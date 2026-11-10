@@ -197,9 +197,11 @@ replaces only what vanilla produced.
   game events, the entities added (a falling block's state and stalactite damage) and the blocks destroyed. The cases
   cover pointed dripstone growing (the block and water source above, column length, stalagmite search), dripping
   water and lava into each kind of cauldron or drying mud into clay, falling and breaking when the support goes,
-  thickness along a column, landing, and cauldrons taking the drip. The replay runs each case through Obsidian's
-  generated owners, or a live block change, in its own world, and compares everything but the game events. Obsidian
-  destroys blocks in the tick's entity phase, so a case that destroys one runs the world tick before comparing.
+  thickness along a column, landing, and cauldrons taking the drip; budding amethyst starting a bud on each face and
+  growing each stage, into air, water sources and falling water, and the faces it skips. The replay runs each case
+  through Obsidian's generated owners, or a live block change, in its own world, and compares everything but the game
+  events. Obsidian destroys blocks in the tick's entity phase, so a case that destroys one runs the world tick before
+  comparing.
 
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.

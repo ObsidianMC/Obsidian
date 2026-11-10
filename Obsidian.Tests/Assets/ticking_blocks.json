@@ -9244,6 +9244,1302 @@
           "state": "minecraft:stone"
         }
       ]
+    },
+    {
+      "name": "budding_amethyst_grows_a_bud_down",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        }
+      ],
+      "seed": 14,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 5,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 0
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:small_amethyst_bud[facing=down,waterlogged=false]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:small_amethyst_bud[facing=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        }
+      ]
+    },
+    {
+      "name": "budding_amethyst_grows_a_bud_up",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        }
+      ],
+      "seed": 55,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 5,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 1
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:small_amethyst_bud[facing=up,waterlogged=false]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:small_amethyst_bud[facing=up,waterlogged=false]"
+        }
+      ]
+    },
+    {
+      "name": "budding_amethyst_grows_a_bud_north",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        }
+      ],
+      "seed": 18,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 5,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 2
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            10,
+            7
+          ],
+          "state": "minecraft:small_amethyst_bud[facing=north,waterlogged=false]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            7
+          ],
+          "state": "minecraft:small_amethyst_bud[facing=north,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        }
+      ]
+    },
+    {
+      "name": "budding_amethyst_grows_a_bud_south",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        }
+      ],
+      "seed": 37,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 5,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 3
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            10,
+            9
+          ],
+          "state": "minecraft:small_amethyst_bud[facing=south,waterlogged=false]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            9
+          ],
+          "state": "minecraft:small_amethyst_bud[facing=south,waterlogged=false]"
+        }
+      ]
+    },
+    {
+      "name": "budding_amethyst_grows_a_bud_west",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        }
+      ],
+      "seed": 1,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 5,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 4
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            7,
+            10,
+            8
+          ],
+          "state": "minecraft:small_amethyst_bud[facing=west,waterlogged=false]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            7,
+            10,
+            8
+          ],
+          "state": "minecraft:small_amethyst_bud[facing=west,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        }
+      ]
+    },
+    {
+      "name": "budding_amethyst_grows_a_bud_east",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        }
+      ],
+      "seed": 64,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 5,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 5
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:small_amethyst_bud[facing=east,waterlogged=false]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:small_amethyst_bud[facing=east,waterlogged=false]"
+        }
+      ]
+    },
+    {
+      "name": "budding_amethyst_chance_misses",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        }
+      ],
+      "seed": 2,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 5,
+          "value": 3
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        }
+      ]
+    },
+    {
+      "name": "budding_amethyst_grows_a_small_bud",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:small_amethyst_bud[facing=up,waterlogged=false]"
+        }
+      ],
+      "seed": 55,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 5,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 1
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:medium_amethyst_bud[facing=up,waterlogged=false]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:medium_amethyst_bud[facing=up,waterlogged=false]"
+        }
+      ]
+    },
+    {
+      "name": "budding_amethyst_grows_a_medium_bud",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:medium_amethyst_bud[facing=up,waterlogged=false]"
+        }
+      ],
+      "seed": 55,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 5,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 1
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:large_amethyst_bud[facing=up,waterlogged=false]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:large_amethyst_bud[facing=up,waterlogged=false]"
+        }
+      ]
+    },
+    {
+      "name": "budding_amethyst_grows_a_large_bud",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:large_amethyst_bud[facing=up,waterlogged=false]"
+        }
+      ],
+      "seed": 55,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 5,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 1
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:amethyst_cluster[facing=up,waterlogged=false]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:amethyst_cluster[facing=up,waterlogged=false]"
+        }
+      ]
+    },
+    {
+      "name": "budding_amethyst_grows_a_cluster_bud",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:amethyst_cluster[facing=up,waterlogged=false]"
+        }
+      ],
+      "seed": 55,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 5,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 1
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:amethyst_cluster[facing=up,waterlogged=false]"
+        }
+      ]
+    },
+    {
+      "name": "budding_amethyst_grows_a_sideways_bud",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:medium_amethyst_bud[facing=east,waterlogged=false]"
+        }
+      ],
+      "seed": 64,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 5,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 5
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:large_amethyst_bud[facing=east,waterlogged=false]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:large_amethyst_bud[facing=east,waterlogged=false]"
+        }
+      ]
+    },
+    {
+      "name": "budding_amethyst_skips_a_bud_facing_away",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:small_amethyst_bud[facing=north,waterlogged=false]"
+        }
+      ],
+      "seed": 55,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 5,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 1
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:small_amethyst_bud[facing=north,waterlogged=false]"
+        }
+      ]
+    },
+    {
+      "name": "budding_amethyst_blocked_face",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "seed": 55,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 5,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 1
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "budding_amethyst_grows_into_water",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "seed": 55,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 5,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 1
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:small_amethyst_bud[facing=up,waterlogged=true]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:small_amethyst_bud[facing=up,waterlogged=true]"
+        }
+      ]
+    },
+    {
+      "name": "budding_amethyst_skips_flowing_water",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:water[level=3]"
+        }
+      ],
+      "seed": 55,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 5,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 1
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:water[level=3]"
+        }
+      ]
+    },
+    {
+      "name": "budding_amethyst_grows_into_falling_water",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:water[level=8]"
+        }
+      ],
+      "seed": 55,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 5,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 1
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:small_amethyst_bud[facing=up,waterlogged=false]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:small_amethyst_bud[facing=up,waterlogged=false]"
+        }
+      ]
+    },
+    {
+      "name": "budding_amethyst_grows_a_waterlogged_bud",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:small_amethyst_bud[facing=up,waterlogged=true]"
+        }
+      ],
+      "seed": 55,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 5,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 1
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:medium_amethyst_bud[facing=up,waterlogged=true]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:medium_amethyst_bud[facing=up,waterlogged=true]"
+        }
+      ]
+    },
+    {
+      "name": "budding_amethyst_skips_a_bud_of_another_block",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:amethyst_block"
+        }
+      ],
+      "seed": 55,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 5,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 1
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:budding_amethyst"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:amethyst_block"
+        }
+      ]
     }
   ],
   "_notes": "Vanilla block routines, recorded by the asset generator's TickingBlockFixtures.java against a block view of the case's setup (air elsewhere, void air outside the build height of -64 to 319) in the overworld, with a legacy random seeded with seed (0 by default) as both the routine's random and the level's. call is randomTick (the origin's state, only when its isRandomlyTicking holds, which ticks records), tick (the origin's scheduled tick), set (Level.setBlock of state at the origin with UPDATE_ALL) or landing (a falling block of state settling at the origin, with the entityDrops rule and silent flag). Writes store the block and, as Level.setBlock does, run the new state's onPlace and then, unless UPDATE_KNOWN_SHAPE is set, the neighbours' shape updates; neighbour notifications are not run. draws lists each draw in order; writes the block changes with their flags; scheduled the block and fluid ticks scheduled with their delays (a block tick counts as pending for hasScheduledTick); events the level events; gameEvents the game events with the state they carry; entities the entities added, with a falling block's state, position and damage; destroyed the blocks destroyed and whether they drop; items the items a landing dropped. after holds the final state of every setup or written position."
