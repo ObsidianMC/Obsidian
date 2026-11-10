@@ -94,20 +94,32 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
     // Its jump_strength, which mods can change with attribute modifiers, and its rider's client predicts with.
     internal override float JumpPower => this.GetAttributeValue("minecraft:jump_strength");
 
-    // Where its rider's client moved it, while the client controls it; otherwise its own travel.
-    protected override VectorD Travel()
+    // Server-driven travel. Client-controlled movement is committed separately in Mob.AI with control revalidated.
+    protected override VectorD Travel() => this.Flying ? VolumeMovement.Travel(this, true) : base.Travel();
+
+    internal bool ApplyClientMovement(ClientVehicleControl.QueuedMove move)
     {
-        if (!this.ClientControl.ControlledBy(this.Rider))
-            return this.Flying ? VolumeMovement.Travel(this, true) : base.Travel();
+        using (this.EnterOwningLevel(out _))
+            return this.ClientControl.ApplyAcceptedTo(this, move);
+    }
 
-        if (this.ClientControl.Accepted is not VehicleMove move)
-            return this.Position;
-
+    // Synchronous host commit; Dimension and BoundingBox remain virtual accessors.
+    internal bool CommitClientMovement(VehicleMove move)
+    {
         this.Yaw = move.Yaw;
         this.Pitch = move.Pitch;
         this.MovementFlags = move.OnGround ? MovementFlags.OnGround : MovementFlags.None;
+        if (this.Level is WorldData.AbstractLevel level
+            && !level.TryMoveEntity(this, this.Position, move.Position))
+        {
+            this.Motion = VectorD.Zero;
+            (this.Navigator as Navigator)?.Stop();
+            return false;
+        }
 
-        return move.Position;
+        this.Position = move.Position;
+        this.BoundingBox = this.Dimension.CreateBBFromPosition(move.Position);
+        return true;
     }
 
     protected override async ValueTask TickMobAsync()

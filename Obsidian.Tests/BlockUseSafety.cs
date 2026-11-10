@@ -45,7 +45,25 @@ public sealed class BlockUseSafety
         await click.WaitAsync(TimeSpan.FromSeconds(10));
         Assert.NotNull(player.OpenedContainer);
         player.FlushBlockAcknowledgement();
-        var sequence = 1;
+        await player.CloseContainerAsync();
+        client.ClearPackets();
+        packet = BlockUpdates.UseOn(target, BlockFace.Up, sequence: 2);
+        using (await player.Inventory.LockAsync())
+        {
+            click = packet.UseAsync(context.Server, player).AsTask();
+            Assert.False(click.IsCompleted);
+            await player.SendPositionAsync(VectorD.Zero);
+        }
+
+        Assert.Null(await click.WaitAsync(TimeSpan.FromSeconds(10)));
+        Assert.Null(player.OpenedContainer);
+        Assert.Equal(2, client.SentPackets.OfType<BlockUpdatePacket>().Count());
+        Assert.Contains(client.SentPackets, sent => sent is ContainerSetSlotPacket);
+        Assert.DoesNotContain(client.SentPackets, sent => sent is BlockChangedAckPacket);
+        player.FlushBlockAcknowledgement();
+        Assert.IsType<BlockChangedAckPacket>(client.SentPackets.Last());
+        await client.ConfirmTeleportAsync();
+        var sequence = 2;
 
         // Early refusals and an item's refused placement all repair both cells and the hand first.
         foreach (var refusal in new[] { "dead", "reach", "placement" })
@@ -128,6 +146,39 @@ public sealed class BlockUseSafety
                 client.SentPackets.OfType<BlockChangedAckPacket>().Select(packet => packet.SequenceID));
             world.TryRemovePlayer(player);
         }
+    }
+
+    [Fact]
+    public async Task QueuedBoneMealCannotCommitWhileATeleportIsPending()
+    {
+        await using var context = TestServerFactory.CreateServer($"pending-bone-meal-{Guid.NewGuid():N}");
+        var world = context.World;
+        WorldBlockEntities.AddEmptyChunk(world);
+        var target = new Vector(8, 64, 8);
+        await world.GetBlockAsync(target);
+        world.BlockUpdates.SetBlock(target + Vector.Down, BlocksRegistry.Farmland);
+        world.BlockUpdates.SetBlock(target, BlocksRegistry.Wheat);
+        var player = TestServerFactory.CreateConnectedPlayer(
+            context.Server, world, "Gardener", new VectorD(8.5, 64, 10.5));
+        Assert.True(world.TryAddPlayer(player));
+        player.GameMode = GameMode.Survival;
+        player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.BoneMeal, 2));
+        var client = (TestClient)player.Client;
+        var use = BlockUpdates.UseOn(target, BlockFace.Up, sequence: 81);
+        Assert.Equal(UseResult.SuccessServer, await use.UseAsync(context.Server, player));
+        await player.SendPositionAsync(VectorD.Zero);
+        client.ClearPackets();
+
+        await world.RunQueuedEntityActionsAsync();
+
+        Assert.True(world.BlockUpdates.GetBlock(target).IsSameState(BlocksRegistry.Wheat));
+        Assert.Equal(2, player.GetHeldItem()!.Count);
+        Assert.Equal(0, player.Statistics.Get("minecraft:bone_meal", type: "minecraft:used"));
+        Assert.Equal(2, client.SentPackets.OfType<BlockUpdatePacket>().Count());
+        Assert.Contains(client.SentPackets, sent => sent is ContainerSetSlotPacket);
+        Assert.DoesNotContain(client.SentPackets, sent => sent is BlockChangedAckPacket);
+        player.FlushBlockAcknowledgement();
+        Assert.Equal(81, Assert.Single(client.SentPackets.OfType<BlockChangedAckPacket>()).SequenceID);
     }
 
     [Fact]

@@ -592,6 +592,8 @@ public sealed partial class Client : IClient
             this.outputDrained?.TrySetResult();
         }
 
+        if (this.Player is PlayerBase player)
+            player.StopTeleportWaits();
         this.cancellationSource.Cancel();
         this.cancellationSource.Dispose();
         try
