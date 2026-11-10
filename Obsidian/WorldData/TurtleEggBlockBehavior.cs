@@ -15,7 +15,7 @@ internal static partial class RandomTickBehaviors
 /// it, and its <c>onPlace</c>, which shows particles when it sits on sand.
 /// </summary>
 /// <remarks>
-/// Trampling is <see cref="AbstractLevel.TrampleTurtleEggAsync"/>'s.
+/// Trampling is dispatched by <see cref="TurtleEggContactBehavior"/> on fall and step contacts.
 /// </remarks>
 internal sealed class TurtleEggBlockBehavior : IRandomTickBehavior, IOnPlaceBehavior
 {
