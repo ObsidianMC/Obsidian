@@ -149,6 +149,10 @@ public partial class MainEventHandler
 
         player.Statistics.Increment(block.UnlocalizedName, type: "minecraft:mined");
 
+        // Vanilla's ItemStack.mineBlock: a tool counts as used for each block it mines.
+        if (CombatItems.IsTool(tool))
+            player.Statistics.Increment(tool!.Holder.UnlocalizedName, type: "minecraft:used");
+
         // Like vanilla's Item.mineBlock, the tool wears once the drops were decided with it as it was.
         if (tool is not null && wear > 0)
             await player.DamageInventoryItemAsync(toolSlot, wear, expected: tool);
