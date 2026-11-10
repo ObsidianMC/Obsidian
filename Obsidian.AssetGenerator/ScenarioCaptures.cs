@@ -32,7 +32,7 @@ internal static class ScenarioCaptures
     public const string Fire = "fire";
     public const string TickingBlocks = "ticking_blocks";
     public const string BlockUse = "block_use";
-
+    public const string GrowingPlantTicks = "growing_plant_ticks";
 
     private const string Symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -66,7 +66,7 @@ internal static class ScenarioCaptures
 
     public static readonly string[] All =
         [Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps, SavedHeightmaps, Mining,
-            Placement, CopperWeathering, Fire, TickingBlocks, BlockUse];
+            Placement, CopperWeathering, Fire, TickingBlocks, BlockUse, GrowingPlantTicks];
 
     private const string RedstoneNotes = """
         Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a
@@ -154,6 +154,14 @@ internal static class ScenarioCaptures
         if (fixtures.Contains(Fire))
         {
             await FixtureDumper.DumpFireAsync(server, Path.Combine(assetsDirectory, "fire_ticks.json"), cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(GrowingPlantTicks))
+        {
+            var path = Path.Combine(assetsDirectory, "growing_plant_ticks.json");
+            await FixtureDumper.DumpGrowingPlantTicksAsync(server, path);
             if (fixtures.Count == 1)
                 return;
         }

@@ -229,6 +229,24 @@ replaces only what vanilla produced.
   container close sources; mob ambient sounds aren't compared (see
   [mob ambient sounds](known-gaps/mob-ambient-sounds.md)).
 
+- `growing_plant_ticks.json` (`VanillaGrowingPlantTicks.ReplayGrowingPlantTickReference`) records vanilla's
+  `randomTick` of growing plants, and the shape updates of kelp and the vines, from
+  `Java/GrowingPlantTickFixtures.java` (`CaptureFixtures=growing_plant_ticks`). Each case is its input: the blocks of
+  a small block view (air elsewhere), an optional ticked origin, optional actions after the tick (a state set with
+  `UPDATE_ALL`, or a block removed), a seed, and optionally the raw light everywhere (`light`) and the `spread_vines`
+  rule (`spreadVines`). The probe ticks the origin only if its state randomly ticks, with a legacy random of the seed
+  as both the tick's and the level's random. It records whether the state ticks, every draw with its bound and result
+  (a body turning back into a head draws its age), the ordered writes with their flags (neighbour shape updates run,
+  so an old head turning into its body is one), the block and fluid ticks scheduled with their delays, and the final
+  state of every position it set up or wrote. The cases cover kelp and the cave, weeping and twisting vines, melon and
+  pumpkin stems, wall vines and the pitcher crop: growing, a missed draw, being blocked, the last age, light, the
+  build height limits, each way a vine spreads, a tip broken off after growing, a head growing into a one-block gap
+  below its plant, and support placed or removed under a head. The replay builds each case in a fresh world with the
+  recording random as the level's, dispatches the state as `AbstractLevel.TickChunkBlocks` does (its
+  `isRandomlyTicking`, then its generated owner), runs the actions, and compares the draws, the ordered writes and
+  their neighbour, client and known-shape flags, the final blocks, that nothing else in the chunk around them changed,
+  and the ticks pending in the chunk with their delays. Six cases list exactly where the block notification pipeline
+  still parts from vanilla (see [plant growth](known-gaps/plant-growth-beyond-saplings.md)).
 
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.
@@ -260,7 +278,7 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=block_use
 
-
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=growing_plant_ticks
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=sulfur -p:CaptureCases=spike_shatters_after_falling+review_spike_pending_fall_keeps_frustum
 ```
@@ -302,6 +320,10 @@ container close sources, and awarded advancement criteria. The fixture lists
 location predicate terms in Obsidian's existing format; the probe converts them to 26.3's `all_of` and `match_block`
 encoding before registering them with vanilla's advancement system.
 
+The `growing_plant_ticks` capture runs no server and re-records every case. To add one, add a case with its `name`,
+`seed`, `setup` and an `origin` or `actions`, and capture again; pick a seed whose first draws take the branch the case
+is about.
+
 A `structure_pieces` case with `captureReferences: true` also records `referenceChunks`: the saved
 `structures.References` from vanilla's chunk serializer at STRUCTURE_REFERENCES, across its bounding box plus
 one chunk of border. `VanillaStructureSaves.GeneratedChunksSaveVanillaReferences` compares generated chunk saves
@@ -313,8 +335,8 @@ other dumpers, so editing it regenerates the assets once.
 
 The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft version> <cache directory>
 <scratch directory> <test assets directory>
-[redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+placement+fire+ticking_blocks+block_use]
-[case names]`.
+[redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+placement+fire+ticking_blocks+block_use+
+growing_plant_ticks] [case names]`.
 
 ## How it captures
 
