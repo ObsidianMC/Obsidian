@@ -275,6 +275,7 @@ public partial class Entity : IEquatable<Entity>, IEntity
         tag.Set(new NbtTag<short>("Air", this.Air));
         tag.Set(new NbtTag<bool>("OnGround", this.MovementFlags.HasFlag(MovementFlags.OnGround)));
         tag.Set(new NbtTag<int>("TicksFrozen", PowderedSnowTicks));
+        tag.Set(new NbtTag<int>("PortalCooldown", this.PortalCooldownTicks));
         tag.Set(new NbtArray<int>("UUID", EntityNbt.UuidToInts(this.Uuid)));
         tag.SetOrRemove("CustomName", this.CustomName?.ToNbt("CustomName"));
 
@@ -309,6 +310,7 @@ public partial class Entity : IEquatable<Entity>, IEntity
         if (tag.TryGetBool("OnGround", out var onGround) && onGround)
             this.MovementFlags |= MovementFlags.OnGround;
         if (tag.TryGetNumber<int>("TicksFrozen", out var frozen)) PowderedSnowTicks = Math.Clamp(frozen, 0, 140);
+        this.PortalCooldownTicks = tag.TryGetNumber<int>("PortalCooldown", out var cooldown) ? cooldown : 0;
         if (this.ReadsSavedUuid && tag.TryGetTag<NbtArray<int>>("UUID", out var uuid) && uuid.Count == 4)
             this.Uuid = EntityNbt.UuidFromInts(uuid.GetArray());
         if (tag.TryGetTag("CustomName", out var customName))

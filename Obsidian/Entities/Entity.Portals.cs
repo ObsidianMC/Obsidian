@@ -46,8 +46,15 @@ public partial class Entity
     // Vanilla's getDimensionChangingDelay: a vehicle whose first passenger is a player waits like a player.
     private int TravelPortalCooldown => this is IPlayer || this.Passengers is [IPlayer, ..] ? 10 : 300;
 
-    /// <summary>The ticks before the entity may use a portal again.</summary>
-    internal int PortalCooldownTicks => this.travelPortalCooldown;
+    /// <summary>
+    /// The ticks before the entity may use a portal again, which vanilla saves as <c>PortalCooldown</c> (players keep
+    /// their own, <see cref="PlayerBase.PortalCooldown"/>).
+    /// </summary>
+    internal int PortalCooldownTicks
+    {
+        get => this.travelPortalCooldown;
+        set => this.travelPortalCooldown = value;
+    }
 
     /// <summary>
     /// Vanilla's <c>setPortalCooldown()</c>: the entity waits its dimension changing delay before it may use a portal,
