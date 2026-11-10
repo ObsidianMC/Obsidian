@@ -83,12 +83,31 @@ internal sealed class BlockProbes : IAsyncDisposable
     /// <summary>The level of the dimension <paramref name="name"/>.</summary>
     public AbstractLevel Level(string name) => this.listeners[name].Level;
 
-    /// <summary>Moves the level's listener to <paramref name="origin"/> and forgets what it heard.</summary>
+    /// <summary>
+    /// Moves the level's listener to <paramref name="origin"/>, forgets what it heard and starts recording the blocks
+    /// the level stores, with their flags, in order.
+    /// </summary>
     public void Listen(AbstractLevel level, Vector origin)
     {
         var listener = this.listeners[level.DimensionName];
         listener.Player.Position = (VectorD)origin + new VectorD(0.5, 0, 0.5);
         listener.Client.ClearPackets();
+        listener.Writes.Clear();
+        level.Fluids.BlockStored = (position, block, flags) => listener.Writes.Add(new Write(position, block, flags));
+    }
+
+    /// <summary>
+    /// Removes from <paramref name="differences"/> the ones <paramref name="expected"/> lists for the case, which are
+    /// known and explained where they're listed, and adds a difference for each listed one that didn't occur, so that
+    /// a gap closing fails the replay until its entry is removed.
+    /// </summary>
+    public static void ExpectKnown(List<string> differences, IReadOnlyList<string> expected)
+    {
+        foreach (var difference in expected)
+        {
+            if (!differences.Remove(difference))
+                differences.Add($"expected difference no longer occurs: {difference}");
+        }
     }
 
     /// <summary>
@@ -117,6 +136,7 @@ internal sealed class BlockProbes : IAsyncDisposable
         RecordingRandom random)
     {
         CompareDraws(differences, probe.GetProperty("draws"), random.Draws);
+        this.CompareWrites(differences, probe.GetProperty("writes"), level, offset);
         CompareBlocks(differences, probe.GetProperty("after"), level, offset);
         CompareTicks(differences, probe.GetProperty("scheduled"), level, offset);
         this.CompareSounds(differences, probe.GetProperty("sounds"), level, offset);
@@ -158,6 +178,24 @@ internal sealed class BlockProbes : IAsyncDisposable
         var draws = expected.EnumerateArray().Select(Draw.Parse).ToList();
         if (!draws.SequenceEqual(actual))
             differences.Add($"draws: vanilla [{string.Join(", ", draws)}], Obsidian [{string.Join(", ", actual)}]");
+    }
+
+    // The blocks the level stored since the case began, in order, with every flag, against vanilla's setBlock calls.
+    private void CompareWrites(List<string> differences, JsonElement expected, AbstractLevel level, Vector offset)
+    {
+        var vanilla = expected.EnumerateArray()
+            .Select(write => Write.Describe(
+                Position(write.GetProperty("pos")) + offset,
+                ParseState(write.GetProperty("state").GetString()!),
+                write.GetProperty("flags").GetInt32()))
+            .ToList();
+
+        var obsidian = this.listeners[level.DimensionName].Writes
+            .Select(write => Write.Describe(write.Position, write.Block, (int)write.Flags))
+            .ToList();
+
+        if (!vanilla.SequenceEqual(obsidian))
+            differences.Add($"writes: vanilla [{string.Join(", ", vanilla)}], Obsidian [{string.Join(", ", obsidian)}]");
     }
 
     private static void CompareBlocks(List<string> differences, JsonElement expected, AbstractLevel level, Vector offset)
@@ -295,7 +333,18 @@ internal sealed class BlockProbes : IAsyncDisposable
         this.listeners[level.DimensionName] = new Listener(level, player, Assert.IsType<TestClient>(player.Client));
     }
 
-    private sealed record Listener(AbstractLevel Level, Entities.Player Player, TestClient Client);
+    private sealed record Listener(AbstractLevel Level, Entities.Player Player, TestClient Client)
+    {
+        public List<Write> Writes { get; } = [];
+    }
+
+    // A block the level stored, with its flags.
+    private sealed record Write(Vector Position, IBlock Block, BlockUpdateFlags Flags)
+    {
+        // The state by its id and its block's name, which both sides share.
+        public static string Describe(Vector position, IBlock block, int flags) =>
+            $"{position} {block.UnlocalizedName}#{block.GetHashCode()} flags {flags}";
+    }
 }
 
 /// <summary>A draw as the probes record it: the call, its bound for <c>nextInt(bound)</c>, and its result.</summary>
