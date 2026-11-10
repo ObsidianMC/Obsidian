@@ -310,6 +310,24 @@ replaces only what vanilla produced.
   with every flag bit and swings included; two cases pin the door and trapdoor opening flags (see
   [waxing, bells and redstone ore](known-gaps/waxing-bells-and-redstone-ore.md)).
 
+- `dispenser.json` (`VanillaDispensers.ReplayDispenserReference`) records what a dispenser does with each item, from
+  `Java/DispenserFixtures.java` (`CaptureFixtures=dispenser`). Like the block use probe it runs a dedicated server of
+  its own in a flat world of air, but frozen and stepped one tick at a time, with random ticks and mob griefing off.
+  A case is its input: the dispenser's facing and items, the blocks set up around it without updates, and the mobs
+  standing in front (without AI; `tamed` and `canPickUpLoot` set). The probe powers the dispenser with a redstone block
+  placed behind it, with every update, and after each of the case's ticks (6 by default; it fires on the fourth)
+  records the blocks within 3 of the dispenser that changed since before the redstone block, the dispenser's items,
+  the entities within 5 (dropped items summed by item, since item entities merge, or only their ids, or only that
+  some dropped, where a case's `drops` says vanilla's are random; primed TNT with its fuse; mobs with their equipment
+  and whether they can be sheared), and the sounds (positioned and following an entity, without mobs' ambient
+  sounds), level events and particles a player beside the dispenser received and the game events within 16 blocks
+  during that tick. The replay builds each case in one world of empty chunks, places the same redstone block and runs
+  whole ticks of the level, comparing every field of every tick; game events are seen as they're emitted
+  (`AbstractLevel.GameEventEmitted`), since the level dispatches them later in the tick. Its mobs are spawned standing
+  on their floor. Projectile positions aren't recorded: vanilla draws their spread from each projectile's own random.
+  Four cases are pinned by the ticks and fields that differ, each failing when it changes (see
+  [dispenser behaviours](known-gaps/dispenser-behaviours.md)).
+
 - `turtle_eggs.json` (`VanillaTurtleEggs.ReplayTurtleEggReference`) records vanilla's turtle eggs, from
   `Java/HatchingFixtures.java` (`CaptureFixtures=turtle_eggs`). Each case is its input: the blocks of a small block
   view (air elsewhere), the origin, a seed, the overworld clock's time and the dimension, and either a random tick or
@@ -437,6 +455,8 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=waxing_bells_ore
 
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=dispenser
+
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=eyeblossom_ghast_portal
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=turtle_eggs
@@ -480,6 +500,10 @@ Append new inputs, select only their names, and verify existing case text is unc
 same selection as its second argument when run directly with the cached server and libraries on its classpath.
 `scheduled` records scheduling attempts: the first request per position/type remains pending, even when later
 attempts use another delay. The pending-coral case records delays 85 and 88, but only the first is pending.
+
+For `dispenser`, `CaptureCases` accepts exact `+`-separated names in `dispenser.json` and records only those cases;
+the others keep theirs. Add a case with empty `checkpoints` and capture it on its own. The whole capture takes about
+20 seconds after the server starts.
 
 For `eyeblossom_ghast_portal`, `CaptureCases` accepts exact `+`-separated names in
 `eyeblossom_ghast_portal_ticks.json` and records only those cases; the others keep theirs. The capture takes about ten
@@ -574,7 +598,7 @@ The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft 
 <scratch directory> <test assets directory>
 [redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+heightmaps+saved_heightmaps+mining+placement+
 copper_weathering+fire+ticking_blocks+block_use+waxing_bells_ore+turtle_eggs+frogspawn+growing_plant_ticks+
-melting_weather+furnace_results]
+melting_weather+furnace_results+dispenser]
 [case names]`.
 
 ## How it captures

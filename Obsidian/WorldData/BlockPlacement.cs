@@ -5,9 +5,16 @@ using Obsidian.Plugins;
 
 namespace Obsidian.WorldData;
 
-/// <summary>Transfers the hand item to an unpublished block entity in the block mutation's critical section.</summary>
-internal sealed class BlockPlacement(IPlayer player, int slot, ItemStack item)
+/// <summary>
+/// Transfers the hand item to an unpublished block entity in the block mutation's critical section. Without a player
+/// (<see cref="ForDispenser"/>), the item is one a dispenser holds locked and spends itself: no hand is locked,
+/// checked or used up here.
+/// </summary>
+internal sealed class BlockPlacement(IPlayer? player, int slot, ItemStack item)
 {
+    /// <summary>A dispenser placing <paramref name="item"/>, which it spends itself once the block is placed.</summary>
+    internal static BlockPlacement ForDispenser(ItemStack item) => new(null, 0, item);
+
     /// <summary>
     /// What else the placement changes in the same critical section, once the block is set and the item used: a
     /// door's upper half, a bed's head (vanilla's <c>setPlacedBy</c>). Nothing can change the world in between.
@@ -15,11 +22,16 @@ internal sealed class BlockPlacement(IPlayer player, int slot, ItemStack item)
     internal Action? Placed { get; init; }
 
     // Inventory hooks can await world writes while owning this inventory. Never wait for it under tick.
-    internal bool TryLockHand(out IDisposable? held) => player.Inventory.TryLock(out held);
+    internal bool TryLockHand(out IDisposable? held)
+    {
+        held = null;
+        return player is null || player.Inventory.TryLock(out held);
+    }
 
     internal Prepared? Prepare(IBlock block, Vector position, ILogger logger)
     {
-        if (!ReferenceEquals(player.Inventory.GetItem(slot), item) || item.Count <= 0)
+        var inHand = player is null || ReferenceEquals(player.Inventory.GetItem(slot), item);
+        if (!inHand || item.Count <= 0)
             return null;
 
         var type = block.HasBlockEntity() ? block.BlockEntityType() : null;
@@ -51,7 +63,7 @@ internal sealed class BlockPlacement(IPlayer player, int slot, ItemStack item)
 
     internal void Consume()
     {
-        if (player.GameMode != GameMode.Creative)
+        if (player is not null && player.GameMode != GameMode.Creative)
         {
             if (item.Holder.Id == ItemIds.PowderSnowBucket)
                 player.Inventory.SetItem(slot, new ItemStack(ItemsRegistry.Bucket, 1));

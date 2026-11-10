@@ -70,8 +70,9 @@ public sealed partial class Egg : Throwable
     public override void SpawnEntity(Velocity? velocity = null, int additionalData = 0)
     {
         base.SpawnEntity(velocity ?? new Velocity(this.Motion.X, this.Motion.Y, this.Motion.Z), this.Owner?.EntityId ?? additionalData);
-        if (this.Level is AbstractLevel level)
-            level.EmitGameEvent(MobGameEvent.ProjectileShoot, this.Position, this.Owner ?? this);
+        // An egg with no thrower (a dispenser's, or one loaded) has its throw heard where it was fired from.
+        if (this.Level is AbstractLevel level && this.Owner is not null)
+            level.EmitGameEvent(MobGameEvent.ProjectileShoot, this.Position, this.Owner);
     }
 
     public override async ValueTask TickAsync()

@@ -64,11 +64,30 @@ internal sealed class MobProjectile : Entity
         NoGravity = type is not (EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion);
     }
 
+    /// <summary>
+    /// A projectile nothing shot, like a dispenser's: it moves by <paramref name="motion"/> from
+    /// <paramref name="position"/>, and a fireball keeps speeding up along it.
+    /// </summary>
+    [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
+    internal MobProjectile(ILevel level, EntityType type, VectorD position, VectorD motion)
+        : this(level, type)
+    {
+        EntityId = Server.GetNextEntityId();
+        Position = position;
+        BoundingBox = Dimension.CreateBBFromPosition(Position);
+        Motion = motion;
+
+        var thrown = type is EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion;
+        acceleration = thrown || motion.Magnitude < 0.0001f ? VectorD.Zero : motion / motion.Magnitude * 0.1f;
+    }
+
     public override void SpawnEntity(Velocity? velocity = null, int additionalData = 0)
     {
         base.SpawnEntity(velocity ?? new Velocity(Motion.X, Motion.Y, Motion.Z), Owner?.EntityId ?? 0);
-        if (Level is AbstractLevel level)
-            level.EmitGameEvent(MobGameEvent.ProjectileShoot, Position, Owner ?? this);
+
+        // A projectile with no shooter (a dispenser's, or one loaded) has its shot heard where it was fired from.
+        if (Level is AbstractLevel level && Owner is not null)
+            level.EmitGameEvent(MobGameEvent.ProjectileShoot, Position, Owner);
     }
 
     public override ValueTask DamageAsync(IEntity source, float amount = 1)

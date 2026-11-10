@@ -111,8 +111,10 @@ public partial class Arrow : Entity
     public override void SpawnEntity(Velocity? velocity = null, int additionalData = 0)
     {
         base.SpawnEntity(velocity, additionalData);
-        if (Level is AbstractLevel level)
-            level.EmitGameEvent(MobGameEvent.ProjectileShoot, Position, Owner ?? this);
+
+        // An arrow with no shooter (a dispenser's, or one loaded) has its shot heard where it was fired from.
+        if (Level is AbstractLevel level && Owner is not null)
+            level.EmitGameEvent(MobGameEvent.ProjectileShoot, Position, Owner);
     }
 
     internal override IClientboundPacket CreateSpawnPacket(Velocity? velocity = null, int additionalData = 0)
