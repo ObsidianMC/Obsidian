@@ -228,7 +228,6 @@ public partial class UseItemOnPacket
                 if (!level.BlockUpdates.SetBlock(firePosition, fire))
                     return false;
 
-                level.ScheduleBlockTick(firePosition, fire, 30 + Random.Shared.Next(10));
                 ItemDamage.ApplyIgniterCost(use, item);
                 return true;
             });

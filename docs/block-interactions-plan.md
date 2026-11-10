@@ -51,10 +51,9 @@ Four defects found on the way are worse than a missing feature, because the bloc
 2. **Fixed: fire from fireballs, explosions and end crystals never spread or burned out.** Fire's first tick was
    scheduled by hand where a player lit it, where it spread and where lava lit it, and by nothing else. Fire now
    has vanilla's on-place behaviour (`OnPlaceBehaviors.FireBlock`), which schedules the tick for every placement
-   and draws its delay once from the level's random; the hand-written scheduling in `FireBlockBehavior` and
-   `AbstractLevel.Growth.cs` is gone. `UseItemOnPacket` still schedules once more after placing, which does nothing
-   (the tick is already scheduled) but draws from `Random.Shared`; that line can go. The `fire_ticks.json` capture
-   checks it.
+   and draws its delay once from the level's random. The hand-written scheduling in `FireBlockBehavior`,
+   `AbstractLevel.Growth.cs` and `UseItemOnPacket` is gone. Hand ignition also leaves soul fire without a scheduled
+   tick. The `fire_ticks.json` and `block_use.json` captures check fire and block-use behavior.
 3. **Dispensers and droppers open as a 9×1 row** instead of 3×3 (`OpenScreenPacket.cs:27`), and shulker boxes open
    with the generic chest menu, which lets players put shulker boxes inside them.
 4. **An observer facing a container pulsed forever.** Fixed: the block entity tick sent a neighbour update around
