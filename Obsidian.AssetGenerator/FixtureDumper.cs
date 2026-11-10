@@ -104,6 +104,22 @@ internal static class FixtureDumper
         return VanillaServer.RunJavaAsync(server.ScratchDirectory, arguments.ToArray());
     }
 
+    // An on-request gameplay probe: eyeblossoms, potted eyeblossoms, dried ghasts and nether portals ticking against
+    // each case's block view.
+    internal static Task DumpEyeblossomGhastPortalAsync(
+        VanillaServer server, string fixture, IReadOnlyCollection<string>? cases = null)
+    {
+        var arguments = new List<string>
+        {
+            "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("EyeblossomGhastPortalFixtures.java"),
+            fixture
+        };
+        if (cases is not null)
+            arguments.Add(string.Join('+', cases));
+
+        return VanillaServer.RunJavaAsync(server.ScratchDirectory, arguments.ToArray());
+    }
+
     internal static Task DumpSulfurAsync(VanillaServer server, string fixture) =>
         VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
             Source("SulfurFixtures.java"), fixture);
