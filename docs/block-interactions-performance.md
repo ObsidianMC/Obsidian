@@ -249,46 +249,51 @@ Rides with: plan phase 1.
 
 ### 8. Tick only the block entities that tick
 
-*Done. The block entity pass takes half the time; what is left is the container upkeep below.*
+*Done. The pass is about 15 percent faster, not twice as fast; what is left is the upkeep walk below.*
 
-Each chunk keeps the block entities whose classes override `TickAsync` (`Chunk.TickingBlockEntities`). A reflection
-check decides this once per class, so a new class that ticks can't be left out. The chunk's block entity methods
-(`SetBlockEntity`, `GetOrAddBlockEntity`, `RemoveBlockEntity`, `ReplaceBlockEntity`) mark the list stale. Chunk
-loading, restoring kept block entities and every level block write go through those methods. The level's tick then
-rebuilds the list from the dictionary, in the dictionary's own order. That is the order the old walk ticked them in,
-within a chunk and across chunks. The rebuild takes no lock: a change that lands during it leaves the list stale for
-the next tick. The tick skips a block entity that was removed or replaced since the list was built.
+The pass still walks each block-ticking chunk's block entity dictionary once, in its order, exactly where the old
+loop did. What changed is what it does per entry. A reflection check, made once per class, tells whether the class
+overrides `TickAsync` (`BlockEntity.Ticks`), so a new class that ticks can't be left out. One that ticks is checked
+against its block, placed, loaded and ticked as before. One that doesn't is first asked whether it has anything to
+do: not placed yet, an `OnLoad` pending, or a container whose items or comparators are behind. Only then is it
+checked against its block and kept up. Chests, signs, beds and banners with nothing to do no longer pay for a block
+lookup, a type comparison and an awaited tick that does nothing. Each container's revision, which scans every slot,
+is read once per pass.
 
-The ticking ones still have their block checked each tick, as vanilla's tickers do. Not every block write goes
-through the level: generation and raw chunk writes don't. Catching those on change would add work to every block
-write, while the check costs a few nanoseconds per ticker. The other block entities aren't checked unless they have
-upkeep to do.
+A first version kept a per-chunk array of the ticking block entities, marked stale by the chunk's block entity
+methods, and kept up the others in a second walk after each chunk's ticks. It halved the pass, but review found three
+problems, all from the cached array, so it wasn't kept:
 
-Their upkeep runs on its own walk after each chunk's ticks. It covers placing them, running their pending
-`OnLoad`, a plugin container's save and items-changed poll, and telling comparators about items that moved without
-a block update (#703). That runs for the same block entities, in the same block-ticking chunks, as before.
-Restoring kept block entities and the pending loads of chunks that don't tick were never part of the per-chunk walk
-and are unchanged. A non-ticking container is now polled after the ticks of its chunk instead of at its place in
-the dictionary. This is still within the same tick, before the item access flush. Nothing in the pass reads what
-that update changes: a comparator that hears of it only schedules a block tick two game ticks later. What can
-differ is the order of that block tick among the others scheduled for the same game tick. The old order was the
-dictionary's, not vanilla's: vanilla tells comparators at the moment the items move.
+- A removed plugin block entity stayed in the array of a chunk that emptied or left block-ticking range, keeping its
+  plugin's assembly from unloading.
+- A block entity a plugin put into the public `Chunk.BlockEntities` dictionary directly was never ticked, since no
+  chunk method marked the array stale.
+- Upkeep after the ticks changed what comparators were told. A comparator computes its input when it hears of a
+  change, before deciding to schedule its update. So a chest filled outside the tick and emptied by a hopper later in
+  the same pass no longer scheduled the update it used to.
 
 Same harness as the re-runnable block probe below: 25 block-ticking chunks holding 3,000 chests and 1,000 signs,
-plus an idle furnace and an idle hopper in each. One operation is one call of `TickBlockEntitiesAsync`. Before:
-`c043dcd3d` with the probe case added (`65d62c805`); after: `0e47f9b0a`. Both runs were made on 2026-11-09 on the
-machine described there. Reading each container's revision once per pass (`64e70a7ae`) didn't move the numbers
-(105.5 to 106.8 µs in three runs): an idle vanilla chest was already read once, so only plugin containers and
-changed ones read it less.
+plus an idle furnace and an idle hopper in each. One operation is one call of `TickBlockEntitiesAsync`. All runs were
+made on 2026-11-09 on the machine described there, on that day's 26.3.x; ranges are over two to four runs.
 
-| Operation | Before (ns/op) | After (ns/op) | Before (B/op) | After (B/op) |
-|---|---:|---:|---:|---:|
-| BlockEntityPass / 4,000 idle, 50 ticking | 212685.65 | 104262.85 | 18384.00 | 16784.00 |
+| Version | ns/op | B/op |
+|---|---:|---:|
+| Before this change | 201,000 to 204,500 | 18,384 |
+| Cached array of tickers, upkeep after them (not kept) | 103,400 to 107,100 | 16,784 |
+| One walk inside the async pass (this change) | 168,300 to 180,300 | 18,384 |
+| One walk, outside the async pass until a tick waits (not kept) | 139,400 to 144,700 | 18,384 |
 
-Of the roughly 104 µs left, about 40 µs is enumerating the chunks' block entity dictionaries for the upkeep. About
-60 µs is reading `Inventory.Revision` once for each of the 3,000 chests (`BaseContainer.Revision` scans every slot). The 50
-tickers' own ticks take about 10 µs and most of the allocations. Removing the upkeep walk would need it to become
-event-driven: block entities placed when their chunk loads, and containers that report their own changes.
+The single walk costs more than the cached array because of where it runs, not what it does. Inside the async pass
+the dictionary's enumerator lives across the awaited ticks, so it stays a heap object reached through interface
+calls. The same idle work in a plain synchronous `foreach` cost about 94 µs instead of about 162 µs. There .NET 10
+keeps the enumerator on the stack and calls it directly; that is what the cached array's separate upkeep loop got
+for free. Keeping the walk synchronous until a tick actually waits, and handing the enumerator to an async
+continuation then, recovers about 25 µs. It wasn't kept: it needs a second copy of the walk, and the enumerator it
+hands off still can't stay on the stack.
+
+What remains is the upkeep walk itself: enumerating every block entity of every block-ticking chunk, and reading
+every container's revision, each tick. Only making that upkeep event-driven removes it: block entities placed when
+their chunk loads, and containers that report their own changes.
 
 *From the code.*
 
