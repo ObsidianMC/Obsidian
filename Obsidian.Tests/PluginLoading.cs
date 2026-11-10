@@ -979,6 +979,9 @@ public sealed class ProbePlugin : PluginBase
     // What its charm's inventory tick hurts the holder with, an (IEntity Source, float Amount) pair, while set.
     public const string HurtKey = "Obsidian.Tests.ProbePlugin.Hurt";
 
+    // A test-controlled rendezvous inside the charm's real inventory hook.
+    public const string InventoryTickHookKey = "Obsidian.Tests.ProbePlugin.InventoryTickHook";
+
     // How many times its handler saw one of its pouches close.
     public const string PouchClosesKey = "Obsidian.Tests.ProbePlugin.PouchCloses";
 
@@ -1249,6 +1252,9 @@ public sealed class ProbePlugin : PluginBase
         {
             var ticks = AppContext.GetData(TicksKey);
             AppContext.SetData(TicksKey, $"{ticks}{context.Slot}:{context.EquipmentSlot};");
+
+            if (AppContext.GetData(InventoryTickHookKey) is Func<ItemInventoryTickContext, ValueTask> hook)
+                await hook(context);
 
             if (AppContext.GetData(HurtKey) is (IEntity source, float amount))
                 await context.Player.DamageAsync(source, amount);

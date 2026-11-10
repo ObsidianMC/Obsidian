@@ -18,7 +18,7 @@ waiting; `try` means `Wait(0)`, releasing any partial acquisition on failure.
 | Entity transfer | `inventory and/or tick -> TransferLock -> chunk EntityLock -> entity grid`. Transfer acquisition is synchronous; never hold two levels' transfer locks, await, load chunks, or run plugin code inside one. Pickup holds inventory before transfer; hopper access under transfer must not wait for inventories. |
 | Chunk and lighting | Live writes take `tick -> Chunk.BlockLock`; runtime lighting also uses `tick -> propagation` (reader/writer lock). Saves acquire generation's chunk lock before tick, then block snapshots and entity snapshots. Chunk loading/region lookup and I/O must finish outside the write's tick section. `regionLock` is not acquired inside that section. |
 | Notification queue | Writes take `tick -> BlockNotificationPipeline.sync` (short blocking monitor). Draining takes `sync` only to dequeue/change bookkeeping, releases it before world reads, hooks and awaits. There is no `sync -> tick/inventory` edge. Placement already invokes synchronous world callbacks while holding its hand; this repair must not expand that scope. |
-| Other bookkeeping | Container viewer-list monitor is short and releases before callbacks. `WindowSnapshots.gate` serializes currentness checks and packet submission after inventory release and plugin packet handlers. Container loot uses `LootGenerationLock -> inventory -> LootLock`; loot preparation runs outside tick/transfer/click locks. Container save and component application take `inventory -> LootLock`; data block entities also have their data monitor. Plugin call leases are nonblocking entry/lifetime accounting, not inventory mutexes. |
+| Other bookkeeping | Container viewer-list monitor is short and releases before callbacks. `WindowSnapshots.gate` serializes currentness checks and packet submission after inventory release and plugin packet handlers. Player-grid membership has a short monitor for joins, leaves and query snapshots; it does not wait for inventories. Container loot uses `LootGenerationLock -> inventory -> LootLock`; loot preparation runs outside tick/transfer/click locks. Container save and component application take `inventory -> LootLock`; data block entities also have their data monitor. Plugin call leases are nonblocking entry/lifetime accounting, not inventory mutexes; live block-entity calls are awaited before removal outside tick. |
 
 ## Rule
 
@@ -32,12 +32,32 @@ Keeping inventory-tick hooks atomic permits their existing awaited world writes.
 when plugins observe them; unlocking around hooks changes their inventory contract. Removing the opposite wait
 edge is the smaller compatible repair.
 
+## Placement repair
+
+Placement now tries the hand **once**, before validation, preparation or writes. Contention returns false without
+changing the block or consuming an item. There is no automatic retry and no spin: the player sees a refused click,
+with the clicked cell, adjacent cell and hand resent by the existing `UseItemOnPacket` completion path before the
+acknowledgement. Another player click can try again. Revalidation, block publication and exactly one consumption
+still share the tick and hand locks. Cancellation and actor/hand changes before commit still refuse the operation.
+No plugin callback or await gains a new held lock. Furnace and campfire ticks likewise try once and skip a busy
+tick (normal ticking tries next tick); campfire insertion tries both inventories and refuses before any change.
+
+`PlacementInventoryLocking.InventoryTickWorldWriteAndPlacementCannotDeadlockEachOther` runs the real plugin
+inventory-tick hook and placement with explicit rendezvous points while each owns its first lock. On the original
+code, its ten-second bound failed with `placement completed=False, item tick completed=False`. A test-only
+cancellation escape released the hook, and both pending writes were joined before disposal. After the repair,
+placement refuses and the hook's world write completes while its inventory view remains unchanged. No sleeps or
+scheduling races decide the result. The probe callback lives only in the test plugin; production needs no test seam.
+
 ## Other violations and boundaries
 
 - `Region.SnapshotChunkAsync -> SerializeChunk -> BlockEntityNbt.Save -> ContainerBlockEntity.Save` /
   `SnapshotContents` waits for resident container inventories under tick. `BlockEntityLifecycle.Retire` also waits
   for each inventory under tick on unload. These require coordinated snapshot/retirement admission before tick,
   with resident identity revalidation and all-or-nothing unload handling; merely skipping would lose save data.
+- The same snapshot calls `CollectEntities -> EntityNbt.Save -> VehicleInventory.Save` for chest boats and
+  container minecarts: `tick -> transfer -> chunk EntityLock -> vehicle inventory` (wait). This also violates the
+  transfer lock's inventory ordering. Entity snapshot admission must be fixed together; skipping loses entities.
 - `PluginBlockEntities.Keep/KeepCore` waits for container retirement and saving under tick, including placement's
   `CompleteBlockEntityPlacement -> KeepIfUnloading`. Plugin preservation needs coordinated admission and a
   retryable unload sweep; skipping would leave a live plugin instance behind. Keep this lifecycle work separate.
