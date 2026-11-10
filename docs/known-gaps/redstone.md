@@ -18,6 +18,9 @@ What follows is what still differs.
   item access) or on its next one (players' clicks), and only near players, where vanilla's `setChanged` tells them
   at once. Entities press plates, trip wires and press wooden buttons (arrows) straight after their own tick, as
   vanilla's do, but only from where they end up: vanilla also finds the blocks an entity passed through in that tick.
+  Which entities touch blocks and which leave plates and tripwires alone (vexes touch them, bats don't trigger them,
+  an entity its own tick removed touches nothing) follows vanilla's source; `block_contact_scenarios.json` doesn't
+  capture those kinds yet.
   Cats sitting on a chest don't stop comparators reading it.
   Solid-block obstruction above a single chest or either double-chest half leaves the comparator's output stale
   until another notification, as captured in vanilla; removing it alone does too. Observers use the shape owner,

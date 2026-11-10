@@ -1124,9 +1124,13 @@ public abstract partial class AbstractLevel : ILevel
                     await entity.TickAsync();
 
                     // Like vanilla's entity movement, the blocks it touches react now, before the next entity ticks;
-                    // as in vanilla, only where entities tick (players everywhere).
-                    if (entity is Entity toucher && (entity is IPlayer || this.IsMobTicking(entity.Position)))
+                    // as in vanilla, only where entities tick (players everywhere), and not once its tick removed it
+                    // (an arrow despawning, a projectile breaking): removal takes it out of the level's grid.
+                    if (entity is Entity toucher
+                        && (entity is IPlayer || toucher.Grid == this.EntityGrid && this.IsMobTicking(entity.Position)))
+                    {
                         await this.EntityContacts.TouchAsync(toucher);
+                    }
 
                     if (entity is Entity concrete && entity is not IPlayer && entity.Level == this)
                         await concrete.TickEntityPortalAsync();

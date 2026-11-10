@@ -130,33 +130,37 @@ internal sealed class EntityContactPass(IContactLevel level)
     /// <summary>
     /// Whether <paramref name="entity"/> touches blocks at all, like vanilla's entities that apply block effects as they
     /// move (living entities, items, experience orbs, falling blocks, TNT, projectiles, boats, minecarts and end
-    /// crystals) while they have physics (vanilla's <c>isAffectedByBlocks</c>).
+    /// crystals) while they have physics (vanilla's <c>isAffectedByBlocks</c>). Vexes fly through blocks but still touch
+    /// them, as vanilla's do, and a plugin's projectiles and objects touch blocks like vanilla's.
     /// </summary>
     internal static bool TouchesBlocks(Entity entity) => entity switch
     {
         PlayerBase player => player.GameMode != GameMode.Spectator,
         ArmorStand stand => !stand.NoGravity && !stand.StandProperties.HasFlag(StandProperties.SetMarker),
-        Vex or EnderDragon => false,
+        EnderDragon => false,
         Living => true,
         ItemEntity or ExperienceOrb or FallingBlock or PrimedTnt or FireworkRocket or FishingHook => true,
+        PluginEntity => true,
         Arrow or Throwable or VehicleEntity or EndCrystal or DragonFireball or BreezeWindCharge => true,
         MobProjectile => entity.Type != EntityType.LlamaSpit,
         _ => entity.Type == EntityType.WindCharge,
     };
 
-    // An entity its own tick removed, which vanilla's isAffectedByBlocks leaves out.
+    // An entity its own tick removed, which vanilla's isAffectedByBlocks leaves out. The level also skips any entity
+    // its tick took out of the level (see AbstractLevel's entity loop); these flags are for the ones that mark
+    // themselves removed.
     private static bool IsRemoved(Entity entity) =>
         entity is ItemEntity { Removed: true } or Mob { IsRemoved: true } or VehicleEntity { IsRemoved: true };
 
     /// <summary>
     /// Whether pressure plates and tripwires leave <paramref name="entity"/> out when they look for entities on them,
-    /// like vanilla's <c>isIgnoringBlockTriggers</c> (and its selector leaving spectators out).
+    /// like vanilla's <c>isIgnoringBlockTriggers</c> (and its selector leaving spectators out). Bats ignore them too.
     /// </summary>
     internal static bool IgnoresBlockTriggers(IEntity entity) => entity switch
     {
         IPlayer player => player.GameMode == GameMode.Spectator,
         ArmorStand stand => stand.StandProperties.HasFlag(StandProperties.SetMarker),
-        DisplayEntity or TextDisplay or Interaction or OminousItemSpawner => true,
+        DisplayEntity or TextDisplay or Interaction or OminousItemSpawner or Bat => true,
         _ => entity.Type == EntityType.Marker,
     };
 
