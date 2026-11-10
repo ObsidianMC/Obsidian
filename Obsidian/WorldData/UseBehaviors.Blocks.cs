@@ -127,9 +127,11 @@ internal static partial class UseBehaviors
                     return false;
 
                 jukebox.Set(new ItemStack(use.Item!, 1).ToNbt("RecordItem"));
-                jukebox.Set("IsPlaying", true);
-                jukebox.Set("ObsidianSongElapsed", 0);
-                use.Level.BlockUpdates.SetBlock(use.Position, use.Block.WithProperty("has_record", true));
+                jukebox.Set(AbstractLevel.SongTicksField, 0L);
+
+                // Vanilla's notifyItemChangedInJukebox tells only clients; onSongChanged updates the neighbours.
+                var playing = use.Block.WithProperty("has_record", true);
+                use.Level.BlockUpdates.SetBlock(use.Position, playing, Obsidian.API.Blocks.BlockUpdateFlags.Clients);
                 return true;
             }, consumeItem: true))
             {
@@ -139,6 +141,10 @@ internal static partial class UseBehaviors
             await use.Player.SyncInventorySlotAsync(use.HandSlot);
             use.Level.EmitGameEvent(MobGameEvent.BlockChange, use.Center);
             use.Level.StartJukebox(use.Position, song);
+
+            // Vanilla's onSongChanged: the neighbours hear of it, and comparators read the disc's song.
+            use.Level.UpdateNeighbors(use.Position, use.Block);
+            use.Level.BlockUpdates.UpdateAnalogOutput(use.Position);
 
             use.Level.EmitGameEvent(MobGameEvent.BlockChange, use.Center, use.Player);
             use.Award("minecraft:play_record");
@@ -151,42 +157,36 @@ internal static partial class UseBehaviors
             if (use.Block.GetProperty("has_record") != "true")
                 return ValueTask.FromResult(UseResult.Pass);
 
+            if (Jukebox(use) is not DataBlockEntity jukebox)
+                return ValueTask.FromResult(UseResult.Fail);
+
             ItemStack? stack = null;
-            if (Jukebox(use) is not DataBlockEntity jukebox || !use.TryCommit(() =>
+            var ejected = use.TryCommit(() =>
             {
                 if (!jukebox.SnapshotData().TryGetTag<NbtCompound>("RecordItem", out var record)
                     || record.ItemFromNbt() is not { IsAir: false } stored)
+                {
                     return false;
+                }
 
                 stack = stored;
                 jukebox.Remove("RecordItem");
-                use.Level.BlockUpdates.SetBlock(use.Position, use.Block.WithProperty("has_record", false));
+
+                // Vanilla's notifyItemChangedInJukebox tells only clients; onSongChanged updates the neighbours.
+                var empty = use.Block.WithProperty("has_record", false);
+                use.Level.BlockUpdates.SetBlock(use.Position, empty, Obsidian.API.Blocks.BlockUpdateFlags.Clients);
                 return true;
-            }))
+            });
+
+            if (!ejected)
                 return ValueTask.FromResult(UseResult.Fail);
 
-            Eject(use, stack!);
+            // Vanilla's notifyItemChangedInJukebox, as the disc leaves.
+            use.Level.EmitGameEvent(MobGameEvent.BlockChange, use.Center);
+            use.Level.EjectRecord(use.Position, stack!, jukebox);
+            use.Level.UpdateNeighbors(use.Position, use.Block);
+            use.Level.BlockUpdates.UpdateAnalogOutput(use.Position);
             return ValueTask.FromResult(UseResult.Success);
-        }
-
-        private static void Eject(BlockUse use, ItemStack stack)
-        {
-            var level = use.Level;
-            level.StopJukebox(use.Position);
-
-            var motion = new VectorD(
-                (Random.Shared.NextDouble() - 0.5) * 0.2,
-                0.2,
-                (Random.Shared.NextDouble() - 0.5) * 0.2);
-            level.SpawnEntity(new ItemEntity
-            {
-                Level = level,
-                EntityId = Obsidian.Server.GetNextEntityId(),
-                Position = (VectorD)use.Position + new VectorD(0.5, 1, 0.5),
-                Item = stack,
-                Motion = motion,
-                CanPickup = false
-            });
         }
 
         private static DataBlockEntity? Jukebox(BlockUse use)

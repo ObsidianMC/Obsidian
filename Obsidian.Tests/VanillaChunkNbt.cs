@@ -57,9 +57,9 @@ public sealed class VanillaChunkNbt
                 Assert.Equal(2, furnace.Inventory.GetItem(0)!.Count);
                 var brewing = Assert.IsType<BrewingStandBlockEntity>(chunk.GetBlockEntity(2, -60, 0));
                 Assert.Equal(20, brewing.Stand.Fuel);
-                var pot = Assert.IsType<DataBlockEntity>(chunk.GetBlockEntity(4, -60, 0)).SnapshotData();
-                Assert.Equal("minecraft:angler_pottery_sherd", ((NbtCompound)((NbtCompound)pot["sherds"])["back"]).GetString("id"));
-                Assert.Equal(5, ((NbtCompound)pot["item"]).GetInt("count"));
+                var pot = Assert.IsType<DecoratedPotBlockEntity>(chunk.GetBlockEntity(4, -60, 0));
+                Assert.Equal("minecraft:angler_pottery_sherd", ((NbtCompound)((NbtCompound)pot.Sherds!)["back"]).GetString("id"));
+                Assert.Equal(5, pot.Inventory.GetItem(0)!.Count);
                 var sign = Assert.IsType<DataBlockEntity>(chunk.GetBlockEntity(6, -60, 0)).SnapshotData();
                 Assert.True(sign.GetBool("is_waxed"));
                 Assert.Equal("Hello", ((NbtTag<string>)((NbtList)((NbtCompound)sign["front_text"])["messages"])[0]).Value);

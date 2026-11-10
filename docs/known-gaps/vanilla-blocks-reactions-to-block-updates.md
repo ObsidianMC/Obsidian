@@ -104,7 +104,7 @@ before it is implemented. "Phase" refers to the [block interactions plan](../blo
 | `DecoratedPotBlock` | decorated pot | Fluid tick only | 2 (batch D) |
 | `DriedGhastBlock` | dried ghast | Fluid tick only | 5 |
 | `EnderChestBlock` | ender chest | Fluid tick only | 6 |
-| `FlowerPotBlock` | flower pots | Don't drop when their floor goes | 2 (batch D) |
+| `FlowerPotBlock` | flower pots | Stay when their floor goes, as vanilla's do: its rule drops a pot that can't survive, and `FlowerPotBlock` doesn't override `canSurvive` (26.3 jar; not captured) | Shape-rule follow-up |
 | `FrogspawnBlock` | frogspawn | Doesn't drop without water | 5 |
 | `HeavyCoreBlock` | heavy core | Fluid tick only | Shape-rule follow-up |
 | `HugeMushroomBlock` | mushroom blocks and stems | Faces don't join neighbours | 5 |

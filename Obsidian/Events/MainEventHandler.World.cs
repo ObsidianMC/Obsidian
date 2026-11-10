@@ -41,7 +41,7 @@ public partial class MainEventHandler
             return;
 
         var current = await world.GetBlockAsync(location) ?? BlocksRegistry.Air;
-        if (args.IsCancelled || current.GetHashCode() != block.GetHashCode())
+        if (args.IsCancelled || !current.IsSameState(block))
         {
             await RestoreBreakAsync(player, world, location, current);
             return;
@@ -66,13 +66,34 @@ public partial class MainEventHandler
             wear = CombatItems.ToolDamage(tool, block);
         }
 
+        // Vanilla's DecoratedPotBlock.playerWillDestroy: a tool that breaks pots cracks one before it goes, so its loot
+        // is its sherds. The cracked state isn't sent; the removal that follows is.
+        IBlock? uncracked = null;
+        if (DecoratedPotBlockEntity.CrackedBy(block, tool) is IBlock cracked && world is AbstractLevel potLevel)
+        {
+            var original = block;
+            if (!await potLevel.TrySetBlockAsync(location, cracked, BlockUpdateFlags.None,
+                state => state.IsSameState(original)))
+            {
+                current = await world.GetBlockAsync(location) ?? BlocksRegistry.Air;
+                await RestoreBreakAsync(player, world, location, current);
+                return;
+            }
+
+            uncracked = original;
+            block = cracked;
+        }
+
         var parts = await TwoPartBlockBreak.PrepareAsync(world, location, block);
 
         // What the block entity gives the loot (a shulker box's items, say), taken before the block goes.
         await using var blockEntity = await BlockEntityComponents.CaptureAsync(
             world, parts.DropPosition, player, onLevelTick);
         if (!blockEntity.CanBreak)
+        {
+            await AbortCrackedBreakAsync(player, world, location, block, uncracked);
             return;
+        }
 
         var drops = await BlockLoot.GetDropsAsync(
             world,
@@ -86,11 +107,14 @@ public partial class MainEventHandler
         if (world is AbstractLevel concreteWorld)
         {
             var changed = await concreteWorld.TrySetBlockAsync(location, BlocksRegistry.Air, BlockUpdateFlags.All,
-                state => state.GetHashCode() == block.GetHashCode()
+                state => state.IsSameState(block)
                     && (blockEntity.Source is null || parts.DropPosition != location
                         || ReferenceEquals(concreteWorld.GetResidentBlockEntity(location), blockEntity.Source)));
             if (!changed)
+            {
+                await AbortCrackedBreakAsync(player, world, location, block, uncracked);
                 return;
+            }
         }
         else
         {
@@ -102,9 +126,6 @@ public partial class MainEventHandler
 
         if (world is AbstractLevel gameEvents)
         {
-            if (block.Is(BlockIds.Jukebox))
-                gameEvents.StopJukebox(location);
-
             gameEvents.EmitGameEvent(MobGameEvent.BlockDestroy, (VectorD)location + 0.5, player,
                 affectedBlock: block);
         }
@@ -136,6 +157,10 @@ public partial class MainEventHandler
 
         player.Statistics.Increment(block.UnlocalizedName, type: "minecraft:mined");
 
+        // Vanilla's ItemStack.mineBlock: a tool counts as used for each block it mines.
+        if (CombatItems.IsTool(tool))
+            player.Statistics.Increment(tool!.Holder.UnlocalizedName, type: "minecraft:used");
+
         // Like vanilla's Item.mineBlock, the tool wears once the drops were decided with it as it was.
         if (tool is not null && wear > 0)
             await player.DamageInventoryItemAsync(toolSlot, wear, expected: tool);
@@ -163,6 +188,19 @@ public partial class MainEventHandler
 
         foreach (var droppedItem in drops)
             SpawnBlockDrop(player, parts.DropPosition, droppedItem);
+    }
+
+    // A break that cracked a decorated pot and then couldn't remove it puts the pot back whole, unless something else
+    // changed the block meanwhile, and corrects the player's predicted break with what's there now.
+    private static async ValueTask AbortCrackedBreakAsync(IPlayer player, ILevel world, Vector location,
+        IBlock cracked, IBlock? uncracked)
+    {
+        if (uncracked is null || world is not AbstractLevel level)
+            return;
+
+        await level.TrySetBlockAsync(location, uncracked, BlockUpdateFlags.None, state => state.IsSameState(cracked));
+        var current = await world.GetBlockAsync(location) ?? BlocksRegistry.Air;
+        await RestoreBreakAsync(player, world, location, current);
     }
 
     private static async ValueTask RestoreBreakAsync(IPlayer player, ILevel world, Vector location, IBlock block)

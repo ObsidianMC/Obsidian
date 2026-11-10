@@ -2,7 +2,8 @@
 
 
 **Status:** open. Item access (see [plugin content](../plugin-content.md#item-access)) covers vanilla's containers,
-hoppers, droppers and dispensers; the rest of vanilla's item movers aren't modelled.
+hoppers, droppers and dispensers, chiseled bookshelves and decorated pots; the rest of vanilla's item movers aren't
+modelled.
 
 - **Dispensers** place boats and minecarts and drop every other item, like vanilla's default behaviour. Vanilla's
   other item behaviours (shooting arrows and other projectiles, pouring and filling buckets, bone meal, placing
@@ -19,6 +20,10 @@ hoppers, droppers and dispensers; the rest of vanilla's item movers aren't model
 - **Inside block hooks**, which hold the level's tick lock, a container a player's click holds at that moment, or
   one still waiting for its loot table, takes and gives nothing for that call, where vanilla's single thread never
   meets either case.
+- **Jukeboxes** keep their disc as saved data, so hoppers can't put a disc in or take one out, where vanilla's
+  `JukeboxBlockEntity` (a `ContainerSingleItem`) takes a disc into an empty jukebox and gives it to a hopper with an
+  empty slot. Making it a typed block entity, like the chiseled bookshelf's, would bring that and keep the disc's
+  song in one place.
 - **Fluids** have no access API yet; one would follow `IItemAccess`'s shape (amounts instead of stacks, the same
   simulate flag and sides) when a mod needs it.
 
