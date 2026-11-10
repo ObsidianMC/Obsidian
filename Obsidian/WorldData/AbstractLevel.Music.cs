@@ -1,3 +1,4 @@
+using Obsidian.API.Inventory;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -6,6 +7,13 @@ namespace Obsidian.WorldData;
 
 public abstract partial class AbstractLevel
 {
+    // Vanilla's JukeboxBlockEntity saves how far into its song a playing jukebox is; one that isn't playing saves none.
+    internal const string SongTicksField = "ticks_since_song_started";
+
+    // What Obsidian saved before it used vanilla's field, still read from older worlds.
+    private const string LegacyPlayingField = "IsPlaying";
+    private const string LegacyElapsedField = "ObsidianSongElapsed";
+
     private readonly ConcurrentDictionary<Vector, int> playingJukeboxes = [];
     internal void StartJukebox(Vector point, int song, int elapsed = 0)
     {
@@ -19,11 +27,66 @@ public abstract partial class AbstractLevel
         PacketBroadcaster.QueuePacketToLevelInRange(this, (VectorD)point, new LevelEventPacket(1010, point, song));
     }
 
-    internal void StopJukebox(Vector point)
+    /// <summary>
+    /// Vanilla's <c>JukeboxSongPlayer.stop</c>: a jukebox playing a song stops, which the players around hear (level
+    /// event 1011) and listeners notice (<c>jukebox_stop_play</c>). One that isn't playing does nothing.
+    /// </summary>
+    /// <param name="point">The jukebox's position.</param>
+    /// <param name="jukebox">Its block entity, when it's no longer in its chunk.</param>
+    internal void StopJukebox(Vector point, DataBlockEntity? jukebox = null)
     {
         playingJukeboxes.TryRemove(point, out _);
-        if (GetLoadedChunk(point.X >> 4, point.Z >> 4)?.GetBlockEntity(point.X, point.Y, point.Z) is DataBlockEntity jukebox)
-            jukebox.Set("IsPlaying", false);
+        var chunk = GetLoadedChunk(point.X >> 4, point.Z >> 4);
+        jukebox ??= chunk?.GetBlockEntity(point.X, point.Y, point.Z) as DataBlockEntity;
+        if (jukebox is null || SongTicks(jukebox) is null)
+            return;
+
+        jukebox.Remove(SongTicksField);
+        PacketBroadcaster.QueuePacketToLevelInRange(this, (VectorD)point, new LevelEventPacket(1011, point, 0));
+        EmitGameEvent(MobGameEvent.JukeboxStop, (VectorD)point + new VectorD(0.5, 0.5, 0.5));
+    }
+
+    /// <summary>
+    /// Vanilla's <c>JukeboxBlockEntity.popOutTheItem</c>: the song stops and the disc pops out on top of the jukebox,
+    /// pushed a little to the side, and can be picked up after vanilla's default delay.
+    /// </summary>
+    internal void EjectRecord(Vector point, ItemStack disc, DataBlockEntity? jukebox = null)
+    {
+        this.StopJukebox(point, jukebox);
+
+        var motion = new VectorD(
+            (Random.Shared.NextDouble() - 0.5) * 0.2,
+            0.2,
+            (Random.Shared.NextDouble() - 0.5) * 0.2);
+        this.SpawnEntity(new ItemEntity
+        {
+            Level = this,
+            EntityId = Obsidian.Server.GetNextEntityId(),
+            Position = (VectorD)point + new VectorD(0.5, 1, 0.5),
+            Item = disc,
+            Motion = motion,
+            CanPickup = false
+        });
+    }
+
+    /// <summary>
+    /// What removing a jukebox does, like vanilla's <c>JukeboxBlockEntity</c>: <c>preRemoveSideEffects</c> pops its
+    /// disc out, and <c>setRemoved</c> then stops it once more, whether it played or not.
+    /// </summary>
+    private void RemoveJukebox(DataBlockEntity jukebox)
+    {
+        var point = jukebox.BlockPosition;
+        ItemStack? disc;
+        lock (jukebox.Data)
+        {
+            disc = jukebox.SnapshotTag<NbtCompound>("RecordItem")?.ItemFromNbt();
+            jukebox.Remove("RecordItem");
+        }
+
+        if (disc is { IsAir: false, Count: > 0 })
+            this.EjectRecord(point, disc, jukebox);
+
+        playingJukeboxes.TryRemove(point, out _);
         PacketBroadcaster.QueuePacketToLevelInRange(this, (VectorD)point, new LevelEventPacket(1011, point, 0));
         EmitGameEvent(MobGameEvent.JukeboxStop, (VectorD)point + new VectorD(0.5, 0.5, 0.5));
     }
@@ -45,9 +108,11 @@ public abstract partial class AbstractLevel
             }
             else if (entity.Id == "minecraft:jukebox")
             {
-                var data = entity.SnapshotData();
-                if (data.TryGetBool("IsPlaying", out var playing) && playing && data.TryGetTag<NbtCompound>("RecordItem", out var record) && record.ItemFromNbt() is { } stack)
-                    StartJukebox(entity.BlockPosition, JukeboxSongsRegistry.GetSong(stack), data.TryGetTagValue<int>("ObsidianSongElapsed", out var elapsed) ? elapsed : 0);
+                if (SongTicks(entity) is long elapsed
+                    && entity.SnapshotTag<NbtCompound>("RecordItem")?.ItemFromNbt() is { } stack)
+                {
+                    StartJukebox(entity.BlockPosition, JukeboxSongsRegistry.GetSong(stack), (int)elapsed);
+                }
             }
         }
     }
@@ -72,13 +137,33 @@ public abstract partial class AbstractLevel
                 continue;
             playingJukeboxes[point] = remaining - 1;
             if (chunk.GetBlockEntity(point.X, point.Y, point.Z) is DataBlockEntity jukebox)
-            {
-                var data = jukebox.SnapshotData();
-                jukebox.Set("ObsidianSongElapsed", (data.TryGetTagValue<int>("ObsidianSongElapsed", out var elapsed) ? elapsed : 0) + 1);
-            }
+                jukebox.Set(SongTicksField, (SongTicks(jukebox) ?? 0) + 1);
             if (remaining % 20 == 0)
                 EmitGameEvent(MobGameEvent.JukeboxPlay, (VectorD)point + new VectorD(0.5, 0.5, 0.5));
         }
+    }
+
+    /// <summary>
+    /// How far into its song a jukebox is, in ticks, or null when it isn't playing: vanilla's
+    /// <c>ticks_since_song_started</c>, or what Obsidian saved before, which is moved to vanilla's field.
+    /// </summary>
+    internal static long? SongTicks(DataBlockEntity jukebox)
+    {
+        var data = jukebox.SnapshotData();
+        if (data.TryGetNumber<long>(SongTicksField, out var ticks))
+            return ticks;
+
+        if (!data.TryGetBool(LegacyPlayingField, out var playing))
+            return null;
+
+        jukebox.Remove(LegacyPlayingField);
+        jukebox.Remove(LegacyElapsedField);
+        if (!playing)
+            return null;
+
+        long elapsed = data.TryGetTagValue<int>(LegacyElapsedField, out var saved) ? saved : 0;
+        jukebox.Set(SongTicksField, elapsed);
+        return elapsed;
     }
 
     internal void PlayNoteBlock(Vector point, IEntity? source = null)

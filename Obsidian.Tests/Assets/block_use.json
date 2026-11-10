@@ -16111,6 +16111,4171 @@
         "filled_any",
         "filled_water"
       ]
+    },
+    {
+      "name": "chiseled_bookshelf_insert_slot_0",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:book",
+      "cursor": [0.83, 0.75, 0],
+      "checkBlockEntity": true,
+      "comparator": [1, 0, 0],
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf[slot_0_occupied=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:chiseled_bookshelf[slot_0_occupied=true]",
+      "hand": "minecraft:book x1",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.chiseled_bookshelf.insert"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:used minecraft:book 1"
+      ],
+      "menu": null,
+      "blockEntity": "{Items:[{Slot:0b,count:1,id:\"minecraft:book\"}],components:{},id:\"minecraft:chiseled_bookshelf\",last_interacted_slot:0}",
+      "comparatorSignal": 1
+    },
+    {
+      "name": "chiseled_bookshelf_insert_slot_1",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:book",
+      "cursor": [0.5, 0.75, 0],
+      "checkBlockEntity": true,
+      "comparator": [1, 0, 0],
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf[slot_1_occupied=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:chiseled_bookshelf[slot_1_occupied=true]",
+      "hand": "minecraft:book x1",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.chiseled_bookshelf.insert"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:used minecraft:book 1"
+      ],
+      "menu": null,
+      "blockEntity": "{Items:[{Slot:1b,count:1,id:\"minecraft:book\"}],components:{},id:\"minecraft:chiseled_bookshelf\",last_interacted_slot:1}",
+      "comparatorSignal": 2
+    },
+    {
+      "name": "chiseled_bookshelf_insert_slot_2",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:book",
+      "cursor": [0.17, 0.75, 0],
+      "checkBlockEntity": true,
+      "comparator": [1, 0, 0],
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf[slot_2_occupied=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:chiseled_bookshelf[slot_2_occupied=true]",
+      "hand": "minecraft:book x1",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.chiseled_bookshelf.insert"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:used minecraft:book 1"
+      ],
+      "menu": null,
+      "blockEntity": "{Items:[{Slot:2b,count:1,id:\"minecraft:book\"}],components:{},id:\"minecraft:chiseled_bookshelf\",last_interacted_slot:2}",
+      "comparatorSignal": 3
+    },
+    {
+      "name": "chiseled_bookshelf_insert_slot_3",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:book",
+      "cursor": [0.83, 0.25, 0],
+      "checkBlockEntity": true,
+      "comparator": [1, 0, 0],
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf[slot_3_occupied=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:chiseled_bookshelf[slot_3_occupied=true]",
+      "hand": "minecraft:book x1",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.chiseled_bookshelf.insert"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:used minecraft:book 1"
+      ],
+      "menu": null,
+      "blockEntity": "{Items:[{Slot:3b,count:1,id:\"minecraft:book\"}],components:{},id:\"minecraft:chiseled_bookshelf\",last_interacted_slot:3}",
+      "comparatorSignal": 4
+    },
+    {
+      "name": "chiseled_bookshelf_insert_slot_4",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:book",
+      "cursor": [0.5, 0.25, 0],
+      "checkBlockEntity": true,
+      "comparator": [1, 0, 0],
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf[slot_4_occupied=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:chiseled_bookshelf[slot_4_occupied=true]",
+      "hand": "minecraft:book x1",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.chiseled_bookshelf.insert"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:used minecraft:book 1"
+      ],
+      "menu": null,
+      "blockEntity": "{Items:[{Slot:4b,count:1,id:\"minecraft:book\"}],components:{},id:\"minecraft:chiseled_bookshelf\",last_interacted_slot:4}",
+      "comparatorSignal": 5
+    },
+    {
+      "name": "chiseled_bookshelf_insert_slot_5",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:book",
+      "cursor": [0.17, 0.25, 0],
+      "checkBlockEntity": true,
+      "comparator": [1, 0, 0],
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf[slot_5_occupied=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:chiseled_bookshelf[slot_5_occupied=true]",
+      "hand": "minecraft:book x1",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.chiseled_bookshelf.insert"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:used minecraft:book 1"
+      ],
+      "menu": null,
+      "blockEntity": "{Items:[{Slot:5b,count:1,id:\"minecraft:book\"}],components:{},id:\"minecraft:chiseled_bookshelf\",last_interacted_slot:5}",
+      "comparatorSignal": 6
+    },
+    {
+      "name": "chiseled_bookshelf_insert_enchanted_book",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:enchanted_book",
+      "cursor": [0.83, 0.75, 0],
+      "checkBlockEntity": true,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf[slot_0_occupied=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:chiseled_bookshelf[slot_0_occupied=true]",
+      "hand": "minecraft:enchanted_book x1",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.chiseled_bookshelf.insert.enchanted"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:used minecraft:enchanted_book 1"
+      ],
+      "menu": null,
+      "blockEntity": "{Items:[{Slot:0b,count:1,id:\"minecraft:enchanted_book\"}],components:{},id:\"minecraft:chiseled_bookshelf\",last_interacted_slot:0}"
+    },
+    {
+      "name": "chiseled_bookshelf_insert_occupied_slot",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf[slot_0_occupied=true]",
+          "nbt": "{Items:[{Slot:0b,id:\"minecraft:book\",count:1}],last_interacted_slot:0}"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:book",
+      "cursor": [0.83, 0.75, 0],
+      "checkInventory": true,
+      "checkBlockEntity": true,
+      "comparator": [1, 0, 0],
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:chiseled_bookshelf",
+      "hand": "minecraft:book x3",
+      "inventory": [
+        "minecraft:book x3",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.chiseled_bookshelf.pickup"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none",
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null,
+      "blockEntity": "{Items:[],components:{},id:\"minecraft:chiseled_bookshelf\",last_interacted_slot:0}",
+      "comparatorSignal": 1
+    },
+    {
+      "name": "chiseled_bookshelf_take_empty_hand",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf[slot_4_occupied=true]",
+          "nbt": "{Items:[{Slot:4b,id:\"minecraft:book\",count:1}],last_interacted_slot:1}"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.5, 0.25, 0],
+      "checkInventory": true,
+      "checkBlockEntity": true,
+      "comparator": [1, 0, 0],
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:chiseled_bookshelf",
+      "hand": "minecraft:book x1",
+      "inventory": [
+        "minecraft:book x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.chiseled_bookshelf.pickup"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none",
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null,
+      "blockEntity": "{Items:[],components:{},id:\"minecraft:chiseled_bookshelf\",last_interacted_slot:4}",
+      "comparatorSignal": 5
+    },
+    {
+      "name": "chiseled_bookshelf_take_enchanted_book",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf[slot_2_occupied=true]",
+          "nbt": "{Items:[{Slot:2b,id:\"minecraft:enchanted_book\",count:1}],last_interacted_slot:2}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.17, 0.75, 0],
+      "checkInventory": true,
+      "checkBlockEntity": true,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:chiseled_bookshelf",
+      "hand": "minecraft:enchanted_book x1",
+      "inventory": [
+        "minecraft:enchanted_book x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.chiseled_bookshelf.pickup.enchanted"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none",
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null,
+      "blockEntity": "{Items:[],components:{},id:\"minecraft:chiseled_bookshelf\",last_interacted_slot:2}"
+    },
+    {
+      "name": "chiseled_bookshelf_take_empty_slot",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf[slot_1_occupied=true]",
+          "nbt": "{Items:[{Slot:1b,id:\"minecraft:book\",count:1}],last_interacted_slot:1}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.83, 0.75, 0],
+      "checkInventory": true,
+      "checkBlockEntity": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "consume",
+      "changes": "",
+      "hand": "empty",
+      "inventory": [
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null,
+      "blockEntity": "{Items:[{Slot:1b,count:1,id:\"minecraft:book\"}],components:{},id:\"minecraft:chiseled_bookshelf\",last_interacted_slot:1}"
+    },
+    {
+      "name": "chiseled_bookshelf_take_full_inventory",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf[slot_5_occupied=true]",
+          "nbt": "{Items:[{Slot:5b,id:\"minecraft:book\",count:1}],last_interacted_slot:5}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stick",
+      "count": 1,
+      "cursor": [0.17, 0.25, 0],
+      "fullInventory": true,
+      "checkInventory": true,
+      "checkBlockEntity": true,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:chiseled_bookshelf",
+      "hand": "minecraft:stick x1",
+      "inventory": [
+        "minecraft:stick x1",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64"
+      ],
+      "entities": [
+        "item minecraft:book x1"
+      ],
+      "sounds": [
+        "minecraft:block.chiseled_bookshelf.pickup"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none",
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null,
+      "blockEntity": "{Items:[],components:{},id:\"minecraft:chiseled_bookshelf\",last_interacted_slot:5}"
+    },
+    {
+      "name": "chiseled_bookshelf_wrong_item",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stone",
+      "cursor": [0.83, 0.75, 0],
+      "checkBlockEntity": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "consume",
+      "changes": "",
+      "hand": "minecraft:stone x2",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null,
+      "blockEntity": "{Items:[],components:{},id:\"minecraft:chiseled_bookshelf\",last_interacted_slot:-1}"
+    },
+    {
+      "name": "chiseled_bookshelf_side_face",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "east",
+      "item": "minecraft:book",
+      "cursor": [1, 0.75, 0.5],
+      "checkBlockEntity": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:book x2",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null,
+      "blockEntity": "{Items:[],components:{},id:\"minecraft:chiseled_bookshelf\",last_interacted_slot:-1}"
+    },
+    {
+      "name": "chiseled_bookshelf_offhand_book",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.83, 0.25, 0],
+      "offhand": "minecraft:book",
+      "handUsed": "offhand",
+      "checkInventory": true,
+      "checkBlockEntity": true,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf[slot_3_occupied=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:chiseled_bookshelf[slot_3_occupied=true]",
+      "hand": "minecraft:book x1",
+      "inventory": [
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.chiseled_bookshelf.insert"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:used minecraft:book 1"
+      ],
+      "menu": null,
+      "blockEntity": "{Items:[{Slot:3b,count:1,id:\"minecraft:book\"}],components:{},id:\"minecraft:chiseled_bookshelf\",last_interacted_slot:3}"
+    },
+    {
+      "name": "chiseled_bookshelf_offhand_occupied",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf[slot_3_occupied=true]",
+          "nbt": "{Items:[{Slot:3b,id:\"minecraft:book\",count:1}],last_interacted_slot:3}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.83, 0.25, 0],
+      "offhand": "minecraft:book",
+      "handUsed": "offhand",
+      "checkInventory": true,
+      "checkBlockEntity": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:book x2",
+      "inventory": [
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null,
+      "blockEntity": "{Items:[{Slot:3b,count:1,id:\"minecraft:book\"}],components:{},id:\"minecraft:chiseled_bookshelf\",last_interacted_slot:3}"
+    },
+    {
+      "name": "chiseled_bookshelf_sneaking_book",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:book",
+      "cursor": [0.83, 0.75, 0],
+      "sneaking": true,
+      "checkBlockEntity": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:book x2",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null,
+      "blockEntity": "{Items:[],components:{},id:\"minecraft:chiseled_bookshelf\",last_interacted_slot:-1}"
+    },
+    {
+      "name": "chiseled_bookshelf_creative_insert",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:book",
+      "cursor": [0.5, 0.75, 0],
+      "gameMode": "creative",
+      "checkBlockEntity": true,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf[slot_1_occupied=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:chiseled_bookshelf[slot_1_occupied=true]",
+      "hand": "minecraft:book x2",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.chiseled_bookshelf.insert"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:used minecraft:book 1"
+      ],
+      "menu": null,
+      "blockEntity": "{Items:[{Slot:1b,count:1,id:\"minecraft:book\"}],components:{},id:\"minecraft:chiseled_bookshelf\",last_interacted_slot:1}"
+    },
+    {
+      "name": "chiseled_bookshelf_creative_take_full_inventory",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf[slot_1_occupied=true]",
+          "nbt": "{Items:[{Slot:1b,id:\"minecraft:book\",count:1}],last_interacted_slot:1}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stick",
+      "count": 1,
+      "cursor": [0.5, 0.75, 0],
+      "gameMode": "creative",
+      "fullInventory": true,
+      "checkInventory": true,
+      "checkBlockEntity": true,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:chiseled_bookshelf",
+      "hand": "minecraft:stick x1",
+      "inventory": [
+        "minecraft:stick x1",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.chiseled_bookshelf.pickup"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none",
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null,
+      "blockEntity": "{Items:[],components:{},id:\"minecraft:chiseled_bookshelf\",last_interacted_slot:1}"
+    },
+    {
+      "name": "chiseled_bookshelf_adventure_insert",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:book",
+      "cursor": [0.17, 0.75, 0],
+      "gameMode": "adventure",
+      "checkBlockEntity": true,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf[slot_2_occupied=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:chiseled_bookshelf[slot_2_occupied=true]",
+      "hand": "minecraft:book x1",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.chiseled_bookshelf.insert"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:used minecraft:book 1"
+      ],
+      "menu": null,
+      "blockEntity": "{Items:[{Slot:2b,count:1,id:\"minecraft:book\"}],components:{},id:\"minecraft:chiseled_bookshelf\",last_interacted_slot:2}"
+    },
+    {
+      "name": "chiseled_bookshelf_facing_east_slot_5",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf[facing=east]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "east",
+      "item": "minecraft:book",
+      "cursor": [1, 0.25, 0.17],
+      "checkBlockEntity": true,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf[facing=east,slot_5_occupied=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:chiseled_bookshelf[facing=east,slot_5_occupied=true]",
+      "hand": "minecraft:book x1",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.chiseled_bookshelf.insert"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none"
+      ],
+      "stats": [
+        "minecraft:used minecraft:book 1"
+      ],
+      "menu": null,
+      "blockEntity": "{Items:[{Slot:5b,count:1,id:\"minecraft:book\"}],components:{},id:\"minecraft:chiseled_bookshelf\",last_interacted_slot:5}"
+    },
+    {
+      "name": "chiseled_bookshelf_destroy",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chiseled_bookshelf[slot_0_occupied=true,slot_3_occupied=true]",
+          "nbt": "{Items:[{Slot:0b,id:\"minecraft:book\",count:1},{Slot:3b,id:\"minecraft:enchanted_book\",count:1}],last_interacted_slot:3}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.5, 0.75, 0],
+      "breakAfterUse": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "consume",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null,
+      "broken": {
+        "changes": "0,0,0=minecraft:air",
+        "entities": [
+          "item minecraft:book x1",
+          "item minecraft:enchanted_book x1"
+        ],
+        "sounds": [],
+        "levelEvents": [
+          "2001 0,0,0 3863"
+        ],
+        "blockEvents": [],
+        "gameEvents": [
+          "minecraft:block_destroy 0,0,0 player"
+        ],
+        "stats": [
+          "minecraft:mined minecraft:chiseled_bookshelf 1"
+        ]
+      }
+    },
+    {
+      "name": "decorated_pot_insert",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:decorated_pot"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:diamond",
+      "checkBlockEntity": true,
+      "comparator": [1, 0, 0],
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:diamond x1",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.decorated_pot.insert"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:decorated_pot 1 0 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:diamond 1"
+      ],
+      "menu": null,
+      "blockEntity": "{components:{},id:\"minecraft:decorated_pot\",item:{count:1,id:\"minecraft:diamond\"}}",
+      "comparatorSignal": 1
+    },
+    {
+      "name": "decorated_pot_insert_same",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:decorated_pot",
+          "nbt": "{item:{id:\"minecraft:diamond\",count:8}}"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:diamond",
+      "checkBlockEntity": true,
+      "comparator": [1, 0, 0],
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:diamond x1",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.decorated_pot.insert"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:decorated_pot 1 0 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:diamond 1"
+      ],
+      "menu": null,
+      "blockEntity": "{components:{},id:\"minecraft:decorated_pot\",item:{count:9,id:\"minecraft:diamond\"}}",
+      "comparatorSignal": 2
+    },
+    {
+      "name": "decorated_pot_insert_different",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:decorated_pot",
+          "nbt": "{item:{id:\"minecraft:diamond\",count:5}}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:emerald",
+      "checkBlockEntity": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:emerald x2",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.decorated_pot.insert_fail"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:decorated_pot 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null,
+      "blockEntity": "{components:{},id:\"minecraft:decorated_pot\",item:{count:5,id:\"minecraft:diamond\"}}"
+    },
+    {
+      "name": "decorated_pot_insert_full",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:decorated_pot",
+          "nbt": "{item:{id:\"minecraft:diamond\",count:64}}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:diamond",
+      "checkBlockEntity": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:diamond x2",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.decorated_pot.insert_fail"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:decorated_pot 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null,
+      "blockEntity": "{components:{},id:\"minecraft:decorated_pot\",item:{count:64,id:\"minecraft:diamond\"}}"
+    },
+    {
+      "name": "decorated_pot_empty_hand",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:decorated_pot"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkBlockEntity": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.decorated_pot.insert_fail"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:decorated_pot 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null,
+      "blockEntity": "{components:{},id:\"minecraft:decorated_pot\"}"
+    },
+    {
+      "name": "decorated_pot_empty_hand_holding_items",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:decorated_pot",
+          "nbt": "{item:{id:\"minecraft:diamond\",count:3}}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkInventory": true,
+      "checkBlockEntity": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "inventory": [
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.decorated_pot.insert_fail"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:decorated_pot 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null,
+      "blockEntity": "{components:{},id:\"minecraft:decorated_pot\",item:{count:3,id:\"minecraft:diamond\"}}"
+    },
+    {
+      "name": "decorated_pot_offhand_insert",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:decorated_pot"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "offhand": "minecraft:diamond",
+      "handUsed": "offhand",
+      "checkInventory": true,
+      "checkBlockEntity": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:diamond x1",
+      "inventory": [
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.decorated_pot.insert"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:decorated_pot 1 0 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:diamond 1"
+      ],
+      "menu": null,
+      "blockEntity": "{components:{},id:\"minecraft:decorated_pot\",item:{count:1,id:\"minecraft:diamond\"}}"
+    },
+    {
+      "name": "decorated_pot_offhand_different",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:decorated_pot",
+          "nbt": "{item:{id:\"minecraft:diamond\",count:5}}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "offhand": "minecraft:emerald",
+      "handUsed": "offhand",
+      "checkInventory": true,
+      "checkBlockEntity": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:emerald x2",
+      "inventory": [
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null,
+      "blockEntity": "{components:{},id:\"minecraft:decorated_pot\",item:{count:5,id:\"minecraft:diamond\"}}"
+    },
+    {
+      "name": "decorated_pot_sneaking",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:decorated_pot"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:diamond",
+      "sneaking": true,
+      "checkBlockEntity": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:diamond x2",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null,
+      "blockEntity": "{components:{},id:\"minecraft:decorated_pot\"}"
+    },
+    {
+      "name": "decorated_pot_creative_insert",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:decorated_pot"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:diamond",
+      "gameMode": "creative",
+      "checkBlockEntity": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:diamond x2",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.decorated_pot.insert"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:decorated_pot 1 0 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:diamond 1"
+      ],
+      "menu": null,
+      "blockEntity": "{components:{},id:\"minecraft:decorated_pot\",item:{count:1,id:\"minecraft:diamond\"}}"
+    },
+    {
+      "name": "decorated_pot_adventure_insert",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:decorated_pot"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:diamond",
+      "gameMode": "adventure",
+      "checkBlockEntity": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:diamond x1",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.decorated_pot.insert"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:decorated_pot 1 0 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:diamond 1"
+      ],
+      "menu": null,
+      "blockEntity": "{components:{},id:\"minecraft:decorated_pot\",item:{count:1,id:\"minecraft:diamond\"}}"
+    },
+    {
+      "name": "decorated_pot_insert_unstackable",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:decorated_pot"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:diamond_sword",
+      "count": 1,
+      "checkBlockEntity": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.decorated_pot.insert"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:decorated_pot 1 0 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:diamond_sword 1"
+      ],
+      "menu": null,
+      "blockEntity": "{components:{},id:\"minecraft:decorated_pot\",item:{count:1,id:\"minecraft:diamond_sword\"}}"
+    },
+    {
+      "name": "decorated_pot_full_unstackable",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:decorated_pot",
+          "nbt": "{item:{id:\"minecraft:diamond_sword\",count:1}}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:diamond_sword",
+      "count": 1,
+      "checkBlockEntity": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:diamond_sword x1",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.decorated_pot.insert_fail"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:decorated_pot 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null,
+      "blockEntity": "{components:{},id:\"minecraft:decorated_pot\",item:{count:1,id:\"minecraft:diamond_sword\"}}"
+    },
+    {
+      "name": "decorated_pot_keeps_sherds",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:decorated_pot",
+          "nbt": "{sherds:{back:{id:\"minecraft:angler_pottery_sherd\"},left:{id:\"minecraft:brick\"},right:{id:\"minecraft:brick\"},front:{id:\"minecraft:heart_pottery_sherd\"}}}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:diamond",
+      "checkBlockEntity": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:diamond x1",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.decorated_pot.insert"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:decorated_pot 1 0 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:diamond 1"
+      ],
+      "menu": null,
+      "blockEntity": "{components:{},id:\"minecraft:decorated_pot\",item:{count:1,id:\"minecraft:diamond\"},sherds:{back:{id:\"minecraft:angler_pottery_sherd\"},front:{id:\"minecraft:heart_pottery_sherd\"},left:{id:\"minecraft:brick\"},right:{id:\"minecraft:brick\"}}}"
+    },
+    {
+      "name": "decorated_pot_destroy_by_hand",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:decorated_pot",
+          "nbt": "{sherds:{back:{id:\"minecraft:angler_pottery_sherd\"},left:{id:\"minecraft:brick\"},right:{id:\"minecraft:brick\"},front:{id:\"minecraft:heart_pottery_sherd\"}},item:{id:\"minecraft:diamond\",count:3}}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "breakAfterUse": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.decorated_pot.insert_fail"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:decorated_pot 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null,
+      "broken": {
+        "changes": "0,0,0=minecraft:air",
+        "entities": [
+          "item minecraft:diamond x3",
+          "item minecraft:decorated_pot x1 {\"minecraft:pot_decorations\":{back:{id:\"minecraft:angler_pottery_sherd\"},front:{id:\"minecraft:heart_pottery_sherd\"},left:{id:\"minecraft:brick\"},right:{id:\"minecraft:brick\"}}}"
+        ],
+        "sounds": [],
+        "levelEvents": [
+          "2001 0,0,0 35452"
+        ],
+        "blockEvents": [],
+        "gameEvents": [
+          "minecraft:block_destroy 0,0,0 player"
+        ],
+        "stats": [
+          "minecraft:mined minecraft:decorated_pot 1"
+        ]
+      }
+    },
+    {
+      "name": "decorated_pot_destroy_with_stick",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:decorated_pot",
+          "nbt": "{sherds:{back:{id:\"minecraft:angler_pottery_sherd\"},left:{id:\"minecraft:brick\"},right:{id:\"minecraft:brick\"},front:{id:\"minecraft:heart_pottery_sherd\"}},item:{id:\"minecraft:diamond\",count:3}}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stick",
+      "count": 1,
+      "sneaking": true,
+      "breakAfterUse": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:stick x1",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null,
+      "broken": {
+        "changes": "0,0,0=minecraft:air",
+        "entities": [
+          "item minecraft:diamond x3",
+          "item minecraft:decorated_pot x1 {\"minecraft:pot_decorations\":{back:{id:\"minecraft:angler_pottery_sherd\"},front:{id:\"minecraft:heart_pottery_sherd\"},left:{id:\"minecraft:brick\"},right:{id:\"minecraft:brick\"}}}"
+        ],
+        "sounds": [],
+        "levelEvents": [
+          "2001 0,0,0 35452"
+        ],
+        "blockEvents": [],
+        "gameEvents": [
+          "minecraft:block_destroy 0,0,0 player"
+        ],
+        "stats": [
+          "minecraft:mined minecraft:decorated_pot 1"
+        ]
+      }
+    },
+    {
+      "name": "decorated_pot_destroy_with_pickaxe",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:decorated_pot",
+          "nbt": "{sherds:{back:{id:\"minecraft:angler_pottery_sherd\"},left:{id:\"minecraft:brick\"},right:{id:\"minecraft:brick\"},front:{id:\"minecraft:heart_pottery_sherd\"}},item:{id:\"minecraft:diamond\",count:3}}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:iron_pickaxe",
+      "count": 1,
+      "sneaking": true,
+      "breakAfterUse": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:iron_pickaxe x1",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null,
+      "broken": {
+        "changes": "0,0,0=minecraft:air",
+        "entities": [
+          "item minecraft:diamond x3",
+          "item minecraft:brick x1",
+          "item minecraft:angler_pottery_sherd x1",
+          "item minecraft:heart_pottery_sherd x1",
+          "item minecraft:brick x1"
+        ],
+        "sounds": [],
+        "levelEvents": [
+          "2001 0,0,0 35444"
+        ],
+        "blockEvents": [],
+        "gameEvents": [
+          "minecraft:block_destroy 0,0,0 player"
+        ],
+        "stats": [
+          "minecraft:used minecraft:iron_pickaxe 1",
+          "minecraft:mined minecraft:decorated_pot 1"
+        ]
+      }
+    },
+    {
+      "name": "flower_pot_plant_dandelion",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:flower_pot"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:dandelion",
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:potted_dandelion",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:potted_dandelion",
+      "hand": "minecraft:dandelion x1",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:pot_flower 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "flower_pot_plant_creative",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:flower_pot"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:dandelion",
+      "gameMode": "creative",
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:potted_dandelion",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:potted_dandelion",
+      "hand": "minecraft:dandelion x2",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:pot_flower 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "flower_pot_plant_adventure",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:flower_pot"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:dandelion",
+      "gameMode": "adventure",
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:potted_dandelion",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:potted_dandelion",
+      "hand": "minecraft:dandelion x1",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:pot_flower 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "flower_pot_plant_oak_sapling",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:flower_pot"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:oak_sapling",
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:potted_oak_sapling",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:potted_oak_sapling",
+      "hand": "minecraft:oak_sapling x1",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:pot_flower 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "flower_pot_plant_bamboo",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:flower_pot"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:bamboo",
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:potted_bamboo",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:potted_bamboo",
+      "hand": "minecraft:bamboo x1",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:pot_flower 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "flower_pot_plant_cactus",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:flower_pot"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:cactus",
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:potted_cactus",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:potted_cactus",
+      "hand": "minecraft:cactus x1",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:pot_flower 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "flower_pot_plant_open_eyeblossom",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:flower_pot"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:open_eyeblossom",
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:potted_open_eyeblossom",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:potted_open_eyeblossom",
+      "hand": "minecraft:open_eyeblossom x1",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:pot_flower 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "flower_pot_plant_offhand",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:flower_pot"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "offhand": "minecraft:dandelion",
+      "handUsed": "offhand",
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:potted_dandelion",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:potted_dandelion",
+      "hand": "minecraft:dandelion x1",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:pot_flower 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "flower_pot_plant_sneaking",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:flower_pot"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:dandelion",
+      "sneaking": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "fail",
+      "changes": "",
+      "hand": "minecraft:dandelion x2",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "flower_pot_full_other_flower",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:potted_dandelion"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:poppy",
+      "checkInventory": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "consume",
+      "changes": "",
+      "hand": "minecraft:poppy x2",
+      "inventory": [
+        "minecraft:poppy x2",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "flower_pot_full_same_flower",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:potted_poppy"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:poppy",
+      "checkInventory": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "consume",
+      "changes": "",
+      "hand": "minecraft:poppy x2",
+      "inventory": [
+        "minecraft:poppy x2",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "flower_pot_empty_empty_hand",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:flower_pot"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkInventory": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "consume",
+      "changes": "",
+      "hand": "empty",
+      "inventory": [
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "flower_pot_empty_unpottable_item",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:flower_pot"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stone",
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "consume",
+      "changes": "",
+      "hand": "minecraft:stone x2",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "flower_pot_take_empty_hand",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:potted_poppy"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkInventory": true,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:flower_pot",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:flower_pot",
+      "hand": "minecraft:poppy x1",
+      "inventory": [
+        "minecraft:poppy x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "flower_pot_take_with_other_item",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:potted_poppy"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stick",
+      "count": 1,
+      "checkInventory": true,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:flower_pot",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:flower_pot",
+      "hand": "minecraft:stick x1",
+      "inventory": [
+        "minecraft:stick x1",
+        "minecraft:poppy x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "flower_pot_take_open_eyeblossom",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:potted_open_eyeblossom"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkInventory": true,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:flower_pot",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:flower_pot",
+      "hand": "minecraft:open_eyeblossom x1",
+      "inventory": [
+        "minecraft:open_eyeblossom x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "flower_pot_take_full_inventory",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:potted_poppy"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stick",
+      "count": 1,
+      "fullInventory": true,
+      "checkInventory": true,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:flower_pot",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:flower_pot",
+      "hand": "minecraft:stick x1",
+      "inventory": [
+        "minecraft:stick x1",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64"
+      ],
+      "entities": [
+        "item minecraft:poppy x1"
+      ],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "flower_pot_take_creative_full_inventory",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:potted_poppy"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stick",
+      "count": 1,
+      "gameMode": "creative",
+      "fullInventory": true,
+      "checkInventory": true,
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:flower_pot",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:flower_pot",
+      "hand": "minecraft:stick x1",
+      "inventory": [
+        "minecraft:stick x1",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64"
+      ],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "flower_pot_take_offhand",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:potted_poppy"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "offhand": "minecraft:stick",
+      "handUsed": "offhand",
+      "checkInventory": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:stick x2",
+      "inventory": [
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "flower_pot_destroy_potted",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:potted_poppy"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stick",
+      "count": 1,
+      "sneaking": true,
+      "breakAfterUse": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:stick x1",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null,
+      "broken": {
+        "changes": "0,0,0=minecraft:air",
+        "entities": [
+          "item minecraft:flower_pot x1",
+          "item minecraft:poppy x1"
+        ],
+        "sounds": [],
+        "levelEvents": [
+          "2001 0,0,0 12386"
+        ],
+        "blockEvents": [],
+        "gameEvents": [
+          "minecraft:block_destroy 0,0,0 player"
+        ],
+        "stats": [
+          "minecraft:mined minecraft:potted_poppy 1"
+        ]
+      }
+    },
+    {
+      "name": "lodestone_compass_single",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lodestone"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:compass",
+      "count": 1,
+      "checkInventory": true,
+      "criteria": {
+        "use_lodestone": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": [
+              {
+                "condition": "minecraft:block_state_property",
+                "block": "minecraft:lodestone"
+              },
+              {
+                "condition": "minecraft:match_tool",
+                "predicate": {
+                  "items": "minecraft:compass"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "awardedCriteria": [
+        "use_lodestone"
+      ],
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:compass x1",
+      "inventory": [
+        "minecraft:compass x1 {\"minecraft:lodestone_tracker\":{target:{dimension:\"minecraft:overworld\",pos:[I;0,0,0]}}}",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.lodestone_compass.lock"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [
+        "minecraft:used minecraft:compass 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "lodestone_compass_stack",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lodestone"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:compass",
+      "count": 2,
+      "checkInventory": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:compass x1",
+      "inventory": [
+        "minecraft:compass x1",
+        "minecraft:compass x1 {\"minecraft:lodestone_tracker\":{target:{dimension:\"minecraft:overworld\",pos:[I;0,0,0]}}}",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.lodestone_compass.lock"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [
+        "minecraft:used minecraft:compass 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "lodestone_compass_creative",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lodestone"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:compass",
+      "count": 1,
+      "gameMode": "creative",
+      "checkInventory": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:compass x1",
+      "inventory": [
+        "minecraft:compass x1",
+        "minecraft:compass x1 {\"minecraft:lodestone_tracker\":{target:{dimension:\"minecraft:overworld\",pos:[I;0,0,0]}}}",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.lodestone_compass.lock"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [
+        "minecraft:used minecraft:compass 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "lodestone_compass_full_inventory",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lodestone"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:compass",
+      "count": 2,
+      "fullInventory": true,
+      "checkInventory": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:compass x1",
+      "inventory": [
+        "minecraft:compass x1",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64",
+        "minecraft:stone x64"
+      ],
+      "entities": [
+        "item minecraft:compass x1"
+      ],
+      "sounds": [
+        "minecraft:item.lodestone_compass.lock"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [
+        "minecraft:used minecraft:compass 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "lodestone_compass_offhand_stack",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lodestone"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "offhand": "minecraft:compass",
+      "handUsed": "offhand",
+      "checkInventory": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:compass x1",
+      "inventory": [
+        "minecraft:compass x1 {\"minecraft:lodestone_tracker\":{target:{dimension:\"minecraft:overworld\",pos:[I;0,0,0]}}}",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.lodestone_compass.lock"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [
+        "minecraft:used minecraft:compass 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "lodestone_compass_sneaking",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lodestone"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:compass",
+      "count": 1,
+      "sneaking": true,
+      "checkInventory": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:compass x1",
+      "inventory": [
+        "minecraft:compass x1 {\"minecraft:lodestone_tracker\":{target:{dimension:\"minecraft:overworld\",pos:[I;0,0,0]}}}",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:item.lodestone_compass.lock"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [
+        "minecraft:used minecraft:compass 1"
+      ],
+      "menu": null
+    },
+    {
+      "name": "lodestone_compass_adventure",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lodestone"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:compass",
+      "count": 1,
+      "gameMode": "adventure",
+      "checkInventory": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:compass x1",
+      "inventory": [
+        "minecraft:compass x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "lodestone_empty_hand",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lodestone"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkInventory": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "pass",
+      "changes": "",
+      "hand": "empty",
+      "inventory": [
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "compass_on_stone",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:stone"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:compass",
+      "count": 1,
+      "checkInventory": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:compass x1",
+      "inventory": [
+        "minecraft:compass x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "jukebox_insert_cat_comparator",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jukebox"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:music_disc_cat",
+      "count": 1,
+      "checkBlockEntity": true,
+      "comparator": [1, 0, 0],
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jukebox[has_record=true]",
+          "flags": 2
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:jukebox[has_record=true]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [
+        "1010 0,0,0 5"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none",
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:play_record 1"
+      ],
+      "menu": null,
+      "blockEntity": "{RecordItem:{count:1,id:\"minecraft:music_disc_cat\"},components:{},id:\"minecraft:jukebox\",ticks_since_song_started:0L}",
+      "comparatorSignal": 2
+    },
+    {
+      "name": "jukebox_insert_13_comparator",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jukebox"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:music_disc_13",
+      "count": 1,
+      "comparator": [1, 0, 0],
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jukebox[has_record=true]",
+          "flags": 2
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:jukebox[has_record=true]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [
+        "1010 0,0,0 1"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none",
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:play_record 1"
+      ],
+      "menu": null,
+      "comparatorSignal": 1
+    },
+    {
+      "name": "jukebox_insert_5_comparator",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jukebox"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:music_disc_5",
+      "count": 1,
+      "comparator": [1, 0, 0],
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jukebox[has_record=true]",
+          "flags": 2
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:jukebox[has_record=true]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [
+        "1010 0,0,0 2"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none",
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:play_record 1"
+      ],
+      "menu": null,
+      "comparatorSignal": 15
+    },
+    {
+      "name": "jukebox_eject_comparator",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jukebox[has_record=true]",
+          "nbt": "{RecordItem:{id:\"minecraft:music_disc_cat\",count:1},ticks_since_song_started:40L}"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west,powered=true]",
+          "nbt": "{OutputSignal:2}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkBlockEntity": true,
+      "comparator": [1, 0, 0],
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jukebox",
+          "flags": 2
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:jukebox",
+      "hand": "empty",
+      "entities": [
+        "item minecraft:music_disc_cat x1"
+      ],
+      "sounds": [],
+      "levelEvents": [
+        "1011 0,0,0 0"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 none",
+        "minecraft:jukebox_stop_play 0,0,0 none"
+      ],
+      "stats": [],
+      "menu": null,
+      "blockEntity": "{components:{},id:\"minecraft:jukebox\"}",
+      "comparatorSignal": 0
+    },
+    {
+      "name": "jukebox_destroy_with_disc",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jukebox[has_record=true]",
+          "nbt": "{RecordItem:{id:\"minecraft:music_disc_cat\",count:1},ticks_since_song_started:40L}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stick",
+      "count": 1,
+      "sneaking": true,
+      "breakAfterUse": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:stick x1",
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null,
+      "broken": {
+        "changes": "0,0,0=minecraft:air",
+        "entities": [
+          "item minecraft:music_disc_cat x1",
+          "item minecraft:jukebox x1"
+        ],
+        "sounds": [],
+        "levelEvents": [
+          "2001 0,0,0 8633",
+          "1011 0,0,0 0",
+          "1011 0,0,0 0"
+        ],
+        "blockEvents": [],
+        "gameEvents": [
+          "minecraft:block_destroy 0,0,0 player",
+          "minecraft:jukebox_stop_play 0,0,0 none",
+          "minecraft:jukebox_stop_play 0,0,0 none"
+        ],
+        "stats": [
+          "minecraft:mined minecraft:jukebox 1"
+        ]
+      }
+    },
+    {
+      "name": "decorated_pot_loot_deposit_diamond",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:decorated_pot",
+          "nbt": "{LootTable:\"minecraft:pots/trial_chambers/corridor\",LootTableSeed:5L}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:diamond",
+      "checkBlockEntity": true,
+      "checkInventory": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:diamond x2",
+      "inventory": [
+        "minecraft:diamond x2",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.decorated_pot.insert_fail"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:decorated_pot 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null,
+      "blockEntity": "{components:{},id:\"minecraft:decorated_pot\",item:{count:2,id:\"minecraft:emerald\"}}"
+    },
+    {
+      "name": "decorated_pot_loot_deposit_emerald",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:decorated_pot",
+          "nbt": "{LootTable:\"minecraft:pots/trial_chambers/corridor\",LootTableSeed:5L}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:emerald",
+      "checkBlockEntity": true,
+      "checkInventory": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "success",
+      "changes": "",
+      "hand": "minecraft:emerald x1",
+      "inventory": [
+        "minecraft:emerald x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.decorated_pot.insert"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:decorated_pot 1 0 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:emerald 1"
+      ],
+      "menu": null,
+      "blockEntity": "{components:{},id:\"minecraft:decorated_pot\",item:{count:3,id:\"minecraft:emerald\"}}"
+    },
+    {
+      "name": "decorated_pot_loot_empty_hand",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:decorated_pot",
+          "nbt": "{LootTable:\"minecraft:pots/trial_chambers/corridor\",LootTableSeed:5L}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkBlockEntity": true,
+      "checkInventory": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "inventory": [
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.decorated_pot.insert_fail"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:decorated_pot 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 0,0,0 player"
+      ],
+      "stats": [],
+      "menu": null,
+      "blockEntity": "{components:{},id:\"minecraft:decorated_pot\",item:{count:2,id:\"minecraft:emerald\"}}"
+    },
+    {
+      "name": "decorated_pot_loot_sneaking",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:decorated_pot",
+          "nbt": "{LootTable:\"minecraft:pots/trial_chambers/corridor\",LootTableSeed:5L}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:diamond",
+      "sneaking": true,
+      "checkBlockEntity": true,
+      "checkInventory": true,
+      "checkWrites": true,
+      "writes": [],
+      "destroyed": [],
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:diamond x2",
+      "inventory": [
+        "minecraft:diamond x2",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null,
+      "blockEntity": "{LootTable:\"minecraft:pots/trial_chambers/corridor\",LootTableSeed:5L,components:{},id:\"minecraft:decorated_pot\"}"
     }
   ],
   "version": "26.3"

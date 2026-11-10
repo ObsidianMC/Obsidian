@@ -37,6 +37,7 @@
 		<VanillaDumperInput Remove="Java\TickingBlockFixtures.java" />
 		<VanillaDumperInput Remove="Java\BlockUseInstrumentation.java" />
 		<VanillaDumperInput Remove="Java\ProjectileHitFixtures.java" />
+		<VanillaDumperInput Remove="Java\WaxingBellsOreFixtures.java" />
 		<VanillaDumperInput Remove="Java\HatchingFixtures.java" />
 		<VanillaDumperInput Remove="Java\EyeblossomGhastPortalFixtures.java" />
 		<VanillaDumperInput Remove="Java\GrowingPlantTickFixtures.java" />
@@ -54,6 +55,7 @@
 		<None Update="Java\BlockUseFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\BlockUseInstrumentation.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\ProjectileHitFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\WaxingBellsOreFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\HatchingFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\EyeblossomGhastPortalFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\GrowingPlantTickFixtures.java" CopyToOutputDirectory="PreserveNewest" />
@@ -96,6 +98,7 @@
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)collision_shapes.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)block_sounds.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)note_block_instruments.json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)flower_pot_contents.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)block_loot_tables.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\blocks.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\entities.json" />

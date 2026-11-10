@@ -50,6 +50,14 @@ public partial class ItemEntity : Entity
 
     internal static bool Drop(IPlayer player, ItemStack stack) => Drop(player, stack, hostOwned: false);
 
+    /// <summary>
+    /// Drops a stack in front of the player like <see cref="Drop(IPlayer, ItemStack)"/>, without counting it as
+    /// dropped: vanilla's <c>Player.drop</c> for an item a use gave back that didn't fit their inventory. The server
+    /// owns the drop, so a level that can't take it yet gets it on a later entity action rather than losing it.
+    /// </summary>
+    internal static void DropUncounted(IPlayer player, ItemStack stack) =>
+        Drop(player, stack, hostOwned: true, counted: false);
+
     // Finished menu clicks drop the player's items, regardless of the menu's ambient plugin call.
     internal static void DropHostOwned(IPlayer player, ItemStack stack) => Drop(player, stack, hostOwned: true);
 
@@ -99,7 +107,8 @@ public partial class ItemEntity : Entity
     }
 
     // Thrown where the player looks, or with the given motion for a drop around them.
-    private static bool Drop(IPlayer player, ItemStack stack, bool hostOwned, VectorD? around = null)
+    private static bool Drop(IPlayer player, ItemStack stack, bool hostOwned, VectorD? around = null,
+        bool counted = true)
     {
         var direction = player.GetLookDirection();
         var motion = around ?? new VectorD(direction.X * 0.3, direction.Y * 0.3 + 0.1, direction.Z * 0.3);
@@ -126,7 +135,7 @@ public partial class ItemEntity : Entity
             return false;
         }
 
-        if (around is null)
+        if (around is null && counted)
         {
             player.Statistics.Increment(stack.Holder.UnlocalizedName, stack.Count, "minecraft:dropped");
             player.Statistics.Increment("minecraft:drop");

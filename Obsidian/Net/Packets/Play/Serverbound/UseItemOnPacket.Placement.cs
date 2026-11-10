@@ -146,6 +146,28 @@ public partial class UseItemOnPacket
         return null;
     }
 
+    /// <summary>
+    /// Vanilla's <c>BlockPlaceContext.canPlace</c> for the held item, which some blocks' uses read to leave the click
+    /// to placement: whether the item places a block, and the clicked block or the one beside it on the clicked face
+    /// can be replaced by it.
+    /// </summary>
+    internal static bool CanPlace(BlockUse use)
+    {
+        if (!use.HasItem || PlacedBlock(use.Player, use.Item!) is not IBlock block)
+            return false;
+
+        var upperHit = use.Cursor.Y > 0.5;
+        var clicked = use.Block;
+        var replacesClicked = clicked.CanBeReplaced() && clicked.RegistryId != block.RegistryId
+            || VanillaPlacement.SlabCanBeReplaced(clicked, block, true, use.Face, upperHit);
+        if (replacesClicked)
+            return true;
+
+        var beside = use.Level.BlockUpdates.GetBlock(use.Position + use.Face.ToVector());
+        return beside.CanBeReplaced()
+            || VanillaPlacement.SlabCanBeReplaced(beside, block, false, use.Face, upperHit);
+    }
+
     // A placement that didn't happen: the player's client, which predicted it, gets the item back.
     private static UseResult Refuse(BlockUse use)
     {
