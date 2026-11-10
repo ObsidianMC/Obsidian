@@ -66,7 +66,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     public virtual long Revision => this.EngineRevision;
 
     // Lock bookkeeping must never dispatch to a plugin's virtual Revision getter.
-    private long EngineRevision
+    internal long EngineRevision
     {
         get
         {
@@ -82,7 +82,19 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         }
     }
 
-    public ItemStack? this[int index] { get => this.GetItem(index); set => this.SetItem(index, value); }
+    public ItemStack? this[int index]
+    {
+        get => this.GetItem(index);
+        set
+        {
+            var revision = Volatile.Read(ref this.slotsChanged);
+            this.SetItem(index, value);
+            // Overrides may keep slots outside the base array. An engine write through the indexer still
+            // invalidates prepared snapshots; taking/releasing a read-only lock must never do so.
+            if (Volatile.Read(ref this.slotsChanged) == revision)
+                this.MarkChanged();
+        }
+    }
 
     public ReadOnlySpan<ItemStack?> this[Range range] => this.GetItems().AsSpan(range);
 
@@ -110,14 +122,14 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
                     continue;
 
                 invItem.Count += item.Count;
-                this.SetItem(i, invItem);
+                this[i] = invItem;
 
                 return i;
             }
 
             if (invItem == null)
             {
-                this.SetItem(i, item);
+                this[i] = item;
 
                 return i;
             }
@@ -139,7 +151,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         if (this.GetItem(slot) == null)
             return false;
 
-        this.SetItem(slot, null);
+        this[slot] = null;
 
         return true;
     }
@@ -152,7 +164,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
             return false;
 
         item.Count -= amount;
-        this.SetItem(slot, item.Count <= 0 ? null : item);
+        this[slot] = item.Count <= 0 ? null : item;
 
         return true;
     }
@@ -301,7 +313,8 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         LockAllAsync(window.LockParts.Append(inventory));
 
     // Takes the containers' locks in order; the returned handle releases them in reverse.
-    internal static async ValueTask<IDisposable> LockAllAsync(IEnumerable<BaseContainer> parts)
+    internal static async ValueTask<IDisposable> LockAllAsync(
+        IEnumerable<BaseContainer> parts, CancellationToken cancellationToken = default)
     {
         var ordered = Ordered(parts);
         var taken = new List<IDisposable>(ordered.Length);
@@ -312,7 +325,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
             foreach (var part in ordered)
             {
                 var handle = new PartRelease(part);
-                await part.TransactionLock.WaitAsync();
+                await part.TransactionLock.WaitAsync(cancellationToken);
                 taken.Add(handle);
                 handle.CaptureRevision();
             }
@@ -418,6 +431,10 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     /// </summary>
     /// <returns>Whether this call retired it: false when it was already.</returns>
     internal bool TryRetire() => Interlocked.Exchange(ref this.retired, 1) == 0;
+
+    // Only the unload that successfully retired this inventory may give it back, before publishing any removal
+    // or notifying plugin code. No inventory contents change, and no inventory lock is acquired here.
+    internal void Unretire() => Volatile.Write(ref this.retired, 0);
 
     // Only the aborted break that acquired retirement may undo it, under the click lock.
     internal void CancelRetirement() => Volatile.Write(ref this.retired, 0);

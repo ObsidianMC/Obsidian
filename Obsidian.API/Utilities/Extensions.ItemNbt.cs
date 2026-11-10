@@ -33,6 +33,12 @@ public partial class Extensions
     /// </remarks>
     public static NbtCompound ToNbt(this ItemStack item, string name = "")
     {
+        // World snapshots prepare component delegates before transfer/inventory admission. The final host
+        // serializer may only copy that NBT, including for stacks outside inventories.
+        if (InventorySnapshot.TryGetItemData(item, name, out var prepared))
+            return prepared!;
+
+        var version = item.Version;
         var compound = new NbtCompound(name)
         {
             new NbtTag<string>("id", item.Holder.UnlocalizedName),
@@ -61,6 +67,7 @@ public partial class Extensions
         if (components.Count > 0)
             compound.Add(components);
 
+        InventorySnapshot.RecordItemData(item, version, compound);
         return compound;
     }
 

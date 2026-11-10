@@ -115,6 +115,24 @@ internal sealed class LevelFluids : IFluidLevelAccess
         }
     }
 
+    // Rollback rejoins the same resident chunk, with unchanged blocks. Restore scheduler ownership without
+    // re-running plugin neighbor/shape callbacks: an error there must not interrupt restoration of other chunks.
+    internal void RestoreTracking(Chunk chunk, bool fluids, bool blocks)
+    {
+        lock (this.sync)
+        {
+            var key = NumericsHelper.IntsToLong(chunk.X, chunk.Z);
+            if (fluids)
+            {
+                this.chunks[key] = chunk;
+                chunk.FluidTicks.StartTicking(this.scheduler, key);
+            }
+
+            if (blocks)
+                this.Blocks.Ticks.Track(chunk);
+        }
+    }
+
     /// <summary>Checks the slot identity while holding TickLock, including in-flight unloading saves.</summary>
     internal bool IsResident(IChunk chunk) =>
         this.level.GetRegionForChunk(chunk.X, chunk.Z) is Region region && region.IsChunkResident(chunk);

@@ -46,6 +46,9 @@ namespace Obsidian.WorldData;
 /// </remarks>
 internal sealed class EntityTransferLock
 {
+    static EntityTransferLock() =>
+        API.Inventory.ComponentExecutionGuard.TransferHeld = static () => IsAnyHeldByCurrentThread;
+
     private readonly Lock gate = new();
 
     // The transfer lock this thread holds, and how many times it entered it. Nothing awaits under the lock, so the

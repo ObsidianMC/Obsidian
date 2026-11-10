@@ -85,7 +85,7 @@ public abstract partial class AbstractLevel
                     }
 
                     for (var slot = 0; slot < inventory.Size; slot++)
-                        inventory.SetItem(slot, staged[slot]);
+                        inventory[slot] = staged[slot];
 
                     container.LootTable = null;
                     container.LootTableSeed = 0;
@@ -150,7 +150,7 @@ public abstract partial class AbstractLevel
                 return;
 
             for (var slot = 0; slot < inventory.Size; slot++)
-                inventory.SetItem(slot, staged[slot]);
+                inventory[slot] = staged[slot];
 
             vehicle.LootTable = null;
             vehicle.LootTableSeed = 0;
