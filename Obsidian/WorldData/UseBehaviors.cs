@@ -110,6 +110,11 @@ internal sealed class BlockUse
     /// lock. The callback must validate its destination before writing, and must not await or invoke plugin hooks.
     /// Send packets and run awaited hooks only after this returns.
     /// </summary>
+    /// <remarks>
+    /// A replacement is only for a single unstackable input, such as a filled fish bucket. Cauldrons and hives
+    /// need a separate exchange operation that consumes one and routes the result to the hand, inventory or world;
+    /// those batches must add that operation outside this critical section's callback.
+    /// </remarks>
     public bool TryCommit(Func<bool> change, bool consumeItem = false, BaseContainer? destination = null,
         ItemStack? replacement = null)
     {
@@ -132,7 +137,8 @@ internal sealed class BlockUse
                 if (!ReferenceEquals(held, this.Item)
                     || held is not null && (held.Count <= 0 || held.Count != this.UsedItem?.Count
                         || !held.Equals(this.UsedItem))
-                    || consumeItem && held is null)
+                    || consumeItem && held is null
+                    || replacement is not null && (!consumeItem || held?.Count != 1))
                 {
                     this.ResyncHand = true;
                     return false;

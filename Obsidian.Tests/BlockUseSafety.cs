@@ -17,6 +17,30 @@ namespace Obsidian.Tests;
 public sealed class BlockUseSafety
 {
     [Fact]
+    public async Task StackedFishBucketsCannotOverwriteTheHandOrPlaceAMob()
+    {
+        await using var context = TestServerFactory.CreateServer($"stacked-buckets-{Guid.NewGuid():N}");
+        var world = context.World;
+        WorldBlockEntities.AddEmptyChunk(world);
+        var target = new Vector(8, 64, 8);
+        await world.GetBlockAsync(target);
+        world.BlockUpdates.SetBlock(target, BlocksRegistry.Stone);
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "User",
+            new VectorD(8.5, 64, 10.5));
+        player.GameMode = GameMode.Survival;
+        var buckets = new ItemStack(ItemsRegistry.Get("minecraft:cod_bucket"), 2);
+        player.Inventory.SetItem(player.CurrentHeldItemSlot, buckets);
+
+        var packet = BlockUpdates.UseOn(target, BlockFace.Up, new VectorF(0.5f, 0.5f, 0.5f));
+        Assert.Equal(UseResult.Fail, await packet.UseAsync(context.Server, player));
+
+        Assert.Same(buckets, player.GetHeldItem());
+        Assert.Equal(2, buckets.Count);
+        Assert.True(world.BlockUpdates.GetBlock(target + Vector.Up).IsAir);
+        Assert.Empty(world.GetEntitiesInRange((VectorD)target, 4));
+    }
+
+    [Fact]
     public async Task DeadOrRespawningClicksAreAcknowledgedWithoutUsingItems()
     {
         await using var context = TestServerFactory.CreateServer($"dead-block-use-{Guid.NewGuid():N}");
