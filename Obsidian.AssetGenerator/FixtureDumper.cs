@@ -182,36 +182,22 @@ internal static class FixtureDumper
     }
 
     // An on-request probe: a dedicated server of its own, in a new flat world under the scratch directory.
-    internal static async Task DumpBlockUseAsync(VanillaServer server, string fixture,
-        IReadOnlyCollection<string>? cases = null)
-    {
-        var world = Path.Combine(server.ScratchDirectory, "block-use");
-        if (Directory.Exists(world))
-            Directory.Delete(world, recursive: true);
-
-        Directory.CreateDirectory(world);
-
-        var observed = Path.Combine(world, "observed-classes");
-        await VanillaServer.RunJavaAsync(world,
-            "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("BlockUseInstrumentation.java"),
-            server.ClassPath[0], observed);
-        var observedJar = Path.Combine(observed, "vanilla-observed.jar");
-        var classPath = string.Join(Path.PathSeparator, new[] { observedJar }.Concat(server.ClassPath.Skip(1)));
-
-        // The probe finds the server in the shutdown hook vanilla's Main registers.
-        await VanillaServer.RunJavaAsync(world,
-            "--add-opens", "java.base/java.lang=ALL-UNNAMED",
-            "-cp", classPath, Source("BlockUseFixtures.java"), fixture,
-            cases is null ? "" : string.Join('+', cases));
-    }
+    internal static Task DumpBlockUseAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunObservedProbeAsync(server, fixture, "block-use", "BlockUseFixtures.java", cases);
 
     // An on-request probe: a dedicated server of its own, in a new flat world under the scratch directory. It reuses
-    // BlockUseFixtures.java from the same directory (the source launcher compiles it on demand) and that probe's
-    // observed copy of the vanilla jar, which records ordered block writes.
-    internal static async Task DumpWaxingBellsOreAsync(VanillaServer server, string fixture,
-        IReadOnlyCollection<string>? cases = null)
+    // BlockUseFixtures.java from the same directory (the source launcher compiles it on demand).
+    internal static Task DumpWaxingBellsOreAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunObservedProbeAsync(server, fixture, "waxing-bells-ore", "WaxingBellsOreFixtures.java", cases);
+
+    // Runs a probe on an observed copy of the vanilla jar, which records ordered block writes, in a new world folder
+    // named worldName under the scratch directory.
+    private static async Task RunObservedProbeAsync(VanillaServer server, string fixture, string worldName,
+        string probe, IReadOnlyCollection<string>? cases)
     {
-        var world = Path.Combine(server.ScratchDirectory, "waxing-bells-ore");
+        var world = Path.Combine(server.ScratchDirectory, worldName);
         if (Directory.Exists(world))
             Directory.Delete(world, recursive: true);
 
@@ -227,7 +213,7 @@ internal static class FixtureDumper
         // The probe finds the server in the shutdown hook vanilla's Main registers.
         await VanillaServer.RunJavaAsync(world,
             "--add-opens", "java.base/java.lang=ALL-UNNAMED",
-            "-cp", classPath, Source("WaxingBellsOreFixtures.java"), fixture,
+            "-cp", classPath, Source(probe), fixture,
             cases is null ? "" : string.Join('+', cases));
     }
 
