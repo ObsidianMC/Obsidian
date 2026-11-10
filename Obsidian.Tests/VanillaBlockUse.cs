@@ -69,6 +69,7 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
         Setup[] Setup,
         Vector Clicked,
         BlockFace Face,
+        VectorF Cursor,
         string? Item,
         int Count,
         string? Offhand,
@@ -197,7 +198,7 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
 
         // The use, the block updates it caused and the tick's block events.
         var offhand = OptionalString(use.Reference, "handUsed") == "offhand";
-        var packet = BlockUpdates.UseOn(target + use.Clicked, use.Face, new VectorF(0.5f, 0.5f, 0.5f));
+        var packet = BlockUpdates.UseOn(target + use.Clicked, use.Face, use.Cursor);
         if (offhand)
             typeof(UseItemOnPacket).GetProperty(nameof(UseItemOnPacket.Hand))!.SetValue(packet, InteractionHand.OffHand);
 
@@ -643,12 +644,16 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
                 OptionalString(block, "text")))
             .ToArray();
         var mode = use.TryGetProperty("gameMode", out var gameMode) ? gameMode.GetString()! : "survival";
+        var cursor = use.TryGetProperty("cursor", out var clickPoint)
+            ? new VectorF(clickPoint[0].GetSingle(), clickPoint[1].GetSingle(), clickPoint[2].GetSingle())
+            : new VectorF(0.5f, 0.5f, 0.5f);
 
         return new Case(
             use.GetProperty("name").GetString()!,
             setup,
             Position(use.GetProperty("clicked")),
             Enum.Parse<BlockFace>(use.GetProperty("face").GetString()!, ignoreCase: true),
+            cursor,
             OptionalString(use, "item"),
             use.TryGetProperty("count", out var count) ? count.GetInt32() : 2,
             OptionalString(use, "offhand"),
