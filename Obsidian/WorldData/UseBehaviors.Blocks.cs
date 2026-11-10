@@ -128,7 +128,10 @@ internal static partial class UseBehaviors
 
                 jukebox.Set(new ItemStack(use.Item!, 1).ToNbt("RecordItem"));
                 jukebox.Set(AbstractLevel.SongTicksField, 0L);
-                use.Level.BlockUpdates.SetBlock(use.Position, use.Block.WithProperty("has_record", true));
+
+                // Vanilla's notifyItemChangedInJukebox tells only clients; onSongChanged updates the neighbours.
+                var playing = use.Block.WithProperty("has_record", true);
+                use.Level.BlockUpdates.SetBlock(use.Position, playing, Obsidian.API.Blocks.BlockUpdateFlags.Clients);
                 return true;
             }, consumeItem: true))
             {
@@ -139,7 +142,8 @@ internal static partial class UseBehaviors
             use.Level.EmitGameEvent(MobGameEvent.BlockChange, use.Center);
             use.Level.StartJukebox(use.Position, song);
 
-            // Vanilla's onSongChanged: comparators read the disc's song.
+            // Vanilla's onSongChanged: the neighbours hear of it, and comparators read the disc's song.
+            use.Level.UpdateNeighbors(use.Position, use.Block);
             use.Level.BlockUpdates.UpdateAnalogOutput(use.Position);
 
             use.Level.EmitGameEvent(MobGameEvent.BlockChange, use.Center, use.Player);
@@ -153,23 +157,34 @@ internal static partial class UseBehaviors
             if (use.Block.GetProperty("has_record") != "true")
                 return ValueTask.FromResult(UseResult.Pass);
 
+            if (Jukebox(use) is not DataBlockEntity jukebox)
+                return ValueTask.FromResult(UseResult.Fail);
+
             ItemStack? stack = null;
-            if (Jukebox(use) is not DataBlockEntity jukebox || !use.TryCommit(() =>
+            var ejected = use.TryCommit(() =>
             {
                 if (!jukebox.SnapshotData().TryGetTag<NbtCompound>("RecordItem", out var record)
                     || record.ItemFromNbt() is not { IsAir: false } stored)
+                {
                     return false;
+                }
 
                 stack = stored;
                 jukebox.Remove("RecordItem");
-                use.Level.BlockUpdates.SetBlock(use.Position, use.Block.WithProperty("has_record", false));
+
+                // Vanilla's notifyItemChangedInJukebox tells only clients; onSongChanged updates the neighbours.
+                var empty = use.Block.WithProperty("has_record", false);
+                use.Level.BlockUpdates.SetBlock(use.Position, empty, Obsidian.API.Blocks.BlockUpdateFlags.Clients);
                 return true;
-            }))
+            });
+
+            if (!ejected)
                 return ValueTask.FromResult(UseResult.Fail);
 
             // Vanilla's notifyItemChangedInJukebox, as the disc leaves.
             use.Level.EmitGameEvent(MobGameEvent.BlockChange, use.Center);
             use.Level.EjectRecord(use.Position, stack!, jukebox);
+            use.Level.UpdateNeighbors(use.Position, use.Block);
             use.Level.BlockUpdates.UpdateAnalogOutput(use.Position);
             return ValueTask.FromResult(UseResult.Success);
         }
