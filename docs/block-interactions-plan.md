@@ -267,9 +267,10 @@ are their own PRs after this phase.
 `ShapeUpdater.UpdateShape` picks a block's shape rule from its concrete vanilla class, so every subclass has to be
 listed by hand: `WeatheringCopperDoorBlock` beside `DoorBlock`, `StrawBedBlock` beside `BedBlock`, and about thirty
 plant classes that all inherit one rule. A subclass nobody lists silently gets no rule, which is the bug #695 fixed
-for placement. Vanilla dispatches by the class that *declares* `updateShape`, and
-`Assets/block_update_shape_classes.json` already records that for every block: 108 declaring classes over 854
-blocks, where the switch has 29 arms. The generator binds 17 of them through `ShapeUpdateBehaviors` today.
+for placement. Vanilla dispatches by the class that *declares* `updateShape`, and the generated asset
+`Assets/block_update_shape_classes.json` already records that for every block whose class overrides it: 108
+declaring classes over 854 blocks when this was written, where the switch has 29 arms. The generator binds 18 of them
+through `ShapeUpdateBehaviors` today.
 
 Tags are not the key to use. Vanilla chooses the rule by class, a datapack can change a tag without changing a
 block's shape logic, and most of these rules (torches, ladders, lanterns, vines, dust, double plants) have no tag.
@@ -277,7 +278,8 @@ Tags stay where vanilla reads them, inside the rules: what a fence or wall conne
 
 1. **Key the existing rules by declaring class.** Each arm of the switch becomes the rule of the Mojang class that
    declares it (`DoorBlock`, `AbstractBedBlock`, `LanternBlock`, `VegetationBlock`, ...), bound by the generator
-   like the 17 owners that exist. The hand-listed subclasses and their `BlockClassId` members go.
+   like the 18 owners that exist. The hand-listed subclasses go, and so do their `BlockClassId` members where
+   nothing else uses them (copper weathering reads `WeatheringCopperDoorBlock`, for one).
 2. **Keep worldgen working.** Trees, structure templates and terrain call `ShapeUpdater` through `IWorldGenLevel`,
    while the generated owners take the live `IBlockLevel`. The rules need one read-only view both can supply; shape
    rules return a state and schedule ticks, they don't write.
@@ -291,9 +293,10 @@ No behaviour change is intended for blocks that have a rule today, so the existi
 feature and structure captures). Where a subclass gains a rule it was missing, capture it first.
 
 The observer fix has landed (#703) and moved the observer onto the same generated hook, so this can start. That
-work also showed a gap this refactor should close: structure templates and worldgen call `ShapeUpdater` directly
-and never reach the generated owners, so an observer placed by a template gets no shape reaction. The shared view
-in step 2 is where that is fixed.
+work also showed a gap this refactor should close: structure templates and worldgen call `ShapeUpdater` directly,
+which never dispatches a generated owner's `UpdateShape`, so an observer placed by a template gets no shape
+reaction. Worldgen reaches owners only through post-processing (`IPostProcessBehavior`, which soul sand and magma
+implement). The shared view in step 2 is where that is fixed.
 
 ### Phase 5: ticking (L)
 
@@ -352,7 +355,8 @@ Capture: `block_use` cases for the opening rules and the dragon egg; RCON scenar
 2. Phase 1, with performance items 2 and 7.
 3. Phases 2 and 3 side by side. Phase 2's seven batches are independent of each other.
 4. Phase 4, then performance items 5 and 6 on their own. The shape-rule refactor can run beside any phase once
-   the observer fix has merged; it shares files only with performance item 6.
+   the observer fix has merged. It adds members to `BlockOwnerBehaviors.cs`, which other phases edit too, and
+   otherwise shares files mainly with performance item 6.
 5. Phases 5 and 6 in either order.
 
 For delegated batches, `AGENTS.md` allows two agents per model family at once. Give each batch its own behaviour file

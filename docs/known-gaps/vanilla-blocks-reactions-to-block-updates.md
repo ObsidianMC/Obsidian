@@ -12,8 +12,9 @@ Removal is queued on the serial level tick so loot never runs under the tick loc
 `SuppressDrops` and `block_drops`. Water washout drops loot without the break effect; lava only fizzes.
 Rails check their base and ascending end support and drop without a break effect. Doors, trapdoors, fence gates,
 rails and TNT react to power (see [Redstone](redstone.md)). Scheduled ticks run for the vanilla classes that have a
-tick behaviour (`TickBehaviors`: leaves, fire, farmland, sugar cane, cactus, bamboo, kelp, bubble columns,
-composters, sulfur spikes) and for redstone components and falling blocks; the rest do nothing when they come due.
+tick behaviour (`TickBehaviors`: leaves, fire, farmland, sugar cane, cactus, bamboo, kelp, bubble columns, soul
+sand, magma, composters, sulfur spikes) and for redstone components and falling blocks; the rest do nothing when
+they come due.
 Of vanilla's own blocks, pressure plates, tripwire, wooden buttons, detector rails and bubble columns react to
 entities inside them; none has a stepped-on reaction, though magma, turtle eggs and sculk shriekers are handled by
 checks of their own. The [block interactions plan](../block-interactions-plan.md) lists what is missing, phase by
@@ -28,8 +29,10 @@ different one. Obsidian deliberately doesn't emulate Java's heap layout for this
 
 **Where to start:**
 
-- A vanilla class's tick, random tick, shape update, entity contact or on-place reaction is a member named after
-  the Mojang class that declares it, in `Obsidian/WorldData/BlockOwnerBehaviors.cs` or `RandomTickBehaviors.cs`; the
-  generator binds its blocks. Redstone reactions to neighbours are registered in `Obsidian/WorldData/Redstone`.
+- New reactions go in as generated owners: a vanilla class's tick, random tick, shape update, entity contact or
+  on-place reaction is a member named after the Mojang class that declares it, in
+  `Obsidian/WorldData/BlockOwnerBehaviors.cs` or `RandomTickBehaviors.cs`, and the generator binds its blocks. Older
+  code still uses other routes: most shape rules live in `ShapeUpdater`, and redstone components register their
+  neighbour reactions, contact and ticks in `Obsidian/WorldData/Redstone`.
 - Placement checks belong in `UseItemOnPacket`'s placement, before the place event: vanilla's `canSurvive` and
   `isUnobstructed`.

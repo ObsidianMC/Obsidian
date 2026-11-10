@@ -5,8 +5,8 @@
 [block interactions plan](../block-interactions-plan.md) lists every component's state in its appendix, section 7.
 What follows is what still differs.
 
-- **Consumers.** Bells don't react to power. Doors, trapdoors and fence gates, note blocks, powered, activator
-  and detector rails, TNT, copper bulbs, pistons, hoppers, droppers, dispensers and crafters do; copper bulbs make no
+- **Consumers.** Bells don't react to power. Doors, trapdoors and fence gates, note blocks, powered and activator
+  rails, TNT, copper bulbs, pistons, hoppers, droppers, dispensers and crafters do; copper bulbs make no
   sound, and dispensers only dispense boats and minecarts and drop everything else (see
   [item access](item-access-beyond-containers.md)).
 - **Sources.** Trapped chests and lightning rods give no power, though dust connects to them as to any signal
