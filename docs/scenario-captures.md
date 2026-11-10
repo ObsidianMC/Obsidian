@@ -229,6 +229,18 @@ replaces only what vanilla produced.
   container close sources; mob ambient sounds aren't compared (see
   [mob ambient sounds](known-gaps/mob-ambient-sounds.md)).
 
+- `turtle_eggs.json` (`VanillaTurtleEggs.ReplayTurtleEggReference`) records vanilla's turtle eggs, from
+  `Java/HatchingFixtures.java` (`CaptureFixtures=turtle_eggs`). Each case is its input: the blocks of a small block
+  view (air elsewhere), the origin, a seed, the overworld clock's time and the dimension, and either a random tick or
+  a state to `place` with every update. The probe builds the level's environment attributes from the dimension
+  type's own attributes and its timelines at that time (no biome or weather layers), uses a legacy random of the seed
+  as both the tick's and the level's random, and runs each write's `onPlace` as a chunk does. It records the draws,
+  the writes, the ticks scheduled, the sounds (without their seed), level events, game events, the entities added
+  (position, yaw, age, home) and the final blocks. The cases cover cracking on each block of `#sand`, hatching one and
+  four eggs, eggs on dirt and sandstone, the hatch window's edges, a later day, chance cracks outside the window and
+  in the nether, and placing on and off sand. `chances` samples `gameplay/turtle_egg_hatch_chance` by dimension and
+  time. The replay runs every case in one world, moved along x, through the random-tick dispatch or a block change,
+  and compares everything recorded but the game events, which no client sees.
 
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.
@@ -260,7 +272,7 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=block_use
 
-
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=turtle_eggs
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=sulfur -p:CaptureCases=spike_shatters_after_falling+review_spike_pending_fall_keeps_frustum
 ```
@@ -302,6 +314,10 @@ container close sources, and awarded advancement criteria. The fixture lists
 location predicate terms in Obsidian's existing format; the probe converts them to 26.3's `all_of` and `match_block`
 encoding before registering them with vanilla's advancement system.
 
+The `turtle_eggs` capture runs no server and re-records every case. To add one, add a case with its `name`, `seed`,
+`origin` and `setup` (and `time`, `dimension` or `place`) and capture again; pick a seed whose first draw takes the
+branch the case is about.
+
 A `structure_pieces` case with `captureReferences: true` also records `referenceChunks`: the saved
 `structures.References` from vanilla's chunk serializer at STRUCTURE_REFERENCES, across its bounding box plus
 one chunk of border. `VanillaStructureSaves.GeneratedChunksSaveVanillaReferences` compares generated chunk saves
@@ -313,7 +329,7 @@ other dumpers, so editing it regenerates the assets once.
 
 The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft version> <cache directory>
 <scratch directory> <test assets directory>
-[redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+placement+fire+ticking_blocks+block_use]
+[redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+placement+fire+ticking_blocks+block_use+turtle_eggs]
 [case names]`.
 
 ## How it captures

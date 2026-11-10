@@ -104,6 +104,11 @@ internal static class FixtureDumper
         return VanillaServer.RunJavaAsync(server.ScratchDirectory, arguments.ToArray());
     }
 
+    // An on-request gameplay probe: turtle eggs' random tick and placement, with a seeded random.
+    internal static Task DumpTurtleEggsAsync(VanillaServer server, string fixture) =>
+        VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
+            Source("HatchingFixtures.java"), fixture);
+
     internal static Task DumpSulfurAsync(VanillaServer server, string fixture) =>
         VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
             Source("SulfurFixtures.java"), fixture);
