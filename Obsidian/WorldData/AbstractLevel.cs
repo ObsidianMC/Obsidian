@@ -454,8 +454,7 @@ public abstract partial class AbstractLevel : ILevel
         this.RedstoneRules = new RedstoneBehaviors(new PluginRedstoneBehavior(this));
         this.BlockNotifications = new BlockNotificationPipeline(this, this.Neighbors);
         this.RedstoneInstall = RedstoneRegistration.Install(this, this.BlockUpdates.Ticks, this.Neighbors, this.RedstoneRules, position => this.PlayNoteBlock(position));
-        this.Plates = new PressurePlates(this);
-        this.Plates.RegisterTicks(this.BlockUpdates.Ticks, this);
+        this.EntityContacts = new EntityContactPass(this);
         this.Lighting = new RuntimeLightEngine(
             this.Fluids.TickLock, () => this.DimensionType?.Element.HasSkylight ?? true);
         this.Portals = new LevelPortals(this);
@@ -1123,7 +1122,12 @@ public abstract partial class AbstractLevel : ILevel
                 {
                     this.tickingEntity = entity;
                     await entity.TickAsync();
-                    await this.TouchPluginBlocksAsync(entity);
+
+                    // Like vanilla's entity movement, the blocks it touches react now, before the next entity ticks;
+                    // as in vanilla, only where entities tick (players everywhere).
+                    if (entity is Entity toucher && (entity is IPlayer || this.IsMobTicking(entity.Position)))
+                        await this.EntityContacts.TouchAsync(toucher);
+
                     if (entity is Entity concrete && entity is not IPlayer && entity.Level == this)
                         await concrete.TickEntityPortalAsync();
                     timings.LapEntity(entity.GetType());
@@ -1134,11 +1138,6 @@ public abstract partial class AbstractLevel : ILevel
                 claimed?.ReleaseTick(this);
             }
         }
-        // Like vanilla's entity movement, the redstone that entities touch reacts once they've all ticked: pressure plates,
-        // then tripwires, on the entities' current positions.
-        var movers = this.SnapshotEntities().ToList();
-        await this.Plates.UpdateAsync(movers);
-        await this.RedstoneInstall.Tripwires.UpdateAsync(movers);
         timings.Lap("entities");
 
         TickStage = "sleeping";

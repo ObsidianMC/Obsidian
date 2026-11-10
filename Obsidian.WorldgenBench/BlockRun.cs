@@ -68,7 +68,7 @@ internal static class BlockRun
         Measure("NeighborTryGet/wire", 2_000_000, () => flag = world.Neighbors.TryGet(wire, out _));
         Measure("RedstoneFor/stone", 2_000_000, () => result = world.Redstone.For(stone));
         Measure("RedstoneFor/wire", 2_000_000, () => result = world.Redstone.For(wire));
-        Measure("ContactFor/air", 2_000_000, () => result = world.Redstone.ContactFor(air));
+        Measure("ContactFlags/air", 2_000_000, () => flag = ContactFlags.Of(air) != 0);
         Measure("BlockEntityType/chest", 2_000_000, () => result = BlocksRegistry.Chest.BlockEntityType());
 
         var position = new Vector(4, 64, 4);
@@ -282,15 +282,12 @@ internal static class BlockRun
         Measure("EntityContacts/400-on-stone-4-plates", 200, () => Complete(ContactTickAsync(world, entities)));
     }
 
-    // What the level's tick runs for entities touching blocks, apart from the entity loop's own snapshot.
+    // What the level's tick runs for entities touching blocks, apart from the entity loop's own snapshot: the contact
+    // pass for each entity after its tick.
     private static async System.Threading.Tasks.ValueTask ContactTickAsync(World world, IEntity[] entities)
     {
         foreach (var entity in entities)
-            await world.TouchPluginBlocksAsync(entity);
-
-        var movers = world.SnapshotEntities().ToList();
-        await world.Plates.UpdateAsync(movers);
-        await world.RedstoneInstall.Tripwires.UpdateAsync(movers);
+            await world.EntityContacts.TouchAsync((Obsidian.Entities.Entity)entity);
     }
 
     // Spaced so that no two block entities touch: index 0 to 255 covers the chunk's floor at y 64, two apart.

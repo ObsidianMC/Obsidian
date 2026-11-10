@@ -384,6 +384,7 @@ public abstract class VehicleEntity : Entity, IPlayerInteractable
         if (landed)
         {
             this.LandedFrom = this.FallDistance;
+            this.RecordLanding(this.FallDistance);
             this.FallDistance = 0;
         }
         else if (displacement.Y < 0)

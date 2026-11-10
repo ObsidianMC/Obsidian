@@ -73,6 +73,7 @@ public partial class Mob
                 fallDistance += (float)(LastPosition.Y - Position.Y);
             if (MovementFlags.HasFlag(MovementFlags.OnGround))
             {
+                this.RecordLanding(fallDistance);
                 var damage = MathF.Ceiling(fallDistance - SafeFallDistance);
                 // Like vanilla's Creeper.causeFallDamage, only an actual fall swells it, and only up to 5 ticks short of its fuse.
                 if (this is Creeper creeper && fallDistance > 0)

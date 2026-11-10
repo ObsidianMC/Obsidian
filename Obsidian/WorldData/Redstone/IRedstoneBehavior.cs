@@ -23,43 +23,13 @@ internal interface IRedstoneBehavior
 }
 
 /// <summary>
-/// What a block does to an entity whose box overlaps it, like vanilla's <c>entityInside</c> for redstone blocks (a detector rail).
-/// </summary>
-internal interface IRedstoneContact
-{
-    /// <summary>Runs the contact of an entity with the block at <paramref name="position"/>.</summary>
-    ValueTask EntityInsideAsync(IRedstoneLevel level, Vector position, IBlock state);
-}
-
-/// <summary>
 /// Redstone behaviors registered by vanilla class and expanded to registry ids, so every state of a class shares one
 /// rule. Registrations are made once when the level is created; plugin behavior is resolved dynamically.
 /// </summary>
 internal sealed class RedstoneBehaviors(IRedstoneBehavior? pluginBehaviors = null)
 {
     private readonly Dictionary<string, IRedstoneBehavior> behaviors = [];
-    private readonly Dictionary<string, IRedstoneContact> contacts = [];
     private readonly IRedstoneBehavior?[] byId = new IRedstoneBehavior?[BlocksRegistry.ResourceIds.Length];
-    private readonly IRedstoneContact?[] contactsById = new IRedstoneContact?[BlocksRegistry.ResourceIds.Length];
-
-    public void RegisterContact(string blockClass, IRedstoneContact contact)
-    {
-        if (!this.contacts.TryAdd(blockClass, contact))
-            throw new InvalidOperationException($"A redstone contact is already registered for {blockClass}.");
-
-        foreach (var id in BlockPhysics.BlocksOfClass(blockClass))
-            this.contactsById[id] = contact;
-    }
-
-    public IRedstoneContact? ContactFor(IBlock state)
-    {
-        var id = state.RegistryId;
-        if ((uint)id < (uint)this.contactsById.Length)
-            return this.contactsById[id];
-
-        return this.contacts.GetValueOrDefault(state.BlockClass());
-    }
-
     public void Register(string blockClass, IRedstoneBehavior behavior)
     {
         if (!this.behaviors.TryAdd(blockClass, behavior))
