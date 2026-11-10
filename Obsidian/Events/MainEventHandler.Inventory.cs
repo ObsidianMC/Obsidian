@@ -42,7 +42,7 @@ public partial class MainEventHandler
         var player = args.Player;
         var window = player.OpenedContainer ?? player.Inventory;
         WindowSync sync;
-        var cookingExperience = 0;
+        List<FurnaceBlockEntity.CookedRecipe>? cooked = null;
         List<Func<ValueTask>> workstationWork = [];
 
         using (await BaseContainer.LockWindowAsync(window, player.Inventory))
@@ -94,11 +94,15 @@ public partial class MainEventHandler
                 workstationWork = EndWorkstationEffects();
             }
 
+            // In the step that takes the output, so that no other taker, nor the machine breaking, takes what it
+            // cooked before this player is given it.
             if (window is SmeltingContainer furnace
                 && (furnace[2]?.Count ?? 0) < outputCount
-                && FurnaceBlockEntity.Of(furnace) is FurnaceBlockEntity machine)
+                && FurnaceBlockEntity.Of(furnace) is FurnaceBlockEntity machine
+                && player is PlayerBase taker)
             {
-                cookingExperience = machine.TakeExperience(PlayerRecipes(player), Globals.Random.NextSingle);
+                var random = (player.Level as AbstractLevel)?.CookingExperienceRandom ?? Globals.Random.NextSingle;
+                cooked = taker.TakeCookedRecipes(machine, PlayerRecipes(player), random);
             }
 
             // After the click and the changes registered with it, whatever they did to the grid, and before the
@@ -109,8 +113,12 @@ public partial class MainEventHandler
             sync = CaptureWindow(args, window);
         }
 
-        if (cookingExperience > 0 && player.Level is AbstractLevel level)
-            level.DropCookingExperience(player.Position, cookingExperience);
+        // Each recipe's experience drops by the player as orbs of its own; the recipes come on their next tick.
+        if (cooked is not null && player.Level is AbstractLevel level)
+        {
+            foreach (var recipe in cooked)
+                level.DropCookingExperience(player.Position, recipe.Experience);
+        }
 
         await RunWorkstationEffectsAsync(workstationWork);
 

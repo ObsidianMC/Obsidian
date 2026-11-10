@@ -569,7 +569,7 @@ public abstract partial class AbstractLevel
                 {
                     int experience;
                     using (furnace.Inventory.Lock())
-                        experience = furnace.TakeExperience(this.CookingRecipes, Globals.Random.NextSingle);
+                        experience = furnace.TakeExperience(this.CookingRecipes, this.CookingExperienceRandom);
 
                     this.DropCookingExperience((VectorD)furnace.BlockPosition, experience);
                 }

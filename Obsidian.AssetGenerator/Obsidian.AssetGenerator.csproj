@@ -37,6 +37,7 @@
 		<VanillaDumperInput Remove="Java\TickingBlockFixtures.java" />
 		<VanillaDumperInput Remove="Java\HatchingFixtures.java" />
 		<VanillaDumperInput Remove="Java\GrowingPlantTickFixtures.java" />
+		<VanillaDumperInput Remove="Java\FurnaceFixtures.java" />
 
 		<None Update="@(VanillaDumperInput)" CopyToOutputDirectory="PreserveNewest" />
 		<!-- Gameplay probes run only through their requested CaptureFixtures entry. -->
@@ -51,6 +52,7 @@
 		<None Update="Java\HatchingFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\GrowingPlantTickFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\MeltingWeatherFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\FurnaceFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 
 		<!-- On-request captures (CaptureVanillaWorldgen); not asset inputs, so editing them doesn't regenerate the assets. -->
 		<None Update="Captures\**\*.java" CopyToOutputDirectory="PreserveNewest" />

@@ -27,6 +27,7 @@ internal static class ProgressConditions
                     recipe == AdvancementsRegistry.Qualify(condition.Value.GetString()!),
                 "recipe_id" when trigger == "recipe_crafted" =>
                     recipe == AdvancementsRegistry.Qualify(condition.Value.GetString()!),
+                "recipes" when trigger is "recipe_unlocked" or "recipe_crafted" => Recipes(recipe, condition.Value),
                 "from" when trigger == "changed_dimension" =>
                     from == AdvancementsRegistry.Qualify(condition.Value.GetString()!),
                 "to" when trigger == "changed_dimension" =>
@@ -45,6 +46,25 @@ internal static class ProgressConditions
 
         return trigger != "impossible";
     }
+
+    // 26.3's recipe_unlocked and recipe_crafted conditions name their recipes as a holder set (Recipe.LIST_CODEC): one
+    // recipe or a list of them, any of which matches. Recipes have no tags, so a tag matches none.
+    private static bool Recipes(string? recipe, JsonElement recipes)
+    {
+        if (recipe is null)
+            return false;
+
+        return recipes.ValueKind switch
+        {
+            JsonValueKind.String => IsRecipe(recipe, recipes.GetString()!),
+            JsonValueKind.Array => recipes.EnumerateArray()
+                .Any(entry => entry.ValueKind == JsonValueKind.String && IsRecipe(recipe, entry.GetString()!)),
+            _ => false
+        };
+    }
+
+    private static bool IsRecipe(string recipe, string identifier) =>
+        !identifier.StartsWith('#') && recipe == AdvancementsRegistry.Qualify(identifier);
 
     private static bool LocationEvent(IPlayer player, JsonElement conditions, ItemStack? item,
         IBlock? block, Vector? position)

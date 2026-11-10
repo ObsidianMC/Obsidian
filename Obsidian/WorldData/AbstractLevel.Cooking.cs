@@ -95,6 +95,13 @@ public abstract partial class AbstractLevel
         }
     }
 
+    /// <summary>
+    /// What a cooking machine's experience draws its fractions of a point with. Vanilla draws them from the level's
+    /// random; Obsidian gives the experience out from a player's click, off the level's tick, so they're drawn from a
+    /// random that is safe to share. Tests set their own.
+    /// </summary>
+    internal Func<float> CookingExperienceRandom { get; set; } = Globals.Random.NextSingle;
+
     internal void DropCookingExperience(VectorD position, int amount)
     {
         while (amount > 0)

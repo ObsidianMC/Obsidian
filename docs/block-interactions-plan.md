@@ -551,7 +551,7 @@ adds.
 
 | Line | Status | What's left |
 |---|---|---|
-| Furnaces, blast furnaces, smokers | Works | No recipe unlock on taking the result |
+| Furnaces, blast furnaces, smokers | Works | The recipe book holds no cooking displays, so clients aren't shown the recipes taking a result unlocks; experience draws and the crafted statistic (see `known-gaps/workstation-details.md`) |
 | Brewing stands, campfires | Works | |
 | Crops | Works | Stems and the pitcher crop captured (`growing_plant_ticks.json`); bone meal doesn't grow them |
 | Saplings | Works | Poplar doesn't grow |

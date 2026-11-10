@@ -20,8 +20,21 @@ Progress item from being marked done:
   `item_used_on_block`; successful bucket/entity use, music-block, campfire and queued bone-meal operations still
   need their own confirmation hooks. There is no broad attempt-based fallback that could grant failed actions.
 - Recipe rewards explicitly add existing displays, persist known recipe ids in `recipeBook.recipes`, and fire
-  `recipe_unlocked` on first reward unlock. The existing recipe book still exposes all crafting recipes on join;
-  selective unlocking and vanilla recipe-book settings/highlights are a separate change.
+  `recipe_unlocked` on first reward unlock, under the player's tick gate, so a save sees a recipe known only together
+  with its trigger having fired; if the trigger throws, the recipe is forgotten again. Taking a furnace's, blast
+  furnace's or smoker's result takes the recipes it cooked with the output and queues them for the player's next
+  progress tick, which does the same for each, then fires `recipe_crafted` for each (`furnace_results.json`). Crafted
+  recipes' `recipe_crafted` uses the same queue. A player leaving is given what's queued before the leave's save; a
+  server stopping hard before the next tick loses what that tick would have given (never a recipe known without its
+  trigger). The existing recipe book still exposes all crafting recipes on join and holds no cooking displays, so a
+  cooking recipe unlocked this way is known and saved but the client's furnace recipe book isn't told; selective
+  unlocking, cooking displays and vanilla recipe-book settings, notifications and highlights are a separate change.
+- A reward's loot items are handed over through the inventory work of the flow that fired the trigger. Grants made
+  from the player's progress tick or their leave run outside any such work, so the items arrive under the tick gate,
+  before any save. A trigger fired inside an inventory transaction (a click or a trade, say) is granted once the
+  transaction let go of its locks, under the gate, but the items are queued to the transaction again and handed over
+  after the gate is released. A leave that takes the gate in between saves the player without them, and they're then
+  added to a player who has left, so they're gone when the player comes back.
 - Function reward identifiers are read but cannot execute: the server has no Minecraft function system. Loot
   rewards use the existing loot evaluator and inherit its unsupported-condition/table-loading limitations.
 - Automatic statistics cover play/world time, death/rest/sneak timers, deaths, jumps, common movement distances,

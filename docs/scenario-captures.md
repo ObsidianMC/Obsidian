@@ -294,6 +294,22 @@ replaces only what vanilla produced.
   entities rise, while those above or outside the new collision volume stay put. The replay also checks client
   position correction in one focused Obsidian packet test.
 
+- `furnace_results.json` (`VanillaFurnaceResults.ReplayFurnaceResultReference`) records what vanilla's furnaces,
+  blast furnaces and smokers give out, from `Java/FurnaceFixtures.java` (`CaptureFixtures=furnace_results`). Each case
+  is its input: the machine, the recipes it cooked and how often, the recipes the player already knows, the
+  `limited_crafting` rule, a seed for the level's random and whether a player takes the result
+  (`awardUsedRecipesAndPopExperience`) or the machine is broken (`preRemoveSideEffects`). The probe decodes the
+  recipes from the vanilla data pack and gives the player vanilla's recipe book; it records the recipes awarded, those
+  the book added, the criterion triggers fired, the recipes `recipe_crafted` fired for, the orbs, the draws and how
+  many recipes the machine still holds. A machine walks its recipes in a hash order, so lists are sorted and cases
+  with several recipes give at most one a fractional experience. The replay clicks each take case's result as a
+  client does, then lets the player leave, which gives them what the take queued, and removes each break case's
+  machine, with the case's seed as the level's cooking random. It compares the recipes recorded as known, the
+  `recipe_unlocked` and `recipe_crafted` triggers (through advancements it adds for each recipe), the orbs spawned,
+  what the machine still holds, the bonus points' draws and the level random's draws. Where Obsidian knowingly
+  draws differently (see [workstation details](known-gaps/workstation-details.md)), the replay asserts the
+  difference by name, pinned to what Obsidian draws, so that it fails once the difference goes.
+
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.
 
@@ -331,6 +347,8 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=growing_plant_ticks
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=melting_weather
+
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=furnace_results
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=sulfur -p:CaptureCases=spike_shatters_after_falling+review_spike_pending_fall_keeps_frustum
 ```
@@ -374,7 +392,8 @@ encoding before registering them with vanilla's advancement system.
 
 The `turtle_eggs` and `frogspawn` captures run no server and re-record every case. To add one, add a case with its
 `name`, `seed`, `origin` and `setup` (and `time`, `dimension`, `place` or `tick`) and capture again; pick a seed whose
-first draw takes the branch the case is about.
+first draw takes the branch the case is about. The `furnace_results` capture also runs no server and re-records every
+case.
 
 The `growing_plant_ticks` capture runs no server and re-records every case. To add one, add a case with its `name`,
 `seed`, `setup` and an `origin` or `actions`, and capture again; pick a seed whose first draws take the branch the case
@@ -397,7 +416,8 @@ other dumpers, so editing it regenerates the assets once.
 The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft version> <cache directory>
 <scratch directory> <test assets directory>
 [redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+heightmaps+saved_heightmaps+mining+placement+
-copper_weathering+fire+ticking_blocks+block_use+turtle_eggs+frogspawn+growing_plant_ticks+melting_weather]
+copper_weathering+fire+ticking_blocks+block_use+turtle_eggs+frogspawn+growing_plant_ticks+melting_weather+
+furnace_results]
 [case names]`.
 
 ## How it captures

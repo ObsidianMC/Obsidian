@@ -1,0 +1,624 @@
+{
+  "_notes": "Vanilla 26.3 cooking machines giving out what they cooked, recorded by the asset generator's FurnaceFixtures.java. Each case's machine has cooked its used recipes as many times as each says (setRecipeUsed, as cooking calls it), then either a player takes its result (action take: awardUsedRecipesAndPopExperience, which the result slot runs on a pickup or quick move) or it's broken (action break: preRemoveSideEffects). The player's recipe book knows the case's known recipes, and the limited_crafting rule is limitedCrafting. The level's random is a legacy random seeded with seed. awarded lists the recipes the player was given, unlocked those the recipe book added (each firing recipe_unlocked), triggers the criterion triggers fired in order, crafted the recipes recipe_crafted was fired for, orbs the experience orbs' values, draws the level random's draws in order, and usedAfter how many recipes the machine still holds as used. A machine iterates its used recipes in an identity hash order, so awarded, unlocked, crafted and orbs are sorted, and cases with several recipes give at most one of them a fractional experience, which keeps the draws in a fixed order.",
+  "version": "26.3",
+  "cases": [
+    {
+      "name": "take_one_iron_ingot_without_the_bonus",
+      "seed": 1,
+      "machine": "furnace",
+      "used": {
+        "minecraft:iron_ingot_from_smelting_raw_iron": 1
+      },
+      "known": [],
+      "action": "take",
+      "awarded": [
+        "minecraft:iron_ingot_from_smelting_raw_iron"
+      ],
+      "unlocked": [
+        "minecraft:iron_ingot_from_smelting_raw_iron"
+      ],
+      "triggers": [
+        "minecraft:recipe_unlocked",
+        "minecraft:recipe_crafted"
+      ],
+      "crafted": [
+        "minecraft:iron_ingot_from_smelting_raw_iron"
+      ],
+      "orbs": [],
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.7308782
+        }
+      ],
+      "usedAfter": 0
+    },
+    {
+      "name": "take_one_iron_ingot_with_the_bonus",
+      "seed": 5184,
+      "machine": "furnace",
+      "used": {
+        "minecraft:iron_ingot_from_smelting_raw_iron": 1
+      },
+      "known": [],
+      "action": "take",
+      "awarded": [
+        "minecraft:iron_ingot_from_smelting_raw_iron"
+      ],
+      "unlocked": [
+        "minecraft:iron_ingot_from_smelting_raw_iron"
+      ],
+      "triggers": [
+        "minecraft:recipe_unlocked",
+        "minecraft:recipe_crafted"
+      ],
+      "crafted": [
+        "minecraft:iron_ingot_from_smelting_raw_iron"
+      ],
+      "orbs": [
+        1
+      ],
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 4.2837858E-4
+        },
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 17
+        }
+      ],
+      "usedAfter": 0
+    },
+    {
+      "name": "take_three_iron_ingots",
+      "seed": 2,
+      "machine": "furnace",
+      "used": {
+        "minecraft:iron_ingot_from_smelting_raw_iron": 3
+      },
+      "known": [],
+      "action": "take",
+      "awarded": [
+        "minecraft:iron_ingot_from_smelting_raw_iron"
+      ],
+      "unlocked": [
+        "minecraft:iron_ingot_from_smelting_raw_iron"
+      ],
+      "triggers": [
+        "minecraft:recipe_unlocked",
+        "minecraft:recipe_crafted"
+      ],
+      "crafted": [
+        "minecraft:iron_ingot_from_smelting_raw_iron"
+      ],
+      "orbs": [
+        1,
+        1
+      ],
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.73114693
+        },
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 12
+        },
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 0
+        }
+      ],
+      "usedAfter": 0
+    },
+    {
+      "name": "take_ten_iron_ingots",
+      "seed": 3,
+      "machine": "furnace",
+      "used": {
+        "minecraft:iron_ingot_from_smelting_raw_iron": 10
+      },
+      "known": [],
+      "action": "take",
+      "awarded": [
+        "minecraft:iron_ingot_from_smelting_raw_iron"
+      ],
+      "unlocked": [
+        "minecraft:iron_ingot_from_smelting_raw_iron"
+      ],
+      "triggers": [
+        "minecraft:recipe_unlocked",
+        "minecraft:recipe_crafted"
+      ],
+      "crafted": [
+        "minecraft:iron_ingot_from_smelting_raw_iron"
+      ],
+      "orbs": [
+        7
+      ],
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 14
+        }
+      ],
+      "usedAfter": 0
+    },
+    {
+      "name": "take_forty_iron_ingots",
+      "seed": 4,
+      "machine": "furnace",
+      "used": {
+        "minecraft:iron_ingot_from_smelting_raw_iron": 40
+      },
+      "known": [],
+      "action": "take",
+      "awarded": [
+        "minecraft:iron_ingot_from_smelting_raw_iron"
+      ],
+      "unlocked": [
+        "minecraft:iron_ingot_from_smelting_raw_iron"
+      ],
+      "triggers": [
+        "minecraft:recipe_unlocked",
+        "minecraft:recipe_crafted"
+      ],
+      "crafted": [
+        "minecraft:iron_ingot_from_smelting_raw_iron"
+      ],
+      "orbs": [
+        1,
+        3,
+        7,
+        17
+      ],
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 22
+        },
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 12
+        },
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 23
+        },
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 38
+        }
+      ],
+      "usedAfter": 0
+    },
+    {
+      "name": "take_glass_without_the_bonus",
+      "seed": 1,
+      "machine": "furnace",
+      "used": {
+        "minecraft:glass": 1
+      },
+      "known": [],
+      "action": "take",
+      "awarded": [
+        "minecraft:glass"
+      ],
+      "unlocked": [
+        "minecraft:glass"
+      ],
+      "triggers": [
+        "minecraft:recipe_unlocked",
+        "minecraft:recipe_crafted"
+      ],
+      "crafted": [
+        "minecraft:glass"
+      ],
+      "orbs": [],
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.7308782
+        }
+      ],
+      "usedAfter": 0
+    },
+    {
+      "name": "take_glass_with_the_bonus",
+      "seed": 5184,
+      "machine": "furnace",
+      "used": {
+        "minecraft:glass": 1
+      },
+      "known": [],
+      "action": "take",
+      "awarded": [
+        "minecraft:glass"
+      ],
+      "unlocked": [
+        "minecraft:glass"
+      ],
+      "triggers": [
+        "minecraft:recipe_unlocked",
+        "minecraft:recipe_crafted"
+      ],
+      "crafted": [
+        "minecraft:glass"
+      ],
+      "orbs": [
+        1
+      ],
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 4.2837858E-4
+        },
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 17
+        }
+      ],
+      "usedAfter": 0
+    },
+    {
+      "name": "take_a_known_recipe",
+      "seed": 5,
+      "machine": "furnace",
+      "used": {
+        "minecraft:iron_ingot_from_smelting_raw_iron": 2
+      },
+      "known": [
+        "minecraft:iron_ingot_from_smelting_raw_iron"
+      ],
+      "action": "take",
+      "awarded": [
+        "minecraft:iron_ingot_from_smelting_raw_iron"
+      ],
+      "unlocked": [],
+      "triggers": [
+        "minecraft:recipe_crafted"
+      ],
+      "crafted": [
+        "minecraft:iron_ingot_from_smelting_raw_iron"
+      ],
+      "orbs": [
+        1
+      ],
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.73051983
+        },
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 12
+        }
+      ],
+      "usedAfter": 0
+    },
+    {
+      "name": "take_two_recipes",
+      "seed": 6,
+      "machine": "furnace",
+      "used": {
+        "minecraft:gold_ingot_from_smelting_raw_gold": 2,
+        "minecraft:iron_ingot_from_smelting_raw_iron": 10
+      },
+      "known": [
+        "minecraft:gold_ingot_from_smelting_raw_gold"
+      ],
+      "action": "take",
+      "awarded": [
+        "minecraft:gold_ingot_from_smelting_raw_gold",
+        "minecraft:iron_ingot_from_smelting_raw_iron"
+      ],
+      "unlocked": [
+        "minecraft:iron_ingot_from_smelting_raw_iron"
+      ],
+      "triggers": [
+        "minecraft:recipe_unlocked",
+        "minecraft:recipe_crafted",
+        "minecraft:recipe_crafted"
+      ],
+      "crafted": [
+        "minecraft:gold_ingot_from_smelting_raw_gold",
+        "minecraft:iron_ingot_from_smelting_raw_iron"
+      ],
+      "orbs": [
+        1,
+        1,
+        7
+      ],
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 11
+        },
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 36
+        },
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 26
+        }
+      ],
+      "usedAfter": 0
+    },
+    {
+      "name": "take_with_limited_crafting",
+      "seed": 7,
+      "machine": "furnace",
+      "used": {
+        "minecraft:iron_ingot_from_smelting_raw_iron": 1
+      },
+      "known": [],
+      "action": "take",
+      "limitedCrafting": true,
+      "awarded": [
+        "minecraft:iron_ingot_from_smelting_raw_iron"
+      ],
+      "unlocked": [
+        "minecraft:iron_ingot_from_smelting_raw_iron"
+      ],
+      "triggers": [
+        "minecraft:recipe_unlocked",
+        "minecraft:recipe_crafted"
+      ],
+      "crafted": [
+        "minecraft:iron_ingot_from_smelting_raw_iron"
+      ],
+      "orbs": [],
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.730699
+        }
+      ],
+      "usedAfter": 0
+    },
+    {
+      "name": "take_from_a_smoker",
+      "seed": 8,
+      "machine": "smoker",
+      "used": {
+        "minecraft:cooked_beef_from_smoking": 4
+      },
+      "known": [],
+      "action": "take",
+      "awarded": [
+        "minecraft:cooked_beef_from_smoking"
+      ],
+      "unlocked": [
+        "minecraft:cooked_beef_from_smoking"
+      ],
+      "triggers": [
+        "minecraft:recipe_unlocked",
+        "minecraft:recipe_crafted"
+      ],
+      "crafted": [
+        "minecraft:cooked_beef_from_smoking"
+      ],
+      "orbs": [
+        1
+      ],
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.7302511
+        },
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 36
+        }
+      ],
+      "usedAfter": 0
+    },
+    {
+      "name": "take_from_a_blast_furnace",
+      "seed": 9,
+      "machine": "blast_furnace",
+      "used": {
+        "minecraft:iron_ingot_from_blasting_raw_iron": 1
+      },
+      "known": [],
+      "action": "take",
+      "awarded": [
+        "minecraft:iron_ingot_from_blasting_raw_iron"
+      ],
+      "unlocked": [
+        "minecraft:iron_ingot_from_blasting_raw_iron"
+      ],
+      "triggers": [
+        "minecraft:recipe_unlocked",
+        "minecraft:recipe_crafted"
+      ],
+      "crafted": [
+        "minecraft:iron_ingot_from_blasting_raw_iron"
+      ],
+      "orbs": [],
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.73016155
+        }
+      ],
+      "usedAfter": 0
+    },
+    {
+      "name": "take_with_nothing_cooked",
+      "seed": 10,
+      "machine": "furnace",
+      "used": {},
+      "known": [],
+      "action": "take",
+      "awarded": [],
+      "unlocked": [],
+      "triggers": [],
+      "crafted": [],
+      "orbs": [],
+      "draws": [],
+      "usedAfter": 0
+    },
+    {
+      "name": "break_a_furnace",
+      "seed": 11,
+      "machine": "furnace",
+      "used": {
+        "minecraft:iron_ingot_from_smelting_raw_iron": 3
+      },
+      "known": [],
+      "action": "break",
+      "awarded": [],
+      "unlocked": [],
+      "triggers": [],
+      "crafted": [],
+      "orbs": [
+        1,
+        1
+      ],
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.7303407149712222
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.42734718641649616
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.6294993817708533
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.026397286504969197
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.18901963958098933
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.04350990880275296
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.4347985601251102
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.6700085398791594
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.3552692866051542
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.9120799
+        },
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 26
+        },
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 5
+        }
+      ],
+      "usedAfter": 1
+    },
+    {
+      "name": "break_a_furnace_of_two_recipes",
+      "seed": 12,
+      "machine": "furnace",
+      "used": {
+        "minecraft:gold_ingot_from_smelting_raw_gold": 2,
+        "minecraft:iron_ingot_from_smelting_raw_iron": 10
+      },
+      "known": [],
+      "action": "break",
+      "awarded": [],
+      "unlocked": [],
+      "triggers": [],
+      "crafted": [],
+      "orbs": [
+        1,
+        1,
+        7
+      ],
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.7298928061101974
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.2750691655200749
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.4809864913712196
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.9377974811097111
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.04007276791326142
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.408003837649472
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.3273766662410398
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.44512781259198586
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.695331270657562
+        },
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 25
+        },
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 3
+        },
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 10
+        }
+      ],
+      "usedAfter": 2
+    }
+  ]
+}
