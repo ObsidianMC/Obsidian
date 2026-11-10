@@ -17,6 +17,53 @@ namespace Obsidian.Tests;
 public sealed class BlockUseSafety
 {
     [Fact]
+    public async Task AClickWaitsForItsHandSnapshotAndRefusalsRepairPredictionBeforeAcknowledging()
+    {
+        await using var context = TestServerFactory.CreateServer($"busy-use-{Guid.NewGuid():N}");
+        var world = context.World;
+        WorldBlockEntities.AddEmptyChunk(world);
+        var target = new Vector(8, 64, 8);
+        await world.GetBlockAsync(target);
+        world.BlockUpdates.SetBlock(target, BlocksRegistry.Chest);
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "User",
+            new VectorD(8.5, 64, 10.5));
+        player.GameMode = GameMode.Survival;
+        var client = (TestClient)player.Client;
+        var packet = BlockUpdates.UseOn(target, BlockFace.Up, new VectorF(0.5f, 0.5f, 0.5f));
+
+        Task<UseResult?> click;
+        using (await player.Inventory.LockAsync())
+        {
+            click = packet.UseAsync(context.Server, player).AsTask();
+            Assert.False(click.IsCompleted);
+            Assert.DoesNotContain(client.SentPackets, sent => sent is BlockChangedAckPacket);
+        }
+
+        await click.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.NotNull(player.OpenedContainer);
+
+        // Early refusals and an item's refused placement all repair both cells and the hand first.
+        foreach (var refusal in new[] { "dead", "reach", "placement" })
+        {
+            client.ClearPackets();
+            player.Health = refusal == "dead" ? 0 : 20;
+            player.Position = refusal == "reach" ? new VectorD(100, 64, 100) : new VectorD(8.5, 64, 10.5);
+            world.BlockUpdates.SetBlock(target, BlocksRegistry.Stone);
+            world.BlockUpdates.SetBlock(target + Vector.Up, BlocksRegistry.Stone);
+            player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.Stone, 1));
+
+            await packet.UseAsync(context.Server, player);
+
+            var packets = client.SentPackets.ToArray();
+            var ack = Array.FindIndex(packets, sent => sent is BlockChangedAckPacket);
+            var slot = Array.FindIndex(packets, sent => sent is ContainerSetSlotPacket);
+            Assert.Equal(2, packets.Take(ack).OfType<BlockUpdatePacket>().Count());
+            Assert.True(slot >= 0 && slot < ack, refusal);
+            Assert.IsType<BlockChangedAckPacket>(packets.Last());
+        }
+    }
+
+    [Fact]
     public async Task StackedFishBucketsCannotOverwriteTheHandOrPlaceAMob()
     {
         await using var context = TestServerFactory.CreateServer($"stacked-buckets-{Guid.NewGuid():N}");

@@ -70,7 +70,7 @@ public partial class UseItemOnPacket
 
         if (!user.Alive || user.Respawning)
         {
-            this.Acknowledge(user);
+            await this.RefuseAsync(user, level);
             return null;
         }
 
@@ -81,44 +81,44 @@ public partial class UseItemOnPacket
             : null;
         if (block is null || !user.Alive || user.Respawning)
         {
-            this.Acknowledge(user);
+            await this.RefuseAsync(user, level);
             return null;
         }
 
-        BlockUse? use = null;
+        int handSlot;
+        ItemStack? item;
+        ItemStack? usedItem;
+        using (await user.Inventory.LockAsync())
+        {
+            handSlot = this.Hand == InteractionHand.OffHand ? OffhandSlot : user.CurrentHeldItemSlot;
+            item = user.Inventory.GetItem(handSlot);
+            usedItem = item is null ? null : new ItemStack(item, item.Count);
+        }
+
+        // The inventory and world snapshots need no shared lock: exchanges validate both again at commitment.
+        IBlockEntity? blockEntity;
         lock (level.Fluids.TickLock)
         {
-            if (user.Inventory.TryLock(out var handLock))
-            {
-                using (handLock)
-                {
-                    var handSlot = this.Hand == InteractionHand.OffHand ? OffhandSlot : user.CurrentHeldItemSlot;
-                    var item = user.Inventory.GetItem(handSlot);
-                    use = new BlockUse
-                    {
-                        Server = server,
-                        Level = level,
-                        Player = user,
-                        Position = this.Position,
-                        Block = level.BlockUpdates.GetBlock(this.Position),
-                        BlockEntity = level.GetResidentBlockEntity(this.Position),
-                        Face = this.Face,
-                        Cursor = this.Cursor,
-                        Hand = this.Hand,
-                        HandSlot = handSlot,
-                        Item = item,
-                        UsedItem = item is null ? null : new ItemStack(item, item.Count),
-                        Sequence = this.Sequence
-                    };
-                }
-            }
+            block = level.BlockUpdates.GetBlock(this.Position);
+            blockEntity = level.GetResidentBlockEntity(this.Position);
         }
 
-        if (use is null)
+        var use = new BlockUse
         {
-            this.Acknowledge(user);
-            return null;
-        }
+            Server = server,
+            Level = level,
+            Player = user,
+            Position = this.Position,
+            Block = block,
+            BlockEntity = blockEntity,
+            Face = this.Face,
+            Cursor = this.Cursor,
+            Hand = this.Hand,
+            HandSlot = handSlot,
+            Item = item,
+            UsedItem = usedItem,
+            Sequence = this.Sequence
+        };
 
         var result = await this.UseBlockAsync(use);
         if (!use.CompletionDeferred)
@@ -272,8 +272,8 @@ public partial class UseItemOnPacket
         if (result.Swings())
             player.SwingForUse(use.Hand, use.Item, includeSelf: result == UseResult.SuccessServer);
 
-        await this.ResendBlocksAsync(use);
-        if (use.ResyncHand)
+        this.ResendBlocks(use.Level, player);
+        if (use.ResyncHand || !result.ConsumesAction())
             await player.SyncInventorySlotAsync(use.HandSlot);
 
         this.Acknowledge(player);
@@ -285,14 +285,23 @@ public partial class UseItemOnPacket
         await use.Player.FireProgressAsync(trigger, item: use.UsedItem, block: current, position: use.Position);
     }
 
-    // The clicked block and the one on the clicked face, as vanilla sends them after every click.
-    private async ValueTask ResendBlocksAsync(BlockUse use)
+    // Refusals repair the client's prediction before acknowledging, including reach and lifecycle refusals.
+    private async ValueTask RefuseAsync(Player player, AbstractLevel level)
+    {
+        this.ResendBlocks(level, player);
+        var slot = this.Hand == InteractionHand.OffHand ? OffhandSlot : player.CurrentHeldItemSlot;
+        await player.SyncInventorySlotAsync(slot);
+        this.Acknowledge(player);
+    }
+
+    // Read only loaded state: an impossible click must not load distant chunks just to correct its prediction.
+    private void ResendBlocks(AbstractLevel level, Player player)
     {
         var beside = this.Position + this.Face.ToVector();
         foreach (var position in new[] { this.Position, beside })
         {
-            if (await use.Level.GetBlockAsync(position) is IBlock block)
-                use.Player.Client.SendPacket(new BlockUpdatePacket(position, block.GetHashCode()));
+            var block = level.GameEventBlock(position) ?? BlocksRegistry.Air;
+            player.Client.SendPacket(new BlockUpdatePacket(position, block.GetHashCode()));
         }
     }
 
