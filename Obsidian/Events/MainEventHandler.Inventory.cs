@@ -94,11 +94,15 @@ public partial class MainEventHandler
                 workstationWork = EndWorkstationEffects();
             }
 
+            // In the step that takes the output, so that no other taker, nor the machine breaking, takes what it
+            // cooked before this player is given it.
             if (window is SmeltingContainer furnace
                 && (furnace[2]?.Count ?? 0) < outputCount
-                && FurnaceBlockEntity.Of(furnace) is FurnaceBlockEntity machine)
+                && FurnaceBlockEntity.Of(furnace) is FurnaceBlockEntity machine
+                && player is PlayerBase taker)
             {
-                cooked = machine.TakeCookedRecipes(PlayerRecipes(player), Globals.Random.NextSingle);
+                var random = (player.Level as AbstractLevel)?.CookingExperienceRandom ?? Globals.Random.NextSingle;
+                cooked = taker.TakeCookedRecipes(machine, PlayerRecipes(player), random);
             }
 
             // After the click and the changes registered with it, whatever they did to the grid, and before the
@@ -109,28 +113,18 @@ public partial class MainEventHandler
             sync = CaptureWindow(args, window);
         }
 
-        if (cooked is not null)
-            await GiveCookedRecipesAsync(player, cooked);
+        // Each recipe's experience drops by the player as orbs of its own; the recipes come on their next tick.
+        if (cooked is not null && player.Level is AbstractLevel level)
+        {
+            foreach (var recipe in cooked)
+                level.DropCookingExperience(player.Position, recipe.Experience);
+        }
 
         await RunWorkstationEffectsAsync(workstationWork);
 
         // A viewer's window that changed before its contents went through plugins' packet handlers is left stale, for
         // the viewer's tick to send (see RefreshStaleWindowAsync).
         await sync.SendAsync();
-    }
-
-    // Vanilla's awardUsedRecipesAndPopExperience, for a player taking a cooking machine's result: each recipe's
-    // experience drops by the player as orbs of its own, then the player is given the recipes.
-    private static async ValueTask GiveCookedRecipesAsync(IPlayer player, List<FurnaceBlockEntity.CookedRecipe> cooked)
-    {
-        if (player.Level is AbstractLevel level)
-        {
-            foreach (var recipe in cooked)
-                level.DropCookingExperience(player.Position, recipe.Experience);
-        }
-
-        if (player is PlayerBase taker)
-            await taker.AwardCookedRecipesAsync(cooked.Select(recipe => recipe.Recipe.Identifier));
     }
 
     // Whether the player still has the window open, under the click's id.

@@ -522,7 +522,7 @@ adds.
 
 | Line | Status | What's left |
 |---|---|---|
-| Furnaces, blast furnaces, smokers | Works | The recipe book holds no cooking displays, so clients aren't shown the recipes taking a result unlocks |
+| Furnaces, blast furnaces, smokers | Works | The recipe book holds no cooking displays, so clients aren't shown the recipes taking a result unlocks; experience draws and the crafted statistic (see `known-gaps/workstation-details.md`) |
 | Brewing stands, campfires | Works | |
 | Crops | Works | Pitcher crop, melon and pumpkin stems don't grow |
 | Saplings | Works | Poplar doesn't grow |

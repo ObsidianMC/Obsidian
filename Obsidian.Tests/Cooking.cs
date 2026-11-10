@@ -3,6 +3,9 @@ using Obsidian.API.BlockEntities;
 using Obsidian.API.Containers;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
+using Obsidian.API.Loot;
+using Obsidian.API.Loot.Conditions;
+using Obsidian.API.Loot.Numbers;
 using Obsidian.API.Registries;
 using Obsidian.API.Utilities;
 using Obsidian.ChunkData;
@@ -100,6 +103,9 @@ public sealed class Cooking
 
         await kitchen.TakeResultAsync();
 
+        // The recipe comes on the player's next tick.
+        await kitchen.Player.TickAsync();
+
         Assert.True(kitchen.Player.CarriedItem?.Is(machine.Output));
         Assert.Empty(restored.RecipesUsed);
         Assert.Contains(kitchen.Entities(), entity => entity is ExperienceOrb);
@@ -157,6 +163,224 @@ public sealed class Cooking
             kitchen.Entities(),
             entity => entity is ItemEntity item && item.Item.Is(ItemsRegistry.CookedBeef));
         Assert.Null(kitchen.World.GetItemAccess(position, BlockFace.Up));
+    }
+
+    // Taking a result takes the machine's recipes with the output; the player is given them on their next tick or as
+    // they leave, before the leave's save. A player who took a result and left before their next tick comes back with
+    // the recipe and its criterion. A player who left first takes nothing from the machine, which keeps the recipe.
+    // A crafted recipe's recipe_crafted fires on the leave too.
+    [Fact(DisplayName = "Taking a result and leaving before the next tick keeps the recipe whole",
+        Timeout = TestServerFactory.TestTimeout)]
+    public async Task TakingAResultAndLeavingKeepsTheRecipeWhole()
+    {
+        await using var awards = RecipeAwards.Apply(RecipeAwards.Crafted(CraftingTableRecipe));
+        await using var kitchen = await Kitchen.OpenAsync("taking and leaving");
+        var furnace = await kitchen.PlaceAsync<FurnaceBlockEntity>(BlocksRegistry.Furnace);
+
+        // Taken, then left before the next tick. The player's data is loaded, so that their saves are written.
+        var cook = kitchen.Player;
+        await cook.LoadAsync(loadFromPersistentWorld: false);
+        await kitchen.TakeCookedAsync(furnace, cook, IronIngotRecipe);
+
+        Assert.Equal((false, false), Seen(cook, IronIngotRecipe));
+        Assert.Equal(0, furnace.RecipesUsed.Values.Sum());
+
+        await LeaveAsync(cook);
+        Assert.Equal((true, true), Seen(await kitchen.ReloadAsync(cook), IronIngotRecipe));
+
+        // Left, then the take arrives: the machine keeps the recipe.
+        var leaver = await kitchen.JoinAsync("Leaver");
+        Cooked(furnace, IronIngotRecipe);
+        await kitchen.OpenAsync(furnace.Furnace, leaver);
+        await leaver.StopTickingAsync();
+        await kitchen.TakeResultAsync(leaver);
+        await leaver.SaveAsync();
+
+        Assert.Equal((false, false), Seen(await kitchen.ReloadAsync(leaver), IronIngotRecipe));
+        Assert.Equal(1, furnace.RecipesUsed.Values.Sum());
+
+        // A craft recorded before leaving fires recipe_crafted before the leave's save.
+        var crafter = await kitchen.JoinAsync("Crafter");
+        crafter.RecordProgressCraft(CraftingTableRecipe, new ItemStack(ItemsRegistry.CraftingTable, 1));
+        await LeaveAsync(crafter);
+
+        var reloaded = await kitchen.ReloadAsync(crafter);
+        Assert.True(reloaded.Advancements.HasCriterion(RecipeAwards.CraftedAdvancement(CraftingTableRecipe), "fired"));
+    }
+
+    // The machine breaking right after a take finds nothing left to drop: the taker was given it with the output.
+    [Fact(DisplayName = "A machine broken right after a take leaves the taker its recipes",
+        Timeout = TestServerFactory.TestTimeout)]
+    public async Task BreakingAMachineAfterATakeLeavesTheTakerItsRecipes()
+    {
+        await using var kitchen = await Kitchen.OpenAsync("taking and breaking");
+        var furnace = await kitchen.PlaceAsync<FurnaceBlockEntity>(BlocksRegistry.Furnace);
+        var cook = kitchen.Player;
+        await kitchen.TakeCookedAsync(furnace, cook, IronIngotRecipe);
+
+        await kitchen.World.SetBlockAsync(position, BlocksRegistry.Air);
+        await kitchen.World.DoWorldTickAsync();
+        await cook.StopTickingAsync();
+
+        Assert.Equal((true, true), Seen(cook, IronIngotRecipe));
+    }
+
+    // One recipe's reward throwing is logged; it isn't left known, and the batch's other recipe is still given.
+    [Fact(DisplayName = "A recipe whose reward throws doesn't stop the batch's other recipes",
+        Timeout = TestServerFactory.TestTimeout)]
+    public async Task ARecipeWhoseRewardThrowsLeavesTheOthersGiven()
+    {
+        await using var awards = RecipeAwards.Apply(
+            RecipeAwards.Rewarding(GlassRecipe, """{ "loot": ["probe:throwing"] }"""),
+            RecipeAwards.Crafted(IronIngotRecipe),
+            RecipeAwards.Crafted(GlassRecipe));
+        PluginLootTables.Apply([new LootTable { Identifier = "probe:throwing", Pools = [ThrowingPool()] }]);
+        try
+        {
+            await using var kitchen = await Kitchen.OpenAsync("throwing reward");
+            var furnace = await kitchen.PlaceAsync<FurnaceBlockEntity>(BlocksRegistry.Furnace);
+            var cook = kitchen.Player;
+            await kitchen.TakeCookedAsync(furnace, cook, GlassRecipe, IronIngotRecipe);
+            await cook.StopTickingAsync();
+
+            Assert.Equal((true, true), Seen(cook, IronIngotRecipe));
+            Assert.False(Seen(cook, GlassRecipe).Known);
+            Assert.True(cook.Advancements.HasCriterion(RecipeAwards.CraftedAdvancement(IronIngotRecipe), "fired"));
+            Assert.True(cook.Advancements.HasCriterion(RecipeAwards.CraftedAdvancement(GlassRecipe), "fired"));
+        }
+        finally
+        {
+            PluginLootTables.Apply([]);
+        }
+    }
+
+    // A recipe in the batch that an earlier recipe's reward unlocks is known with its criterion met, once.
+    [Fact(DisplayName = "A cooked recipe another recipe's reward unlocks is known with its criterion",
+        Timeout = TestServerFactory.TestTimeout)]
+    public async Task ARecipeUnlockedByAnotherRecipesRewardIsKnownWithItsCriterion()
+    {
+        await using var awards = RecipeAwards.Apply(
+            RecipeAwards.Rewarding(IronIngotRecipe, $$"""{ "recipes": ["{{GlassRecipe}}"] }"""));
+        await using var kitchen = await Kitchen.OpenAsync("nested unlock");
+        var furnace = await kitchen.PlaceAsync<FurnaceBlockEntity>(BlocksRegistry.Furnace);
+        var cook = kitchen.Player;
+        await kitchen.TakeCookedAsync(furnace, cook, IronIngotRecipe, GlassRecipe);
+        await cook.StopTickingAsync();
+
+        Assert.Equal((true, true), Seen(cook, IronIngotRecipe));
+        Assert.Equal((true, true), Seen(cook, GlassRecipe));
+    }
+
+    private const string IronIngotRecipe = "minecraft:iron_ingot_from_smelting_raw_iron";
+    private const string GlassRecipe = "minecraft:glass";
+    private const string CraftingTableRecipe = "minecraft:crafting_table";
+
+    // The vanilla recipe advancements whose recipe_unlocked criterion each recipe meets.
+    private static readonly Dictionary<string, string> recipeAdvancements = new()
+    {
+        [IronIngotRecipe] = "minecraft:recipes/misc/iron_ingot_from_smelting_raw_iron",
+        [GlassRecipe] = "minecraft:recipes/building_blocks/glass"
+    };
+
+    // The machine cooked each recipe once, and has a result to take.
+    private static void Cooked(FurnaceBlockEntity furnace, params string[] recipes)
+    {
+        var set = ((AbstractLevel)furnace.Level!).CookingRecipes;
+        foreach (var recipe in recipes)
+        {
+            var key = set.Recipes.Keys.Single(key => AdvancementsRegistry.Qualify(key) == recipe);
+            furnace.RecipesUsed[key] = 1;
+        }
+
+        furnace.Inventory[2] = new ItemStack(ItemsRegistry.IronIngot, 1);
+    }
+
+    // Whether the recipe is known, as the player's save writes it, and whether its recipe advancement's
+    // recipe_unlocked criterion is met.
+    private static (bool Known, bool Criterion) Seen(Obsidian.Entities.Player player, string recipe)
+    {
+        var known = player.SaveData().TryGetTag<NbtCompound>("recipeBook", out var book)
+            && book.TryGetTag<NbtList>("recipes", out var recipes)
+            && recipes.OfType<NbtTag<string>>().Any(known => known.Value == recipe);
+        var criterion = player.Advancements.HasCriterion(recipeAdvancements[recipe], "has_the_recipe");
+
+        return (known, criterion);
+    }
+
+    // What a leave does to the player: their ticks stop, then they're saved.
+    private static async Task LeaveAsync(Obsidian.Entities.Player player)
+    {
+        await player.StopTickingAsync();
+        await player.SaveAsync();
+    }
+
+    // A pool whose condition throws, so that the table's rolls throw.
+    private static LootPool ThrowingPool() => new()
+    {
+        Entries = [],
+        Rolls = new ConstantNumber { Value = 1 },
+        Conditions = [new ThrowingCondition()]
+    };
+
+    private sealed class ThrowingCondition : ILootCondition
+    {
+        public bool Test(LootContext context) => throw new InvalidOperationException("A probe reward that throws.");
+    }
+
+    /// <summary>
+    /// Advancements a test adds for a while: one met when recipe_crafted fires for a recipe, or one met when
+    /// recipe_unlocked fires for a recipe with the given reward.
+    /// </summary>
+    private sealed class RecipeAwards : IAsyncDisposable
+    {
+        private readonly API.Advancements.Advancement[] previous;
+
+        private RecipeAwards(API.Advancements.Advancement[] previous)
+        {
+            this.previous = previous;
+        }
+
+        public static RecipeAwards Apply(params API.Advancements.Advancement[] added)
+        {
+            var previous = AdvancementsRegistry.Current.Values.ToArray();
+            AdvancementsRegistry.Apply([.. previous, .. added]);
+
+            return new RecipeAwards(previous);
+        }
+
+        public static string CraftedAdvancement(string recipe) => $"probe:crafted/{Path(recipe)}";
+
+        public static API.Advancements.Advancement Crafted(string recipe) => Parse(CraftedAdvancement(recipe), $$"""
+            {
+              "criteria": {
+                "fired": { "trigger": "minecraft:recipe_crafted", "conditions": { "recipes": "{{recipe}}" } }
+              }
+            }
+            """);
+
+        public static API.Advancements.Advancement Rewarding(string recipe, string rewards) =>
+            Parse($"probe:rewarding/{Path(recipe)}", $$"""
+            {
+              "criteria": {
+                "fired": { "trigger": "minecraft:recipe_unlocked", "conditions": { "recipes": "{{recipe}}" } }
+              },
+              "rewards": {{rewards}}
+            }
+            """);
+
+        public ValueTask DisposeAsync()
+        {
+            AdvancementsRegistry.Apply(this.previous);
+            return ValueTask.CompletedTask;
+        }
+
+        private static string Path(string recipe) => recipe["minecraft:".Length..];
+
+        private static API.Advancements.Advancement Parse(string identifier, string json)
+        {
+            using var document = System.Text.Json.JsonDocument.Parse(json);
+            return AdvancementsRegistry.Parse(identifier, document.RootElement);
+        }
     }
 
     // A stack given its own minecraft:cooking_fuel, burning for the given time at normal speed.
@@ -338,7 +562,38 @@ public sealed class Cooking
                 await this.World.TickCampfireAsync(campfire);
         }
 
-        public ValueTask OpenAsync(BaseContainer container) => this.Player.OpenInventoryAsync(container);
+        public ValueTask OpenAsync(BaseContainer container, Obsidian.Entities.Player? player = null) =>
+            (player ?? this.Player).OpenInventoryAsync(container);
+
+        // Another player, loaded (so that their saves are written) and joined beside the first.
+        public async Task<Obsidian.Entities.Player> JoinAsync(string name)
+        {
+            var player = TestServerFactory.CreateConnectedPlayer(this.context.Server, this.World, name,
+                (VectorD)position);
+            await player.LoadAsync(loadFromPersistentWorld: false);
+            await TestServerFactory.JoinConnectedPlayerAsync(this.context.Server, player);
+
+            return player;
+        }
+
+        // The player as their save loads them again.
+        public async Task<Obsidian.Entities.Player> ReloadAsync(Obsidian.Entities.Player player)
+        {
+            var reloaded = TestServerFactory.CreateConnectedPlayer(this.context.Server, this.World,
+                player.Username, (VectorD)position, player.Uuid);
+            await reloaded.LoadAsync(loadFromPersistentWorld: false);
+
+            return reloaded;
+        }
+
+        // The machine cooked the recipes; the player opens it and takes its result.
+        public async Task TakeCookedAsync(FurnaceBlockEntity furnace, Obsidian.Entities.Player player,
+            params string[] recipes)
+        {
+            Cooked(furnace, recipes);
+            await this.OpenAsync(furnace.Furnace, player);
+            await this.TakeResultAsync(player);
+        }
 
         // The menu data packets the player's open container got.
         public int ContainerDataPackets()
@@ -351,10 +606,11 @@ public sealed class Cooking
         }
 
         // Clicks the open furnace's result slot, as the client sends it.
-        public async Task TakeResultAsync()
+        public async Task TakeResultAsync(Obsidian.Entities.Player? player = null)
         {
+            player ??= this.Player;
             using var writer = new NetworkBuffer();
-            writer.WriteVarInt(this.Player.CurrentContainerId);
+            writer.WriteVarInt(player.CurrentContainerId);
             writer.WriteVarInt(0);
             writer.WriteShort(2);
             writer.WriteByte(0);
@@ -365,7 +621,7 @@ public sealed class Cooking
             using var reader = new NetworkBuffer(writer.AsSpan(0, writer.Size).ToArray());
             var packet = new ContainerClickPacket();
             packet.Populate(reader);
-            await packet.HandleAsync(this.Player.Server, this.Player);
+            await packet.HandleAsync(player.Server, player);
         }
 
         public IEnumerable<IEntity> Entities() =>

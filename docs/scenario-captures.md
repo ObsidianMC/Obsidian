@@ -260,9 +260,13 @@ replaces only what vanilla produced.
   recipes from the vanilla data pack and gives the player vanilla's recipe book; it records the recipes awarded, those
   the book added, the criterion triggers fired, the recipes `recipe_crafted` fired for, the orbs, the draws and how
   many recipes the machine still holds. A machine walks its recipes in a hash order, so lists are sorted and cases
-  with several recipes give at most one a fractional experience. The replay takes each case's recipes from an
-  Obsidian machine with the same seed and gives them to a player, then compares the recipes, the orbs, what's left
-  and the recipes whose `recipe_unlocked` criteria were met; for a broken machine it compares the experience.
+  with several recipes give at most one a fractional experience. The replay clicks each take case's result as a
+  client does, then lets the player leave, which gives them what the take queued, and removes each break case's
+  machine, with the case's seed as the level's cooking random. It compares the recipes recorded as known, the
+  `recipe_unlocked` and `recipe_crafted` triggers (through advancements it adds for each recipe), the orbs spawned,
+  what the machine still holds, the bonus points' draws and the level random's draws. Where Obsidian knowingly
+  draws differently (see [workstation details](known-gaps/workstation-details.md)), the replay asserts the
+  difference by name, pinned to what Obsidian draws, so that it fails once the difference goes.
 
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.
