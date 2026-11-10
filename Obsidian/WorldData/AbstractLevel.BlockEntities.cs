@@ -245,7 +245,7 @@ public abstract partial class AbstractLevel
                 await this.TickBlockEntityAsync(blockEntity);
 
                 if (blockEntity is ContainerBlockEntity container)
-                    this.KeepUpContainer(container);
+                    this.KeepUpContainer(container, container.Inventory.Revision);
             }
 
             this.KeepUpIdleBlockEntities(chunk);
@@ -275,8 +275,11 @@ public abstract partial class AbstractLevel
 
             var container = blockEntity as ContainerBlockEntity;
             var placing = blockEntity.Host is null || blockEntity.LoadPending;
+
+            // Read once: a container's revision scans every one of its slots.
+            var items = container?.Inventory.Revision ?? 0;
             var containerChanged = container is not null
-                && (ItemsUnheard(container) || ComparatorsBehind(container));
+                && (ItemsUnheard(container, items) || ComparatorsBehind(container, items));
 
             if (!placing && !containerChanged)
                 continue;
@@ -288,7 +291,7 @@ public abstract partial class AbstractLevel
             this.RunLoad(blockEntity);
 
             if (container is not null)
-                this.KeepUpContainer(container);
+                this.KeepUpContainer(container, items);
         }
     }
 
@@ -314,13 +317,14 @@ public abstract partial class AbstractLevel
     /// plugin's container saves and hears of changes made without the inventory's lock, and comparators hear of
     /// items that moved since they last did.
     /// </summary>
-    private void KeepUpContainer(ContainerBlockEntity container)
+    /// <param name="container">The container.</param>
+    /// <param name="items">Its inventory's revision, read once for the pass.</param>
+    private void KeepUpContainer(ContainerBlockEntity container, long items)
     {
         // A plugin's container is saved as of its last change, which players make by moving its items. Its own
         // changes made without the inventory's lock are heard here too.
         if (!container.SavesOnAnyThread)
         {
-            var items = container.Inventory.Revision;
             if (items != container.SavedRevision)
                 container.SetChanged();
 
@@ -331,23 +335,19 @@ public abstract partial class AbstractLevel
         // Comparators hear of items that moved since they last did: changes made outside the level's tick, like
         // players' clicks, and the container's own tick. Changes made through item access are told at the end of
         // this tick (FlushItemAccessChangesAsync). An unchanged container tells nobody.
-        if (ComparatorsBehind(container))
+        if (ComparatorsBehind(container, items))
             this.UpdateComparatorsOf(container);
     }
 
-    // Whether a plugin's container has items it wasn't saved or told with (see KeepUpContainer).
-    private static bool ItemsUnheard(ContainerBlockEntity container)
-    {
-        if (container.SavesOnAnyThread)
-            return false;
+    // Whether a plugin's container has items, as of revision items, it wasn't saved or told with (see KeepUpContainer).
+    private static bool ItemsUnheard(ContainerBlockEntity container, long items) =>
+        !container.SavesOnAnyThread
+        && (items != container.SavedRevision || items != container.NotifiedRevision);
 
-        var items = container.Inventory.Revision;
-        return items != container.SavedRevision || items != container.NotifiedRevision;
-    }
-
-    // Whether comparators haven't heard of a container's items, or of a plugin container's announced change.
-    private static bool ComparatorsBehind(ContainerBlockEntity container) =>
-        container.Inventory.Revision != container.ComparatorRevision
+    // Whether comparators haven't heard of a container's items as of revision items, or of a plugin container's
+    // announced change.
+    private static bool ComparatorsBehind(ContainerBlockEntity container, long items) =>
+        items != container.ComparatorRevision
         || (!container.SavesOnAnyThread && container.ChangeRevision != container.ComparatorChangeRevision);
 
     /// <summary>
