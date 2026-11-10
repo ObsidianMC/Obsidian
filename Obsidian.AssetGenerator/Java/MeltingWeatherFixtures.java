@@ -134,7 +134,7 @@ public final class MeltingWeatherFixtures {
 
     private static void prepare(ServerLevel level, JsonObject testCase) {
         clear(level);
-        fillBiome(level, testCase.get("biome").getAsString());
+        fillBiome(level, testCase);
 
         var positions = written.get(level.dimension());
         var kind = testCase.get("kind").getAsString();
@@ -200,13 +200,29 @@ public final class MeltingWeatherFixtures {
         }
     }
 
-    private static void fillBiome(ServerLevel level, String name) {
+    private static void fillBiome(ServerLevel level, JsonObject testCase) {
+        var name = testCase.get("biome").getAsString();
         var key = ResourceKey.create(Registries.BIOME, Identifier.parse(name));
         Holder<Biome> biome = level.registryAccess().lookupOrThrow(Registries.BIOME).getOrThrow(key);
+        var border = testCase.has("biomeBorder") ? testCase.getAsJsonObject("biomeBorder") : null;
+        var otherKey = border == null ? key
+            : ResourceKey.create(Registries.BIOME, Identifier.parse(border.get("other").getAsString()));
+        var other = level.registryAccess().lookupOrThrow(Registries.BIOME).getOrThrow(otherKey);
         for (var x = -1; x <= 1; x++) {
             for (var z = -1; z <= 1; z++) {
                 var chunk = level.getChunk(x, z);
-                chunk.fillBiomesFromNoise((qx, qy, qz) -> biome);
+                chunk.fillBiomesFromNoise((qx, qy, qz) -> {
+                    if (border == null)
+                        return biome;
+
+                    var coordinate = switch (border.get("axis").getAsString()) {
+                        case "x" -> qx;
+                        case "y" -> qy;
+                        case "z" -> qz;
+                        default -> throw new IllegalArgumentException("Unknown biome border axis.");
+                    };
+                    return coordinate >= border.get("quart").getAsInt() ? other : biome;
+                });
                 chunk.markUnsaved();
             }
         }
@@ -323,6 +339,22 @@ public final class MeltingWeatherFixtures {
                     before.put(pos, level.getBlockState(pos));
                 }
             }
+        }
+
+        if (testCase.has("biomeBorder")) {
+            testCase.addProperty("biomeSeed", level.getSeed());
+            var samples = new JsonArray();
+            for (var z = 0; z < 16; z++) {
+                for (var x = 0; x < 16; x++) {
+                    var pos = new BlockPos(x, highest + 1, z);
+                    var selected = level.getBiome(pos);
+                    var sample = new JsonObject();
+                    sample.add("pos", array(pos));
+                    sample.addProperty("biome", selected.unwrapKey().orElseThrow().identifier().toString());
+                    samples.add(sample);
+                }
+            }
+            testCase.add("biomeSamples", samples);
         }
 
         level.getRandom().setSeed(testCase.get("seed").getAsLong());

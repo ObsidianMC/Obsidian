@@ -43,9 +43,8 @@ public abstract partial class AbstractLevel
     /// snow settles or builds up on it and a cauldron there may fill.
     /// </summary>
     /// <remarks>
-    /// The biome is the one stored at the top of the column, as everywhere live code reads it, rather than vanilla's
-    /// fuzzed lookup between neighbouring biome cells. The level's writes notify neighbours like vanilla's
-    /// <c>setBlockAndUpdate</c>, so water beside new ice schedules its flow. Growing snow doesn't push entities up yet.
+    /// Biomes use the same seed-dependent lookup as natural spawning, including neighbouring chunks. The level's
+    /// writes notify neighbours, so water beside new ice schedules its flow. Growing snow doesn't push entities up yet.
     /// </remarks>
     private void TickPrecipitation(Chunk chunk)
     {
@@ -55,11 +54,10 @@ public abstract partial class AbstractLevel
             chunk.GetHeight(HeightmapType.MotionBlocking, x, z),
             chunk.Z * 16 + z);
         var below = top + Vector.Down;
-        var biomeY = Math.Clamp(top.Y, this.MinY, this.MinY + this.Height - 1);
         var blocks = this.BlockUpdates;
 
-        // Generated chunks always hold biomes; a chunk built by hand may not, and then there's no climate to read.
-        if (chunk.GetBiome(top.X, biomeY, top.Z) is not BiomeCodec biome)
+        // Hand-built chunks and plugin-generated chunks may have no biome data, so no climate can be read there.
+        if (this.BiomeAt(chunk, top.X, top.Y, top.Z) is not BiomeCodec biome)
             return;
 
         if (this.ShouldFreeze(chunk, biome, below))

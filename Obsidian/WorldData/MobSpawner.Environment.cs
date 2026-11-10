@@ -5,17 +5,12 @@ namespace Obsidian.WorldData;
 
 internal sealed partial class MobSpawner
 {
-    private long? biomeZoomSeed;
-
-    private BiomeCodec SpawnBiomeAt(IChunk fallback, int x, int y, int z)
-    {
-        var seed = this.biomeZoomSeed ??= BiomeManager.ObfuscateSeed(level.LevelData.RandomSeed);
-        return SpawnBiomeAt(seed, level.GetLoadedChunk, fallback, x, y, z);
-    }
+    private BiomeCodec SpawnBiomeAt(IChunk fallback, int x, int y, int z) =>
+        level.BiomeAt(fallback, x, y, z);
 
     /// <summary>
-    /// Natural mob spawns request full-resolution biomes in 26.3. Probability during population uses the raw
-    /// quart biome instead. Read stored sections, including adjacent chunks, without recursively loading terrain.
+    /// Natural mob spawns and precipitation request full-resolution biomes in 26.3. Probability during population
+    /// uses the raw quart biome instead. Read stored sections, including adjacent chunks, without recursively loading terrain.
     /// </summary>
     internal static BiomeCodec SpawnBiomeAt(long zoomSeed, Func<int, int, IChunk?> loadedChunk,
         IChunk fallback, int x, int y, int z)

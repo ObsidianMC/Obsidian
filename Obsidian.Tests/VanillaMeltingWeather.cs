@@ -64,6 +64,18 @@ public sealed class VanillaMeltingWeather(ITestOutputHelper output)
             RunBlock(level, probe, kind!);
 
         var failures = new List<string>();
+        if (probe.TryGetProperty("biomeSamples", out var samples))
+        {
+            foreach (var sample in samples.EnumerateArray())
+            {
+                var position = Position(sample.GetProperty("pos"));
+                var chunk = level.GetLoadedChunk(position.X >> 4, position.Z >> 4)!;
+                var actual = level.BiomeAt(chunk, position.X, position.Y, position.Z);
+                if (actual.Name != sample.GetProperty("biome").GetString())
+                    failures.Add($"Biome at {position}: expected {sample.GetProperty("biome")}, got {actual.Name}");
+            }
+        }
+
         CompareChanges(probe, level, before, failures);
         CompareTicks(probe, "blockTicks", BlockTicks(level), failures);
         CompareTicks(probe, "fluidTicks", FluidTicks(level), failures);
@@ -95,13 +107,16 @@ public sealed class VanillaMeltingWeather(ITestOutputHelper output)
         world.LevelData.Thundering = false;
         world.LevelData.DayTime = probe.TryGetProperty("dayTime", out var dayTime) ? dayTime.GetInt32() : 6000;
 
+        if (probe.TryGetProperty("biomeSeed", out var biomeSeed))
+            level.LevelData.RandomSeed = biomeSeed.GetInt64();
+
         var setup = Setup(probe);
         for (var chunkX = -1; chunkX <= 1; chunkX++)
         {
             for (var chunkZ = -1; chunkZ <= 1; chunkZ++)
             {
                 var chunk = new Chunk(chunkX, chunkZ, level.MinY, level.Height, ChunkGenStage.full);
-                FillBiome(chunk, biome);
+                FillBiome(chunk, biome, probe);
                 foreach (var (position, state) in setup)
                 {
                     if (position.X >> 4 == chunkX && position.Z >> 4 == chunkZ)
@@ -349,14 +364,33 @@ public sealed class VanillaMeltingWeather(ITestOutputHelper output)
         return positions;
     }
 
-    private static void FillBiome(Chunk chunk, API.Registry.Codecs.Biomes.BiomeCodec biome)
+    private static void FillBiome(Chunk chunk, API.Registry.Codecs.Biomes.BiomeCodec biome, JsonElement probe)
     {
+        var hasBorder = probe.TryGetProperty("biomeBorder", out var border);
+        var other = hasBorder && CodecRegistry.TryGetBiome(border.GetProperty("other").GetString()!, out var found)
+            ? found : biome;
         for (var y = chunk.MinY; y < chunk.MinY + chunk.Height; y += 4)
         {
             for (var x = 0; x < 16; x += 4)
             {
                 for (var z = 0; z < 16; z += 4)
-                    chunk.SetBiome(x, y, z, biome);
+                {
+                    var selected = biome;
+                    if (hasBorder)
+                    {
+                        var coordinate = border.GetProperty("axis").GetString() switch
+                        {
+                            "x" => chunk.X * 4 + (x >> 2),
+                            "y" => y >> 2,
+                            "z" => chunk.Z * 4 + (z >> 2),
+                            _ => throw new InvalidOperationException("Unknown biome border axis.")
+                        };
+                        if (coordinate >= border.GetProperty("quart").GetInt32())
+                            selected = other;
+                    }
+
+                    chunk.SetBiome(x, y, z, selected);
+                }
             }
         }
     }
