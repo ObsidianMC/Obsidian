@@ -207,8 +207,8 @@ the fluid level first.
 | Growth through `LiveFeatureLevel` (trees, bone meal features) | only `UpdateFluidsAround`: no shape updates | none |
 
 The fluid level runs vanilla's order: removal hooks, `onPlace` (liquids, generated owners, falling blocks, plugins),
-six `neighborChanged` (liquids, plugins, frosted ice), then six shape updates, which ask falling blocks, signs, door and chest
-placement rules, generated shape owners and plugins (`LevelBlockUpdates.UpdateShape`) before `ShapeUpdater`. It
+six `neighborChanged` (liquids, plugins, frosted ice), then six shape updates, which ask falling blocks, signs,
+chests' placement rule, generated shape owners and plugins (`LevelBlockUpdates.UpdateShape`) before `ShapeUpdater`. It
 skips the shape updates, as vanilla's `setBlock` does, when the removal or `onPlace` replaced the block, and once
 the 512-deep chain limit runs out. A write nested in the updater's chain only queues its own updates there, to run
 in vanilla's order after the current step, so they haven't run yet when the pipeline hears of it. The pipeline queued
@@ -251,10 +251,12 @@ Steps:
 
 1. **Done.** Count shape evaluations, neighbour steps, fluid tick requests and block writes on a live level (above).
 2. **Done.** A live level queues its changes into the pipeline without shape steps
-   (`AbstractLevel.NotifyBlockChange`, `BlockNotificationPipeline.Enqueue`'s `shapes`), so each shape update runs once, in the fluid level's vanilla-ordered updater,
-   with vanilla's flags on what it writes. The pipeline's placement and neighbour steps keep their order. Two rules
-   had only been right because of the pipeline's second look and now follow vanilla's `DoorBlock`: any door is a
-   half's partner (a copper door's upper half weathers with the lower) and the lower half needs a sturdy face below.
+   (`AbstractLevel.NotifyBlockChange`, `BlockNotificationPipeline.Enqueue`'s `shapes`), so each shape update runs
+   once, in the fluid level's vanilla-ordered updater, with vanilla's flags on what it writes. The pipeline's
+   placement and neighbour steps keep their order. Doors had only been right because of the pipeline's second look:
+   the live door rule took only the same block as a partner and checked a full top collision face for support,
+   where vanilla's `DoorBlock` takes any door (a copper door's upper half weathers with the lower) and needs a
+   sturdy face below. Doors now use only the shared pass's `DoorShapeRule`, which already followed vanilla.
    Coral draws on every change again, and the replays' pins for the double dispatch are gone. `more_blocks.json`'s
    shape cases replay through the fluid level's shape update as well as the pipeline's; of the 27 redstone
    scenarios, the 12 marked `level` run on a real level and the rest only on `RedstoneTestWorld`, which keeps the
