@@ -19,7 +19,7 @@ public sealed class DataBlockEntity : BlockEntity
     private static readonly HashSet<string> clientDataTypes =
     [
         "minecraft:banner", "minecraft:beacon", "minecraft:brushable_block", "minecraft:campfire",
-        "minecraft:conduit", "minecraft:creaking_heart", "minecraft:decorated_pot", "minecraft:end_gateway",
+        "minecraft:conduit", "minecraft:creaking_heart", "minecraft:end_gateway",
         "minecraft:hanging_sign", "minecraft:jigsaw", "minecraft:mob_spawner", "minecraft:shelf", "minecraft:sign",
         "minecraft:skull", "minecraft:structure_block", "minecraft:test_block", "minecraft:test_instance_block",
         "minecraft:trial_spawner", "minecraft:vault"
@@ -176,7 +176,7 @@ public sealed class DataBlockEntity : BlockEntity
         return copy;
     }
 
-    private static INbtTag Copy(INbtTag tag)
+    internal static INbtTag Copy(INbtTag tag)
     {
         switch (tag)
         {

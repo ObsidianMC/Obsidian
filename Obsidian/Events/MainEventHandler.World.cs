@@ -66,6 +66,22 @@ public partial class MainEventHandler
             wear = CombatItems.ToolDamage(tool, block);
         }
 
+        // Vanilla's DecoratedPotBlock.playerWillDestroy: a tool that breaks pots cracks one before it goes, so its loot
+        // is its sherds. The cracked state isn't sent; the removal that follows is.
+        if (DecoratedPotBlockEntity.CrackedBy(block, tool) is IBlock cracked && world is AbstractLevel potLevel)
+        {
+            var original = block;
+            if (!await potLevel.TrySetBlockAsync(location, cracked, BlockUpdateFlags.None,
+                state => state.GetHashCode() == original.GetHashCode()))
+            {
+                current = await world.GetBlockAsync(location) ?? BlocksRegistry.Air;
+                await RestoreBreakAsync(player, world, location, current);
+                return;
+            }
+
+            block = cracked;
+        }
+
         var parts = await TwoPartBlockBreak.PrepareAsync(world, location, block);
 
         // What the block entity gives the loot (a shulker box's items, say), taken before the block goes.
