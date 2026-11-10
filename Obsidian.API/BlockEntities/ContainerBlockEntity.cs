@@ -130,7 +130,7 @@ public partial class ContainerBlockEntity : BlockEntity, IItemAccessProvider
     protected internal override void Load(NbtCompound tag)
     {
         for (var slot = 0; slot < this.Inventory.Size; slot++)
-            this.Inventory.SetItem(slot, null);
+            this.Inventory[slot] = null;
 
         this.LootTable = tag.TryGetTagValue<string>("LootTable", out var lootTable) ? lootTable : null;
         this.LootTableSeed = tag.TryGetNumber<long>("LootTableSeed", out var seed) ? seed : 0;
@@ -143,7 +143,7 @@ public partial class ContainerBlockEntity : BlockEntity, IItemAccessProvider
                 if (!itemTag.TryGetTag<NbtTag<byte>>("Slot", out var slot) || slot.Value >= this.Inventory.Size)
                     continue;
 
-                this.Inventory.SetItem(slot.Value, itemTag.ItemFromNbt());
+                this.Inventory[slot.Value] = itemTag.ItemFromNbt();
             }
         }
 
@@ -160,7 +160,7 @@ public partial class ContainerBlockEntity : BlockEntity, IItemAccessProvider
     /// </remarks>
     protected internal override void Save(NbtCompound tag)
     {
-        using (this.Inventory.Lock())
+        using (InventorySnapshot.Lock(this.Inventory))
         {
             lock (this.LootLock)
             this.SaveContents(tag);
@@ -170,7 +170,7 @@ public partial class ContainerBlockEntity : BlockEntity, IItemAccessProvider
     /// <summary>Overlays current container fields without invoking a plugin's Save override.</summary>
     internal void SnapshotContents(NbtCompound tag)
     {
-        using (this.Inventory.Lock())
+        using (InventorySnapshot.Lock(this.Inventory))
         {
             lock (this.LootLock)
         {
@@ -201,19 +201,7 @@ public partial class ContainerBlockEntity : BlockEntity, IItemAccessProvider
             return;
         }
 
-        var items = new NbtList(NbtTagType.Compound, "Items");
-        for (var slot = 0; slot < this.Inventory.Size; slot++)
-        {
-            var item = this.Inventory[slot];
-            if (item is null || item.IsAir || item.Count <= 0)
-                continue;
-
-            var itemTag = item.ToNbt();
-            itemTag.Add(new NbtTag<byte>("Slot", (byte)slot));
-            items.Add(itemTag);
-        }
-
-        tag.Add(items);
+        tag.Add(InventorySnapshot.SaveItems(this.Inventory));
     }
 
     // Vanilla machines save their counters atomically with their items, under the inventory and loot locks.

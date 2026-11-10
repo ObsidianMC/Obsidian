@@ -38,6 +38,11 @@ public partial class ContainerBlockEntity
         public void Dispose()
         {
             var changed = owner.Inventory.Revision != revision;
+            // A plugin may keep its own slots and revision. Publish a real change before releasing its
+            // existing lock, so prepared host snapshots can validate it without calling plugin code.
+            if (changed)
+                owner.Inventory.MarkChanged();
+
             held.Dispose();
             if (!changed)
                 return;

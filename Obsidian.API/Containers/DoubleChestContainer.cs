@@ -32,7 +32,7 @@ internal sealed class DoubleChestContainer : BaseContainer
 
     public override ItemStack? GetItem(int slot) => this.Half(slot, out var local).GetItem(local);
 
-    public override void SetItem(int slot, ItemStack? item) => this.Half(slot, out var local).SetItem(local, item);
+    public override void SetItem(int slot, ItemStack? item) => this.Half(slot, out var local)[local] = item;
 
     public override int AddItem(ItemStack item)
     {

@@ -685,7 +685,7 @@ public abstract partial class AbstractLevel
             if (item is null || item.IsAir || item.Count <= 0)
                 continue;
 
-            inventory.SetItem(slot, null);
+            inventory[slot] = null;
             contents.Add(item);
         }
     }
