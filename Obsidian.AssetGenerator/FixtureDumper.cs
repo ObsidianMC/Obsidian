@@ -205,6 +205,31 @@ internal static class FixtureDumper
             cases is null ? "" : string.Join('+', cases));
     }
 
+    // An on-request probe: lightning bolts on a dedicated server of its own, in a new flat world under the scratch
+    // directory, with the block write observer the block use probe adds to a scratch copy of the jar.
+    internal static async Task DumpLightningAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null)
+    {
+        var world = Path.Combine(server.ScratchDirectory, "lightning");
+        if (Directory.Exists(world))
+            Directory.Delete(world, recursive: true);
+
+        Directory.CreateDirectory(world);
+
+        var observed = Path.Combine(world, "observed-classes");
+        await VanillaServer.RunJavaAsync(world,
+            "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("BlockUseInstrumentation.java"),
+            server.ClassPath[0], observed);
+        var observedJar = Path.Combine(observed, "vanilla-observed.jar");
+        var classPath = string.Join(Path.PathSeparator, new[] { observedJar }.Concat(server.ClassPath.Skip(1)));
+
+        // The probe finds the server in the shutdown hook vanilla's Main registers.
+        await VanillaServer.RunJavaAsync(world,
+            "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+            "-cp", classPath, Source("LightningFixtures.java"), fixture,
+            cases is null ? "" : string.Join('+', cases));
+    }
+
     // An on-request probe: a dedicated server of its own, in a new normal world under the scratch directory.
     internal static async Task DumpMeltingWeatherAsync(VanillaServer server, string fixture,
         IReadOnlyCollection<string>? cases = null)

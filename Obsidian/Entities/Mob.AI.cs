@@ -202,7 +202,14 @@ public partial class Mob
     /// </returns>
     internal virtual ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand) => ValueTask.FromResult(false);
 
-    internal async ValueTask<Mob> ConvertToAsync(EntityType type)
+    /// <summary>
+    /// Replaces the mob with a new one of <paramref name="type"/> where it stands, keeping its name, persistence, flags
+    /// and equipment.
+    /// </summary>
+    /// <param name="keepHealth">
+    /// Whether the new mob keeps the old one's health; vanilla's own conversions start it at full health.
+    /// </param>
+    internal async ValueTask<Mob> ConvertToAsync(EntityType type, bool keepHealth = true)
     {
         var replacement = Obsidian.Entities.Factories.EntitySpawner.CreateMob(Level, type)
             ?? throw new ArgumentOutOfRangeException(nameof(type));
@@ -212,7 +219,11 @@ public partial class Mob
         replacement.Yaw = Yaw;
         replacement.Pitch = Pitch;
         replacement.Motion = Motion;
-        replacement.Health = Math.Min(Health, replacement.GetAttributeValue("minecraft:generic.max_health"));
+
+        // It stands where the old mob stood, so it doesn't land on its first tick.
+        replacement.MovementFlags = MovementFlags;
+        if (keepHealth)
+            replacement.Health = Math.Min(Health, replacement.GetAttributeValue("minecraft:generic.max_health"));
         replacement.CustomName = CustomName;
         replacement.CustomNameVisible = CustomNameVisible;
         replacement.PersistenceRequired = PersistenceRequired;
@@ -556,7 +567,8 @@ public partial class Mob
     {
         var kind = IncomingDamageKind ?? (applyArmor ? CombatDamageKind.Melee : CombatDamageKind.Magic);
         applyArmor &= kind is CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion
-            or CombatDamageKind.FireContact or CombatDamageKind.Thorns or CombatDamageKind.FallingStalactite;
+            or CombatDamageKind.FireContact or CombatDamageKind.Thorns or CombatDamageKind.FallingStalactite
+            or CombatDamageKind.Lightning;
         if (!UsesAi)
         {
             await base.DamageAsync(source, amount);

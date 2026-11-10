@@ -9,9 +9,9 @@ What follows is what still differs.
   rails, TNT, copper bulbs, pistons, hoppers, droppers, dispensers and crafters do; copper bulbs make no
   sound, and dispensers only dispense boats and minecarts and drop everything else (see
   [item access](item-access-beyond-containers.md)).
-- **Sources.** Trapped chests and lightning rods give no power, though dust connects to them as to any signal
-  source. Observers, daylight detectors, target blocks (hit by arrows, spectral arrows and tridents only), tripwire
-  hooks, detector rails, sculk sensors and lecterns do.
+- **Sources.** Trapped chests give no power, though dust connects to them as to any signal source. Observers,
+  daylight detectors, target blocks (hit by arrows, spectral arrows and tridents only), tripwire hooks, detector rails,
+  sculk sensors, lecterns and lightning rods (struck by [lightning](lightning.md)) do.
 - **Analog outputs.** Comparators read 0 from jukeboxes, chiseled bookshelves, decorated pots,
   shelves, command blocks, sculk sensors, creaking hearts, copper bulbs and copper golem statues.
 - **Timing.** Comparators hear of a container's items changing at the end of the level's block entity tick (through

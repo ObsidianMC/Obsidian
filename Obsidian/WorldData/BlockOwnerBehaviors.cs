@@ -47,6 +47,8 @@ internal static class OnPlaceBehaviors
     internal static IOnPlaceBehavior FrogspawnBlock { get; } = new FrogspawnBlockBehavior();
 
     internal static IOnPlaceBehavior FrostedIceBlock { get; } = new FrostedIceBlockBehavior();
+
+    internal static IOnPlaceBehavior LightningRodBlock => LightningRodBehavior.Instance;
 }
 
 /// <summary>
@@ -137,6 +139,8 @@ internal static class TickBehaviors
     internal static IScheduledTickBehavior DriedGhastBlock { get; } = new DriedGhastBehavior();
 
     internal static IScheduledTickBehavior FrostedIceBlock { get; } = new FrostedIceBlockBehavior();
+
+    internal static IScheduledTickBehavior LightningRodBlock => LightningRodBehavior.Instance;
 }
 
 /// <summary>

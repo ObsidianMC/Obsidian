@@ -290,12 +290,26 @@ public partial class ItemEntity : Entity
     /// star withstands it, and anything else is gone once its five health is.
     /// </summary>
     /// <returns>Whether it was destroyed.</returns>
-    internal async ValueTask<bool> HurtByExplosionAsync(float damage)
+    internal ValueTask<bool> HurtByExplosionAsync(float damage)
     {
         if (this.Item.Holder.Id == ItemIds.NetherStar)
-            return false;
+            return ValueTask.FromResult(false);
 
+        return this.HurtAsync(damage);
+    }
+
+    // Vanilla's Entity.thunderHit on an item: five lightning damage, which nothing withstands (fire resistant items
+    // only withstand fire, and lightning isn't fire), so it's gone.
+    internal override async ValueTask ThunderHitAsync(LightningBolt bolt) => await this.HurtAsync(5);
+
+    // Vanilla's ItemEntity.hurtServer once the item takes the damage: the damage's game event, which names no
+    // source for explosions and lightning, then the item is gone once its five health is.
+    private async ValueTask<bool> HurtAsync(float damage)
+    {
         this.itemHealth -= damage;
+        if (this.Level is WorldData.AbstractLevel level)
+            level.EmitGameEvent(WorldData.MobGameEvent.EntityDamage, this.Position);
+
         if (this.itemHealth > 0)
             return false;
 

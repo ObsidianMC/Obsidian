@@ -14,16 +14,50 @@ public sealed partial class CopperGolem : PathfinderMob
     private static readonly string[] StatueFacings = ["south", "west", "north", "east"];
 
     private int weather;
+
+    /// <summary>How weathered the golem is, from 0 (unaffected) to 3 (oxidized).</summary>
+    internal int Weather
+    {
+        get => weather;
+        set => weather = Math.Clamp(value, 0, WeatherStates.Length - 1);
+    }
     private long nextWeather;
     private IBlockEntity? destination;
     private long searchAt;
     private int interactionState;
 
+    // The bolt that last cleaned it, which cleans it only once however many ticks it strikes.
+    private Guid lastLightningBolt;
+
     public CopperGolem() => Type = EntityType.CopperGolem;
+
+    // Vanilla's CopperGolem.thunderHit: struck like anything living, and the first time a bolt strikes it, it loses a
+    // stage of weathering and starts weathering afresh.
+    internal override async ValueTask ThunderHitAsync(LightningBolt bolt)
+    {
+        await base.ThunderHitAsync(bolt);
+        if (bolt.Uuid == lastLightningBolt)
+            return;
+
+        lastLightningBolt = bolt.Uuid;
+        if (weather == 0)
+            return;
+
+        weather--;
+        nextWeather = Level.LevelData.GameTime + Random.Next(504000, 552001);
+        SynchronizeMetadata();
+    }
 
     protected override bool UsesAi => true;
     protected override bool CanDespawn => false;
-    protected override string? SoundName => "copper_golem";
+    // Vanilla's CopperGolemOxidationLevels: exposed golems sound like unaffected ones; weathered and oxidized ones have
+    // sounds of their own.
+    protected override string? SoundName => weather switch
+    {
+        2 => "copper_golem_weathered",
+        3 => "copper_golem_oxidized",
+        _ => "copper_golem"
+    };
     internal override float MovementSpeed => base.MovementSpeed * (1 - weather * 0.1f);
 
     protected override void FinalizeSpawn()

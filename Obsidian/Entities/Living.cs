@@ -47,6 +47,19 @@ public partial class Living : Entity, ILiving
     }
     }
 
+    /// <summary>
+    /// Vanilla's <c>Entity.thunderHit</c>: one more tick of fire (eight seconds of it when that brings the count to
+    /// zero, which only an entity holding off fire reaches) and five lightning damage.
+    /// </summary>
+    internal override async ValueTask ThunderHitAsync(LightningBolt bolt)
+    {
+        this.fireTicks++;
+        if (this.fireTicks == 0)
+            this.Ignite(8);
+
+        await this.DamageCombatAsync(this, 5, CombatDamageKind.Lightning);
+    }
+
     public LivingBitMask LivingBitMask { get; set; }
 
     /// <summary>

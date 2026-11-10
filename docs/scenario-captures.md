@@ -266,6 +266,32 @@ replaces only what vanilla produced.
   An optional `dimension` supplies that dimension type's environment attributes; optional `actions` are subsequent
   `UPDATE_ALL` writes. `findTip` takes `maxLength` and `includeMerged` and records the returned position or null.
 
+- `lightning_bolts.json` (`VanillaLightning.ReplayLightningReference`) records lightning bolts from
+  `Java/LightningFixtures.java` (`CaptureFixtures=lightning`), on a dedicated server of its own in a flat world of air
+  (plains, seed `test-seed`, the replay world's), frozen, whose level ticks the probe runs itself between the server's
+  own. Each case runs in a chunk of its own, forced, at origin (32i + 8, 64, 8). RCON can't seed a bolt's random or
+  hear sounds, level events and game events, so this is a Java probe rather than an RCON scenario. A `strike` case
+  sets its blocks without updates and adds its mobs without AI, seeds the level's random, adds a bolt whose own random
+  is seeded (its seed and flashes drawn again, as its constructor draws them), optionally visual only or with the
+  listener as its cause, and records after each tick the blocks the level stored in the area (in order, with every
+  flag, through the block use probe's observed jar), the blocks that changed, the entities (type, position, remaining
+  fire ticks, health, persistence and what lightning changes), the sounds and level events a spectator received and
+  the game events within 16 blocks, then the lightning advancements the spectator was granted. The spectator stands
+  where the bolt can't strike it, and spectators don't count for natural spawning, so no chunk is shuffled with the
+  level's random between the strike's draws. Mobs' own randoms aren't seeded, so their ambient sounds, a witch's
+  drinking and whether a pig's zombified piglin holds a golden sword or spear aren't recorded. A `natural` case runs
+  `ServerLevel.tickThunder` once on its chunk in a thunderstorm, with the level's random seeded and `randValue` set,
+  and records the entities it added, `randValue` afterwards and the level random's next `nextInt()`. The cases cover
+  rods (up, sideways, weathered, waxed) powering lamps on their side and beside their support, copper cleared around a
+  rod and under a bolt, fire on grass and planks with the fire spread rule on and off (26.3 has no `do_fire_tick`;
+  `fire_spread_radius_around_player` is 0 or -1), easy (fire only on flashes) and peaceful (no conversions), a charged
+  creeper, a zombified piglin, a witch, mooshrooms changing colour, a turtle (with mob drops off), items, a copper
+  golem, an armor stand, a channeled bolt and the advancements, a visual-only bolt, and storms striking open ground, a
+  rod (and not a covered one), a mob under the sky, a skeleton trap (none above a rod or without mob spawning), a
+  missed chance, no thunder and an empty column. The replay runs every case in one world, through the level's ticks
+  with a ticking chunk ticket for each, and compares all of it; its pinned differences are listed in [the known
+  gaps](known-gaps/lightning.md).
+
 - `block_use.json` (`VanillaBlockUse.ReplayBlockUseReference`) records what using a block does, from
   `Java/BlockUseFixtures.java`. Like the placement probe it runs a dedicated server of its own in a flat world of air,
   and each case uses its main hand's item through `ServerPlayerGameMode.useItemOn`; optional `rayUse` also runs
@@ -426,6 +452,8 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=block_contact
 
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=lightning
+
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=sulfur -p:CaptureCases=spike_shatters_after_falling+review_spike_pending_fall_keeps_frustum
 ```
 
@@ -455,6 +483,10 @@ Append new inputs, select only their names, and verify existing case text is unc
 same selection as its second argument when run directly with the cached server and libraries on its classpath.
 `scheduled` records scheduling attempts: the first request per position/type remains pending, even when later
 attempts use another delay. The pending-coral case records delays 85 and 88, but only the first is pending.
+
+For `lightning`, `CaptureCases` accepts exact `+`-separated names in `lightning_bolts.json` and records only those
+cases; the others keep theirs. Every case takes well under a second after the server starts. The probe needs the block
+use probe's observed copy of the jar, which the capture builds first.
 
 For `eyeblossom_ghast_portal`, `CaptureCases` accepts exact `+`-separated names in
 `eyeblossom_ghast_portal_ticks.json` and records only those cases; the others keep theirs. The capture takes about ten
@@ -533,7 +565,7 @@ The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft 
 <scratch directory> <test assets directory>
 [redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+heightmaps+saved_heightmaps+mining+placement+
 copper_weathering+fire+ticking_blocks+block_use+turtle_eggs+frogspawn+growing_plant_ticks+melting_weather+
-furnace_results]
+furnace_results+lightning]
 [case names]`.
 
 ## How it captures

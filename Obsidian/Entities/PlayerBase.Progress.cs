@@ -151,9 +151,19 @@ public partial class PlayerBase
 
     internal ValueTask FireProgressAsync(string trigger, ItemStack? item = null, IEntity? entity = null,
         IBlock? block = null, Vector? position = null, string? recipe = null, string? from = null,
-        string? to = null, int? levels = null)
+        string? to = null, int? levels = null) =>
+        this.FireProgressAsync(
+            trigger,
+            conditions => ProgressConditions.Match(
+                this, trigger, conditions, item, entity, block, position, recipe, from, to, levels));
+
+    /// <summary>
+    /// Fires the trigger, granting the criteria whose conditions <paramref name="matches"/> accepts, under the same
+    /// rules as the trigger's other overload: for a trigger with conditions of its own, like lightning's.
+    /// </summary>
+    internal ValueTask FireProgressAsync(string trigger, Func<System.Text.Json.JsonElement, bool> matches)
     {
-        ValueTask Fire() => this.FireProgressNowAsync(trigger, item, entity, block, position, recipe, from, to, levels);
+        ValueTask Fire() => this.ProgressAdvancements.FireAsync($"minecraft:{trigger}", matches);
 
         // Gameplay firing a trigger for this player from another's tick (a hit landing in it, say) can't wait for this
         // player's gate. The event is matched now, as it is (the killer's position and dimension, say), and what it
@@ -162,10 +172,7 @@ public partial class PlayerBase
         // a trigger fired after the leave would be.
         if (this.HoldsAnotherPlayersGate)
         {
-            var matched = this.ProgressAdvancements.Match(
-                $"minecraft:{trigger}",
-                conditions => ProgressConditions.Match(
-                    this, trigger, conditions, item, entity, block, position, recipe, from, to, levels));
+            var matched = this.ProgressAdvancements.Match($"minecraft:{trigger}", matches);
             if (matched.Count > 0 && this.Server is Server server)
                 server.BackgroundWork.TryStart(() => this.GrantMatchedAsync(matched));
 

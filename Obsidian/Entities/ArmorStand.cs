@@ -3,6 +3,13 @@
 [MinecraftEntity("minecraft:armor_stand")]
 public sealed partial class ArmorStand : Living
 {
+    // Vanilla's armor stand has 20 health, its max_health attribute.
+    public ArmorStand()
+    {
+        Type = EntityType.ArmorStand;
+        Health = 20;
+    }
+
     public StandProperties StandProperties { get; set; }
 
     public Rotation Head { get; set; }
@@ -11,6 +18,9 @@ public sealed partial class ArmorStand : Living
     public Rotation RightArm { get; set; }
     public Rotation LeftLeg { get; set; }
     public Rotation RightLeft { get; set; }
+
+    // Vanilla's ArmorStand.thunderHit does nothing: lightning neither burns nor hurts it.
+    internal override ValueTask ThunderHitAsync(LightningBolt bolt) => ValueTask.CompletedTask;
 }
 
 [Flags]
