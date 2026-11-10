@@ -3,19 +3,46 @@
 
 **Status:** open.
 
-Random ticks grow saplings and the mangrove propagule, and bone meal grows saplings, azaleas, crops, grass blocks and
-short grass and ferns (see [plugin content](../plugin-content.md#saplings)). Crops don't grow on random ticks, and bone
-meal does nothing to vanilla's other plants (stems, berries, mushrooms, moss, nylium, cocoa, water plants and the
-like).
+Random ticks grow saplings and the mangrove propagule, crops, nether wart, cocoa, sugar cane, cactus, sweet berries,
+bamboo, chorus flowers and mushrooms, and spread grass and mycelium (`RandomTickBehaviors`). Kelp, the cave, weeping
+and twisting vines (cave vines rolling glow berries), melon and pumpkin stems (setting their fruit), wall vines and the
+pitcher crop grow too, and are checked against vanilla's draws and results (`growing_plant_ticks.json`, see
+[scenario captures](../scenario-captures.md)). The poplar sapling doesn't grow (see
+[saplings 26.3 added](saplings-that-26-3-added.md)).
+
+Bone meal grows saplings, azaleas, crops, grass blocks and short grass and ferns (see
+[plugin content](../plugin-content.md#saplings)). It does nothing to vanilla's other plants (stems, the pitcher crop,
+berries, mushrooms, moss, nylium, cocoa, kelp, the cave and nether vines and the like). In vanilla, bone meal that
+brings a stem to age 7 runs the stem's random tick, and the pitcher crop's bone meal is its random-tick growth; both
+are there to share in `GrowingPlantRandomTicks.cs`.
 
 Random ticks sample the same sections and draw the same positions as vanilla's. Copper now weathers through all
-three age transitions, including connected doors and chests, with a captured neighborhood scan and random draws.
-Ice and snow still do not melt. Lava's random tick draws its chances in vanilla's order and sets fire to the blocks
-vanilla's lava ignites; fire then ticks, spreads and burns out with vanilla's draws (see `fire_ticks.json` in
-[scenario captures](../scenario-captures.md)).
+three age transitions, including connected doors and chests, with a captured neighborhood scan and random draws. A
+block whose vanilla random tick Obsidian doesn't have draws nothing: ice and snow still don't melt, and so on. Lava's
+random tick draws its chances in vanilla's order and sets fire to the blocks vanilla's lava ignites; fire then ticks,
+spreads and burns out with vanilla's draws (see `fire_ticks.json` in [scenario captures](../scenario-captures.md)).
 Vanilla's chunk ticks also draw for rain and snow (`tickPrecipitation`, one time in 48 per random tick), which
 Obsidian neither draws nor does, so the level random and the position sequence part from vanilla's there.
 
-**Where to start:** each plant is another case of `Growth` (its random tick, bone meal target, chance and growth),
-placing features through `LiveFeatureLevel`; crops' random ticks need vanilla's `CropBlock.getGrowthSpeed`. Other
-blocks' random ticks go next to the plants' in `AbstractLevel.TickChunkBlocks`.
+Around the plants that grow:
+
+- **The block notification pipeline repeats shape updates.** Every write's shape updates run in the fluid level
+  (`FluidLevel.ExecuteShapeUpdate`), and again in `BlockNotificationPipeline`, which drains in the middle of the fluid
+  level's chain when a shape update stores a block. The pipeline then turns a head that grew into a one-block gap below
+  its plant into its body before the fluid level does, storing it with every flag where vanilla's shape update only
+  tells clients. It also schedules kelp's water tick at a head the fluid level has just turned back from a body, which
+  vanilla doesn't, because it reads the state after the conversion (`ShapeUpdater.ScheduleFluidTick`). The pipeline
+  shouldn't run vanilla blocks' shape updates (the owner hook and the fluid tick) for writes whose shape updates the
+  fluid level ran, or should run them after that chain, with the shape update's flags. `VanillaGrowingPlantTicks` lists
+  the six captured cases this changes.
+- **Pitcher crops have no shape handler.** A lower half that loses its farmland or light, or a half whose other half
+  the world removes, stays; vanilla's `PitcherCropBlock.updateShape` breaks it.
+- **Cave, weeping and twisting vines don't break when they lose their support.** Their shape update schedules the
+  support check as vanilla's does, but the check (`KelpBlockBehavior.Tick`) only breaks kelp.
+- **Crops' growth speed finds farmland by id.** `CropGrowth.GrowthSpeed` counts farmland where vanilla reads the
+  `grows_crops` tag; 26.3's tag holds only farmland, so a data pack adding to it isn't followed.
+
+**Where to start:** a plant's random tick is a member of `RandomTickBehaviors` named for the vanilla class that
+declares it, which the block generator binds (a class without one reports `OBSGEN001`). Capture it first by adding
+cases to `growing_plant_ticks.json` (`CaptureFixtures=growing_plant_ticks`). Bone meal goes in `Growth`, and kelp's and
+the vines' shape updates in `GrowingPlantShapes`.
