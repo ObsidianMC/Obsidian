@@ -18,9 +18,10 @@ and fails once one goes.
   [block interactions plan](../block-interactions-plan.md); a lightning bolt entity is where to start
   (`channeling_trident_lightning_rod`).
 - **Arrows press wooden buttons after they hit.** Vanilla's arrow presses a button it moves through during its move,
-  before its own hit, so the click and `block_activate` come before the arrow's sound and `projectile_land`. Obsidian
-  presses it in the contact pass after the arrow's tick. Phase 3's one contact pass is where that changes
-  (`arrow_oak_button`, `spectral_arrow_oak_button`, `trident_oak_button`).
+  before its own hit, so the click and `block_activate` come before the arrow's sound and `projectile_land`. Obsidian's
+  contact pass (#723) runs straight after the arrow's tick, so the press follows the hit. Touching the blocks along a
+  projectile's move, before it hits, is where that changes (`arrow_oak_button`, `spectral_arrow_oak_button`,
+  `trident_oak_button`).
 - **A splash potion's particles have a fixed colour.** Obsidian has no effect colours to mix the potion's from
   (`splash_potion_target`, `splash_potion_chorus_flower`).
 - **Water doesn't put out a burning arrow,** so vanilla's extinguish sound as a flaming arrow enters a waterlogged
