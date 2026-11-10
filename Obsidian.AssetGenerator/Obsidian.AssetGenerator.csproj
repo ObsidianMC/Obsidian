@@ -38,6 +38,7 @@
 		<VanillaDumperInput Remove="Java\BlockUseInstrumentation.java" />
 		<VanillaDumperInput Remove="Java\ProjectileHitFixtures.java" />
 		<VanillaDumperInput Remove="Java\WaxingBellsOreFixtures.java" />
+		<VanillaDumperInput Remove="Java\FoodHarvestFixtures.java" />
 		<VanillaDumperInput Remove="Java\HatchingFixtures.java" />
 		<VanillaDumperInput Remove="Java\EyeblossomGhastPortalFixtures.java" />
 		<VanillaDumperInput Remove="Java\GrowingPlantTickFixtures.java" />
@@ -58,6 +59,7 @@
 		<None Update="Java\BlockUseInstrumentation.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\ProjectileHitFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\WaxingBellsOreFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\FoodHarvestFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\HatchingFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\EyeblossomGhastPortalFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\GrowingPlantTickFixtures.java" CopyToOutputDirectory="PreserveNewest" />
@@ -106,6 +108,8 @@
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)block_loot_tables.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\blocks.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\entities.json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\harvest.json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\carve.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)predicate.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)context_int_provider.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)commands-$(MinecraftVersion).json" />

@@ -225,6 +225,14 @@ internal static class ProgressConditions
                         return false;
                 }
             }
+            else if (property.Name == "smokey")
+            {
+                if (entity.Level is not WorldData.AbstractLevel level
+                    || WorldData.CampfireSmoke.Reaches(level, (Vector)origin.Floor()) != property.Value.GetBoolean())
+                {
+                    return false;
+                }
+            }
             else if (property.Name == "block")
             {
                 var block = new MobTerrain(entity.Level).GetBlock((Vector)origin.Floor());
@@ -243,7 +251,7 @@ internal static class ProgressConditions
     private static bool Block(IBlock block, JsonElement predicate) => predicate.EnumerateObject().All(property =>
         property.Name switch
         {
-            "blocks" => LootTableJson.MatchesRegistrySet(property.Value, "block", block.UnlocalizedName, block.BaseId),
+            "blocks" => LootTableJson.MatchesRegistrySet(property.Value, "block", block.UnlocalizedName, block.RegistryId),
             "state" => LootTableJson.MatchesProperties(block.GetProperties(), property.Value),
             _ => false
         });

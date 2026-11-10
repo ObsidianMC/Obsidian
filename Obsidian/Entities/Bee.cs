@@ -13,6 +13,17 @@ public sealed partial class Bee : FarmAnimal
     private int stingTicks;
     private int searchCooldown;
     private bool hasNectar;
+    private bool harvestTargetPending;
+
+    internal void TargetHarvester(IEntity player)
+    {
+        if (HasStung)
+            return;
+
+        AttackTarget = player;
+        harvestTargetPending = true;
+    }
+
     internal int CropsGrownSincePollination { get; private set; }
     public Bee() => Type = EntityType.Bee;
 
@@ -54,6 +65,13 @@ public sealed partial class Bee : FarmAnimal
         await base.TickMobAsync();
         if (MobBitMask.HasFlag(MobBitmask.NoAi))
             return;
+        if (harvestTargetPending)
+        {
+            harvestTargetPending = false;
+            AngerTicks = Random.Next(400, 801);
+            SynchronizeMetadata();
+        }
+
         if (AngerTicks > 0 && --AngerTicks == 0)
         {
             AttackTarget = null;
