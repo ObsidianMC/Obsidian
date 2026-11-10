@@ -35,9 +35,11 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
     public LevelBlockTicks Ticks => this.ticks ??= new(
         (IBlockTickLevel)level,
         fluids.TickLock,
-        (position, block) => this.RunScheduledTick(position, block.UnlocalizedName));
+        (position, block) => this.RunScheduledTick(position, block.UnlocalizedName),
+        position => fluids.TryGetChunk(position, out var chunk) ? chunk : null);
 
     private LevelBlockTicks? ticks;
+    private BlockValidationView? validationView;
 
     /// <inheritdoc/>
     public ILevel Level => level;
@@ -224,12 +226,15 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
         IBlock state,
         BlockFace direction,
         Vector neighborPosition,
-        IBlock neighbor)
+        IBlock neighbor,
+        bool validation = false)
     {
+        var view = validation ? this.validationView ??= new BlockValidationView(this) : (IShapeLevel)this;
+
         if (IsVanillaFalling(state))
         {
             // Vanilla FallingBlock.updateShape: checks below again soon, and keeps its state.
-            this.ScheduleFall(position, state);
+            view.ScheduleTick(position, state, FallDelay);
             return null;
         }
 
@@ -242,7 +247,7 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
         // A vanilla class's updateShape override, found from the class that declares it. Rules only the shared pass
         // runs are left to the caller's fallback (ShapeUpdater).
         if (ShapeDispatch.LiveOwner(state.RegistryId) is IShapeUpdateBehavior owner)
-            return owner.UpdateShape(this, position, state, direction, neighborPosition, neighbor) ?? state;
+            return owner.UpdateShape(view, position, state, direction, neighborPosition, neighbor) ?? state;
 
         if (!BlockBehaviors.TryEnter(state, out var behavior, out var call))
             return null;
@@ -253,7 +258,7 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
             {
                 return behavior.UpdateShape(new ShapeUpdateContext
                 {
-                    Level = this,
+                    Level = (IBlockLevel)view,
                     Position = position,
                     State = state,
                     Direction = direction,

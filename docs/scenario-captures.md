@@ -9,8 +9,9 @@ replaces only what vanilla produced.
   id and count) go into its block entity, as the `/setblock`'s `Items` data. Scenarios marked `level` need block
   entities (containers and hoppers), so the replay runs them on one shared test server and reuses loaded chunks,
   with a player beside each disjoint box, instead of on the redstone test world; they can't use reloads, entities
-  or arrows. `observer_watches_state_changes` also uses the whole level so both update engines deliver shape
-  work for the same changes; its recorded pulses guard scheduled-tick deduplication. The chest obstruction cases
+  or arrows. `observer_watches_state_changes` also uses the whole level, where the fluid level's updater delivers
+  shape work and the notification pipeline the neighbour reactions; its recorded pulses guard scheduled-tick
+  deduplication. The chest obstruction cases
   retain vanilla's stale comparator output when a solid block is placed
   above the chest and removed, including above either half of a double chest, without moving items.
   The `piston_*observer` / `piston_observer_*` and `sticky_piston_pull_idle_observer` cases record pulses after a
@@ -84,11 +85,12 @@ replaces only what vanilla produced.
   and music probes from `Java/MoreBlockFixtures.java`. Placement runs the chosen block's placement routine and
   survival check; signs are already a standing or ceiling variant. It records full states for every wool/concrete
   stair/slab color and poplar construction families, including powered placement, waterlogging and stair corners.
-  Shape cases record scheduled fluid/block ticks and replay through live notifications; where vanilla's shape
-  update breaks the block, the replay runs one level tick, which is when Obsidian removes it. Each shape case also
-  runs through the shared shape pass as generation reads it, wherever that pass has a rule for the block, so the
-  fence, stair and survival cases cover generation's rules too. The grindstone, wall button and nether wart cases
-  check blocks that gained a shape rule when rules were bound by declaring class. Leaf-distance ticks and
+  Shape cases record scheduled fluid/block ticks and replay twice: through the fluid level's shape update, which a
+  live level runs, and through the notification pipeline, which runs them where it's the only engine; where
+  vanilla's shape update breaks the block, the replay runs one level tick, which is when Obsidian removes it. Each
+  shape case also runs through the shared shape pass as generation reads it, wherever that pass has a rule for the
+  block, so the fence, stair and survival cases cover generation's rules too. The grindstone, wall button and nether
+  wart cases check blocks that gained a shape rule when rules were bound by declaring class. Leaf-distance ticks and
   axe providers also capture the next random draw; stripping checks state, sound ID and durability cost. Door,
   trapdoor and gate uses check state and sound ID (their captured pitch is not asserted by this replay); door
   placement checks the upper half. Note cases invoke vanilla's note and block-event routines, capture trigger
@@ -210,16 +212,18 @@ replaces only what vanilla produced.
   nylium under blocks that do and don't let light down; dirt paths turning to dirt, and which new blocks above or
   beside them schedule that; coral blocks, plants, fans and wall fans dying dry or staying by water, scheduling their
   death when placed or when a neighbour changes, and breaking when their support goes; chorus plants staying, breaking
-  and connecting as their support and neighbours change. The replay runs each case through Obsidian's generated
+  and connecting as their support and neighbours change; an oak door whose stone floor becomes soul sand (it stays)
+  or oak leaves (both halves break). The replay runs each case through Obsidian's generated
   owners, or a live block change, in its own world, and compares everything but the game events. Obsidian destroys
   blocks in the tick's entity phase, so a case that destroys one runs the world tick before comparing, keeping the
   recording random active. Ordered writes compare every flag bit; destruction compares state and drops intent;
   falling entities compare type, position, state, damage enablement, damage per distance and maximum damage. The
   replay rejects unexpected entities and writes outside the case and scans the loaded chunks for unexpected blocks.
-  Explicit expected differences pin six third-write flag changes from the duplicate shape-update pipeline, the
-  skipped pending-coral draw, and the two stalagmite cases' resource-spawn draws (the bounded probe suppresses loot).
-  Each exception fails when it disappears. The `review_*` cases also cover mud in the nether, mixed sulfur/dripstone
-  columns (growth and native `findTip`, including opposite-direction tips), and independent drops/silence landings.
+  Explicit expected differences pin the resource-spawn draws of the two stalagmite cases and the door on leaves (the
+  bounded probe suppresses loot), and the door's upper half breaking in the next entity phase, where vanilla breaks
+  the chain at once (the replay runs that phase alone, without block ticks); each fails when it disappears. The
+  `review_*` cases also cover mud in the nether, mixed sulfur/dripstone columns (growth and native `findTip`,
+  including opposite-direction tips), and independent drops/silence landings.
 - `eyeblossom_ghast_portal_ticks.json` (`VanillaEyeblossomGhastPortalTicks.ReplayEyeblossomGhastPortalReference`)
   records eyeblossoms, potted eyeblossoms, dried ghasts and nether portals from
   `Java/EyeblossomGhastPortalFixtures.java` (`CaptureFixtures=eyeblossom_ghast_portal`): a random tick, a scheduled
@@ -267,17 +271,25 @@ replaces only what vanilla produced.
 
 - `block_use.json` (`VanillaBlockUse.ReplayBlockUseReference`) records what using a block does, from
   `Java/BlockUseFixtures.java`. Like the placement probe it runs a dedicated server of its own in a flat world of air,
-  and each case uses its main hand's item through `ServerPlayerGameMode.useItemOn`; the area's chunks are forced, so
+  and each case uses its main hand's item through `ServerPlayerGameMode.useItemOn`; optional `rayUse` also runs
+  `ServerPlayerGameMode.useItem` when use-on passes. The area's chunks are forced, so
   block events run as a tick runs them. A case names its blocks, the clicked face, the item and count, the off hand,
   the game mode and sneaking. It records the result (which decides the swing), the blocks that changed, the hand,
   the entities that appeared, the sounds, level events and block events a second player beside the target received,
   the game events within 16 blocks (with their source), the statistics awarded and the menu opened, and when a menu
   opened, what closing it changed and played. The replay drives `UseItemOnPacket` in one world, with full sky light
   as the capture's open sky has, runs the queued entity actions and the tick's block events, and checks swings from
-  the result. The cases cover the dispatcher, sign applications and editing, advancement context, use swing charge,
-  container close sources, and the blocks that hold items (flower pots, chiseled bookshelves, decorated pots,
-  lodestone compasses and jukeboxes); mob ambient sounds aren't compared (see
-  [mob ambient sounds](known-gaps/mob-ambient-sounds.md)).
+  the result. The original 92 cases retain their captured bytes. Another 281 cases cover buckets (72), chest
+  obstructions (73), lighting (63) and the blocks that hold items (73: flower pots, chiseled bookshelves, decorated
+  pots, lodestone compasses and jukeboxes), including ordered block writes with every flag bit and successful block
+  destructions. These cases observe all writes, including positions absent from their setup; an unexpected position
+  fails the replay. The older 92 cases compare final block states only. Extending ordered-write checks to those
+  cases remains an open follow-up. The replay uses the capture's absolute coordinates: translating plant
+  outlines changes their position-dependent offsets and can change a bucket ray hit. It also checks whether
+  closing effects exist, rather than comparing them only when both sides happened to open a menu.
+  `SpawnEggAmbientSoundMissing` explicitly asserts the sheep spawn egg's missing ambient sound; it fails if the
+  sound starts working (see [mob ambient sounds](known-gaps/mob-ambient-sounds.md)). The expected differences of
+  the newer cases are named, each pinned to its exact cases, and fail when they disappear (see below).
 
 - `turtle_eggs.json` (`VanillaTurtleEggs.ReplayTurtleEggReference`) records vanilla's turtle eggs, from
   `Java/HatchingFixtures.java` (`CaptureFixtures=turtle_eggs`). Each case is its input: the blocks of a small block
@@ -442,19 +454,50 @@ container close sources, and awarded advancement criteria.
 
 Further optional inputs, for blocks that hold items, are recorded after everything else and change nothing the other
 cases record. A setup placement's `nbt` loads that block entity data (SNBT without the id and position) as a chunk
-load would, telling no comparator. `fillInventory` fills every main inventory slot but the held one with a full
-stack of the item; a case with it or `checkInventory` starts with nothing but its hands, and `checkInventory`
-records each slot the use changed as `inventory` (vanilla's slot numbers: 0 to 8 the hotbar, 40 the offhand), with
-the components a stack changes from its item's as SNBT and a lodestone tracker's target relative to the target.
-`checkBlockEntity` records the clicked block entity's saved data, as a chunk saves it without its position, as
-`blockEntity`. `comparator` names a comparator's offset from the setup: once the use is recorded, its pending tick
-runs and its output is recorded as `comparatorSignal`, which shows both that it heard of the change and what it
-read. `destroy` makes the user break the clicked block afterwards with what they hold, and records under
-`destroyed` what changed, the entities around (with their items' components), what the bystander heard and the
-game events and statistics. The replay compares all of them: SNBT is compared as Obsidian writes the same NBT, the
-comparator's tick runs by ticking the level's scheduled ticks twice, and a break goes through a finished dig. The fixture lists
+load would, telling no comparator. `checkBlockEntity` records the clicked block entity's saved data, as a chunk saves
+it without its position, as `blockEntity`. `comparator` names a comparator's offset from the setup: once the use is
+recorded, its pending tick runs and its output is recorded as `comparatorSignal`, which shows both that it heard of
+the change and what it read. `breakAfterUse` makes the user break the clicked block afterwards with what they hold,
+and records under `broken` what changed, the entities around (with their items' components), what the bystander
+heard and the game events and statistics. The replay compares all of them: SNBT is compared as Obsidian writes the
+same NBT, the comparator's tick runs by ticking the level's scheduled ticks twice, and a break goes through a
+finished dig. The fixture lists
 location predicate terms in Obsidian's existing format; the probe converts them to 26.3's `all_of` and `match_block`
 encoding before registering them with vanilla's advancement system.
+Criteria without a location predicate, including `filled_bucket` with item predicates, are registered unchanged.
+The pickup cases check both an unconditional criterion and the filled item's predicate: vanilla checks its
+temporary result after inventory insertion, which can have emptied that stack even though the inventory received it.
+
+New `block_use` probe inputs are optional, so existing cases record exactly their earlier fields:
+
+- `player: [x, y, z, yaw, pitch]` overrides the actor's standing position and aim for that case. `rayUse: true`
+  records `useOnResult`, then uses the item from its own POV when that result allows it. This follows the client's
+  use-on/item-use dispatch for a block hit; a client looking only at a fluid source sends the item-use packet
+  directly. Water and lava buckets ignore the earlier use-on destination. Powder snow buckets are block items.
+- `dimension: "minecraft:the_nether"` uses the real Nether level and its environment attributes, with that area's
+  chunks forced too. This captures water evaporation, its eight large-smoke particles, bucket cost and absence
+  of a fluid-place game event.
+- `cats: [{"offset": [0, 1, 0], "sitting": true}]` adds a cat before the snapshot. Sitting and standing cats are
+  varied independently of conducting blocks and of either double-chest half.
+- `checkInventory: true` records all 36 storage slots in vanilla slot order, each stack followed by the components
+  it changes from its item's as SNBT, with a lodestone tracker's target relative to the target (compared as Obsidian
+  writes the same NBT). `fullInventory: true` fills every storage slot except the hand with stone. Every case starts
+  with nothing in its inventory but its hands. The replay compares storage, the hand and dropped entities together.
+- `checkEffects: true` records server particle packet types and counts, and each sound's position and volume
+  alongside the existing sounds, level events, game events and statistics. The replay compares every added field.
+  Candle smoke comes from client-local particles; campfire shovel dousing sends level event 1009. Neither sends
+  a server particle packet. Random sound pitches are not fixture fields.
+- `checkWrites: true` records ordered `writes` (offset, state, all integer flag bits) and `destroyed` blocks
+  (offset, previous state, drops requested), from use through the block-event drain. The capture adds observation
+  callbacks to `LevelChunk` storage and successful `Level.destroyBlock` returns in an unsigned scratch copy of the
+  vanilla jar; the cached jar stays untouched. The observer does not replace block behavior or filter positions.
+  The replay uses `LevelFluids.BlockStored` and `AbstractLevel.BlockDestroyed` for the matching observations.
+
+For example, after adding a case, run
+`dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=block_use -p:CaptureCases=bucket_water_evaporates`.
+Select only added or deliberately changed cases, preserve existing line endings, and verify the original case
+text is unchanged. Drops are checked with deterministic sapling and torch cases; grass's random seed loot is
+not used as a fixed drop reference.
 
 The `turtle_eggs` and `frogspawn` captures run no server and re-record every case. To add one, add a case with its
 `name`, `seed`, `origin` and `setup` (and `time`, `dimension`, `place` or `tick`) and capture again; pick a seed whose

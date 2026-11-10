@@ -26,21 +26,6 @@ public sealed class VanillaGrowingPlantTicks(ITestOutputHelper output)
 {
     private static readonly JsonElement fixture = LoadFixture();
 
-    // Where the block notification pipeline, which repeats each write's shape updates after the fluid level's and
-    // drains in the middle of them, still parts from vanilla (see
-    // docs/known-gaps/vanilla-blocks-reactions-to-block-updates.md): it turns a head into its body first and stores it
-    // with every flag, or schedules kelp's water tick at a head the fluid level already turned back from a body. Each
-    // is expected exactly, so the replay fails once it's fixed.
-    private static readonly Dictionary<string, PipelineDifference> pipelineDifferences = new()
-    {
-        ["kelp_tip_broken_after_growing"] = new(ExtraWaterTick: new Vector(8, 64, 8)),
-        ["kelp_plant_loses_its_head"] = new(ExtraWaterTick: new Vector(8, 64, 8)),
-        ["kelp_grows_into_gap"] = new(WriteStoredWithAllFlags: 2, ExtraWaterTick: new Vector(8, 65, 8)),
-        ["cave_vines_grows_into_gap"] = new(WriteStoredWithAllFlags: 2),
-        ["weeping_vines_grows_into_gap"] = new(WriteStoredWithAllFlags: 2),
-        ["twisting_vines_grows_into_gap"] = new(WriteStoredWithAllFlags: 2),
-    };
-
     /// <summary>
     /// Each case's state goes through Obsidian's random-tick dispatch (whether the state ticks, then the owner the
     /// generator binds it to) in a fresh world holding only the case's blocks, with the case's seed (the level's random
@@ -93,11 +78,9 @@ public sealed class VanillaGrowingPlantTicks(ITestOutputHelper output)
         world.Fluids.BlockStored = null;
 
         CompareDraws(differences, probe.GetProperty("draws"), random.Draws);
-        pipelineDifferences.TryGetValue(Name(probe), out var known);
-        ExpectAllFlags(differences, writes, known?.WriteStoredWithAllFlags);
         CompareWrites(differences, probe.GetProperty("writes"), writes);
         CompareBlocks(differences, probe.GetProperty("after"), world, before);
-        CompareTicks(differences, probe.GetProperty("scheduled"), world, known?.ExtraWaterTick);
+        CompareTicks(differences, probe.GetProperty("scheduled"), world);
 
         if (differences.Count > 0)
             throw new Xunit.Sdk.XunitException(string.Join("\n", differences));
@@ -152,18 +135,6 @@ public sealed class VanillaGrowingPlantTicks(ITestOutputHelper output)
         var draws = expected.EnumerateArray().Select(Draw.Parse).ToList();
         if (!draws.SequenceEqual(actual))
             differences.Add($"draws: vanilla [{string.Join(", ", draws)}], Obsidian [{string.Join(", ", actual)}]");
-    }
-
-    // The write the pipeline stores with every flag, set back to the shape update's flags before comparing.
-    private static void ExpectAllFlags(List<string> differences, List<Write> writes, int? index)
-    {
-        if (index is not int at)
-            return;
-
-        if (at < writes.Count && writes[at].Flags == BlockUpdateFlags.All)
-            writes[at] = writes[at] with { Flags = BlockUpdateFlags.Clients };
-        else
-            differences.Add($"write {at} is no longer stored with every flag: remove it from pipelineDifferences");
     }
 
     // Every block the tick and the actions stored, in order, with the flags it was stored with.
@@ -232,8 +203,7 @@ public sealed class VanillaGrowingPlantTicks(ITestOutputHelper output)
 
     // Every block and fluid tick pending in the case's chunk, with its delay, against those vanilla scheduled. Vanilla
     // records each scheduleTick call; the level keeps one tick per position and type.
-    private static void CompareTicks(List<string> differences, JsonElement expected, WorldData.World world,
-        Vector? extraWaterTick)
+    private static void CompareTicks(List<string> differences, JsonElement expected, WorldData.World world)
     {
         var vanilla = expected.EnumerateArray()
             .Select(tick => TickKey(Position(tick.GetProperty("pos")), tick.GetProperty("type").GetString()!,
@@ -247,9 +217,6 @@ public sealed class VanillaGrowingPlantTicks(ITestOutputHelper output)
         var fluidTicks = chunk.FluidTicks.Pack()
             .Select(tick => TickKey(tick.Position, FluidName(tick.Type), tick.Delay));
         var obsidian = blockTicks.Concat(fluidTicks).Order().ToList();
-
-        if (extraWaterTick is Vector extra && !obsidian.Remove(TickKey(extra, "minecraft:water", 5)))
-            differences.Add($"the pipeline's extra water tick at {extra} is gone: remove it from pipelineDifferences");
 
         if (!vanilla.SequenceEqual(obsidian))
             differences.Add($"ticks: vanilla [{string.Join(", ", vanilla)}], Obsidian [{string.Join(", ", obsidian)}]");
@@ -302,9 +269,6 @@ public sealed class VanillaGrowingPlantTicks(ITestOutputHelper output)
         using var document = JsonDocument.Parse(stream);
         return document.RootElement.Clone();
     }
-
-    /// <summary>A case's known difference from the block notification pipeline (see pipelineDifferences).</summary>
-    private sealed record PipelineDifference(int? WriteStoredWithAllFlags = null, Vector? ExtraWaterTick = null);
 
     /// <summary>
     /// A block stored at a position, with every update flag it was stored with (Obsidian's flags share vanilla's bits).

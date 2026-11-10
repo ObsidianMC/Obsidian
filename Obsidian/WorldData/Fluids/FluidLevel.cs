@@ -34,12 +34,14 @@ internal sealed class FluidLevel
 
     private readonly IFluidLevelAccess access;
     private readonly NeighborUpdater neighborUpdater;
+    private readonly IShapeLevel validationView;
 
     public FluidLevel(IFluidLevelAccess access)
     {
         this.access = access;
         this.neighborUpdater = new NeighborUpdater(this);
         this.ShapeView = new ShapeUpdateView(this);
+        this.validationView = new ShapeValidationView((IShapeLevel)this.ShapeView);
     }
 
     /// <summary>
@@ -190,7 +192,8 @@ internal sealed class FluidLevel
     /// Vanilla <c>LiquidBlockContainer.placeLiquid</c>: a dry waterloggable block takes a water source (lit campfires and
     /// candles go out) and schedules the water's tick.
     /// </summary>
-    public bool PlaceLiquid(Vector position, IBlock block, FluidState fluid)
+    public bool PlaceLiquid(Vector position, IBlock block, FluidState fluid,
+        Func<Vector, IBlock, BlockUpdateFlags, bool>? store = null)
     {
         if (block.GetProperty("waterlogged") != "false" || fluid.Kind != FluidKind.Water)
             return false;
@@ -199,7 +202,16 @@ internal sealed class FluidLevel
         if (waterlogged.GetProperty("lit") == "true")
             waterlogged = waterlogged.WithProperty("lit", false);
 
-        this.SetBlock(position, waterlogged, BlockUpdateFlags.All);
+        // A lit candle's liquid-container implementation extinguishes with UPDATE_ALL_IMMEDIATE (11).
+        var flags = block.BlockClass() == "CandleBlock" && block.GetProperty("lit") == "true"
+            ? BlockUpdateFlags.AllImmediate : BlockUpdateFlags.All;
+        var stored = store is null
+            ? this.SetBlock(position, waterlogged, flags)
+            : store(position, waterlogged, flags);
+        if (!stored)
+            return false;
+
+        this.access.OnWaterlogged(position, block);
         this.ScheduleTick(position, fluid.Kind, fluid.Type!.GetTickDelay(this));
         return true;
     }
@@ -382,15 +394,22 @@ internal sealed class FluidLevel
         return this.SetBlock(position, fluid, BlockUpdateFlags.All, updateLimit, shapes);
     }
 
-    // Re-evaluate shape survival against all current neighbours: the state's attachment face may have changed.
+    // Obsidian defers destruction, unlike vanilla's immediate updateOrDestroy. Rechecking the current attachment
+    // must not repeat updateShape's tick requests or random draws when the queued break is cancelled.
     internal bool IsUnsupported(Vector position, IBlock state)
     {
         foreach (var direction in updateShapeOrder)
         {
             var neighborPosition = position.Offset(direction);
             var neighbor = this.GetBlock(neighborPosition);
-            var updated = this.access.Reactions?.UpdateShape(position, state, direction, neighborPosition, neighbor)
-                ?? this.UpdateVanillaShape(state, position, direction, neighbor, VanillaShapes.All);
+            var updated = this.access.Reactions?.UpdateShape(
+                position, state, direction, neighborPosition, neighbor, validation: true);
+            if (updated is null)
+            {
+                var rule = ShapeDispatch.SharedRule(state.RegistryId);
+                updated = rule?.UpdateShape(this.validationView, position, state, direction, neighborPosition, neighbor)
+                    ?? state;
+            }
             if (updated.IsAir)
                 return true;
         }

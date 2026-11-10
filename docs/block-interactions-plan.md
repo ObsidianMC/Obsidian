@@ -59,7 +59,8 @@ Four defects found on the way are worse than a missing feature, because the bloc
 4. **An observer facing a container pulsed forever.** Fixed: the block entity tick sent a neighbour update around
    every container every tick, and observers reacted to neighbour updates from the block they face. Containers now
    tell only comparators when their items change or a plugin consumes `SetChanged()` (performance item 1), and
-   observers react through the generated shape owner shared by both update engines.
+   observers react through the generated shape owner, which a block change runs once, in the fluid level's
+   vanilla-ordered updater.
    Captured in `redstone_scenarios.json`.
 
 Two more from the first audit were fixed by #695 before this plan started: unwaxed copper doors and trapdoors
@@ -306,9 +307,10 @@ Done. Every arm of the switch is now a member of `ShapeUpdateBehaviors` named af
 `WorldData/ShapeRules`, and the rules take one read-only view (`IShapeLevel`) that the live level, the notification
 pipeline, the fluid engine and generation all supply. Step 2's "return a state and schedule ticks" turned out too
 narrow: the view also checks for a pending tick and hands out the live level's random, which coral's rule (#708)
-draws its death delay from; it still has no way to write. Each member's `Reach` keeps the split between the two
-update engines as it was: live owners (coral, dirt paths and chorus plants among them) run first in both, and the
-former arms run only in the shared pass (`ShapeUpdater`). A live owner names what the shared pass runs for its blocks
+draws its death delay from; it still has no way to write. Each member's `Reach` keeps the split as it was: live
+owners (coral, dirt paths and chorus plants among them) run first in a live level's shape update, and the former arms
+run only in the shared pass (`ShapeUpdater`). Since performance item 6's step 2, a live level runs shape updates only
+in the fluid level's updater; the notification pipeline runs them only where it's the only engine. A live owner names what the shared pass runs for its blocks
 (`SharedPassRule`): fences and bars name their own reshape-only rule; bubble columns keep their scheduling rule
 so completion's fluid view saves the check in the chunk's ticks, as before. Speleothems and kelp name a rule that reshapes
 without scheduling their fall, break or support check, as their old shared copies did; other owners name none.
@@ -466,10 +468,10 @@ adds.
 | Line | Status | What's left |
 |---|---|---|
 | Beds: sleep, set respawn, explode | Works | `sleep_in_bed` statistic; stand-up position order |
-| Cake, candle cakes | Missing | Only the comparator output exists |
-| Candles: light and extinguish | Missing | Only water and wind charges put them out |
+| Cake, candle cakes | Partial | Candle-cake ignition and empty-hand extinguishing captured; eating remains missing |
+| Candles: light and extinguish | Works | Captured: flint and steel, fire charges, empty hands and waterlogging |
 | Campfires, soul campfires: cook | Works | Feedback |
-| Campfires, soul campfires: light and extinguish | Missing | Only water and wind charges put them out |
+| Campfires, soul campfires: light and extinguish | Partial | Hand ignition, shovel dousing and waterlogging captured; projectile ignition waits for phase 3 |
 | Composters: insert, collect | Works | Feedback; thrown items aren't taken |
 | Cauldrons: buckets, bottles, washing | Missing | Only the comparator output exists |
 | Flower pots | Works | Captured; potted eyeblossoms turn with the time of day (`eyeblossom_ghast_portal_ticks.json`) |
@@ -492,7 +494,7 @@ adds.
 | Grass to path; dirt, coarse dirt, rooted dirt with a hoe | Works | Captured, with drops |
 | Pumpkins: carve | Missing | |
 | Beehives, bee nests: shears | Missing | |
-| Campfires: shovel; candles and campfires: flint and steel | Missing | |
+| Campfires: shovel; candles and campfires: flint and steel | Works | Captured in `block_use.json`, including waterlogged and already-lit refusals |
 | Respawn anchors: glowstone | Works | Feedback |
 | End portal frames: eye | Works | |
 | Farmland: plant crops; soul sand: nether wart | Works | Captured (`block_placement.json`) |
@@ -585,8 +587,8 @@ adds.
 | Enchanting tables: animation; bookshelves: power | Works | The animation is the client's |
 | Ender chests: animation | Partial | Lid moves; no sound |
 | Shulker boxes: push entities | Missing | |
-| Chests: refuse when obstructed | Missing | |
-| Chests: lid by viewers | Works | Captured |
+| Chests: refuse when obstructed | Works | Captured: normal, trapped and copper; either half, conductors and sitting cats |
+| Chests: lid by viewers | Works | Captured, including one sound per double chest and right-half-first events |
 
 ### 10. 26.3 additions (not on the issue's list)
 

@@ -158,14 +158,48 @@ internal sealed class LevelFluids : IFluidLevelAccess
             this.fluidLevel.OnBlockChanged(position, old, block, flags);
     }
 
+    /// <summary>Uses the fluid engine's liquid-container rule with the live level's transactional writer.</summary>
+    internal bool PlaceLiquid(Vector position, IBlock block, FluidState fluid)
+    {
+        lock (this.sync)
+            return this.fluidLevel.PlaceLiquid(position, block, fluid,
+                (at, state, flags) => this.level.BlockUpdates.SetBlock(at, state, flags));
+    }
+
+    public void OnWaterlogged(Vector position, IBlock previous)
+    {
+        if (previous.GetProperty("lit") != "true"
+            || previous.BlockClass() is not ("CampfireBlock" or "CandleBlock"))
+            return;
+
+        void Publish() => BlockLighting.Extinguished(this.level, position, previous, null);
+        if (this.level.ActiveBlockUse is BlockUseEffects effects)
+            effects.After(Publish);
+        else
+            Publish();
+    }
+
     /// <summary>
-    /// The complete chunk holding <paramref name="position"/>, if it's loaded. Call it under <see cref="TickLock"/>,
-    /// which tracking chunks takes.
+    /// The complete chunk holding <paramref name="position"/>, if it's loaded, whether or not its ticks run yet. Call
+    /// it under <see cref="TickLock"/>, which tracking chunks takes.
     /// </summary>
+    /// <remarks>
+    /// A complete chunk is in its region slot before <see cref="Track"/> sees it: generation marks it full, and a load
+    /// from disk publishes it, before their callers track it, without holding the tick lock in between. Block updates
+    /// read and write it from then on, as the level's other block access does (<see cref="AbstractLevel.GetLoadedChunk"/>),
+    /// so a change beside it reshapes the blocks across the border. Only its ticks wait for tracking.
+    /// </remarks>
     public bool TryGetChunk(Vector position, [NotNullWhen(true)] out Chunk? chunk)
     {
         if (this.chunks.TryGetValue(TickScheduler<FluidKind>.ChunkKey(position), out chunk) && this.IsResident(chunk))
             return true;
+
+        var loaded = this.level.GetLoadedChunk(position.X.ToChunkCoord(), position.Z.ToChunkCoord());
+        if (loaded is Chunk untracked && this.IsResident(untracked))
+        {
+            chunk = untracked;
+            return true;
+        }
 
         chunk = null;
         return false;
@@ -197,12 +231,26 @@ internal sealed class LevelFluids : IFluidLevelAccess
 
     /// <inheritdoc/>
     /// <remarks>
-    /// Chunks that aren't loaded read as void air too; fluid ticks only run where every chunk they can reach is loaded.
+    /// Reads every complete chunk in its region slot, as the level's other block reads do
+    /// (<see cref="AbstractLevel.GetLoadedChunk"/>): one not tracked yet (see <see cref="TryGetChunk"/>), and one
+    /// unloading, which leaves block access at its final save snapshot but stays in its slot, unchanged, until the save
+    /// detaches it. Writes there are refused (see <see cref="SetBlock"/>). Chunks that aren't loaded read as void air;
+    /// fluid ticks only run where every chunk they can reach is tracked.
     /// </remarks>
-    public IBlock GetBlock(Vector position) =>
-        !this.level.IsOutsideBuildHeight(position.Y) && this.TryGetChunk(position, out var chunk)
-            ? chunk.GetBlock(position.X, position.Y, position.Z)
-            : BlocksRegistry.VoidAir;
+    public IBlock GetBlock(Vector position)
+    {
+        if (this.level.IsOutsideBuildHeight(position.Y))
+            return BlocksRegistry.VoidAir;
+
+        if (this.chunks.TryGetValue(TickScheduler<FluidKind>.ChunkKey(position), out var tracked)
+            && this.IsResident(tracked))
+        {
+            return tracked.GetBlock(position.X, position.Y, position.Z);
+        }
+
+        var loaded = this.level.GetLoadedChunk(position.X.ToChunkCoord(), position.Z.ToChunkCoord());
+        return loaded?.GetBlock(position.X, position.Y, position.Z) ?? BlocksRegistry.VoidAir;
+    }
 
     /// <inheritdoc/>
     public int GetRawBrightness(Vector position)

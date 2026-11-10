@@ -2,6 +2,7 @@ using Obsidian.API.BlockEntities;
 using Obsidian.API.Containers;
 using Obsidian.API.Events;
 using Obsidian.Entities;
+using Obsidian.Entities.AI;
 
 namespace Obsidian.WorldData;
 
@@ -65,9 +66,18 @@ internal static partial class UseBehaviors
         public override async ValueTask<BaseContainer?> CreateAsync(IPlayer player, AbstractLevel level, IBlock block,
             Vector position)
         {
+            // Programmatic menu events may precede loading the chunk; obstruction checks read resident state.
+            var current = await level.GetBlockAsync(position);
+            if (current is null || !current.IsSameState(block))
+                return null;
+
+            if (BlockMenus.ChestBlocked(level, block, position))
+                return null;
+
             var fresh = BlockMenus.NewChest(position);
             var container = await BlockMenus.StoredContainerAsync(player, level, position, fresh);
-            return await BlockMenus.DoubleChestAsync(player, level, block, position, container);
+            var joined = await BlockMenus.DoubleChestAsync(player, level, block, position, container);
+            return BlockMenus.ChestBlocked(level, block, position) ? null : joined;
         }
     }
 
@@ -154,6 +164,9 @@ internal static class BlockMenus
 
         container = await StoredContainerAsync(player, level, position, container);
         if (player.Level != level || player is PlayerBase { Alive: false } or PlayerBase { Respawning: true })
+            return;
+
+        if (ReferenceEquals(menu, UseBehaviors.ChestBlock) && ChestBlocked(level, block, position))
             return;
 
         await player.OpenInventoryAsync(container);
@@ -253,5 +266,41 @@ internal static class BlockMenus
             "south" => new Vector(0, 0, 1),
             _ => new Vector(-1, 0, 0)
         };
+    }
+
+    /// <summary>Vanilla chest obstruction applies to each valid half, including a sitting cat's bounding box.</summary>
+    internal static bool ChestBlocked(AbstractLevel level, IBlock block, Vector position)
+    {
+        lock (level.Fluids.TickLock)
+        {
+            if (!level.BlockUpdates.GetBlock(position).IsSameState(block) || BlockedAt(position))
+                return true;
+
+            var type = block.GetProperty("type");
+            if (type is not ("left" or "right")
+                || ConnectedOffset(type, block.GetProperty("facing")) is not Vector offset)
+            {
+                return false;
+            }
+
+            var partnerPosition = position + offset;
+            var partner = level.BlockUpdates.GetBlock(partnerPosition);
+            return partner.RegistryId == block.RegistryId
+                && partner.GetProperty("facing") == block.GetProperty("facing")
+                && partner.GetProperty("type") == (type == "left" ? "right" : "left")
+                && BlockedAt(partnerPosition);
+        }
+
+        bool BlockedAt(Vector at)
+        {
+            if (level.BlockUpdates.GetBlock(at + Vector.Up).IsRedstoneConductor())
+                return true;
+
+            var bounds = new BoundingBox((VectorD)(at + Vector.Up), (VectorD)at + new VectorD(1, 2, 1));
+            return level.GetEntitiesInRange((VectorD)at + new VectorD(0.5, 1.5, 0.5), 3)
+                .OfType<Cat>()
+                .Any(cat => !cat.IsRemoved && cat.IsSitting
+                    && MobTerrain.Overlaps(bounds, cat.Dimension.CreateBBFromPosition(cat.Position)));
+        }
     }
 }

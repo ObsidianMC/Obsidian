@@ -39,12 +39,23 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
     // Setup and clearing, like the capture's: no neighbor or shape updates and nothing placed reacting.
     private const BlockUpdateFlags Quiet = BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace;
 
-    // Where the replay's target is: inside one chunk with room around it, unlike the capture's (0, 64, 0).
-    private static readonly Vector target = new(8, 64, 8);
+    // Keep vanilla's coordinates: plants' outline offsets, and therefore bucket ray hits, depend on position.
+    private static readonly Vector target = new(0, 64, 0);
 
     // Mobs don't make their ambient sounds in Obsidian (known-gaps/mob-ambient-sounds.md), and vanilla's spawn eggs
     // play one as the mob appears: those sounds aren't compared.
     private static readonly HashSet<string> withoutAmbientSounds = ["spawn_egg_on_stone"];
+
+    // Named expected difference BreakSoundForLevelEvent2001, pinned to these cases (see
+    // known-gaps/player-break-effects.md): each breaks a block after its use.
+    private static readonly HashSet<string> breakSoundForLevelEvent2001 =
+    [
+        "chiseled_bookshelf_destroy", "decorated_pot_destroy_by_hand", "decorated_pot_destroy_with_stick",
+        "decorated_pot_destroy_with_pickaxe", "flower_pot_destroy_potted", "jukebox_destroy_with_disc"
+    ];
+
+    // Named expected difference DestroyEventAfterRemoval, pinned to the one case whose removal emits game events.
+    private static readonly HashSet<string> destroyEventAfterRemoval = ["jukebox_destroy_with_disc"];
 
     private sealed record Setup(Vector Offset, IBlock State, string? Text);
 
@@ -92,6 +103,8 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
         var cases = root.GetProperty("cases").EnumerateArray().Select(ReadCase).ToArray();
         var harness = await StartAsync(root);
         await using var context = harness.Context;
+        var nether = await StartAsync(root, "minecraft:the_nether");
+        await using var netherContext = nether.Context;
 
         var previous = AdvancementsRegistry.Current.Values.ToArray();
         try
@@ -107,7 +120,9 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
 
                 try
                 {
-                    await ReplayAsync(harness, use);
+                    var selected = OptionalString(use.Reference, "dimension") == "minecraft:the_nether"
+                        ? nether : harness;
+                    await ReplayAsync(selected, use);
                 }
                 finally
                 {
@@ -124,12 +139,21 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
     }
 
     // One world, with the user standing where the capture's player stood and a bystander above the target.
-    private static async Task<Harness> StartAsync(JsonElement root)
+    private static async Task<Harness> StartAsync(JsonElement root, string dimension = "minecraft:overworld")
     {
         var context = TestServerFactory.CreateServer($"block-use-{Guid.NewGuid():N}");
         var world = context.World;
+        if (dimension != "minecraft:overworld")
+            world.Initialize(CodecRegistry.Dimensions.All[dimension]);
+
         var chunk = WorldBlockEntities.AddEmptyChunk(world);
+        WorldBlockEntities.AddEmptyChunk(world, -1, -1);
+        WorldBlockEntities.AddEmptyChunk(world, -1, 0);
+        WorldBlockEntities.AddEmptyChunk(world, 0, -1);
         await world.GetBlockAsync(target);
+        await world.GetBlockAsync(new Vector(-1, 64, -1));
+        await world.GetBlockAsync(new Vector(-1, 64, 0));
+        await world.GetBlockAsync(new Vector(0, 64, -1));
 
         // The capture's world is air under open sky, so its sky light is full everywhere (a daylight detector reads
         // it).
@@ -190,7 +214,36 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
 
         LoadSetupData(world, use);
         Prepare(user, use);
-        var inventoryBefore = PrepareInventory(user, use);
+        var standing = use.Reference.TryGetProperty("player", out var customPlayer)
+            ? customPlayer : default;
+        if (standing.ValueKind == JsonValueKind.Array)
+        {
+            user.Position = (VectorD)target + new VectorD(standing[0].GetDouble(),
+                standing[1].GetDouble() - 64, standing[2].GetDouble());
+            user.Yaw = standing[3].GetSingle();
+            user.Pitch = standing[4].GetSingle();
+        }
+        else
+        {
+            user.Position = (VectorD)target + new VectorD(0.5, 0, -2.5);
+            user.Yaw = 0;
+            user.Pitch = 30;
+        }
+
+        if (use.Reference.TryGetProperty("cats", out var cats))
+        {
+            foreach (var catInput in cats.EnumerateArray())
+            {
+                var cat = new Cat
+                {
+                    EntityId = Server.GetNextEntityId(),
+                    Level = world,
+                    Position = (VectorD)(target + Position(catInput.GetProperty("offset"))) + new VectorD(0.5, 0, 0.5),
+                    IsSitting = catInput.GetProperty("sitting").GetBoolean()
+                };
+                Assert.True(world.TrySpawnEntity(cat, hostOwned: true));
+            }
+        }
         if (use.Reference.TryGetProperty("checkAttack", out _))
             ChargeAttack(user);
 
@@ -207,14 +260,56 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
         if (use.Reference.TryGetProperty("randomSeed", out var seed))
             world.GrowthRandom = new LegacyRandomSource(seed.GetInt64());
 
-        var result = await packet.UseAsync(harness.Context.Server, user);
-        await world.RunQueuedEntityActionsAsync();
-        await world.BlockNotifications.DrainAsync();
-        await world.ProcessBlockEventsAsync();
+        var writes = new List<string>();
+        var destroyed = new List<string>();
+        var writeDifferences = new List<string>();
+        if (use.Reference.TryGetProperty("writes", out var expectedWrites))
+        {
+            var positions = expectedWrites.EnumerateArray()
+                .Select(write => target + Position(write.GetProperty("offset"))).ToHashSet();
+            world.Fluids.BlockStored = (position, block, flags) =>
+            {
+                writes.Add(Write(position, block, flags));
+                if (!positions.Contains(position))
+                    writeDifferences.Add($"Unexpected write outside the case: {Write(position, block, flags)}");
+            };
+            world.BlockDestroyed = (position, block, drops) =>
+                destroyed.Add(Destroyed(position, block, drops));
+        }
+
+        UseResult? result;
+        UseResult? useOnResult;
+        try
+        {
+            result = await packet.UseAsync(harness.Context.Server, user);
+            useOnResult = result;
+            if (use.Reference.TryGetProperty("rayUse", out _) && result is not UseResult.Fail
+                && result?.ConsumesAction() != true)
+            {
+                var itemPacket = new UseItemPacket();
+                typeof(UseItemPacket).GetProperty(nameof(UseItemPacket.Hand))!.SetValue(itemPacket,
+                    offhand ? InteractionHand.OffHand : InteractionHand.MainHand);
+                typeof(UseItemPacket).GetProperty(nameof(UseItemPacket.Yaw))!.SetValue(itemPacket, user.Yaw.Degrees);
+                typeof(UseItemPacket).GetProperty(nameof(UseItemPacket.Pitch))!.SetValue(itemPacket, user.Pitch.Degrees);
+                result = await itemPacket.UseAsync(harness.Context.Server, user);
+            }
+
+            await world.RunQueuedEntityActionsAsync();
+            await world.BlockNotifications.DrainAsync();
+            await world.ProcessBlockEventsAsync();
+        }
+        finally
+        {
+            world.Fluids.BlockStored = null;
+            world.BlockDestroyed = null;
+        }
 
         var effects = Record(harness, before);
         var menu = Menu(user);
         var swings = Swings(harness);
+        var extra = ((TestClient)harness.Bystander.Client).SentPackets.ToArray();
+        var inventory = Enumerable.Range(0, 36)
+            .Select(slot => DetailedText(user.Inventory.GetItem(slot < 9 ? slot + 36 : slot))).ToArray();
         var outcome = new Outcome(
             Name(result),
             Text(offhand ? user.GetOffHandItem() : user.GetHeldItem()),
@@ -224,8 +319,50 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
             menu,
             await CloseAsync(harness));
 
-        var expected = withoutAmbientSounds.Contains(use.Name) ? WithoutAmbientSounds(use.Expected) : use.Expected;
+        var expected = use.Expected;
+        if (withoutAmbientSounds.Contains(use.Name))
+            expected = ExpectSpawnEggAmbientSoundMissing(expected, outcome);
         var differences = Compare(expected, outcome).ToList();
+        differences.AddRange(writeDifferences);
+        if (use.Reference.TryGetProperty("writes", out expectedWrites))
+        {
+            var recorded = expectedWrites.EnumerateArray().Select(write => Write(
+                target + Position(write.GetProperty("offset")),
+                VanillaSulfurBlocks.ParseState(write.GetProperty("state").GetString()!),
+                (BlockUpdateFlags)write.GetProperty("flags").GetInt32())).ToArray();
+            differences.AddRange(CompareLists("ordered writes", recorded, writes.ToArray()));
+            var removed = use.Reference.GetProperty("destroyed").EnumerateArray().Select(block => Destroyed(
+                target + Position(block.GetProperty("offset")),
+                VanillaSulfurBlocks.ParseState(block.GetProperty("state").GetString()!),
+                block.GetProperty("drops").GetBoolean())).ToArray();
+            differences.AddRange(CompareLists("destroyed blocks", removed, destroyed.ToArray()));
+        }
+        if (use.Reference.TryGetProperty("useOnResult", out var onResult) && onResult.GetString() != Name(useOnResult))
+            differences.Add($"use-on result: expected {onResult.GetString()}, got {Name(useOnResult)}");
+
+        if (use.Reference.TryGetProperty("inventory", out var expectedInventory))
+        {
+            var recordedInventory = Strings(expectedInventory).Select(CanonicalStack).ToArray();
+            differences.AddRange(CompareLists("inventory", recordedInventory, inventory));
+        }
+
+        if (use.Reference.TryGetProperty("particles", out var particles))
+        {
+            var actual = extra.OfType<LevelParticlesPacket>()
+                .Select(particle => $"minecraft:{particle.Data.ParticleType.ToString().ToSnakeCase()} {particle.ParticleCount}")
+                .ToArray();
+            differences.AddRange(CompareLists("particles", Strings(particles), actual));
+        }
+
+        if (use.Reference.TryGetProperty("soundDetails", out var soundDetails))
+        {
+            var actual = extra.OfType<SoundPacket>()
+                .Select(sound => $"{sound.SoundLocation} {Offset(new Vector((int)Math.Floor(sound.SoundPosition.X / 8.0),
+                    (int)Math.Floor(sound.SoundPosition.Y / 8.0), (int)Math.Floor(sound.SoundPosition.Z / 8.0)))} "
+                    + sound.Volume.ToString("0.0####", System.Globalization.CultureInfo.InvariantCulture))
+                .ToArray();
+            differences.AddRange(CompareLists("sound details", Strings(soundDetails), actual));
+        }
         differences.AddRange(CompareSwings(use.Expected.Result, swings));
         if (use.Reference.TryGetProperty("criteria", out var criteria))
         {
@@ -266,7 +403,7 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
                 differences.Add($"sign: color={color}, glowing={glowing}, waxed={waxed}, editor={edited}");
             }
         }
-        differences.AddRange(await CompareHeldItemsAsync(harness, use, inventoryBefore));
+        differences.AddRange(await CompareHeldItemsAsync(harness, use));
         Assert.True(differences.Count == 0, string.Join("; ", differences));
 
         if (use.Reference.TryGetProperty("checkCloseSources", out _))
@@ -287,61 +424,13 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
         }
     }
 
-    // Vanilla's inventory slots the inventory checks read, by the player inventory's slots: the hotbar (0 to 8), the
-    // rest of the main inventory (9 to 35) and the offhand (40).
-    private static IEnumerable<(int Vanilla, int Slot)> InventorySlots()
-    {
-        for (var slot = 0; slot < 9; slot++)
-            yield return (slot, 36 + slot);
-
-        for (var slot = 9; slot < 36; slot++)
-            yield return (slot, slot);
-
-        yield return (40, 45);
-    }
-
-    // Like the capture's: a case that checks or fills the inventory starts with nothing in it but its hands, and
-    // fillInventory fills every other main inventory slot with a full stack. Returns the slots as they are before the
-    // use, or null when the case checks neither.
-    private static Dictionary<int, ItemStack?>? PrepareInventory(ServerPlayer user, Case use)
-    {
-        var fill = OptionalString(use.Reference, "fillInventory");
-        if (!use.Reference.TryGetProperty("checkInventory", out _) && fill is null)
-            return null;
-
-        foreach (var (_, slot) in InventorySlots())
-        {
-            if (slot == user.CurrentHeldItemSlot || slot == 45)
-                continue;
-
-            var filler = fill is null ? null : ItemsRegistry.Get(fill);
-            var stack = filler is null ? null : new ItemStack(filler, filler.MaxStackSize);
-            user.Inventory.SetItem(slot, stack);
-        }
-
-        return InventorySlots().ToDictionary(
-            slots => slots.Slot,
-            slots => user.Inventory.GetItem(slots.Slot) is ItemStack held ? new ItemStack(held, held.Count) : null);
-    }
-
-    // The optional checks of items held by blocks and players, in the capture's order: the inventory slots the use
-    // changed, the clicked block entity's saved data, a comparator's output once its pending tick ran, and what
-    // breaking the clicked block afterwards does.
-    private static async Task<List<string>> CompareHeldItemsAsync(
-        Harness harness,
-        Case use,
-        Dictionary<int, ItemStack?>? inventoryBefore)
+    // The optional checks of items held by blocks, in the capture's order: the clicked block entity's saved data, a
+    // comparator's output once its pending tick ran, and what breaking the clicked block afterwards does.
+    private static async Task<List<string>> CompareHeldItemsAsync(Harness harness, Case use)
     {
         var differences = new List<string>();
         var world = harness.Context.World;
         var reference = use.Reference;
-
-        if (reference.TryGetProperty("inventory", out var inventory))
-        {
-            var expected = Strings(inventory).Select(CanonicalSlot).ToArray();
-            var actual = InventoryChanges(harness.User, inventoryBefore!);
-            differences.AddRange(CompareLists("inventory", expected, actual));
-        }
 
         if (reference.TryGetProperty("blockEntity", out var saved))
         {
@@ -359,25 +448,10 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
                 differences.Add($"comparator: expected {signal.GetInt32()}, got {actual}");
         }
 
-        if (reference.TryGetProperty("destroyed", out var destroyed))
-            differences.AddRange(await CompareDestroyedAsync(harness, use, destroyed));
+        if (reference.TryGetProperty("broken", out var broken))
+            differences.AddRange(await CompareBrokenAsync(harness, use, broken));
 
         return differences;
-    }
-
-    // Each player inventory slot whose stack the use changed, as the capture writes them.
-    private static string[] InventoryChanges(ServerPlayer user, Dictionary<int, ItemStack?> before)
-    {
-        var changed = new List<string>();
-        foreach (var (vanilla, slot) in InventorySlots())
-        {
-            var now = user.Inventory.GetItem(slot);
-            var previous = before[slot];
-            if (DetailedText(now) != DetailedText(previous))
-                changed.Add($"{vanilla} {DetailedText(now)}");
-        }
-
-        return [.. changed];
     }
 
     // A block entity's saved data as a chunk saves it, without its position, as canonical SNBT; null without one.
@@ -428,15 +502,16 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
         }
     }
 
-    // Named expected difference: a player breaking a block sends the players around it the block's break sound
-    // (BlockSoundPlayback), where vanilla sends level event 2001, whose clients play that sound with the break
-    // particles. Each captured break expects the sound in the event's place, so the replay fails once Obsidian sends
-    // the event.
+    // Named expected difference BreakSoundForLevelEvent2001: a player breaking a block sends the players around it the
+    // block's break sound (BlockSoundPlayback), where vanilla sends level event 2001, whose clients play that sound
+    // with the break particles. Its cases expect the sound in the event's place, so the replay fails once Obsidian
+    // sends the event; a case without the event fails too, so the pin can't outlive what it pins.
     private static Effects WithBreakSoundForLevelEvent(Effects expected)
     {
         var breaks = expected.LevelEvents
             .Where(levelEvent => levelEvent.StartsWith("2001 ", StringComparison.Ordinal))
             .ToArray();
+        Assert.Single(breaks);
         var sounds = breaks
             .Select(levelEvent => levelEvent.Split(' ')[2])
             .Select(state => int.Parse(state, System.Globalization.CultureInfo.InvariantCulture))
@@ -447,25 +522,28 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
         return expected with { Sounds = [.. sounds, .. expected.Sounds], LevelEvents = [.. others] };
     }
 
-    // Named expected difference: a player's break emits block_destroy once the block is gone, after the game events of
-    // its removal (a jukebox stopping), where vanilla's playerWillDestroy emits it first. A break whose removal emits
-    // nothing is unaffected; the jukebox's fails once Obsidian emits it first.
+    // Named expected difference DestroyEventAfterRemoval: a player's break emits block_destroy once the block is gone,
+    // after the game events of its removal (a jukebox stopping), where vanilla's playerWillDestroy emits it first. Its
+    // case fails once Obsidian emits it first.
     private static Effects WithDestroyEventLast(Effects expected)
     {
         var destroy = expected.GameEvents
             .Where(gameEvent => gameEvent.StartsWith("minecraft:block_destroy ", StringComparison.Ordinal))
             .ToArray();
         var others = expected.GameEvents
-            .Where(gameEvent => !gameEvent.StartsWith("minecraft:block_destroy ", StringComparison.Ordinal));
+            .Where(gameEvent => !gameEvent.StartsWith("minecraft:block_destroy ", StringComparison.Ordinal))
+            .ToArray();
+        Assert.Single(destroy);
+        Assert.NotEmpty(others);
 
         return expected with { GameEvents = [.. others, .. destroy] };
     }
 
     // The user breaks the clicked block, as a finished dig, and what that changed, played and dropped is compared.
-    private static async Task<IEnumerable<string>> CompareDestroyedAsync(
+    private static async Task<IEnumerable<string>> CompareBrokenAsync(
         Harness harness,
         Case use,
-        JsonElement destroyed)
+        JsonElement broken)
     {
         var world = harness.Context.World;
         var user = harness.User;
@@ -482,11 +560,17 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
         var entities = DetailedEntities(world);
         var stats = Awarded(statistics, user.ProgressStatistics.Save());
 
-        var expected = WithDestroyEventLast(WithBreakSoundForLevelEvent(ReadEffects(destroyed)));
-        var differences = CompareEffects("destroyed ", expected, effects).ToList();
-        var expectedEntities = Strings(destroyed.GetProperty("entities")).Select(CanonicalEntity).ToArray();
-        differences.AddRange(CompareSets("destroyed entities", expectedEntities, entities));
-        differences.AddRange(CompareSets("destroyed stats", Strings(destroyed.GetProperty("stats")), stats));
+        var expected = ReadEffects(broken);
+        if (breakSoundForLevelEvent2001.Contains(use.Name))
+            expected = WithBreakSoundForLevelEvent(expected);
+
+        if (destroyEventAfterRemoval.Contains(use.Name))
+            expected = WithDestroyEventLast(expected);
+
+        var differences = CompareEffects("broken ", expected, effects).ToList();
+        var expectedEntities = Strings(broken.GetProperty("entities")).Select(CanonicalEntity).ToArray();
+        differences.AddRange(CompareSets("broken entities", expectedEntities, entities));
+        differences.AddRange(CompareSets("broken stats", Strings(broken.GetProperty("stats")), stats));
         return differences;
     }
 
@@ -537,13 +621,6 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
         }
 
         return $"{text} {Obsidian.Commands.Snbt.Write(components)}";
-    }
-
-    // The capture's "<slot> <stack>" with its components as canonical SNBT.
-    private static string CanonicalSlot(string recorded)
-    {
-        var space = recorded.IndexOf(' ');
-        return $"{recorded[..space]} {CanonicalStack(recorded[(space + 1)..])}";
     }
 
     // The capture's "item <stack>" with its components as canonical SNBT, or another entity's type as it is.
@@ -608,6 +685,14 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
     {
         user.GameMode = use.GameMode;
         user.Sneaking = use.Sneaking;
+        for (var slot = 9; slot <= 45; slot++)
+            user.Inventory.SetItem(slot, null);
+
+        if (use.Reference.TryGetProperty("fullInventory", out var full) && full.GetBoolean())
+        {
+            for (var slot = 1; slot < 36; slot++)
+                user.Inventory.SetItem(slot < 9 ? slot + 36 : slot, new ItemStack(ItemsRegistry.Stone, 64));
+        }
 
         var held = use.Item is null ? null : new ItemStack(ItemsRegistry.Get(use.Item), use.Count);
         var offhand = use.Offhand is null ? null : new ItemStack(ItemsRegistry.Get(use.Offhand), 2);
@@ -705,13 +790,15 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
             yield return $"user swing: expected {user}, got {swings.User}";
     }
 
-    private static Outcome WithoutAmbientSounds(Outcome outcome)
+    private static Outcome ExpectSpawnEggAmbientSoundMissing(Outcome expected, Outcome actual)
     {
-        var sounds = outcome.Effects.Sounds
-            .Where(sound => !sound.EndsWith(".ambient", StringComparison.Ordinal))
+        Assert.Contains("minecraft:entity.sheep.ambient", expected.Effects.Sounds);
+        Assert.DoesNotContain("minecraft:entity.sheep.ambient", actual.Effects.Sounds);
+        var sounds = expected.Effects.Sounds
+            .Where(sound => sound != "minecraft:entity.sheep.ambient")
             .ToArray();
 
-        return outcome with { Effects = outcome.Effects with { Sounds = sounds } };
+        return expected with { Effects = expected.Effects with { Sounds = sounds } };
     }
 
     private static IEnumerable<string> Compare(Outcome expected, Outcome actual)
@@ -733,6 +820,9 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
 
         foreach (var difference in CompareEffects("", expected.Effects, actual.Effects))
             yield return difference;
+
+        if ((expected.Closed is null) != (actual.Closed is null))
+            yield return $"closed effects: expected {expected.Closed is not null}, got {actual.Closed is not null}";
 
         if (expected.Closed is null || actual.Closed is null)
             yield break;
@@ -910,6 +1000,12 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
         var offset = position - target;
         return $"{offset.X},{offset.Y},{offset.Z}";
     }
+
+    private static string Write(Vector position, IBlock block, BlockUpdateFlags flags) =>
+        $"{Offset(position)}={Text(block)} flags {(int)flags}";
+
+    private static string Destroyed(Vector position, IBlock block, bool drops) =>
+        $"{Offset(position)}={Text(block)} drops {drops}";
 
     // The block and the properties it doesn't share with its default state, sorted by name like vanilla's.
     private static string Text(IBlock state)

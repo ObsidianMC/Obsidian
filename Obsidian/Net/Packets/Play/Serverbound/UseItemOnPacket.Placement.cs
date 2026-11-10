@@ -8,7 +8,7 @@ using Obsidian.WorldData.Redstone;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
 
-// Vanilla's BlockItem.useOn and the buckets: what an item places, the last of an item's uses on a block.
+// Vanilla's BlockItem.useOn: what an item places, the last of an item's uses on a block.
 public partial class UseItemOnPacket
 {
     // The vanilla block classes that implement GameMasterBlock, whose items (GameMasterBlockItem) only creative
@@ -17,7 +17,7 @@ public partial class UseItemOnPacket
         ["CommandBlock", "StructureBlock", "JigsawBlock", "TestBlock", "TestInstanceBlock"];
 
     /// <summary>
-    /// Places the block the held item places, or pours a water or lava bucket. A refused placement asks for the
+    /// Places the block the held item places. A refused placement asks for the
     /// player's hand to be sent again, since their client predicted it.
     /// </summary>
     private async ValueTask<UseResult> PlaceAsync(BlockUse use)
@@ -31,19 +31,17 @@ public partial class UseItemOnPacket
             return UseResult.Pass;
 
         // Like vanilla's BlockPlaceContext: a block goes into a clicked block it can replace (tall grass, say, but not
-        // a block of its own kind), and otherwise next to it on the clicked face, where there must be room. Buckets
-        // pour next to the clicked block.
-        var pouring = block.Is(BlockIds.Water) || block.Is(BlockIds.Lava);
+        // a block of its own kind), and otherwise next to it on the clicked face, where there must be room.
         var upperHit = this.Cursor.Y > 0.5;
-        var replacesClicked = !pouring && (clicked.CanBeReplaced() && clicked.RegistryId != block.RegistryId
-            || VanillaPlacement.SlabCanBeReplaced(clicked, block, true, this.Face, upperHit));
+        var replacesClicked = clicked.CanBeReplaced() && clicked.RegistryId != block.RegistryId
+            || VanillaPlacement.SlabCanBeReplaced(clicked, block, true, this.Face, upperHit);
         var position = replacesClicked ? this.Position : this.Position + this.Face.ToVector();
 
         var target = await placeLevel.GetBlockAsync(position);
         var targetReplaceable = target?.CanBeReplaced() == true
             || target is not null
                 && VanillaPlacement.SlabCanBeReplaced(target, block, replacesClicked, this.Face, upperHit);
-        if (placeLevel.IsOutsideBuildHeight(position.Y) || !pouring && !targetReplaceable)
+        if (placeLevel.IsOutsideBuildHeight(position.Y) || !targetReplaceable)
             return Refuse(use);
 
         var context = new BlockPlaceContext
@@ -65,7 +63,7 @@ public partial class UseItemOnPacket
         // Like the block's other hooks, while the level's block updates wait, so what it reads stays as it read.
         IBlock? state;
         lock (placeLevel.Fluids.TickLock)
-            state = pouring ? block : GetPlacementState(context, placeLevel);
+            state = GetPlacementState(context, placeLevel);
 
         if (state is null)
             return Refuse(use);
@@ -75,12 +73,8 @@ public partial class UseItemOnPacket
         // Vanilla's BlockItem.canPlace also requires Level.isUnobstructed for the final state, so a slab that merges
         // into a double slab is checked as the double: the block's collision shape can't overlap a mob or player (say,
         // the placing player's own feet when they look down and place under themselves).
-        if (!pouring && !IsUnobstructed(placeLevel, position, block))
+        if (!IsUnobstructed(placeLevel, position, block))
             return Refuse(use);
-
-        // Like vanilla's buckets, water poured where it evaporates (the nether) hisses instead of being placed.
-        if (block.Is(BlockIds.Water) && placeLevel.Evaporates(player, position))
-            return UseResult.Consume;
 
         var placing = new BlockPlaceEventArgs(use.Server, player, block, position, placeLevel, this.Hand)
         {
@@ -102,11 +96,13 @@ public partial class UseItemOnPacket
         // The event's handlers may have filled the target (or a second half's place) or changed the player's hand
         // while it ran: all are checked again in the same step as the block is placed, and the item is only used once
         // it is.
+        // Vanilla BlockItem.placeBlock retains UPDATE_ALL_IMMEDIATE; plugin placement keeps its existing flags.
+        var flags = currentItem.Holder.Block is BlockType ? BlockUpdateFlags.All : BlockUpdateFlags.AllImmediate;
         var stored = await placeLevel.TrySetBlockAsync(
             position,
             block,
-            BlockUpdateFlags.All,
-            current => use.CanCommit && (pouring || current.CanBeReplaced()
+            flags,
+            current => use.CanCommit && (current.CanBeReplaced()
                     || VanillaPlacement.SlabCanBeReplaced(current, placed, replacesClicked, this.Face, upperHit))
                 && VanillaPlacement.SecondHalfFits(placeLevel.BlockUpdates, position, placed)
                 && ReferenceEquals(player.Inventory.GetItem(use.HandSlot), currentItem)
@@ -118,14 +114,15 @@ public partial class UseItemOnPacket
 
         await player.FireProgressAsync("placed_block", item: use.UsedItem, block: block, position: position);
 
-        if (!pouring)
+        if (currentItem.Holder.Id == ItemIds.PowderSnowBucket)
+            BlockLighting.Play(placeLevel, position, "minecraft:item.bucket.empty_powder_snow", except: player.EntityId);
+        else
             BlockSoundPlayback.Play(placeLevel, block, position, breaking: false, player.EntityId);
 
         Signs.OnPlacedByPlayer(placeLevel, position, block, player);
 
         var center = (VectorD)position + new VectorD(0.5, 0.5, 0.5);
-        var gameEvent = pouring ? MobGameEvent.FluidPlace : MobGameEvent.BlockPlace;
-        placeLevel.EmitGameEvent(gameEvent, center, player, affectedBlock: block);
+        placeLevel.EmitGameEvent(MobGameEvent.BlockPlace, center, player, affectedBlock: block);
 
         return UseResult.Success;
     }
@@ -137,11 +134,8 @@ public partial class UseItemOnPacket
         if (item.Holder.Block is BlockType pluginBlock)
             return Plugins.ItemBehaviors.CanUseItems(player) ? pluginBlock.DefaultState : null;
 
-        if (item.Is(ItemsRegistry.WaterBucket))
-            return BlocksRegistry.Water;
-
-        if (item.Is(ItemsRegistry.LavaBucket))
-            return BlocksRegistry.Lava;
+        if (BucketItems.Handles(item))
+            return null;
 
         if (VanillaRedstone.TryGetPlacedBlock(item.Holder, out var placed)
             || BlocksRegistry.TryGetBlock(item.Holder, out placed))

@@ -30,9 +30,6 @@ and thunder as in vanilla: only the draw order inside one chunk's tick matches.
 
 Around the plants that grow:
 
-- **Shape updates run twice.** A head growing into a gap below its plant is stored with every flag, and kelp gets
-  a water tick vanilla doesn't schedule, in six captured cases; the cause and the cases are in
-  [vanilla blocks' reactions to block updates](vanilla-blocks-reactions-to-block-updates.md).
 - **Pitcher crops have no shape handler.** A lower half that loses its farmland or light, or a half whose other half
   the world removes, stays; vanilla's `PitcherCropBlock.updateShape` breaks it.
 - **Cave, weeping and twisting vines don't break when they lose their support.** Their shape update schedules the
