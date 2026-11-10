@@ -178,7 +178,7 @@ public final class ArmorStandFixtures {
             input.add("saved", saved(level, stand));
             record(input, heard, userPackets, gameEvents);
             input.add("stats", strings(user.awarded));
-            input.add("criteria", criteria(user, advancement));
+            input.add("completedCriteria", criteria(user, advancement));
         }
 
         discardEntities(level);

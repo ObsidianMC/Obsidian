@@ -291,7 +291,8 @@ public partial class PlayerBase
     {
         if (!Alive || Respawning || target.Level != Level || !target.IsInRange(this, GameMode == GameMode.Creative ? 8 : 6))
             return false;
-        if (Level is AbstractLevel events)
+        // Vanilla's ArmorStand.interact emits only its equip and unequip events (armor_stand_use.json).
+        if (Level is AbstractLevel events && target is not ArmorStand)
             events.EmitGameEvent(MobGameEvent.EntityInteract, target.Position, this);
         var interaction = location is { } at
             ? new EntityInteractEventArgs(this, target, Server, hand, at, sneaking)
