@@ -192,17 +192,21 @@ replaces only what vanilla produced.
 
 - `melting_weather.json` (`VanillaMeltingWeather.ReplayMeltingAndWeatherReference`) records ice, frosted ice and
   snow layers melting and the chunk tick's precipitation pass, from `Java/MeltingWeatherFixtures.java`. The probe runs
-  a dedicated server of its own in a normal overworld (sea level 63, which the snow line is measured from) with the
-  game frozen. Each case fills the nine chunks around chunk (0, 0) with its biome and blocks, waits for vanilla's
+  a dedicated server of its own with the game frozen. Cases use a normal overworld (sea level 63), or a flat
+  overworld (`generator: flat`, sea level -63); the driver groups them into separate server runs. Each case fills the nine chunks around chunk (0, 0) with its biome and blocks, waits for vanilla's
   light engine and records the light the behaviour reads, which the replay writes into its chunks as input rather
   than relighting. `random_tick`, `tick` and `place` cases run one block's random tick, scheduled tick or placement
   with the level random seeded; `precipitation` cases run `ServerLevel.tickChunk` on chunk (0, 0) a number of times
   with the level random and `randValue` set, over layers tiled across the nine chunks. Each records the blocks that
   changed, the block and fluid ticks scheduled with their delays, the next random draw and, for precipitation, the
   position sequence afterwards. The replay drives Obsidian's random-tick binding, `RunScheduledTick`, a block write
-  and `TickRandomBlocks` with a player in chunk (0, 0), the only chunk whose neighbours are all loaded. Frosted ice
-  cases keep every neighbour of a melting block with two frosted neighbours, since Obsidian has no neighbour-changed
-  hook for vanilla's frosted ice yet.
+  and `TickRandomBlocks` on the case's level with a player in chunk (0, 0), the only chunk whose neighbours are all
+  loaded. Sparse frost cases capture immediate neighbour collapse, including removing an end of a trail. A
+  `biomeBorder` selects the other biome at or above a quart coordinate on x, y or z; `biomeSamples` records native
+  full-resolution lookups with `biomeSeed`, including all four horizontal chunk borders. Entity cases install
+  armor stands without ticking them and record `entityPositions` after snow grows; standing and edge-overlapping
+  entities rise, while those above or outside the new collision volume stay put. The replay also checks client
+  position correction in one focused Obsidian packet test.
 
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.
@@ -258,8 +262,10 @@ instrument dumper are separate so editing these probes does not regenerate unrel
 The `placement` capture takes about 10 seconds after the server starts and re-records every item; to add a context,
 add it to `contexts` and capture again.
 
-The `melting_weather` capture takes about 20 seconds and re-records every case; to add one, add its inputs to
-`cases` and capture again.
+For `melting_weather`, `CaptureCases` accepts exact `+`-separated case names and records only those, leaving the
+other cases unchanged. For example, add a case's inputs to `cases` and capture it with
+`-p:CaptureFixtures=melting_weather -p:CaptureCases=review_frosted_pair_collapses`. Each generator group takes
+about 10-20 seconds after the driver builds; it does not run other fixture captures.
 
 A `structure_pieces` case with `captureReferences: true` also records `referenceChunks`: the saved
 `structures.References` from vanilla's chunk serializer at STRUCTURE_REFERENCES, across its bounding box plus
@@ -272,7 +278,7 @@ other dumpers, so editing it regenerates the assets once.
 
 The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft version> <cache directory>
 <scratch directory> <test assets directory>
-[redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+placement+melting_weather]
+[redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+heightmaps+saved_heightmaps+mining+placement+copper_weathering+fire+melting_weather]
 [case names]`.
 
 ## How it captures

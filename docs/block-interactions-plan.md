@@ -310,11 +310,8 @@ member per Mojang class; the generator binds it.
 - **Growing plants:** kelp, cave vines (with glow berries), weeping and twisting vines (`GrowingPlantHeadBlock`),
   melon and pumpkin stems, vines, the pitcher crop, the poplar sapling (needs weighted tree growers, see
   `saplings-that-26-3-added.md`).
-- **Melting and weather (done):** ice, frosted ice and snow layers melt, and the chunk tick runs vanilla's
-  `tickPrecipitation` (snow building up, water freezing, cauldrons filling), replayed from `melting_weather.json`.
-  Left: frosted ice melting when a frosted neighbour goes (needs the neighbour-changed hook), growing snow pushing
-  entities up, and the thunder pass (`tickThunder`: lightning and skeleton traps), which vanilla runs per chunk in
-  the spawning pass rather than the block tick.
+- **Melting and weather:** ice, frosted ice, snow layers, and vanilla's `tickPrecipitation` in
+  `AbstractLevel.TickChunkBlocks` (snow building up, water freezing, cauldrons filling in rain).
 - **Pointed dripstone:** growth, dripping, cauldron filling, falling. `SulfurSpikeBehavior` owns the class but
   returns early for anything that isn't a sulfur spike.
 - **Budding amethyst, sculk catalysts** (spreading on mob deaths), **nylium, eyeblossoms, dried ghasts, coral
@@ -325,9 +322,8 @@ member per Mojang class; the generator binds it.
 - **Furnaces:** unlock the recipe and fire `recipe_unlocked` when the result is taken.
 
 One thing to know before starting: a block that vanilla random-ticks but Obsidian has no behaviour for makes no
-draws, so the level's random sequence parts from vanilla's wherever those would draw (the precipitation pass draws
-in vanilla's order now). Captures of growth draws only match once the blocks ticked before them in the same chunk are
-done.
+draws, and neither does the missing weather pass, so the level's random sequence parts from vanilla's wherever those
+would draw. Captures of growth draws only match once the blocks ticked before them in the same chunk are done.
 Capture each behaviour through a Java probe with its own seeded random rather than through a whole-level scenario.
 
 Capture: a `random_ticks` Java probe fixture (state in, draws consumed and state out), and an RCON scenario for
@@ -533,7 +529,7 @@ adds.
 | Grass, mycelium: spread | Works | |
 | Copper: oxidize | Works | Captured random draws, all 13 owners, connected doors/chests and retained block entities |
 | Leaves: decay | Works | |
-| Ice, snow layers: melt | Works | Frosted ice doesn't melt when a frosted neighbour goes; growing snow doesn't push entities up |
+| Ice, snow layers: melt | Works | Captured melting, sparse frost collapse, biome borders, flat snow lines and entity lifting (`melting_weather.json`) |
 | Fire | Works | Captured (`fire_ticks.json`). Fire lights a portal later in the tick than vanilla's; soul fire placed off a soul fire base isn't put out on placement (`BaseFireBlock.onPlace` is unbound); fire a shape update destroys goes later in the tick |
 | Lava, water | Works | Flow is captured; lava's ignition isn't |
 | Farmland: hydrate | Works | |
@@ -577,7 +573,7 @@ Statements the code contradicts, to correct in phase 0.
   read 0".
 - **`docs/known-gaps/plant-growth-beyond-saplings.md`:** "only saplings and the propagule do anything", "crops don't
   grow on random ticks", "leaves don't decay", and its "Where to start". Still
-  true: bone meal on other plants.
+  true: copper, bone meal on other plants.
 - **`docs/known-gaps/vanilla-blocks-reactions-to-block-updates.md`:** doors, trapdoors, rails and TNT "aren't
   modelled"; scheduled ticks of other vanilla blocks "do nothing"; "only pressure plates and wooden buttons react to
   entities inside them"; its "Where to start".

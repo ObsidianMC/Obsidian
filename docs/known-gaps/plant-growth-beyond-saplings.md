@@ -16,6 +16,10 @@ replayed from vanilla in `melting_weather.json`. Lava's random tick draws its ch
 fire to the blocks vanilla's lava ignites; fire then ticks, spreads and burns out with vanilla's draws (see
 `fire_ticks.json` in [scenario captures](../scenario-captures.md)).
 
+Weather still switches immediately. Vanilla's precipitation pass tests rain strength above 0.2 while weather fades
+in and out, so transition ticks can differ. The level's growth/precipitation random is not shared with mob spawning
+and thunder as in vanilla: only the draw order inside one chunk's tick matches.
+
 **Where to start:** each plant is another case of `Growth` (its random tick, bone meal target, chance and growth),
 placing features through `LiveFeatureLevel`; crops' random ticks need vanilla's `CropBlock.getGrowthSpeed`. Other
 blocks' random ticks go next to the plants' in `AbstractLevel.TickChunkBlocks`.
