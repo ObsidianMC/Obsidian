@@ -34,6 +34,11 @@ into a one-block gap stored as body with flags 3, and kelp water ticks vanilla n
 before a queued break still asks a block's shape update for every face, so live coral plants and fans draw their
 death delay only while they still have their support.
 
+A block that another block's removal breaks through its shape update is removed a tick later: removals run in the
+level tick's entity phase, which runs only the actions queued when it starts, where vanilla breaks the whole chain
+at once. `door_support_becomes_oak_leaves` in `ticking_blocks.json` pins it: the lower half breaks in the first tick,
+the upper half in the next.
+
 Mud drying into clay above dripping pointed dripstone and a dirt path turning into dirt do not lift entities
 standing on them onto the taller replacement block (vanilla's `Block.pushEntitiesUp`). Their bounded captures have
 no entities standing there, so they cover the block transformation but not this missing displacement.

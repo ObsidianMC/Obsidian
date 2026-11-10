@@ -193,26 +193,28 @@ Rides with: its own PR after plan phase 4. Worth doing before large redstone bui
 *Steps 1 and 2 done (measured below); step 3 open. Step 3 moves update order to vanilla's, which can change what
 redstone does today, so it needs order-sensitive captures first. Approved 2026-11-09.*
 
-A block change that asks for updates reaches two engines in turn. Every route reaches both, in this order:
+A block change that asks for updates reaches two engines in turn: every route below but feature growth reaches both,
+the fluid level first.
 
 | Change | Fluid level (`FluidLevel.OnChanged`, `Fluids/NeighborUpdater.cs`) | Notification pipeline |
 |---|---|---|
 | A player's, plugin's, command's or the redstone engine's write (`TrySetBlockUntrackedAsync`, then `AfterBlockSet`) | runs first | after it, from `NotifyBlockChange` |
-| A fluid tick's write, a shape update's write, and `IBlockLevel.SetBlock` (scheduled and random tick owners, plugin hooks, falling blocks) through `FluidLevel.SetBlock` | runs first | after it, from `IFluidLevelAccess.OnBlockSet` |
+| A fluid tick's write, a shape update's write, and `IBlockLevel.SetBlock` (scheduled and random tick owners, plugin hooks, falling blocks, precipitation's snow layers, ice and cauldron fills) through `FluidLevel.SetBlock` | runs first | after it, from `IFluidLevelAccess.OnBlockSet` |
 | A write inside a block use (`BlockUseEffects`) | stored quietly; `AfterBlockSet` (or `NotifyBlockChange`) is replayed after the use's locks unwind | as for a level write |
 | A piston's move | the redstone engine's writes, so as for a level write | as for a level write |
 | A write with `KnownShape` (the default public `SetBlockAsync`) | no shape updates; neighbours as flagged | no shape steps; neighbours as flagged |
 | A write without `Neighbors` (redstone's clients-only writes, coral dying with flag 2) | shape updates, no `neighborChanged` | before: shape steps; now nothing but placement |
-| Growth through `LiveFeatureLevel` (trees, bone meal features) | only `UpdateFluidsAround` | none |
+| Growth through `LiveFeatureLevel` (trees, bone meal features) | only `UpdateFluidsAround`: no shape updates | none |
 
 The fluid level runs vanilla's order: removal hooks, `onPlace` (liquids, generated owners, falling blocks, plugins),
-six `neighborChanged` (liquids, plugins), then six shape updates, which ask falling blocks, signs, door and chest
+six `neighborChanged` (liquids, plugins, frosted ice), then six shape updates, which ask falling blocks, signs, door and chest
 placement rules, generated shape owners and plugins (`LevelBlockUpdates.UpdateShape`) before `ShapeUpdater`. It
 skips the shape updates, as vanilla's `setBlock` does, when the removal or `onPlace` replaced the block, and once
-the 512-deep chain limit runs out. The pipeline ran six shape steps of its own (generated owners, else straight to
-`ShapeUpdater`, writing what changed with every flag), then the redstone engine's placement and six neighbour steps.
-Because a write inside the fluid level's updater drains the pipeline at once, the pipeline's shape steps ran ahead
-of the updater's queued ones, which the replays caught: a conversion stored with flags 3 where vanilla stores 2,
+the 512-deep chain limit runs out. A write nested in the updater's chain only queues its own updates there, to run
+in vanilla's order after the current step, so they haven't run yet when the pipeline hears of it. The pipeline queued
+the redstone engine's placement step, then six shape steps of its own (generated owners, else straight to
+`ShapeUpdater`, writing what changed with every flag), then six neighbour steps. Because a nested write drains the
+pipeline at once, its shape steps ran ahead of the updater's queued ones, which the replays caught: a conversion stored with flags 3 where vanilla stores 2,
 an extra neighbour update, a fluid tick vanilla never schedules, and coral drawing twice from the level's random.
 Plugins' `UpdateShape` and `NeighborChanged` were called once per change before and after (the pipeline never asked
 plugins); generated owners such as observers and coral were asked twice.
@@ -229,20 +231,34 @@ change before → after:
 | A piston pushing a block (5 writes over 6 ticks) | 60 → 30 | 0 | 18 + 19 | 0 |
 | A 15-dust line toggled on and off (81 writes) | 972 → 486 | 0 | 486 + 1949 | 0 |
 
-Timed on the same live level, both modes interleaved in one process (15 rounds each, median), Release, the
-machine from the probe below under load: a change inside solid stone 2.2 µs → 1.7 µs, toggling a 15-dust line
-316 µs → 271 µs. The re-runnable probe below doesn't see this: it runs `RedstoneTestWorld`, where the pipeline is
-the only engine and keeps its shape steps (its rows were unchanged within noise).
+The re-runnable probe below times the same changes on a real level (its `Level/` rows); its `RedstoneTestWorld`
+rows don't see this, since there the pipeline is the only engine and keeps its shape steps. Base `ffacf749a` with the
+probe added against this change, three alternating runs each on the machine below under load (ns per operation,
+bytes per operation):
+
+| Operation | Base | One shape update per change |
+|---|---:|---:|
+| Level / change inside solid stone | 2,353 – 4,174 (2,208 B) | 1,558 – 1,600 (2,208 B) |
+| Level / toggle 15 dust | 355,799 – 380,665 (165–173 KB) | 281,063 – 291,300 (157.5 KB) |
+
+The fluid level's view of chunks had to widen with it. It reads and writes the chunks it tracks for ticks, but a
+complete chunk is in its region slot before generation or a load from disk tracks it, and an unloading chunk stays in
+its slot, read-only, after its final save snapshot. The pipeline's shape pass read both, so a fence across such a
+border connected only through it. The fluid level now writes any resident complete chunk and reads any complete chunk
+in its slot, as the rest of the level does (`LevelFluids.TryGetChunk`, `GetBlock`); only ticks wait for tracking.
 
 Steps:
 
 1. **Done.** Count shape evaluations, neighbour steps, fluid tick requests and block writes on a live level (above).
 2. **Done.** A live level queues its changes into the pipeline without shape steps
-   (`AbstractLevel.NotifyBlockChange`), so each shape update runs once, in the fluid level's vanilla-ordered updater,
+   (`AbstractLevel.NotifyBlockChange`, `BlockNotificationPipeline.Enqueue`'s `shapes`), so each shape update runs once, in the fluid level's vanilla-ordered updater,
    with vanilla's flags on what it writes. The pipeline's placement and neighbour steps keep their order. Two rules
    had only been right because of the pipeline's second look and now follow vanilla's `DoorBlock`: any door is a
    half's partner (a copper door's upper half weathers with the lower) and the lower half needs a sturdy face below.
-   Coral draws on every change again, and the replays' pins for the double dispatch are gone.
+   Coral draws on every change again, and the replays' pins for the double dispatch are gone. `more_blocks.json`'s
+   shape cases replay through the fluid level's shape update as well as the pipeline's; of the 27 redstone
+   scenarios, the 12 marked `level` run on a real level and the rest only on `RedstoneTestWorld`, which keeps the
+   pipeline's shape steps.
 3. **Open.** Decide whether redstone moves onto the vanilla-order updater. The pipeline is first-in, first-out with
    pending duplicates coalesced and a 10,000-step limit, and redstone only runs there, so redstone components and
    plugin or fluid reactions still can't interleave the way vanilla's single updater does. That changes update
@@ -370,11 +386,13 @@ Every item should land with its before and after from the same harness, and with
 
 ```sh
 dotnet build Obsidian.WorldgenBench -c Release -m:1
-dotnet run --project Obsidian.WorldgenBench -c Release --no-build -- block > block.csv
+dotnet run --project Obsidian.WorldgenBench -c Release --no-build -- block > ../block.csv
 ```
 
-The probe shares `RedstoneTestWorld`, runs offline, excludes setup, and reports the median of seven samples after
-250 ms warmup per case; one dust operation is an alternating on/off transition.
+It writes CSV to standard output; keep the file outside the checkout. The probe shares `RedstoneTestWorld`, runs
+offline, excludes setup, and reports the median of seven samples after 250 ms warmup per case; one dust operation is
+an alternating on/off transition. The `Level/` cases make the same changes on a real level (both update engines),
+kept in a temporary folder that is deleted afterwards.
 Before: docs branch point `15309c34b`; both runs: 2026-11-09, AMD Ryzen 9 9950X, Windows 11 (10.0.22631), x64,
 .NET SDK 10.0.403, runtime .NET 10.0.14, Release. Shared-machine timings include load and JIT variation.
 

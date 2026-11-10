@@ -82,11 +82,12 @@ replaces only what vanilla produced.
   and music probes from `Java/MoreBlockFixtures.java`. Placement runs the chosen block's placement routine and
   survival check; signs are already a standing or ceiling variant. It records full states for every wool/concrete
   stair/slab color and poplar construction families, including powered placement, waterlogging and stair corners.
-  Shape cases record scheduled fluid/block ticks and replay through live notifications; where vanilla's shape
-  update breaks the block, the replay runs one level tick, which is when Obsidian removes it. Each shape case also
-  runs through the shared shape pass as generation reads it, wherever that pass has a rule for the block, so the
-  fence, stair and survival cases cover generation's rules too. The grindstone, wall button and nether wart cases
-  check blocks that gained a shape rule when rules were bound by declaring class. Leaf-distance ticks and
+  Shape cases record scheduled fluid/block ticks and replay twice: through the fluid level's shape update, which a
+  live level runs, and through the notification pipeline, which runs them where it's the only engine; where
+  vanilla's shape update breaks the block, the replay runs one level tick, which is when Obsidian removes it. Each
+  shape case also runs through the shared shape pass as generation reads it, wherever that pass has a rule for the
+  block, so the fence, stair and survival cases cover generation's rules too. The grindstone, wall button and nether
+  wart cases check blocks that gained a shape rule when rules were bound by declaring class. Leaf-distance ticks and
   axe providers also capture the next random draw; stripping checks state, sound ID and durability cost. Door,
   trapdoor and gate uses check state and sound ID (their captured pitch is not asserted by this replay); door
   placement checks the upper half. Note cases invoke vanilla's note and block-event routines, capture trigger
@@ -208,15 +209,17 @@ replaces only what vanilla produced.
   nylium under blocks that do and don't let light down; dirt paths turning to dirt, and which new blocks above or
   beside them schedule that; coral blocks, plants, fans and wall fans dying dry or staying by water, scheduling their
   death when placed or when a neighbour changes, and breaking when their support goes; chorus plants staying, breaking
-  and connecting as their support and neighbours change. The replay runs each case through Obsidian's generated
+  and connecting as their support and neighbours change; an oak door whose stone floor becomes soul sand (it stays)
+  or oak leaves (both halves break). The replay runs each case through Obsidian's generated
   owners, or a live block change, in its own world, and compares everything but the game events. Obsidian destroys
   blocks in the tick's entity phase, so a case that destroys one runs the world tick before comparing, keeping the
   recording random active. Ordered writes compare every flag bit; destruction compares state and drops intent;
   falling entities compare type, position, state, damage enablement, damage per distance and maximum damage. The
   replay rejects unexpected entities and writes outside the case and scans the loaded chunks for unexpected blocks.
-  An explicit expected difference pins the two stalagmite cases' resource-spawn draws (the bounded probe
-  suppresses loot); it fails when it disappears. The `review_*` cases also cover mud in the nether, mixed
-  sulfur/dripstone columns (growth and native `findTip`, including opposite-direction tips), and independent drops/silence landings.
+  Explicit expected differences pin the resource-spawn draws of the two stalagmite cases and the door on leaves (the
+  bounded probe suppresses loot), and the door's upper half breaking in the next entity phase, where vanilla breaks
+  the chain at once (the replay runs that phase alone, without block ticks); each fails when it disappears. The
+  `review_*` cases also cover mud in the nether, mixed sulfur/dripstone columns (growth and native `findTip`, including opposite-direction tips), and independent drops/silence landings.
   An optional `dimension` supplies that dimension type's environment attributes; optional `actions` are subsequent
   `UPDATE_ALL` writes. `findTip` takes `maxLength` and `includeMerged` and records the returned position or null.
 
