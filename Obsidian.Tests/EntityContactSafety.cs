@@ -97,7 +97,44 @@ public sealed class EntityContactSafety
         Assert.Equal(standing, item.Position);
     }
 
-    private sealed class ReplacementRandom(Action replace) : LegacyRandomSource(0)
+    [Fact]
+    public async Task TurtleEggContactDoesNotOverwriteAConcurrentReplacement()
+    {
+        await using var context = TestServerFactory.CreateServer($"egg-race-{Guid.NewGuid():N}");
+        var world = context.World;
+        WorldBlockEntities.AddEmptyChunk(world);
+        await world.GetChunkAsync(0, 0, scheduleGeneration: false);
+        var position = new Vector(8, 64, 8);
+        world.BlockUpdates.SetBlock(position + Vector.Down, BlocksRegistry.Sand);
+        world.BlockUpdates.SetBlock(position, BlocksRegistry.TurtleEgg.WithProperty("eggs", "2"));
+        var pig = new Pig
+        {
+            Level = world,
+            Position = new VectorD(8.5, 64.4375, 8.5),
+            MovementFlags = MovementFlags.OnGround
+        };
+        pig.InitializeAi(finalizeSpawn: false);
+        world.SpawnEntity(pig);
+        pig.RecordLanding(2);
+
+        // Replace after the contact read, before the egg breaks; every draw then passes the break chance.
+        world.GrowthRandom = new ReplacementRandom(() =>
+        {
+            Assert.False(world.Fluids.TickLock.IsHeldByCurrentThread);
+            var replacement = Task.Factory.StartNew(
+                () => world.BlockUpdates.SetBlock(position, BlocksRegistry.DiamondBlock),
+                default,
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default);
+            Assert.True(replacement.Wait(TimeSpan.FromSeconds(10)), "Concurrent replacement was blocked.");
+            replacement.GetAwaiter().GetResult();
+        }, alwaysZero: true);
+        await world.EntityContacts.TouchAsync(pig);
+
+        Assert.True(world.BlockUpdates.GetBlock(position).Is(BlockIds.DiamondBlock));
+    }
+
+    private sealed class ReplacementRandom(Action replace, bool alwaysZero = false) : LegacyRandomSource(0)
     {
         private bool replaced;
 
@@ -109,7 +146,8 @@ public sealed class EntityContactSafety
                 replace();
             }
 
-            return base.Next(bits);
+            var drawn = base.Next(bits);
+            return alwaysZero ? 0 : drawn;
         }
     }
 

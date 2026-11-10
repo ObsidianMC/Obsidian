@@ -78,6 +78,21 @@ internal sealed class TurtleEggContactBehavior : IFallOnBehavior, IStepOnBehavio
             return;
 
         var pitch = 0.9f + random.NextFloat() * 0.2f;
+
+        // A landing can be dispatched after the eggs changed, and another thread can change them meanwhile: check
+        // and break as one short mutation, as farmland does. The draws above stay outside it, in vanilla's order.
+        lock (world.Fluids.TickLock)
+        {
+            if (!level.Blocks.GetBlock(position).IsSameState(block))
+                return;
+
+            BreakEgg(level, world, position, block, pitch);
+        }
+    }
+
+    // Vanilla's TurtleEggBlock.destroyEgg once the chance passed: one egg fewer, or the block gone with the last one.
+    private static void BreakEgg(IContactLevel level, AbstractLevel world, Vector position, IBlock block, float pitch)
+    {
         LevelSounds.PlayAtBlock(world, position, "minecraft:entity.turtle.egg_break", 0.7f, pitch);
         var count = int.Parse(block.GetProperty("eggs")!);
         if (count > 1)
