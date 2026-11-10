@@ -235,13 +235,13 @@ replaces only what vanilla produced.
   a state to `place` with every update. The probe builds the level's environment attributes from the dimension
   type's own attributes and its timelines at that time (no biome or weather layers), uses a legacy random of the seed
   as both the tick's and the level's random, and runs each write's `onPlace` as a chunk does, then its neighbour
-  notifications (with `UPDATE_NEIGHBORS`) and shape updates. It records the draws,
-  the writes, the ticks scheduled, the sounds (without their seed), level events, game events, the entities added
+  notifications (with `UPDATE_NEIGHBORS`) and shape updates. It records the draws, the writes, the ticks scheduled, the sounds (without their seed), level events, game events, the entities added
   (position, yaw, age, home) and the final blocks. The cases cover cracking on each block of `#sand`, hatching one and
   four eggs, eggs on dirt and sandstone, the hatch window's edges, a later day, chance cracks outside the window and
   in the nether, and placing on and off sand. `chances` samples `gameplay/turtle_egg_hatch_chance` by dimension and
   time. The replay runs every case in one world, moved along x, through the random-tick dispatch or a block change,
-  and compares everything recorded but the game events, which no client sees.
+  and compares everything recorded but the game events, which no client sees; the writes in order with every flag,
+  as the level stores them (`LevelFluids.BlockStored`).
 
 - `frogspawn.json` (`VanillaFrogspawn.ReplayFrogspawnReference`) records vanilla's frogspawn, from the same probe
   (`CaptureFixtures=frogspawn`). A case either places frogspawn with every update, which schedules its hatch with a
@@ -249,7 +249,8 @@ replaces only what vanilla produced.
   waterlogged block) plays its sound and hatches two to five tadpoles at drawn offsets and yaws. The cases cover
   placing on water, stone and a waterlogged slab, hatching each number of tadpoles, and dying on flowing and falling
   water, stone and ice. The replay places through a block change and ticks through the level's scheduled-tick
-  dispatch, in one world, and compares the draws, blocks, ticks, sounds, level events and tadpoles.
+  dispatch, in one world, and compares the draws, the writes in order with their flags, blocks, ticks, sounds, level
+  events and tadpoles.
 
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.

@@ -13,8 +13,8 @@ Removal is queued on the serial level tick so loot never runs under the tick loc
 Rails check their base and ascending end support and drop without a break effect. Doors, trapdoors, fence gates,
 rails and TNT react to power (see [Redstone](redstone.md)). Scheduled ticks run for the vanilla classes that have a
 tick behaviour (`TickBehaviors`: leaves, fire, farmland, sugar cane, cactus, bamboo, kelp, bubble columns, soul
-sand, magma, composters, sulfur spikes) and for redstone components and falling blocks; the rest do nothing when
-they come due.
+sand, magma, composters, frogspawn, sulfur spikes) and for redstone components and falling blocks; the rest do
+nothing when they come due.
 Of vanilla's own blocks, pressure plates, tripwire, wooden buttons, detector rails and bubble columns react to
 entities inside them; none has a stepped-on reaction, though magma, turtle eggs and sculk shriekers are handled by
 checks of their own. The [block interactions plan](../block-interactions-plan.md) lists what is missing, phase by
@@ -39,6 +39,11 @@ these differences disappear, so fixing the shared pipeline requires removing the
 Mud drying into clay above dripping pointed dripstone and a dirt path turning into dirt do not lift entities
 standing on them onto the taller replacement block (vanilla's `Block.pushEntitiesUp`). Their bounded captures have
 no entities standing there, so they cover the block transformation but not this missing displacement.
+
+Blocks a feature or structure template places in a running level (`/place`, through `LiveFeatureLevel`) don't run
+their on-place reactions, where vanilla's live placement does. Frogspawn placed that way never schedules its hatch,
+so it never hatches, and turtle eggs placed on sand show no particles. Sniffer eggs placed that way are tracked
+separately and do hatch. World generation runs no on-place reactions, as in vanilla.
 
 Saved `block_ticks` and `fluid_ticks` lists are written in the order the ticks would run, where vanilla writes its
 priority queue's internal heap order. Both reload the list in file order, so after a save and reload Obsidian keeps
