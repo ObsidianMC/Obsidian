@@ -17,6 +17,7 @@ using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.Utilities;
 using Obsidian.WorldData;
+using Obsidian.WorldData.Fluids;
 using Obsidian.WorldData.Generators;
 using Xunit;
 
@@ -171,7 +172,7 @@ internal sealed class BlockProbes : IAsyncDisposable
         }
     }
 
-    // The block ticks pending within reach of the case, against those vanilla scheduled.
+    // The block and fluid ticks pending within reach of the case, against those vanilla scheduled.
     private static void CompareTicks(List<string> differences, JsonElement expected, AbstractLevel level, Vector offset)
     {
         var vanilla = expected.EnumerateArray()
@@ -181,11 +182,13 @@ internal sealed class BlockProbes : IAsyncDisposable
             .ToList();
 
         var chunk = (Chunk)level.GetLoadedChunk(offset.X >> 4, offset.Z >> 4)!;
-        var obsidian = chunk.BlockTicks.Pack()
+        var blockTicks = chunk.BlockTicks.Pack()
             .Where(tick => IsNear(tick.Position, offset))
-            .Select(tick => $"{tick.Position} {tick.Block} in {tick.Delay}")
-            .Order()
-            .ToList();
+            .Select(tick => $"{tick.Position} {tick.Block} in {tick.Delay}");
+        var fluidTicks = chunk.FluidTicks.Pack()
+            .Where(tick => IsNear(tick.Position, offset))
+            .Select(tick => $"{tick.Position} {tick.Type.Name()} in {tick.Delay}");
+        var obsidian = blockTicks.Concat(fluidTicks).Order().ToList();
 
         if (!vanilla.SequenceEqual(obsidian))
             differences.Add($"ticks: vanilla [{string.Join(", ", vanilla)}], Obsidian [{string.Join(", ", obsidian)}]");

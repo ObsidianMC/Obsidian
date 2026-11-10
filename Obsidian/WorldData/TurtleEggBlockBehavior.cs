@@ -1,7 +1,6 @@
 using Obsidian.API.Blocks;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Entities;
-using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 
 namespace Obsidian.WorldData;
@@ -68,7 +67,7 @@ internal sealed class TurtleEggBlockBehavior : IRandomTickBehavior, IOnPlaceBeha
     // shapes.
     private static void Crack(AbstractLevel level, Vector position, IBlock block, int hatch, float pitch)
     {
-        PlaySound(level, position, "minecraft:entity.turtle.egg_crack", pitch);
+        BlockSounds.Play(level, position, "minecraft:entity.turtle.egg_crack", SoundVolume, pitch);
         level.BlockUpdates.SetBlock(position, block.WithProperty("hatch", hatch + 1), BlockUpdateFlags.Clients);
         level.EmitGameEvent(MobGameEvent.BlockChange, Center(position), affectedBlock: block);
     }
@@ -77,7 +76,7 @@ internal sealed class TurtleEggBlockBehavior : IRandomTickBehavior, IOnPlaceBeha
     // x as vanilla places them.
     private static void Hatch(AbstractLevel level, Vector position, IBlock block, float pitch)
     {
-        PlaySound(level, position, "minecraft:entity.turtle.egg_hatch", pitch);
+        BlockSounds.Play(level, position, "minecraft:entity.turtle.egg_hatch", SoundVolume, pitch);
         level.BlockUpdates.RemoveBlock(position);
         level.EmitGameEvent(MobGameEvent.BlockDestroy, Center(position), affectedBlock: block);
 
@@ -104,20 +103,4 @@ internal sealed class TurtleEggBlockBehavior : IRandomTickBehavior, IOnPlaceBeha
         int.TryParse(block.GetProperty(name), out var value) ? value : 0;
 
     private static VectorD Center(Vector position) => (VectorD)position + new VectorD(0.5, 0.5, 0.5);
-
-    // Vanilla's playSound at the block's centre for everyone near it. Its seed comes from a random of its own, not the
-    // level's, so the level's draws stay vanilla's.
-    private static void PlaySound(AbstractLevel level, Vector position, string sound, float pitch)
-    {
-        var center = Center(position);
-        level.PacketBroadcaster.BroadcastToLevelInRange(level, center, new SoundPacket
-        {
-            SoundLocation = sound,
-            SoundPosition = new SoundPosition(center.X, center.Y, center.Z),
-            Category = SoundCategory.Blocks,
-            Volume = SoundVolume,
-            Pitch = pitch,
-            Seed = Random.Shared.NextInt64()
-        });
-    }
 }

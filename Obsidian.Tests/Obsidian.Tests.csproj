@@ -33,6 +33,7 @@
 		<EmbeddedResource Include="Assets\ticking_blocks.json" />
 		<EmbeddedResource Include="Assets\block_use.json" />
 		<EmbeddedResource Include="Assets\turtle_eggs.json" />
+		<EmbeddedResource Include="Assets\frogspawn.json" />
 
 		<EmbeddedResource Include="Assets\heightmaps.json" />
 		<EmbeddedResource Include="Assets\saved_heightmaps.json" />

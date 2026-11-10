@@ -8,10 +8,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
@@ -37,6 +39,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.turtle.Turtle;
 import net.minecraft.world.flag.FeatureFlagSet;
 import net.minecraft.world.flag.FeatureFlags;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -46,31 +49,35 @@ import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.levelgen.PositionalRandomFactory;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.level.redstone.CollectingNeighborUpdater;
 import net.minecraft.world.level.redstone.NeighborUpdater;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.ticks.TickPriority;
 import net.minecraft.world.timeline.Timeline;
 
 /**
- * Calls a vanilla block's own routines (a random tick, or being set with every update) against a bounded block view,
- * with a seeded random that records every draw and an environment attribute system built from the dimension type's
- * attributes and timelines at the case's clock time. Also samples the gameplay/turtle_egg_hatch_chance attribute at
- * given times. It records the turtle eggs fixture.
+ * Calls a vanilla block's own routines (a random tick, a scheduled tick, or being set with every update) against a
+ * bounded block view, with a seeded random that records every draw and an environment attribute system built from the
+ * dimension type's attributes and timelines at the case's clock time. Also samples the gameplay/turtle_egg_hatch_chance
+ * attribute at given times. It records the turtle eggs and frogspawn fixtures.
  *
- * Usage: HatchingFixtures <fixture.json>. Each case's name, seed, dimension, time, setup, origin and place are its
- * input; ticks, draws, writes, scheduled, sounds, levelEvents, gameEvents, entities and after are replaced. Each
+ * Usage: HatchingFixtures <fixture.json>. Each case's name, seed, dimension, time, setup, origin, place and tick are
+ * its input; ticks, draws, writes, scheduled, sounds, levelEvents, gameEvents, entities and after are replaced. Each
  * chance sample's dimension and time are its input; chance is replaced.
  */
 public final class HatchingFixtures {
     private static final String NOTES = "Vanilla 26.3 blocks' own routines, recorded by the asset generator's "
-        + "HatchingFixtures.java against a block view of the case's setup (air elsewhere). A case without place "
-        + "random-ticks the origin's state if its isRandomlyTicking holds; a case with place sets that state at the "
-        + "origin with every update, as /setblock does. The random is a legacy random seeded with seed, as both the "
+        + "HatchingFixtures.java against a block view of the case's setup (air elsewhere). A case with place sets "
+        + "that state at the origin with every update, as /setblock does; a case with tick runs the origin's "
+        + "scheduled tick, as the level runs a tick that is due; any other case random-ticks the origin's state if "
+        + "its isRandomlyTicking holds. The random is a legacy random seeded with seed, as both the "
         + "tick's random and the level's. The level's environment attributes are the dimension type's own "
         + "attributes and its timelines (from the dimension type's timeline tag) on a clock at time; biomes and "
         + "weather add no layer. draws lists each draw in order. writes are the block changes in order with their "
-        + "update flags; each runs the new state's onPlace as a chunk does, and the neighbour shape updates it "
-        + "causes. scheduled lists the block and fluid ticks scheduled, with their delays. sounds, levelEvents and "
+        + "update flags; each runs the new state's onPlace as a chunk does, then with UPDATE_NEIGHBORS its "
+        + "neighbours' neighborChanged, then the neighbour shape updates it causes. scheduled lists the block and "
+        + "fluid ticks scheduled, with their delays, once for each block or fluid and position as the level "
+        + "schedules them. sounds, levelEvents and "
         + "gameEvents are what the level was asked to play or emit, in order (sounds without their seed, which "
         + "vanilla draws from another random). entities are the entities added, with their position, yaw, age, "
         + "home and persistence. after holds the final state of every setup or written position. chances samples "
@@ -125,6 +132,9 @@ public final class HatchingFixtures {
         if (input.has("place")) {
             // As /setblock places it: with every update, which runs its onPlace.
             level.setBlock(origin, state(input.get("place").getAsString()), Block.UPDATE_ALL);
+        } else if (input.has("tick") && input.get("tick").getAsBoolean()) {
+            // ServerLevel.tickBlock, for a tick whose block is still there.
+            level.getBlockState(origin).tick(level, origin, random);
         } else {
             // The level only random-ticks a state whose isRandomlyTicking holds, so the others draw nothing.
             var state = level.getBlockState(origin);
@@ -359,6 +369,7 @@ public final class HatchingFixtures {
         Map<BlockPos, BlockState> blocks;
         JsonArray writes;
         JsonArray scheduled;
+        Set<String> scheduledKeys;
         JsonArray sounds;
         JsonArray levelEvents;
         JsonArray gameEvents;
@@ -379,6 +390,7 @@ public final class HatchingFixtures {
             level.blocks = new LinkedHashMap<>();
             level.writes = new JsonArray();
             level.scheduled = new JsonArray();
+            level.scheduledKeys = new HashSet<>();
             level.sounds = new JsonArray();
             level.levelEvents = new JsonArray();
             level.gameEvents = new JsonArray();
@@ -386,6 +398,11 @@ public final class HatchingFixtures {
             level.tickRandom = random;
             level.attributes = attributes;
             level.lookup = lookup;
+
+            // Neighbour notifications go through the level's updater, as a level's do.
+            var updater = Level.class.getDeclaredField("neighborUpdater");
+            updater.setAccessible(true);
+            updater.set(level, new CollectingNeighborUpdater(level, 1_000_000));
 
             // Mobs' path navigation asks the server's debug subscribers whether to record paths; it has none.
             level.owner = allocateInstance(DedicatedServer.class);
@@ -453,7 +470,8 @@ public final class HatchingFixtures {
 
         // Level.setBlock as far as a block's tick sees it: outside the build height nothing changes; otherwise the
         // block is stored, the new state's onPlace runs as LevelChunk.setBlockState runs it (on every change, unless
-        // UPDATE_SKIP_ON_PLACE is set) and, unless UPDATE_KNOWN_SHAPE is set, the neighbours' shapes update.
+        // UPDATE_SKIP_ON_PLACE is set), with UPDATE_NEIGHBORS the neighbours are told, and unless UPDATE_KNOWN_SHAPE
+        // is set the neighbours' shapes update. Analog outputs and points of interest aren't updated.
         @Override public boolean setBlock(BlockPos pos, BlockState state, int flags, int limit) {
             if (isOutsideBuildHeight(pos)) {
                 return false;
@@ -474,6 +492,10 @@ public final class HatchingFixtures {
 
             if ((flags & Block.UPDATE_SKIP_ON_PLACE) == 0) {
                 state.onPlace(this, pos, old, (flags & Block.UPDATE_MOVE_BY_PISTON) != 0);
+            }
+
+            if ((flags & Block.UPDATE_NEIGHBORS) != 0) {
+                updateNeighborsAt(pos, old.getBlock());
             }
 
             if ((flags & Block.UPDATE_KNOWN_SHAPE) == 0 && limit > 0) {
@@ -507,7 +529,12 @@ public final class HatchingFixtures {
             schedule(pos, BuiltInRegistries.FLUID.getKey(type).toString(), delay);
         }
 
+        // A tick of a block or fluid already scheduled at the position isn't scheduled again.
         private void schedule(BlockPos pos, String type, int delay) {
+            if (!scheduledKeys.add(pos.toShortString() + " " + type)) {
+                return;
+            }
+
             var tick = new JsonObject();
             tick.add("pos", coordinates(pos));
             tick.addProperty("type", type);

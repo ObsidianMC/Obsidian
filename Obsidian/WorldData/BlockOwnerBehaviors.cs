@@ -42,6 +42,8 @@ internal static class OnPlaceBehaviors
     internal static IOnPlaceBehavior CoralWallFanBlock { get; } = new CoralPlantBehavior(onWall: true);
 
     internal static IOnPlaceBehavior TurtleEggBlock { get; } = new TurtleEggBlockBehavior();
+
+    internal static IOnPlaceBehavior FrogspawnBlock { get; } = new FrogspawnBlockBehavior();
 }
 
 /// <summary>
@@ -106,6 +108,8 @@ internal static class TickBehaviors
     internal static IScheduledTickBehavior CoralWallFanBlock { get; } = new CoralPlantBehavior(onWall: true);
 
     internal static IScheduledTickBehavior ChorusPlantBlock { get; } = new ChorusPlantBehavior();
+
+    internal static IScheduledTickBehavior FrogspawnBlock { get; } = new FrogspawnBlockBehavior();
 }
 
 /// <summary>

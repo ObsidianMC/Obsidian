@@ -536,7 +536,7 @@ adds.
 | Lava, water | Works | Flow is captured; lava's ignition isn't |
 | Farmland: hydrate | Works | |
 | Turtle eggs: hatch | Works | |
-| Frogspawn | Partial | Only frogspawn a frog laid hatches |
+| Frogspawn | Works | |
 | Sculk catalysts, pointed dripstone, amethyst buds | Partial | Pointed dripstone and amethyst buds work (`ticking_blocks.json`); mud-to-clay and path-to-dirt do not lift entities; sculk catalysts missing |
 | Trial spawners, vaults | Missing | |
 
