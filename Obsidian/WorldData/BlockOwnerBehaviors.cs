@@ -1,6 +1,7 @@
 using Obsidian.API.Blocks;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Entities;
+using Obsidian.WorldData.Redstone;
 
 namespace Obsidian.WorldData;
 
@@ -263,12 +264,41 @@ internal static class ShapeUpdateBehaviors
 }
 
 /// <summary>
-/// A vanilla class's <c>entityInside</c> override, run for an entity whose box overlaps a block it owns.
+/// A vanilla class's <c>entityInside</c> override, run by the entity contact pass (<see cref="EntityContactPass"/>)
+/// for an entity whose box is inside a block it owns, each tick.
 /// </summary>
 internal interface IEntityInsideBehavior
 {
     /// <summary>Runs the contact of <paramref name="entity"/> with <paramref name="block"/> at <paramref name="position"/>.</summary>
-    void EntityInside(IBlockLevel level, Vector position, IBlock block, Entities.Entity entity);
+    ValueTask EntityInsideAsync(IContactLevel level, Vector position, IBlock block, Entities.Entity entity);
+}
+
+/// <summary>
+/// A vanilla class's <c>stepOn</c> override, run by the entity contact pass for an entity on the ground standing on a
+/// block it owns, each tick, before the blocks it's inside.
+/// </summary>
+internal interface IStepOnBehavior
+{
+    /// <summary>Runs <paramref name="entity"/> standing on <paramref name="block"/> at <paramref name="position"/>.</summary>
+    ValueTask SteppedOnAsync(IContactLevel level, Vector position, IBlock block, Entities.Entity entity);
+}
+
+/// <summary>
+/// A vanilla class's <c>fallOn</c> override, run by the entity contact pass for an entity that landed on a block it owns
+/// after falling, before the block it stands on and those it's inside.
+/// </summary>
+/// <remarks>
+/// Vanilla's base <c>Block.fallOn</c> is the fall damage, which entities still take where they land; a block that
+/// changes it takes it over when it gets a member here.
+/// </remarks>
+internal interface IFallOnBehavior
+{
+    /// <summary>
+    /// Runs <paramref name="entity"/> landing on <paramref name="block"/> at <paramref name="position"/> after falling
+    /// <paramref name="fallDistance"/> blocks.
+    /// </summary>
+    ValueTask FallenOnAsync(
+        IContactLevel level, Vector position, IBlock block, Entities.Entity entity, double fallDistance);
 }
 
 /// <summary>
@@ -278,4 +308,53 @@ internal interface IEntityInsideBehavior
 internal static class EntityInsideBehaviors
 {
     internal static IEntityInsideBehavior BubbleColumnBlock { get; } = new BubbleColumnBlockBehavior();
+
+    internal static IEntityInsideBehavior BasePressurePlateBlock { get; } = new PressurePlateContact();
+
+    internal static IEntityInsideBehavior TripWireBlock { get; } = new TripWireContact();
+
+    internal static IEntityInsideBehavior DetectorRailBlock { get; } = new DetectorRailContact();
+
+    internal static IEntityInsideBehavior ButtonBlock { get; } = new ButtonContact();
+
+    // The redstone blocks run their level's own instance, which holds what they need from the level.
+    private sealed class PressurePlateContact : IEntityInsideBehavior
+    {
+        public ValueTask EntityInsideAsync(IContactLevel level, Vector position, IBlock block, Entities.Entity entity) =>
+            level.Redstone.Plates.EntityInsideAsync(position, block, entity);
+    }
+
+    private sealed class TripWireContact : IEntityInsideBehavior
+    {
+        public ValueTask EntityInsideAsync(IContactLevel level, Vector position, IBlock block, Entities.Entity entity) =>
+            level.Redstone.Tripwires.EntityInsideAsync(position, block, entity);
+    }
+
+    private sealed class DetectorRailContact : IEntityInsideBehavior
+    {
+        public ValueTask EntityInsideAsync(IContactLevel level, Vector position, IBlock block, Entities.Entity entity) =>
+            level.Redstone.DetectorRails.EntityInsideAsync(position, block);
+    }
+
+    private sealed class ButtonContact : IEntityInsideBehavior
+    {
+        public ValueTask EntityInsideAsync(IContactLevel level, Vector position, IBlock block, Entities.Entity entity) =>
+            BasicRedstoneComponents.PressedByArrowInsideAsync(level.Redstone.Level, position, block);
+    }
+}
+
+/// <summary>
+/// Obsidian implementations of vanilla classes that override <c>stepOn</c>, bound from
+/// <c>block_step_on_classes.json</c> (<c>BlocksRegistry.GetStepOnBehavior</c>). None has one yet.
+/// </summary>
+internal static class StepOnBehaviors
+{
+}
+
+/// <summary>
+/// Obsidian implementations of vanilla classes that override <c>fallOn</c>, bound from
+/// <c>block_fall_on_classes.json</c> (<c>BlocksRegistry.GetFallOnBehavior</c>). None has one yet.
+/// </summary>
+internal static class FallOnBehaviors
+{
 }
