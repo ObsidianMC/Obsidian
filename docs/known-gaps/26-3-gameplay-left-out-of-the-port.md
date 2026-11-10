@@ -24,7 +24,7 @@ mobs exist and sync to clients, but some can't be used and some biomes lack mobs
   - bubble columns: creation, bucket placement, source replacement, direction and breathing;
   - crops: growth draws, farmland hydration and tilling, and nether wart;
   - fire: support, facing, spread and burning out;
-  - plants: stack collapse, bamboo placement and leaf distance;
+  - plants: stack collapse and bamboo placement;
   - combat: damage and bypass formulas, wolf armor, golem repair and freezing;
   - mob navigation: water, banks, terraces and doors, and species path costs and floating;
   - bundles: capacity and nesting, and fishing enchantments;

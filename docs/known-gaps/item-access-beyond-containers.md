@@ -4,15 +4,13 @@
 **Status:** open. Item access (see [plugin content](../plugin-content.md#item-access)) covers vanilla's containers,
 hoppers, droppers and dispensers; the rest of vanilla's item movers aren't modelled.
 
-- **Dispensers** drop every item, like vanilla's default behaviour. Vanilla's item behaviours (shooting arrows and
-  other projectiles, pouring and filling buckets, bone meal, placing shulker boxes and other blocks, equipping
-  armour, igniting TNT, shearing, ...) aren't modelled, and a dispenser with nothing to fire doesn't emit vanilla's
-  `block_activate` game event.
+- **Dispensers** place boats and minecarts and drop every other item, like vanilla's default behaviour. Vanilla's
+  other item behaviours (shooting arrows and other projectiles, pouring and filling buckets, bone meal, placing
+  shulker boxes and other blocks, equipping armour, igniting TNT, shearing, ...) aren't modelled, and a dispenser
+  with nothing to fire doesn't emit vanilla's `block_activate` game event.
 - **Composters** take items put in by hand and by a hopper above, and give bone meal out by hand and to a hopper
   below, adding the layers each item's `minecraft:compostable` gives. Items thrown into one (item entities) aren't
   taken yet, and the ready tick is checked by scheduling and running it directly, not over a 20-tick world run.
-- **Minecarts with chests or hoppers** are neither containers hoppers reach (vanilla's `getEntityContainer`) nor
-  hoppers themselves.
 - **Hopper timing.** A hopper takes in item entities on its own tick, not also as they move into it (vanilla's
   `entityInside`), and takes them in entity id order rather than vanilla's entity section order. Hoppers tick in
   their chunk's block entity order, not vanilla's level-wide list; the cooldown rules make chains independent of
@@ -24,7 +22,7 @@ hoppers, droppers and dispensers; the rest of vanilla's item movers aren't model
 - **Fluids** have no access API yet; one would follow `IItemAccess`'s shape (amounts instead of stacks, the same
   simulate flag and sides) when a mod needs it.
 
-**Where to start:** dispenser behaviours go in `DispenserComponent.Fire`, in
-`Obsidian/WorldData/Redstone/ItemMovers.cs`, keyed by item like vanilla's `DispenserBlock.DISPENSER_REGISTRY`; a
+**Where to start:** dispenser behaviours go in `RedstoneDispenser.Fire`, in
+`Obsidian/WorldData/Redstone/RedstoneDispenser.cs`, keyed by item like vanilla's `DispenserBlock.DISPENSER_REGISTRY`; a
 composter's access is `ComposterItemAccess` (`Obsidian/WorldData/AbstractLevel.Composters.cs`), which
 `AbstractLevel.GetItemAccess` returns before it looks for a block entity.

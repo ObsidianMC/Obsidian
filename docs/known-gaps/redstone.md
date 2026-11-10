@@ -1,18 +1,19 @@
 # Redstone
 
 
-**Status:** open. Dust, torches, repeaters, comparators, levers, buttons, pressure plates, the block of redstone and
-the redstone lamp work (see [plugin content](../plugin-content.md#redstone)); the rest of vanilla's redstone doesn't.
+**Status:** open. Most of vanilla's redstone works (see [plugin content](../plugin-content.md#redstone)), and the
+[block interactions plan](../block-interactions-plan.md) lists every component's state in its appendix, section 7.
+What follows is what still differs.
 
-- **Consumers.** Doors, trapdoors and fence gates, note blocks, powered, activator and detector rails, TNT,
-  bells and copper bulbs don't react to power. Pistons extend and retract, hoppers lock, droppers and dispensers
-  fire, and crafters craft (see
+- **Consumers.** Bells don't react to power. Doors, trapdoors and fence gates, note blocks, powered and activator
+  rails, TNT, copper bulbs, pistons, hoppers, droppers, dispensers and crafters do; copper bulbs make no
+  sound, and dispensers only dispense boats and minecarts and drop everything else (see
   [item access](item-access-beyond-containers.md)).
-- **Sources.** Daylight detectors, target blocks, trapped chests, tripwire hooks, detector rails,
-  lightning rods and sculk sensors give no power (a lectern pulses as its page turns), though dust connects to them as to any signal source.
+- **Sources.** Trapped chests and lightning rods give no power, though dust connects to them as to any signal
+  source. Observers, daylight detectors, target blocks (hit by arrows, spectral arrows and tridents only), tripwire
+  hooks, detector rails, sculk sensors and lecterns do.
 - **Analog outputs.** Comparators read 0 from jukeboxes, chiseled bookshelves, decorated pots,
-  shelves, command blocks, sculk sensors, detector rails, creaking hearts, copper bulbs, copper golem statues and
-  copper chests.
+  shelves, command blocks, sculk sensors, creaking hearts, copper bulbs and copper golem statues.
 - **Timing.** Comparators hear of a container's items changing at the end of the level's block entity tick (through
   item access) or on its next one (players' clicks), and only near players, where vanilla's `setChanged` tells them
   at once; and entities press plates and arrows press buttons after they tick, where vanilla's do as they move.
