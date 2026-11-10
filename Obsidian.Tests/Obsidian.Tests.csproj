@@ -32,6 +32,8 @@
 		<EmbeddedResource Include="Assets\block_placement.json" />
 		<EmbeddedResource Include="Assets\ticking_blocks.json" />
 		<EmbeddedResource Include="Assets\block_use.json" />
+		<EmbeddedResource Include="Assets\brushing.json" />
+		<EmbeddedResource Include="Assets\armor_stand_use.json" />
 		<EmbeddedResource Include="Assets\turtle_eggs.json" />
 		<EmbeddedResource Include="Assets\frogspawn.json" />
 		<EmbeddedResource Include="Assets\eyeblossom_ghast_portal_ticks.json" />

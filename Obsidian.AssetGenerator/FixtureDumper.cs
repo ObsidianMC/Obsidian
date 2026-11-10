@@ -205,6 +205,36 @@ internal static class FixtureDumper
             cases is null ? "" : string.Join('+', cases));
     }
 
+    // On-request probes: a dedicated server of its own each, in a flat world in a temporary folder that is deleted
+    // afterwards, so no capture world is left in the checkout.
+    internal static Task DumpBrushingAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunInTemporaryWorldAsync(server, "BrushingFixtures.java", fixture, cases);
+
+    internal static Task DumpArmorStandUseAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunInTemporaryWorldAsync(server, "ArmorStandFixtures.java", fixture, cases);
+
+    private static async Task RunInTemporaryWorldAsync(VanillaServer server, string probe, string fixture,
+        IReadOnlyCollection<string>? cases)
+    {
+        var world = Path.Combine(Path.GetTempPath(), $"obsidian-capture-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(world);
+
+        try
+        {
+            // The probe finds the server in the shutdown hook vanilla's Main registers.
+            await VanillaServer.RunJavaAsync(world,
+                "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+                "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source(probe), Path.GetFullPath(fixture),
+                cases is null ? "" : string.Join('+', cases));
+        }
+        finally
+        {
+            Directory.Delete(world, recursive: true);
+        }
+    }
+
     // An on-request probe: a dedicated server of its own, in a new normal world under the scratch directory.
     internal static async Task DumpMeltingWeatherAsync(VanillaServer server, string fixture,
         IReadOnlyCollection<string>? cases = null)
