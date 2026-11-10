@@ -96,7 +96,6 @@ public partial class PlayerBase
 
     private async ValueTask TickAfterLevelsAsync()
     {
-        this.FlushBlockAcknowledgement();
         await this.TickPortalsAsync();
         await this.PickupNearbyItemsAsync();
         await this.TickMenuAsync();

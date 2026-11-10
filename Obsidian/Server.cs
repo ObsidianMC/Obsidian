@@ -1084,8 +1084,8 @@ public sealed partial class Server : IServer, IPluginScopedServer
     }
 
     /// <summary>
-    /// Keeps connections alive on its own timer, so a slow or stuck world tick doesn't also time every player out. It
-    /// also warns while a world tick is stuck, with the stage each level is at. Chunks go out from
+    /// Services connections on its own timer, so a slow or stuck world tick holds neither prediction acknowledgements
+    /// nor keep-alives. It also warns while a world tick is stuck, with the stage each level is at. Chunks go out from
     /// <see cref="ChunkLoopAsync"/> instead, since a chunk read from disk can take long enough to delay keep-alives.
     /// </summary>
     private async Task KeepAliveLoopAsync()
@@ -1100,11 +1100,11 @@ public sealed partial class Server : IServer, IPluginScopedServer
         {
             while (await timer.WaitForNextTickAsync())
             {
-                if (++keepAliveTicks > Configuration.Network.KeepAliveInterval / 50)
-                {
+                var sendKeepAlive = ++keepAliveTicks > Configuration.Network.KeepAliveInterval / 50;
+                if (sendKeepAlive)
                     keepAliveTicks = 0;
-                    await this.ForEachConnectionAsync(SendKeepAliveAsync, this.keepAliveFailures);
-                }
+
+                await this.TickConnectionsAsync(sendKeepAlive);
 
                 if (Stopwatch.GetElapsedTime(lastTickStats) >= TickStatsInterval)
                 {
@@ -1136,6 +1136,21 @@ public sealed partial class Server : IServer, IPluginScopedServer
         {
             // Stopping.
         }
+    }
+
+    /// <summary>
+    /// One pass of the independent 50 ms connection loop. Play-state prediction acknowledgements must not depend
+    /// on world ticks succeeding, simulation being unpaused, or a travelling player belonging to a level.
+    /// </summary>
+    internal Task TickConnectionsAsync(bool sendKeepAlive)
+    {
+        return this.ForEachConnectionAsync(client =>
+        {
+            if (client.Connected && client.State == ClientState.Play && client.Player is Player player)
+                player.FlushBlockAcknowledgement();
+
+            return sendKeepAlive ? SendKeepAliveAsync(client) : ValueTask.CompletedTask;
+        }, this.keepAliveFailures);
 
         // A client going back to configuration gets no keep-alives, but times out if it doesn't acknowledge it.
         static ValueTask SendKeepAliveAsync(IClient client) => client.State switch
