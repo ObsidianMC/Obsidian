@@ -44,7 +44,8 @@ public sealed class WorldPersistence(WorldPersistence.RestartedChunk restarted) 
         Assert.True(witch.PersistenceRequired);
         Assert.Equal("Agatha", witch.CustomName!.Text);
         // A field Obsidian doesn't model survives as it was.
-        Assert.True(witch.UnmodeledData.TryGetTag<NbtTag<int>>("PortalCooldown", out var cooldown) && cooldown.Value == 40);
+        Assert.True(witch.UnmodeledData.TryGetTag<NbtTag<int>>("invulnerable_time", out var invulnerable)
+            && invulnerable.Value == 40);
 
         var frame = Assert.IsType<ItemFrame>(Assert.Single(entities, entity => entity.Type == EntityType.ItemFrame));
         Assert.Equal(BlockFace.West, frame.Facing);
@@ -245,7 +246,7 @@ public sealed class WorldPersistence(WorldPersistence.RestartedChunk restarted) 
                 Health = 17f,
                 PersistenceRequired = true,
                 CustomName = "Agatha",
-                UnmodeledData = new NbtCompound { new NbtTag<int>("PortalCooldown", 40) }
+                UnmodeledData = new NbtCompound { new NbtTag<int>("invulnerable_time", 40) }
             };
             var frame = new ItemFrame
             {

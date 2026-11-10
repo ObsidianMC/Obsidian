@@ -472,7 +472,7 @@ adds.
 | Campfires, soul campfires: light and extinguish | Missing | Only water and wind charges put them out |
 | Composters: insert, collect | Works | Feedback; thrown items aren't taken |
 | Cauldrons: buckets, bottles, washing | Missing | Only the comparator output exists |
-| Flower pots | Missing | |
+| Flower pots | Missing | Planting and taking plants; potted eyeblossoms turn with the time of day (`eyeblossom_ghast_portal_ticks.json`) |
 | Item frames, glow item frames | Works | |
 | Armor stands | Missing | Poses only |
 | Signs, hanging signs: edit | Works | The edit reservation stores no side or expiry, and another player can take it |
@@ -566,6 +566,8 @@ adds.
 | Farmland: hydrate | Works | |
 | Turtle eggs: hatch | Works | |
 | Frogspawn | Works | Frogspawn placed by `/place` or a live feature never hatches (no on-place) |
+| Eyeblossoms: open and close | Works | Captured (`eyeblossom_ghast_portal_ticks.json`); bees aren't poisoned ([gaps](known-gaps/eyeblossoms-dried-ghasts-and-portal-piglins.md)) |
+| Dried ghasts: rehydrate, become ghastlings | Works | Captured (`eyeblossom_ghast_portal_ticks.json`); buckets don't waterlog them, no placement sound |
 | Sculk catalysts, pointed dripstone, amethyst buds | Partial | Pointed dripstone and amethyst buds work (`ticking_blocks.json`); mud-to-clay and path-to-dirt do not lift entities; sculk catalysts missing |
 | Trial spawners, vaults | Missing | |
 
@@ -577,7 +579,7 @@ adds.
 | Spawners: spawn eggs | Works | Trial spawners aren't handled |
 | Dragon eggs | Missing | Only falling |
 | End gateways | Works | No beam; no safe-exit search |
-| Nether portals, end portals | Works | No zombified piglins from portals; no capture |
+| Nether portals, end portals | Works | Zombified piglins spawn from portals (`eyeblossom_ghast_portal_ticks.json`); the floor rule isn't vanilla's ([gaps](known-gaps/eyeblossoms-dried-ghasts-and-portal-piglins.md)); portal travel has no capture |
 | Conduits | Missing | |
 | Beacons: effects | Works | |
 | Enchanting tables: animation; bookshelves: power | Works | The animation is the client's |
