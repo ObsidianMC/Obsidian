@@ -276,3 +276,19 @@ internal sealed class SnowyShapeRule : SharedShapeRule
         Vector neighborPosition, IBlock neighbor) =>
         direction == BlockFace.Up ? state.WithProperty("snowy", TreeBlocks.Snow.Contains(neighbor)) : state;
 }
+
+/// <summary>
+/// The shared pass's rule for plugin blocks, which have no vanilla class: a state with a <c>snowy</c> property is
+/// snowy while snow lies on top, as for every block the shared pass had no other rule for.
+/// </summary>
+internal sealed class PluginSnowyShapeRule : SharedShapeRule
+{
+    public override IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction,
+        Vector neighborPosition, IBlock neighbor)
+    {
+        if (direction != BlockFace.Up || !state.HasProperty("snowy"))
+            return state;
+
+        return state.WithProperty("snowy", TreeBlocks.Snow.Contains(neighbor));
+    }
+}

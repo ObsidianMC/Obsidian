@@ -188,7 +188,7 @@ internal static class PlacementBehaviors
             if (context.Level.GetBlock(position).GetFluid() != FluidKind.Empty)
                 return null;
 
-            if (!BlockSurvival.BambooMayStay(context.Level.GetBlock, position))
+            if (!BlockSurvival.BambooMayStay(new BlockReader(context.Level.AsShapeLevel()), position))
                 return null;
 
             var below = context.Level.GetBlock(position + Vector.Down);

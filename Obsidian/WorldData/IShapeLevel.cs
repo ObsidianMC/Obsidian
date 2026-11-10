@@ -46,7 +46,8 @@ internal enum ShapeReach
 {
     /// <summary>
     /// Ahead of everything else in both live update engines (<see cref="LevelBlockUpdates.UpdateShape"/>). The shared
-    /// pass (<see cref="Features.Tree.ShapeUpdater"/>) leaves its blocks alone, so generation doesn't run it.
+    /// pass (<see cref="Features.Tree.ShapeUpdater"/>) runs the owner's
+    /// <see cref="IShapeUpdateBehavior.SharedPassRule"/> instead, if it names one.
     /// </summary>
     LiveOwner,
 
@@ -55,10 +56,7 @@ internal enum ShapeReach
     /// or plugin answered. The fluid engine runs that fallback only for changes it handles itself (fluid ticks), and
     /// leaves the shape updates of players' and plugins' changes to the notification pipeline.
     /// </summary>
-    SharedPass,
-
-    /// <summary>Both: a live owner whose rule generation and placement need too.</summary>
-    LiveOwnerAndSharedPass
+    SharedPass
 }
 
 /// <summary>

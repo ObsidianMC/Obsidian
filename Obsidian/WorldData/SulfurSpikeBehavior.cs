@@ -14,11 +14,14 @@ namespace Obsidian.WorldData;
 internal sealed class SulfurSpikeBehavior : IShapeUpdateBehavior, IScheduledTickBehavior,
     IRandomTickBehavior, IBlockBehavior
 {
+    private static readonly IShapeUpdateBehavior sharedPassRule = new ReshapeRule();
+
     /// <summary>
-    /// The live level runs the shape rule first, and generation's shared pass runs it too, for the speleothem columns
-    /// templates place. Generation has no block ticks, so there it only reshapes.
+    /// The shared pass reshapes the speleothem columns templates place, and leaves one that has lost its support as it
+    /// is, as its copy of the rule always did: it schedules no fall or break, which chunk completion would otherwise
+    /// save in the region's ticks.
     /// </summary>
-    public ShapeReach Reach => ShapeReach.LiveOwnerAndSharedPass;
+    public IShapeUpdateBehavior? SharedPassRule => sharedPassRule;
 
     // Vanilla's GROWTH_PROBABILITY_PER_RANDOM_TICK: the draw is part of the chunk's shared random sequence.
     private const float GrowthChance = 0.011377778f;
@@ -173,6 +176,22 @@ internal sealed class SulfurSpikeBehavior : IShapeUpdateBehavior, IScheduledTick
         }
 
         return Shape(level, position, state, state.GetProperty("thickness") == "tip_merge");
+    }
+
+    /// <summary>The live rule's reshaping without its tick (see <see cref="SharedPassRule"/>).</summary>
+    private sealed class ReshapeRule : ShapeRules.SharedShapeRule
+    {
+        public override IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction,
+            Vector neighborPosition, IBlock neighbor)
+        {
+            if (!direction.IsVertical())
+                return state;
+
+            if (direction == Direction(state).Opposite() && !Survives(level, position, state))
+                return state;
+
+            return Shape(level, position, state, state.GetProperty("thickness") == "tip_merge");
+        }
     }
 
     /// <summary>

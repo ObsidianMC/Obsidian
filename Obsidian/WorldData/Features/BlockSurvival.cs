@@ -55,9 +55,9 @@ internal static class BlockSurvival
         "SmallDripleafBlock" => SmallDripleafCanSurvive(block, level, position),
         "DryVegetationBlock" or "ShortDryGrassBlock" or "TallDryGrassBlock" => dryVegetationMayPlaceOn.Contains(Below(level, position)),
         "MushroomBlock" => MushroomCanSurvive(level, position, rawBrightness),
-        "CactusBlock" => CactusMayStay(level.GetBlock, position),
+        "CactusBlock" => CactusMayStay(level, position),
         "CactusFlowerBlock" => CactusFlowerMayPlaceOn(Below(level, position)),
-        "SugarCaneBlock" => SugarCaneMayStay(level.GetBlock, position),
+        "SugarCaneBlock" => SugarCaneMayStay(level, position),
         "BaseCoralPlantBlock" or "CoralPlantBlock" or "BaseCoralFanBlock" or "CoralFanBlock" =>
             Below(level, position).IsFaceSturdy(BlockFace.Up),
         "BaseCoralWallFanBlock" or "CoralWallFanBlock" or "AmethystClusterBlock" => AttachedBehindCanSurvive(block, level, position, "facing"),
@@ -181,33 +181,37 @@ internal static class BlockSurvival
     internal static bool SeagrassMayPlaceOn(IBlock below) =>
         below.IsFaceSturdy(BlockFace.Up) && !below.Is(BlockIds.MagmaBlock);
 
-    /// <summary>Vanilla <c>CactusBlock.canSurvive</c>, reading blocks through <paramref name="blockAt"/> (worldgen or a live level).</summary>
-    internal static bool CactusMayStay(Func<Vector, IBlock> blockAt, Vector position)
+    /// <summary>
+    /// Vanilla <c>CactusBlock.canSurvive</c>, reading blocks through <paramref name="blocks"/> (worldgen or a live level).
+    /// </summary>
+    internal static bool CactusMayStay(BlockReader blocks, Vector position)
     {
         foreach (var face in FeatureHelpers.Horizontal)
         {
-            var neighbor = blockAt(position.Offset(face));
+            var neighbor = blocks.GetBlock(position.Offset(face));
             if (neighbor.IsSolid() || neighbor.GetFluid() is FluidKind.Lava or FluidKind.FlowingLava)
                 return false;
         }
 
-        var below = blockAt(position + Vector.Down);
-        return (below.Is(BlockIds.Cactus) || sand.Contains(below)) && !blockAt(position + Vector.Up).IsLiquid;
+        var below = blocks.GetBlock(position + Vector.Down);
+        return (below.Is(BlockIds.Cactus) || sand.Contains(below)) && !blocks.GetBlock(position + Vector.Up).IsLiquid;
     }
 
     /// <summary>Vanilla <c>BambooStalkBlock.canSurvive</c>: the block beneath is on the bamboo-plantable tag.</summary>
-    internal static bool BambooMayStay(Func<Vector, IBlock> blockAt, Vector position) =>
-        bambooPlantableOn.Contains(blockAt(position + Vector.Down));
+    internal static bool BambooMayStay(BlockReader blocks, Vector position) =>
+        bambooPlantableOn.Contains(blocks.GetBlock(position + Vector.Down));
 
     private static bool CactusFlowerMayPlaceOn(IBlock below) =>
         below.RegistryId is BlockIds.Cactus or BlockIds.Farmland || below.IsTopCenterSturdy();
 
-    /// <summary>Vanilla <c>SugarCaneBlock.canSurvive</c>, reading blocks through <paramref name="blockAt"/> (worldgen or a live level).</summary>
-    internal static bool SugarCaneMayStay(Func<Vector, IBlock> blockAt, Vector position)
+    /// <summary>
+    /// Vanilla <c>SugarCaneBlock.canSurvive</c>, reading blocks through <paramref name="blocks"/> (worldgen or a live level).
+    /// </summary>
+    internal static bool SugarCaneMayStay(BlockReader blocks, Vector position)
     {
         Vector belowPosition = position + Vector.Down;
 
-        var below = blockAt(belowPosition);
+        var below = blocks.GetBlock(belowPosition);
         if (below.Is(BlockIds.SugarCane))
             return true;
 
@@ -216,7 +220,7 @@ internal static class BlockSurvival
 
         foreach (var face in FeatureHelpers.Horizontal)
         {
-            var neighbor = blockAt(belowPosition.Offset(face));
+            var neighbor = blocks.GetBlock(belowPosition.Offset(face));
             if (IsWater(neighbor) || neighbor.Is(BlockIds.FrostedIce))
                 return true;
         }

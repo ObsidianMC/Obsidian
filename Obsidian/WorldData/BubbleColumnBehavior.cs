@@ -128,8 +128,11 @@ internal static class BubbleColumns
 /// </summary>
 internal sealed class BubbleColumnBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior, IEntityInsideBehavior
 {
-    /// <summary>Generation's post-processing schedules the column's check too.</summary>
-    public ShapeReach Reach => ShapeReach.LiveOwnerAndSharedPass;
+    /// <summary>
+    /// The shared pass runs this same rule: chunk completion schedules the column's check in the region, as the
+    /// shared pass's copy of the rule always did, and generation's other passes have no ticks to schedule.
+    /// </summary>
+    public IShapeUpdateBehavior? SharedPassRule => this;
 
     /// <summary>Vanilla's <c>BubbleColumnBlock.tick</c>: updates the column from the block below.</summary>
     public void Tick(IBlockLevel level, Vector position, IBlock block, IRandomSource random)

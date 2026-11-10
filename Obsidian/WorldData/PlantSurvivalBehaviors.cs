@@ -13,7 +13,7 @@ internal sealed class SugarCaneBlockBehavior : IScheduledTickBehavior, IShapeUpd
     /// <summary>Vanilla's <c>updateShape</c>: schedules a tick at delay 1 when the block can't survive, and keeps its state.</summary>
     public IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
     {
-        if (!BlockSurvival.SugarCaneMayStay(level.GetBlock, position))
+        if (!BlockSurvival.SugarCaneMayStay(new BlockReader(level), position))
             level.ScheduleTick(position, state, 1);
 
         return state;
@@ -22,7 +22,7 @@ internal sealed class SugarCaneBlockBehavior : IScheduledTickBehavior, IShapeUpd
     /// <summary>Vanilla's <c>tick</c>: a stalk that can't survive breaks and drops itself.</summary>
     public void Tick(IBlockLevel level, Vector position, IBlock block, IRandomSource random)
     {
-        if (!BlockSurvival.SugarCaneMayStay(level.GetBlock, position))
+        if (!BlockSurvival.SugarCaneMayStay(new BlockReader(level.AsShapeLevel()), position))
             level.DestroyBlock(position, dropItems: true);
     }
 }
@@ -33,7 +33,7 @@ internal sealed class CactusBlockBehavior : IScheduledTickBehavior, IShapeUpdate
     /// <summary>Vanilla's <c>updateShape</c>: schedules a tick at delay 1 when the block can't survive, and keeps its state.</summary>
     public IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
     {
-        if (!BlockSurvival.CactusMayStay(level.GetBlock, position))
+        if (!BlockSurvival.CactusMayStay(new BlockReader(level), position))
             level.ScheduleTick(position, state, 1);
 
         return state;
@@ -42,7 +42,7 @@ internal sealed class CactusBlockBehavior : IScheduledTickBehavior, IShapeUpdate
     /// <summary>Vanilla's <c>tick</c>: a cactus that can't survive breaks and drops itself.</summary>
     public void Tick(IBlockLevel level, Vector position, IBlock block, IRandomSource random)
     {
-        if (!BlockSurvival.CactusMayStay(level.GetBlock, position))
+        if (!BlockSurvival.CactusMayStay(new BlockReader(level.AsShapeLevel()), position))
             level.DestroyBlock(position, dropItems: true);
     }
 }
@@ -55,7 +55,7 @@ internal sealed class BambooSaplingBlockBehavior : IShapeUpdateBehavior
 {
     public IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
     {
-        if (!BlockSurvival.BambooMayStay(level.GetBlock, position))
+        if (!BlockSurvival.BambooMayStay(new BlockReader(level), position))
             return BlocksRegistry.Air;
 
         return direction == BlockFace.Up && neighbor.Is(BlockIds.Bamboo)
@@ -73,7 +73,7 @@ internal sealed class BambooStalkBlockBehavior : IScheduledTickBehavior, IShapeU
     /// <summary>Vanilla's <c>updateShape</c>: schedules a tick at delay 1 when the stalk can't survive, and keeps its state.</summary>
     public IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
     {
-        if (!BlockSurvival.BambooMayStay(level.GetBlock, position))
+        if (!BlockSurvival.BambooMayStay(new BlockReader(level), position))
             level.ScheduleTick(position, state, 1);
 
         return state;
@@ -82,7 +82,7 @@ internal sealed class BambooStalkBlockBehavior : IScheduledTickBehavior, IShapeU
     /// <summary>Vanilla's <c>tick</c>: a stalk that can't survive breaks and drops itself.</summary>
     public void Tick(IBlockLevel level, Vector position, IBlock block, IRandomSource random)
     {
-        if (!BlockSurvival.BambooMayStay(level.GetBlock, position))
+        if (!BlockSurvival.BambooMayStay(new BlockReader(level.AsShapeLevel()), position))
             level.DestroyBlock(position, dropItems: true);
     }
 }
@@ -93,8 +93,14 @@ internal sealed class BambooStalkBlockBehavior : IScheduledTickBehavior, IShapeU
 /// </summary>
 internal sealed class KelpBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior
 {
-    /// <summary>Generation turns a kelp head with kelp above into a stem too.</summary>
-    public ShapeReach Reach => ShapeReach.LiveOwnerAndSharedPass;
+    private static readonly IShapeUpdateBehavior sharedPassRule = new KelpShapeRule();
+
+    /// <summary>
+    /// The shared pass only turns a kelp head with kelp above into a stem, as its copy of the rule always did: it
+    /// schedules no support check, which chunk completion would otherwise save in the region's ticks. The cave,
+    /// weeping and twisting vines bound to the same classes keep their state there.
+    /// </summary>
+    public IShapeUpdateBehavior? SharedPassRule => sharedPassRule;
 
     /// <summary>
     /// Vanilla's <c>updateShape</c> (see <see cref="GrowingPlantShapes"/>): an update from the support side schedules
@@ -123,5 +129,18 @@ internal sealed class KelpBlockBehavior : IScheduledTickBehavior, IShapeUpdateBe
 
         if (!BlockSurvival.KelpMayPlaceOn(level.GetBlock(position + Vector.Down)))
             level.DestroyBlock(position, dropItems: true);
+    }
+
+    /// <summary>The live rule's reshaping without its support check (see <see cref="SharedPassRule"/>).</summary>
+    private sealed class KelpShapeRule : ShapeRules.SharedShapeRule
+    {
+        public override IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction,
+            Vector neighborPosition, IBlock neighbor)
+        {
+            var turnsIntoStem = state.RegistryId == BlockIds.Kelp
+                && direction == BlockFace.Up
+                && neighbor.RegistryId is BlockIds.Kelp or BlockIds.KelpPlant;
+            return turnsIntoStem ? BlocksRegistry.KelpPlant : state;
+        }
     }
 }

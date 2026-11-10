@@ -25,11 +25,10 @@ internal static class ShapeUpdater
     /// </summary>
     public static IBlock UpdateFromNeighbourShapes(IWorldGenLevel level, IBlock state, Vector position)
     {
-        var view = ViewOf(level);
         foreach (var direction in updateShapeOrder)
         {
             var neighbor = level.GetBlock(position.Offset(direction));
-            state = UpdateShape(level, view, state, position, direction, neighbor, scheduleFluidTick: true);
+            state = UpdateShape(level, state, position, direction, neighbor, scheduleFluidTick: true);
         }
 
         return state;
@@ -37,7 +36,6 @@ internal static class ShapeUpdater
 
     public static void UpdateShapeAtEdge(IWorldGenLevel level, TreeVoxelShape shape, Vector origin)
     {
-        var view = ViewOf(level);
         shape.ForAllFaces((face, x, y, z) =>
         {
             var position = origin + (x, y, z);
@@ -45,11 +43,11 @@ internal static class ShapeUpdater
             var state = level.GetBlock(position);
             var neighbor = level.GetBlock(neighborPosition);
 
-            var updated = UpdateShape(level, view, state, position, face, neighbor, scheduleFluidTick: true);
+            var updated = UpdateShape(level, state, position, face, neighbor, scheduleFluidTick: true);
             if (!updated.IsSameState(state))
                 level.SetBlock(position, updated);
 
-            var updatedNeighbor = UpdateShape(level, view, neighbor, neighborPosition, face.Opposite(), updated,
+            var updatedNeighbor = UpdateShape(level, neighbor, neighborPosition, face.Opposite(), updated,
                 scheduleFluidTick: true);
             if (!updatedNeighbor.IsSameState(neighbor))
                 level.SetBlock(neighborPosition, updatedNeighbor);
@@ -70,17 +68,7 @@ internal static class ShapeUpdater
         Vector position,
         BlockFace direction,
         IBlock neighbor,
-        bool scheduleFluidTick = true) =>
-        UpdateShape(level, ViewOf(level), state, position, direction, neighbor, scheduleFluidTick);
-
-    private static IBlock UpdateShape(
-        IWorldGenLevel level,
-        IShapeLevel view,
-        IBlock state,
-        Vector position,
-        BlockFace direction,
-        IBlock neighbor,
-        bool scheduleFluidTick)
+        bool scheduleFluidTick = true)
     {
         if (scheduleFluidTick)
         {
@@ -90,7 +78,17 @@ internal static class ShapeUpdater
         if (ShapeDispatch.SharedRule(state.RegistryId) is not IShapeUpdateBehavior rule)
             return state;
 
-        return rule.UpdateShape(view, position, state, direction, position.Offset(direction), neighbor) ?? state;
+        var neighborPosition = position.Offset(direction);
+        if (level is IShapeLevel view)
+            return rule.UpdateShape(view, position, state, direction, neighborPosition, neighbor) ?? state;
+
+        // Generation's view is reused rather than made per block. Rules don't call back into the shared pass, so
+        // binding it to the level for the one rule is safe, and it lets the level go afterwards.
+        var generation = generationView ??= new GenerationView();
+        generation.Level = level;
+        var updated = rule.UpdateShape(generation, position, state, direction, neighborPosition, neighbor);
+        generation.Level = null;
+        return updated ?? state;
     }
 
     /// <summary>
@@ -111,23 +109,27 @@ internal static class ShapeUpdater
         }
     }
 
-    private static IShapeLevel ViewOf(IWorldGenLevel level) => level as IShapeLevel ?? new GenerationView(level);
+    [ThreadStatic]
+    private static GenerationView? generationView;
 
     /// <summary>
     /// A generating level as shape rules read it. Generation's shape pass has no block ticks: scheduling one does
     /// nothing and none reads as scheduled, and rules don't draw from its random, which decides what generates.
     /// </summary>
-    private sealed class GenerationView(IWorldGenLevel level) : IShapeLevel
+    private sealed class GenerationView : IShapeLevel
     {
+        /// <summary>The level the current rule reads; null between rules.</summary>
+        public IWorldGenLevel? Level { get; set; }
+
         public IRandomSource Random =>
             throw new NotSupportedException("Shape rules don't draw from generation's random.");
 
-        public IBlock GetBlock(Vector position) => level.GetBlock(position);
+        public IBlock GetBlock(Vector position) => this.Level!.GetBlock(position);
 
         public bool IsFaceSturdy(Vector position, BlockFace face, SupportType support = SupportType.Full) =>
-            ShapeViews.IsFaceSturdy(level.GetBlock(position), face, support);
+            ShapeViews.IsFaceSturdy(this.Level!.GetBlock(position), face, support);
 
-        public IBlockEntity? GetBlockEntity(Vector position) => level.GetBlockEntity(position);
+        public IBlockEntity? GetBlockEntity(Vector position) => this.Level!.GetBlockEntity(position);
 
         public int GetRawBrightness(Vector position) => 15;
 

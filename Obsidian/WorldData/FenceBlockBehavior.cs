@@ -8,8 +8,8 @@ namespace Obsidian.WorldData;
 
 internal sealed class FenceBlockBehavior : IBlockBehavior, IShapeUpdateBehavior
 {
-    /// <summary>Generation and placement connect fences too.</summary>
-    public ShapeReach Reach => ShapeReach.LiveOwnerAndSharedPass;
+    /// <summary>Generation and placement connect fences with this same rule, which only reshapes.</summary>
+    public IShapeUpdateBehavior? SharedPassRule => this;
 
     private static readonly BlockFace[] sides =
         [BlockFace.North, BlockFace.East, BlockFace.South, BlockFace.West];
@@ -50,10 +50,8 @@ internal sealed class FenceBlockBehavior : IBlockBehavior, IShapeUpdateBehavior
         var sideOnZ = side is BlockFace.North or BlockFace.South;
         var gateOnZ = neighbor.GetProperty("facing") is "north" or "south";
         var gate = neighbor.BlockClass() == "FenceGateBlock" && sideOnZ != gateOnZ;
-        var exception = TagsRegistry.Block.Leaves.Entries.Contains(neighbor.RegistryId)
-            || TagsRegistry.Block.ShulkerBoxes.Entries.Contains(neighbor.RegistryId)
-            || neighbor.UnlocalizedName is "minecraft:barrier" or "minecraft:carved_pumpkin"
-                or "minecraft:jack_o_lantern" or "minecraft:melon" or "minecraft:pumpkin";
+        // Vanilla's Block.isExceptionForConnection, which tells leaves by class, not by the leaves tag.
+        var exception = ShapeRules.ShapeConnections.IsExceptionForConnection(neighbor);
         return sameGroup || gate || !exception && neighbor.IsFaceSturdy(side);
     }
 }

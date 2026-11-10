@@ -33,8 +33,8 @@ internal sealed class IronBarsPlacementBehavior : IBlockBehavior
 /// </summary>
 internal sealed class IronBarsShapeUpdateBehavior : IShapeUpdateBehavior
 {
-    /// <summary>Generation and placement connect bars and panes too.</summary>
-    public ShapeReach Reach => ShapeReach.LiveOwnerAndSharedPass;
+    /// <summary>Generation and placement connect bars and panes with this same rule, which only reshapes.</summary>
+    public IShapeUpdateBehavior? SharedPassRule => this;
 
     public IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
     {

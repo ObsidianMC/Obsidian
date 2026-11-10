@@ -12,6 +12,8 @@ internal static class ShapeDispatch
 
     private static readonly IShapeUpdateBehavior?[] sharedRules;
 
+    private static readonly IShapeUpdateBehavior pluginRule = new ShapeRules.PluginSnowyShapeRule();
+
     static ShapeDispatch()
     {
         var count = BlocksRegistry.ResourceIds.Length;
@@ -24,12 +26,14 @@ internal static class ShapeDispatch
             if (behavior is null)
                 continue;
 
-            var reach = behavior.Reach;
-            if (reach != ShapeReach.SharedPass)
-                liveOwners[registryId] = behavior;
-
-            if (reach != ShapeReach.LiveOwner)
+            if (behavior.Reach == ShapeReach.SharedPass)
+            {
                 sharedRules[registryId] = behavior;
+                continue;
+            }
+
+            liveOwners[registryId] = behavior;
+            sharedRules[registryId] = behavior.SharedPassRule;
         }
     }
 
@@ -40,7 +44,10 @@ internal static class ShapeDispatch
     public static IShapeUpdateBehavior? LiveOwner(int registryId) =>
         (uint)registryId < (uint)liveOwners.Length ? liveOwners[registryId] : null;
 
-    /// <summary>The rule the shared pass (<see cref="Features.Tree.ShapeUpdater"/>) runs, or null.</summary>
+    /// <summary>
+    /// The rule the shared pass (<see cref="Features.Tree.ShapeUpdater"/>) runs, or null. Plugin blocks, whose ids
+    /// follow vanilla's, get the snowy rule the shared pass has always given blocks without one.
+    /// </summary>
     public static IShapeUpdateBehavior? SharedRule(int registryId) =>
-        (uint)registryId < (uint)sharedRules.Length ? sharedRules[registryId] : null;
+        (uint)registryId < (uint)sharedRules.Length ? sharedRules[registryId] : pluginRule;
 }
