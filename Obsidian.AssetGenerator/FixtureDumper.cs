@@ -205,6 +205,31 @@ internal static class FixtureDumper
             cases is null ? "" : string.Join('+', cases));
     }
 
+    // An on-request probe: a dedicated server of its own, in a new flat world under the scratch directory. It shares
+    // block_use's observed scratch jar for the ordered block writes.
+    internal static async Task DumpProjectileHitsAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null)
+    {
+        var world = Path.Combine(server.ScratchDirectory, "projectile-hits");
+        if (Directory.Exists(world))
+            Directory.Delete(world, recursive: true);
+
+        Directory.CreateDirectory(world);
+
+        var observed = Path.Combine(world, "observed-classes");
+        await VanillaServer.RunJavaAsync(world,
+            "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("BlockUseInstrumentation.java"),
+            server.ClassPath[0], observed);
+        var observedJar = Path.Combine(observed, "vanilla-observed.jar");
+        var classPath = string.Join(Path.PathSeparator, new[] { observedJar }.Concat(server.ClassPath.Skip(1)));
+
+        // The probe finds the server in the shutdown hook vanilla's Main registers.
+        await VanillaServer.RunJavaAsync(world,
+            "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+            "-cp", classPath, Source("ProjectileHitFixtures.java"), fixture,
+            cases is null ? "" : string.Join('+', cases));
+    }
+
     // An on-request probe: a dedicated server of its own, in a new normal world under the scratch directory.
     internal static async Task DumpMeltingWeatherAsync(VanillaServer server, string fixture,
         IReadOnlyCollection<string>? cases = null)

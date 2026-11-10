@@ -108,17 +108,9 @@ public sealed partial class ThrownExperienceBottle : Throwable
         }
 
         var terrain = new MobTerrain(level);
-        var swept = new BoundingBox(
-            VectorD.Min(this.Position, this.Position + this.Motion) - new VectorD(0.3f),
-            VectorD.Max(this.Position, this.Position + this.Motion) + new VectorD(0.3f));
-        var fraction = 1d;
+        var blockHit = ProjectileBlockHits.Find(terrain, this.Position, this.Motion);
+        var fraction = blockHit?.Fraction ?? 1;
         var hitEntity = false;
-
-        foreach (var shape in terrain.GetCollisions(swept))
-        {
-            if (MobTerrain.RayIntersection(shape, this.Position, this.Motion) is double hit)
-                fraction = Math.Min(fraction, hit);
-        }
 
         foreach (var candidate in level.GetEntitiesInRange(this.Position, (float)this.Motion.Magnitude + 4))
         {
@@ -144,9 +136,18 @@ public sealed partial class ThrownExperienceBottle : Throwable
 
         this.Position = next;
         this.BoundingBox = this.Dimension.CreateBBFromPosition(this.Position);
+        this.EmitShotOnce(this.Owner);
 
-        if (fraction < 1 || hitEntity)
+        if (hitEntity)
         {
+            level.EmitGameEvent(MobGameEvent.ProjectileLand, this.Position, this, this.Owner);
+            await this.ShatterAsync(level);
+            return;
+        }
+
+        if (blockHit is { } blockCollision)
+        {
+            await ProjectileBlockHits.HitAsync(level, this, this.Owner, blockCollision);
             await this.ShatterAsync(level);
             return;
         }
@@ -167,14 +168,18 @@ public sealed partial class ThrownExperienceBottle : Throwable
         });
     }
 
-    // Vanilla's onHit: the splash, then 3 to 11 experience, in orbs.
+    // Vanilla's onHit, after the hit itself: the splash's particles and sound, then 3 to 11 experience, in orbs.
     private async ValueTask ShatterAsync(AbstractLevel level)
     {
         this.shattered = true;
-        level.EmitGameEvent(MobGameEvent.ProjectileLand, this.Position, this, this.Owner);
 
         var block = (Vector)this.Position.Floor();
         level.PacketBroadcaster.QueuePacketToLevelInRange(level, this.Position, new LevelEventPacket(2002, block, SplashColor));
+        if (!this.Silent)
+        {
+            var sound = new LevelEventPacket(1053, block, 0);
+            level.PacketBroadcaster.QueuePacketToLevelInRange(level, this.Position, sound);
+        }
 
         var experience = 3 + Globals.Random.Next(5) + Globals.Random.Next(5);
         level.SpawnExperienceOrbs(this.Position, (short)experience);

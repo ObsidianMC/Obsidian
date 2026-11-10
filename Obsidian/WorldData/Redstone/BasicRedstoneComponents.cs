@@ -309,31 +309,38 @@ internal static class BasicRedstoneComponents
     private static bool PressedByArrows(IBlock state) => TagsRegistry.Block.WoodenButtons.Entries.Contains(state.RegistryId);
 
     /// <summary>
-    /// Whether an arrow overlaps the button's outline (vanilla <c>checkPressed</c>, which looks for arrows in the shape's bounds).
+    /// An arrow that overlaps the button's outline, or null (vanilla <c>checkPressed</c>, which looks for arrows in the
+    /// shape's bounds).
     /// </summary>
-    private static bool ArrowInside(IRedstoneLevel level, Vector position, IBlock state)
+    private static IEntity? ArrowInside(IRedstoneLevel level, Vector position, IBlock state)
     {
         var (offsetX, offsetY, offsetZ) = BlockPhysics.ShapeOffset(state.GetHashCode(), position.X, position.Z);
         foreach (var box in BlockPhysics.OutlineBoxes(state.GetHashCode()))
         {
             var min = (VectorD)position + new VectorD(box[0] + offsetX, box[1] + offsetY, box[2] + offsetZ);
             var max = (VectorD)position + new VectorD(box[3] + offsetX, box[4] + offsetY, box[5] + offsetZ);
-            if (level.EntitiesIn(min, max).Any(entity => entity is Arrow))
-                return true;
+            if (level.EntitiesIn(min, max).FirstOrDefault(entity => entity is Arrow) is IEntity arrow)
+                return arrow;
         }
 
-        return false;
+        return null;
     }
 
     /// <summary>
-    /// Presses a button: it powers its support and its time starts (vanilla <c>ButtonBlock.press</c>).
+    /// Presses a button: it powers its support and its time starts (vanilla <c>ButtonBlock.press</c>). The
+    /// <c>block_activate</c> game event comes from <paramref name="source"/>, or the player.
     /// </summary>
-    private static async ValueTask PressButtonAsync(IRedstoneLevel level, Vector position, IBlock state, IPlayer? player)
+    private static async ValueTask PressButtonAsync(
+        IRedstoneLevel level,
+        Vector position,
+        IBlock state,
+        IPlayer? player,
+        IEntity? source = null)
     {
         var powered = state.WithProperty("powered", true);
         await SetMountedStateAsync(level, position, powered);
         level.PlaySound(position, ButtonSound(state, on: true), except: player);
-        level.EmitGameEvent(MobGameEvent.BlockActivate, position, player);
+        level.EmitGameEvent(MobGameEvent.BlockActivate, position, source ?? player);
         if (ButtonDelay(state.RegistryId) is { } delay)
             level.ScheduleBlockTick(position, powered, delay);
     }
@@ -347,7 +354,7 @@ internal static class BasicRedstoneComponents
         if (level.GetLoadedBlock(position) is not IBlock state || state.BlockClass() != "ButtonBlock" || state.GetProperty("powered") != "true")
             return;
 
-        if (PressedByArrows(state) && ArrowInside(level, position, state))
+        if (PressedByArrows(state) && ArrowInside(level, position, state) is not null)
         {
             level.ScheduleBlockTick(position, state, ButtonDelay(state.RegistryId) ?? 30);
             return;
@@ -365,10 +372,12 @@ internal static class BasicRedstoneComponents
     {
         public async ValueTask EntityInsideAsync(IRedstoneLevel level, Vector position, IBlock state)
         {
-            if (!PressedByArrows(state) || state.GetProperty("powered") == "true" || !ArrowInside(level, position, state))
+            if (!PressedByArrows(state) || state.GetProperty("powered") == "true")
                 return;
 
-            await PressButtonAsync(level, position, state, player: null);
+            // Vanilla's checkPressed credits the arrow with the press.
+            if (ArrowInside(level, position, state) is IEntity arrow)
+                await PressButtonAsync(level, position, state, player: null, source: arrow);
         }
     }
 

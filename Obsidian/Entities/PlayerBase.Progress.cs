@@ -175,6 +175,24 @@ public partial class PlayerBase
         return DeferredInventoryWork.RunOrDeferAsync(Fire);
     }
 
+    /// <summary>
+    /// Fires a trigger for this player from a level's tick, which mustn't wait for this player's tick gate or
+    /// inventory: the event is matched now, as it is, and what it matched is granted in the server's background work
+    /// once the ticks let go of the gates (as for a trigger fired from another player's tick).
+    /// </summary>
+    /// <param name="trigger">The trigger, without its namespace.</param>
+    /// <param name="entity">The entity the trigger's conditions test: <c>target_hit</c>'s projectile, say.</param>
+    /// <param name="signal"><c>target_hit</c>'s signal strength.</param>
+    internal void QueueProgress(string trigger, IEntity? entity = null, int? signal = null)
+    {
+        var matched = this.ProgressAdvancements.Match(
+            $"minecraft:{trigger}",
+            conditions => ProgressConditions.Match(
+                this, trigger, conditions, null, entity, null, null, null, null, null, null, signal));
+        if (matched.Count > 0 && this.Server is Server server)
+            server.BackgroundWork.TryStart(() => this.GrantMatchedAsync(matched));
+    }
+
     // Fires the trigger at once, for a flow that holds no inventory lock: one under the player's own tick gate, say.
     private ValueTask FireProgressNowAsync(string trigger, ItemStack? item = null, IEntity? entity = null,
         IBlock? block = null, Vector? position = null, string? recipe = null, string? from = null,

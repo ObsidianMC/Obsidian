@@ -7,7 +7,7 @@ namespace Obsidian.Entities;
 
 internal sealed class DragonFireball : Entity
 {
-    internal Guid OwnerUuid { get; private set; }
+    internal Guid OwnerUuid { get; set; }
     private VectorD acceleration;
     private int age;
 
@@ -43,48 +43,66 @@ internal sealed class DragonFireball : Entity
             return;
         }
         var terrain = new MobTerrain(Level);
-        var end = Position + Motion;
-        var swept = new BoundingBox(VectorD.Min(Position, end) - new VectorD(0.5f), VectorD.Max(Position, end) + new VectorD(0.5f));
-        var fraction = 1d;
-        foreach (var shape in terrain.GetCollisions(swept))
-        {
-            if (MobTerrain.RayIntersection(shape, Position, Motion) is { } hit)
-                fraction = Math.Min(fraction, hit);
-        }
-
+        var blockHit = ProjectileBlockHits.Find(terrain, Position, Motion);
+        var fraction = blockHit?.Fraction ?? 1;
+        var hitEntity = false;
         foreach (var target in Level.GetEntitiesInRange(Position, (float)Motion.Magnitude + 3).OfType<Living>())
         {
             if (target.Uuid == OwnerUuid || !target.Alive || target is IPlayer { GameMode: GameMode.Creative or GameMode.Spectator })
                 continue;
-            if (MobTerrain.RayIntersection(target.Dimension.CreateBBFromPosition(target.Position), Position, Motion) is { } hit)
-                fraction = Math.Min(fraction, hit);
+            var bounds = target.Dimension.CreateBBFromPosition(target.Position);
+            if (MobTerrain.RayIntersection(bounds, Position, Motion) is { } hit && hit < fraction)
+            {
+                fraction = hit;
+                hitEntity = true;
+            }
         }
+
         var next = Position + Motion * fraction;
         if (!level.TryMoveEntity(this, Position, next))
             return;
         Position = next;
         BoundingBox = Dimension.CreateBBFromPosition(Position);
-        if (fraction < 1)
+
+        var owner = OwnerUuid == Guid.Empty ? null : level.FindEntity(OwnerUuid);
+        this.EmitShotOnce(owner);
+        if (hitEntity)
         {
-            var nearby = Level.GetEntitiesInRange(Position, 4).OfType<Living>().FirstOrDefault(target =>
-                target.Uuid != OwnerUuid && target.Alive && (target.Position - Position).MagnitudeSquared() < 16);
-            Level.SpawnEntity(new DragonBreathCloud
-            {
-                Level = Level,
-                EntityId = Server.GetNextEntityId(),
-                OwnerUuid = OwnerUuid,
-                Position = nearby?.Position ?? Position,
-                Radius = 3,
-                RadiusPerTick = 4f / 600,
-                Duration = 600
-            });
-            PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new LevelEventPacket(2006, (Vector)Position.Floor(), 1));
-            await RemoveAsync();
+            await BreatheAsync();
             return;
         }
+
+        if (blockHit is { } blockCollision)
+        {
+            await ProjectileBlockHits.HitAsync(level, this, owner, blockCollision);
+            await BreatheAsync();
+            return;
+        }
+
         Motion = (Motion + acceleration) * 0.95f;
         PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new TeleportEntityPacket
         { EntityId = EntityId, Position = Position, Delta = Motion, Yaw = Yaw, Pitch = Pitch, OnGround = false });
+    }
+
+    // Vanilla's DragonFireball.onHit: a cloud of dragon's breath where it hit (on a living entity near it, in
+    // Obsidian), with its particles, and the fireball is gone.
+    private async ValueTask BreatheAsync()
+    {
+        var nearby = Level.GetEntitiesInRange(Position, 4).OfType<Living>().FirstOrDefault(target =>
+            target.Uuid != OwnerUuid && target.Alive && (target.Position - Position).MagnitudeSquared() < 16);
+        Level.SpawnEntity(new DragonBreathCloud
+        {
+            Level = Level,
+            EntityId = Server.GetNextEntityId(),
+            OwnerUuid = OwnerUuid,
+            Position = nearby?.Position ?? Position,
+            Radius = 3,
+            RadiusPerTick = 4f / 600,
+            Duration = 600
+        });
+        var particles = new LevelEventPacket(2006, (Vector)Position.Floor(), 1);
+        PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, particles);
+        await RemoveAsync();
     }
 
     internal override void WriteNbt(NbtCompound tag)

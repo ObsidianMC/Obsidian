@@ -87,12 +87,8 @@ public sealed partial class EnderPearl : Throwable
         return true;
     }
 
-    public override void SpawnEntity(Velocity? velocity = null, int additionalData = 0)
-    {
+    public override void SpawnEntity(Velocity? velocity = null, int additionalData = 0) =>
         base.SpawnEntity(velocity ?? new Velocity(this.Motion.X, this.Motion.Y, this.Motion.Z), this.Owner?.EntityId ?? additionalData);
-        if (this.Level is AbstractLevel level)
-            level.EmitGameEvent(MobGameEvent.ProjectileShoot, this.Position, this.Owner ?? this);
-    }
 
     public override async ValueTask TickAsync()
     {
@@ -118,18 +114,9 @@ public sealed partial class EnderPearl : Throwable
         }
 
         var terrain = new MobTerrain(level);
-        var end = this.Position + this.Motion;
-        var swept = new BoundingBox(
-            VectorD.Min(this.Position, end) - new VectorD(0.3f),
-            VectorD.Max(this.Position, end) + new VectorD(0.3f));
-        var fraction = 1d;
+        var blockHit = ProjectileBlockHits.Find(terrain, this.Position, this.Motion);
+        var fraction = blockHit?.Fraction ?? 1;
         IEntity? target = null;
-
-        foreach (var shape in terrain.GetCollisions(swept))
-        {
-            if (MobTerrain.RayIntersection(shape, this.Position, this.Motion) is double hit)
-                fraction = Math.Min(fraction, hit);
-        }
 
         foreach (var candidate in level.GetEntitiesInRange(this.Position, (float)this.Motion.Magnitude + 20))
         {
@@ -176,10 +163,19 @@ public sealed partial class EnderPearl : Throwable
 
         this.Position = next;
         this.BoundingBox = this.Dimension.CreateBBFromPosition(this.Position);
+        this.EmitShotOnce(this.Owner);
 
-        if (fraction < 1 || target != null)
+        if (target != null)
         {
+            level.EmitGameEvent(MobGameEvent.ProjectileLand, this.Position, this, this.Owner);
             await this.OnHitAsync(level, target);
+            return;
+        }
+
+        if (blockHit is { } blockCollision)
+        {
+            await ProjectileBlockHits.HitAsync(level, this, this.Owner, blockCollision);
+            await this.OnHitAsync(level, null);
             return;
         }
 
@@ -199,10 +195,9 @@ public sealed partial class EnderPearl : Throwable
         });
     }
 
+    // Vanilla's ThrownEnderpearl.onHit, after the hit itself: the target takes the hit, then the owner teleports.
     private async ValueTask OnHitAsync(AbstractLevel level, IEntity? target)
     {
-        level.EmitGameEvent(MobGameEvent.ProjectileLand, this.Position, this, this.Owner);
-
         if (target != null)
         {
             if (target is EnderDragonPart part)

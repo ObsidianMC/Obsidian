@@ -46,15 +46,9 @@ internal sealed class BreezeWindCharge : Entity
         if (owner == null && ownerUuid != Guid.Empty && (age == 1 || age % 20 == 0))
             owner = Level.FindEntity(ownerUuid);
         var terrain = new MobTerrain(Level);
-        var end = Position + Motion;
-        var swept = new BoundingBox(VectorD.Min(Position, end) - new VectorD(0.15f), VectorD.Max(Position, end) + new VectorD(0.15f));
-        var fraction = 1d;
+        var blockHit = ProjectileBlockHits.Find(terrain, Position, Motion);
+        var fraction = blockHit?.Fraction ?? 1;
         IEntity? target = null;
-        foreach (var shape in terrain.GetCollisions(swept))
-        {
-            if (MobTerrain.RayIntersection(shape, Position, Motion) is double hit)
-                fraction = Math.Min(fraction, hit);
-        }
 
         foreach (var entity in Level.GetEntitiesInRange(Position, (float)Motion.Magnitude + 3))
         {
@@ -76,11 +70,21 @@ internal sealed class BreezeWindCharge : Entity
             return;
         Position = next;
         BoundingBox = Dimension.CreateBBFromPosition(next);
-        if (fraction < 1 || target != null)
+        this.EmitShotOnce(owner);
+        if (target != null)
         {
             if (target is Living victim && target is not Wither { Armored: true })
                 await victim.DamageCombatAsync(owner ?? this, 1, CombatDamageKind.Projectile, directSource: this);
-            await BurstAsync(terrain);
+            await BurstAsync(terrain, Position);
+            await RemoveAsync();
+            return;
+        }
+
+        if (blockHit is { } blockCollision)
+        {
+            // Vanilla's AbstractWindCharge.onHitBlock: the burst, a quarter of a block out from the face it hit.
+            var burst = blockCollision.Location + (VectorD)blockCollision.Face.ToVector() * 0.25;
+            await ProjectileBlockHits.HitAsync(level, this, owner, blockCollision, () => BurstAsync(terrain, burst));
             await RemoveAsync();
             return;
         }
@@ -88,8 +92,13 @@ internal sealed class BreezeWindCharge : Entity
         { EntityId = EntityId, Position = Position, Delta = Motion, Yaw = Yaw, Pitch = Pitch, OnGround = false });
     }
 
-    private async ValueTask BurstAsync(MobTerrain terrain)
+    private async ValueTask BurstAsync(MobTerrain terrain, VectorD burst)
     {
+        // Moved to the burst, so that what the burst reaches is measured from it.
+        Position = burst;
+        if (Level is AbstractLevel level)
+            level.EmitGameEvent(MobGameEvent.Explode, burst, this);
+
         foreach (var entity in Level.GetEntitiesInRange(Position, 3).OfType<Living>())
         {
             if (!entity.Alive || entity is IPlayer { GameMode: GameMode.Spectator } || entity is Creaking { CanMove: false })

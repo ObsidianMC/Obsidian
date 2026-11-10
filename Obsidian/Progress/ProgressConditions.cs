@@ -11,7 +11,8 @@ namespace Obsidian.Progress;
 internal static class ProgressConditions
 {
     public static bool Match(IPlayer player, string trigger, JsonElement conditions, ItemStack? item,
-        IEntity? entity, IBlock? block, Vector? position, string? recipe, string? from, string? to, int? levels)
+        IEntity? entity, IBlock? block, Vector? position, string? recipe, string? from, string? to, int? levels,
+        int? signal = null)
     {
         foreach (var condition in conditions.EnumerateObject())
         {
@@ -36,6 +37,11 @@ internal static class ProgressConditions
                 "levels" when trigger == "enchanted_item" =>
                     levels is int value && NumberRange(condition.Value)
                         && LootTableJson.MatchesRange(value, condition.Value),
+                "signal_strength" when trigger == "target_hit" =>
+                    signal is int strength && NumberRange(condition.Value)
+                        && LootTableJson.MatchesRange(strength, condition.Value),
+                "projectile" when trigger == "target_hit" =>
+                    entity is not null && Entity(entity, condition.Value),
                 "location" when trigger is "placed_block" or "item_used_on_block" or "default_block_use"
                     or "any_block_use" =>
                     LocationEvent(player, condition.Value, item, block, position),

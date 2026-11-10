@@ -287,6 +287,22 @@ replaces only what vanilla produced.
   sound starts working (see [mob ambient sounds](known-gaps/mob-ambient-sounds.md)). No new case has an expected
   difference.
 
+- `projectile_block_hits.json` (`VanillaProjectileHits.ReplayProjectileHitReference`) records projectiles hitting
+  blocks, from `Java/ProjectileHitFixtures.java` (`CaptureFixtures=projectile_hits`). Like the block use probe it
+  runs a dedicated server of its own in a flat world of air, at easy, with mob griefing off and time, weather and
+  spawning stopped. Each case is its input: the blocks set up around the target, the projectile, where it starts
+  relative to the target and its motion, whether it burns (`burning`), a trident's `enchantments`, an owner of
+  `none`, the egg's `seed`, the potion, the item the owner holds, `thundering`, game `rules` and the `criteria` to
+  register for the owner. The probe spawns the projectile, owned by a player, and calls `ServerLevel.tick` the case's
+  `ticks` times from one task, so nothing else ticks. After each tick it records under `record` the blocks of the
+  area that changed, the signal the cell east of the target receives, the entities of the area (the case's projectile
+  as `projectile`, experience orbs by type alone), the sounds, level events and block events a bystander receives,
+  the game events, the ordered writes with every flag bit and the blocks destroyed (through `BlockUseInstrumentation`'s
+  observed scratch jar), and the criteria and statistics the owner gained; a field with nothing to report is left
+  out. The owner and the bystander stand nine blocks away, where experience orbs and dragon's breath don't reach them:
+  vanilla's are players the level knows of but not entities of its sections, while the replay's are entities. The
+  replay ticks a test server's world the same way and compares every field of every tick, with each known difference
+  pinned by case and field ([projectile block hits](known-gaps/projectile-block-hits.md)).
 - `turtle_eggs.json` (`VanillaTurtleEggs.ReplayTurtleEggReference`) records vanilla's turtle eggs, from
   `Java/HatchingFixtures.java` (`CaptureFixtures=turtle_eggs`). Each case is its input: the blocks of a small block
   view (air elsewhere), the origin, a seed, the overworld clock's time and the dimension, and either a random tick or
@@ -394,6 +410,8 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=block_use
 
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=projectile_hits
+
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=eyeblossom_ghast_portal
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=turtle_eggs
@@ -482,6 +500,9 @@ Select only added or deliberately changed cases, preserve existing line endings,
 text is unchanged. Drops are checked with deterministic sapling and torch cases; grass's random seed loot is
 not used as a fixed drop reference.
 
+For `projectile_hits`, `CaptureCases` accepts exact `+`-separated names in `projectile_block_hits.json` and records
+only those cases; the others keep theirs. The capture takes about 15 seconds after the server starts.
+
 The `turtle_eggs` and `frogspawn` captures run no server and re-record every case. To add one, add a case with its
 `name`, `seed`, `origin` and `setup` (and `time`, `dimension`, `place` or `tick`) and capture again; pick a seed whose
 first draw takes the branch the case is about. The `furnace_results` capture also runs no server and re-records every
@@ -509,7 +530,7 @@ The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft 
 <scratch directory> <test assets directory>
 [redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+heightmaps+saved_heightmaps+mining+placement+
 copper_weathering+fire+ticking_blocks+block_use+turtle_eggs+frogspawn+growing_plant_ticks+melting_weather+
-furnace_results]
+furnace_results+projectile_hits]
 [case names]`.
 
 ## How it captures

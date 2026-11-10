@@ -50,6 +50,16 @@ internal sealed partial class DeferredWork(ILogger logger)
             this.closed = true;
     }
 
+    /// <summary>Waits for the work accepted so far to end, its failures logged, and keeps accepting work.</summary>
+    public Task DrainAsync()
+    {
+        Task[] left;
+        lock (this.gate)
+            left = [.. this.running];
+
+        return Task.WhenAll(left);
+    }
+
     /// <summary>
     /// Closes (see <see cref="Close"/>) and waits for the work accepted before to end, its failures logged.
     /// </summary>

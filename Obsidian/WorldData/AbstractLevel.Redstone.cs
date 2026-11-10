@@ -97,12 +97,6 @@ public abstract partial class AbstractLevel
     }
 
     /// <summary>
-    /// The block an arrow hit reacts with: a target block takes power for a while (see <see cref="TargetBlock"/>).
-    /// </summary>
-    internal ValueTask OnProjectileHitBlockAsync(Vector block, VectorD location, BlockFace face) =>
-        this.RedstoneInstall.Targets.HitAsync(block, location, face, TargetBlock.ArrowPulseTicks);
-
-    /// <summary>
     /// Vanilla's <c>updateNeighbourForOutputSignal</c> for a container whose items changed: the comparators beside
     /// it, or behind a conductor beside it, hear of it and read it again. A double chest is one container to a
     /// comparator, so the comparators of its other half hear too. Remembers the revision they heard of (see
