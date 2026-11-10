@@ -116,26 +116,42 @@ public partial class UseItemOnPacket
             return ValueTask.FromResult(UseResult.Pass);
 
         use.CompletionDeferred = true;
-        use.Level.EnqueueEntityAction(async () =>
+        use.Level.EnqueueEntityAction(CompleteQueuedUseAsync);
+        async ValueTask CompleteQueuedUseAsync()
         {
-            var committed = use.TryCommit(() =>
+            if (!use.CanCommit)
             {
-                if (!Growth.IsValidBonemealTarget(use.Level, use.Position, use.Block))
-                    return false;
-
-                Growth.ApplyBonemeal(use.Level, use.Position, use.Block, use.Level.GrowthRandom);
-                return true;
-            }, consumeItem: true);
-            if (committed)
-            {
-                use.Level.BroadcastLevelEvent(Growth.BoneMealEvent, use.Position, Growth.BoneMealParticles);
-                use.Level.EmitGameEvent(MobGameEvent.ItemInteractFinish, use.Player.Position, use.Player);
-                use.Player.Statistics.Increment(use.Item!.Holder.UnlocalizedName, type: "minecraft:used");
-                await FireAsync(use, "item_used_on_block");
+                await this.CompleteAsync(use, UseResult.Fail);
+                return;
             }
 
-            await this.CompleteAsync(use, committed ? UseResult.SuccessServer : UseResult.Fail);
-        });
+            var ran = false;
+            var handled = await use.Player.TryRunBlockUseAsync(async () =>
+            {
+                ran = true;
+                var committed = use.TryCommit(() =>
+                {
+                    if (!Growth.IsValidBonemealTarget(use.Level, use.Position, use.Block))
+                        return false;
+
+                    Growth.ApplyBonemeal(use.Level, use.Position, use.Block, use.Level.GrowthRandom);
+                    return true;
+                }, consumeItem: true);
+                if (committed)
+                {
+                    use.Level.BroadcastLevelEvent(Growth.BoneMealEvent, use.Position, Growth.BoneMealParticles);
+                    use.Level.EmitGameEvent(MobGameEvent.ItemInteractFinish, use.Player.Position, use.Player);
+                    use.Player.Statistics.Increment(use.Item!.Holder.UnlocalizedName, type: "minecraft:used");
+                    await FireAsync(use, "item_used_on_block");
+                }
+
+                await this.CompleteAsync(use, committed ? UseResult.SuccessServer : UseResult.Fail);
+            });
+            if (!handled)
+                use.Level.EnqueueEntityAction(CompleteQueuedUseAsync);
+            else if (!ran)
+                await this.CompleteAsync(use, UseResult.Fail);
+        }
         return ValueTask.FromResult(UseResult.SuccessServer);
     }
 

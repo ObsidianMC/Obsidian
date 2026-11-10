@@ -84,6 +84,7 @@ public sealed partial class SamplePlugin : IDisposable
         // Placed on the ground, it faces the player, unpowered and dark, with its block entity and its shape.
         var position = new Vector(4, BlockUpdates.Ground + 1, 4);
         player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(counter.Item!, 1));
+        player.Level.TryAddPlayer(player);
         await BlockUpdates.UseOn(position + Vector.Down, BlockFace.Up).HandleAsync(context.Server, player);
 
         var placed = chunk.GetBlock(position);
@@ -216,6 +217,7 @@ public sealed partial class SamplePlugin : IDisposable
         // Placed again, it reads the count back and saves it.
         await dropped.RemoveAsync();
         player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(drop, 1));
+        player.Level.TryAddPlayer(player);
         await BlockUpdates.UseOn(position + Vector.Down, BlockFace.Up).HandleAsync(context.Server, player);
         await world.DoWorldTickAsync();
 
@@ -323,6 +325,7 @@ public sealed partial class SamplePlugin : IDisposable
 
         // Phase 3: using it opens its menu, bound to its block entity, with the recipes it grinds for the screen's
         // list, in identifier order: each as its ingredient and its result.
+        player.Level.TryAddPlayer(player);
         await BlockUpdates.UseOn(machine, BlockFace.North).HandleAsync(context.Server, player);
         var menu = Assert.IsAssignableFrom<MenuContainer>(player.OpenedContainer);
         Assert.Equal("sample:grinder", menu.Menu.Identifier);
@@ -426,7 +429,9 @@ public sealed partial class SamplePlugin : IDisposable
         // Within reach of both, as vanilla requires.
         var standing = player.Position;
         player.Position = new VectorD(6.5, BlockUpdates.Ground + 1, 5.5);
+        player.Level.TryAddPlayer(player);
         await BlockUpdates.UseOn(first + Vector.Down, BlockFace.Up).HandleAsync(context.Server, player);
+        player.Level.TryAddPlayer(player);
         await BlockUpdates.UseOn(second + Vector.Down, BlockFace.Up).HandleAsync(context.Server, player);
         player.Position = standing;
 
@@ -459,6 +464,7 @@ public sealed partial class SamplePlugin : IDisposable
         player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(moth.SpawnEgg, 2));
         var target = new Vector(6, BlockUpdates.Ground, 6);
         player.Position = (VectorD)target + new VectorD(0, 1, 2);
+        player.Level.TryAddPlayer(player);
         await BlockUpdates.UseOn(target, BlockFace.Up).HandleAsync(context.Server, player);
         var mob = Assert.Single(world.GetEntitiesInRange((VectorD)target, 4).OfType<PluginMob>());
         Assert.Same(moth, mob.Definition);
@@ -466,6 +472,7 @@ public sealed partial class SamplePlugin : IDisposable
         Assert.Equal((VectorD)target + new VectorD(0.5, 1, 0.5), mob.Position);
 
         await world.SetBlockAsync(target, BlocksRegistry.Spawner);
+        player.Level.TryAddPlayer(player);
         await BlockUpdates.UseOn(target, BlockFace.Up).HandleAsync(context.Server, player);
         var spawner = Assert.IsType<DataBlockEntity>(await world.GetBlockEntityAsync(target));
         Assert.True(spawner.Data.TryGetTag<NbtCompound>("SpawnData", out var spawn));

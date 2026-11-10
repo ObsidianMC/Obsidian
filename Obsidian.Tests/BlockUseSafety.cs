@@ -27,6 +27,7 @@ public sealed class BlockUseSafety
         world.BlockUpdates.SetBlock(target, BlocksRegistry.Chest);
         var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "User",
             new VectorD(8.5, 64, 10.5));
+        context.World.TryAddPlayer(player);
         player.GameMode = GameMode.Survival;
         var client = (TestClient)player.Client;
         var packet = BlockUpdates.UseOn(target, BlockFace.Up, new VectorF(0.5f, 0.5f, 0.5f));
@@ -74,6 +75,7 @@ public sealed class BlockUseSafety
         world.BlockUpdates.SetBlock(target, BlocksRegistry.Stone);
         var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "User",
             new VectorD(8.5, 64, 10.5));
+        context.World.TryAddPlayer(player);
         player.GameMode = GameMode.Survival;
         var buckets = new ItemStack(ItemsRegistry.Get("minecraft:cod_bucket"), 2);
         player.Inventory.SetItem(player.CurrentHeldItemSlot, buckets);
@@ -84,7 +86,7 @@ public sealed class BlockUseSafety
         Assert.Same(buckets, player.GetHeldItem());
         Assert.Equal(2, buckets.Count);
         Assert.True(world.BlockUpdates.GetBlock(target + Vector.Up).IsAir);
-        Assert.Empty(world.GetEntitiesInRange((VectorD)target, 4));
+        Assert.Empty(world.GetEntitiesInRange((VectorD)target, 4).Where(entity => !ReferenceEquals(entity, player)));
     }
 
     [Fact]
@@ -97,6 +99,7 @@ public sealed class BlockUseSafety
         await world.SetBlockAsync(target, BlocksRegistry.Get("minecraft:obsidian"));
         var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "User",
             new VectorD(8.5, 64, 10.5));
+        context.World.TryAddPlayer(player);
         player.GameMode = GameMode.Survival;
         var crystals = new ItemStack(ItemsRegistry.EndCrystal, 2);
         player.Inventory.SetItem(player.CurrentHeldItemSlot, crystals);
@@ -111,7 +114,7 @@ public sealed class BlockUseSafety
             Assert.Null(await packet.UseAsync(context.Server, player));
 
             Assert.Equal(2, crystals.Count);
-            Assert.Empty(world.GetEntitiesInRange((VectorD)target, 8));
+            Assert.Empty(world.GetEntitiesInRange((VectorD)target, 8).Where(entity => !ReferenceEquals(entity, player)));
             Assert.Single(((TestClient)player.Client).SentPackets.OfType<BlockChangedAckPacket>());
         }
     }
@@ -126,6 +129,7 @@ public sealed class BlockUseSafety
         context.World.BlockUpdates.SetBlock(target, BlocksRegistry.Lectern);
         var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "User",
             new VectorD(8.5, 64, 10.5));
+        context.World.TryAddPlayer(player);
         player.GameMode = GameMode.Survival;
         var book = new ItemStack(ItemsRegistry.WritableBook, 1);
         player.Inventory.SetItem(player.CurrentHeldItemSlot, book);
@@ -159,6 +163,7 @@ public sealed class BlockUseSafety
         await world.GetBlockAsync(target);
         var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "User",
             new VectorD(8.5, 64, 10.5));
+        context.World.TryAddPlayer(player);
         player.GameMode = GameMode.Survival;
         var interference = "hand";
         context.EventDispatcher.RegisterEvent(null, (Func<PlayerInteractEventArgs, ValueTask>)(async _ =>
@@ -214,13 +219,17 @@ public sealed class BlockUseSafety
         WorldBlockEntities.AddEmptyChunk(world);
         var target = new Vector(8, 64, 8);
         await world.GetBlockAsync(target);
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "User",
-            new VectorD(8.5, 64, 10.5));
-        player.GameMode = GameMode.Survival;
-        var client = (TestClient)player.Client;
+        var watcher = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Watcher",
+            new VectorD(10, 64, 10));
+        world.TryAddPlayer(watcher);
 
-        foreach (var interference in new[] { "none", "hand", "block", "death" })
+        foreach (var interference in new[] { "none", "hand", "block", "death", "disconnect", "removed", "stopped" })
         {
+            var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "User",
+                new VectorD(8.5, 64, 10.5));
+            world.TryAddPlayer(player);
+            player.GameMode = GameMode.Survival;
+            var client = (TestClient)player.Client;
             player.Health = 20;
             world.BlockUpdates.SetBlock(target + Vector.Down, BlocksRegistry.Farmland,
                 BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace);
@@ -245,6 +254,12 @@ public sealed class BlockUseSafety
                 world.BlockUpdates.SetBlock(target, BlocksRegistry.Stone);
             if (interference == "death")
                 player.Health = 0;
+            if (interference == "disconnect")
+                client.Dispose();
+            if (interference == "removed")
+                world.TryRemovePlayer(player);
+            if (interference == "stopped")
+                await player.StopTickingAsync();
 
             await world.RunQueuedEntityActionsAsync();
 
@@ -256,6 +271,10 @@ public sealed class BlockUseSafety
                 Assert.Null(player.GetHeldItem());
             if (interference == "hand")
                 Assert.Equal(2, player.GetHeldItem()?.Count);
+            if (interference is "disconnect" or "removed" or "stopped")
+                Assert.Equal(1, player.GetHeldItem()?.Count);
+
+            world.TryRemovePlayer(player);
         }
     }
 }

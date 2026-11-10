@@ -178,6 +178,7 @@ public sealed class VanillaMoreBlocks(ITestOutputHelper output)
             var item = ItemsRegistry.Get(probe.GetProperty("item").GetString()!);
             player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(item, 2));
             var side = Face(probe.GetProperty("face").GetString()!);
+            player.Level.TryAddPlayer(player);
             await BlockUpdates.UseOn(origin, side).HandleAsync(context.Server, player);
             await world.BlockNotifications.DrainAsync();
             Assert.Equal(probe.GetProperty("note").GetInt32(),

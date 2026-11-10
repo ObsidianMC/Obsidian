@@ -27,6 +27,7 @@ public sealed class BlockUseAdvancements
         world.BlockUpdates.SetBlock(target, BlocksRegistry.Jukebox);
         var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "User",
             new VectorD(8.5, 64, 10.5));
+        context.World.TryAddPlayer(player);
         player.GameMode = GameMode.Survival;
         player.Inventory.SetItem(player.CurrentHeldItemSlot,
             new ItemStack(ItemsRegistry.Get("minecraft:music_disc_cat"), 1));

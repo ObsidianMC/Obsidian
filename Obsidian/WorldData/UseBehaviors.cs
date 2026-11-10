@@ -102,7 +102,10 @@ internal sealed class BlockUse
     /// <summary>A queued action owns rewards and the packet response once it commits or refuses the use.</summary>
     public bool CompletionDeferred { get; set; }
 
-    public bool CanCommit => this.Player.Alive && !this.Player.Respawning && this.Player.Level == this.Level;
+    public bool CanCommit => this.Player.Connected && this.Player.Alive && !this.Player.Respawning
+        && this.Player.Level == this.Level
+        && this.Level.Players.TryGetValue(this.Player.Uuid, out var resident)
+        && ReferenceEquals(resident, this.Player);
 
     /// <summary>
     /// Commits a synchronous destination change and its hand exchange together. The tick lock comes first, then

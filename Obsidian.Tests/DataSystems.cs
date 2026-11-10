@@ -285,6 +285,7 @@ public sealed class DataSystems
         // Run the serverbound packet, including component lookup and inventory wear.
         var face = Enum.Parse<BlockFace>(faceName, ignoreCase: true);
         var packet = BlockUpdates.UseOn(position, face);
+        player.Level.TryAddPlayer(player);
         await packet.HandleAsync(context.Server, player);
 
         // The committed block and wear must agree with the captured transformer.
@@ -295,7 +296,7 @@ public sealed class DataSystems
         Assert.Equal(sample.Damage, heldItem.Damage);
 
         // Publish queued item entities before checking the interaction's loot.
-        await world.DoWorldTickAsync();
+        await world.RunQueuedEntityActionsAsync();
         var drops = world.GetNonPlayerEntitiesInRange((VectorD)position, 3)
             .OfType<Entities.ItemEntity>().ToArray();
         Assert.Equal(resources.Drops.Length, drops.Length);
@@ -353,6 +354,7 @@ public sealed class DataSystems
                 && row.Above == "minecraft:air"
                 && row.Face == "up");
 
+            player.Level.TryAddPlayer(player);
             await BlockUpdates.UseOn(position, BlockFace.Up).HandleAsync(context.Server, player);
 
             Assert.True(sample.Consumes);

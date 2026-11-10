@@ -136,6 +136,7 @@ public sealed class BlockUseTransactions
     {
         var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, name,
             new VectorD(8.5, 64, 10.5));
+        context.World.TryAddPlayer(player);
         player.GameMode = GameMode.Survival;
         return player;
     }

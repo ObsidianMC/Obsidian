@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
@@ -203,6 +203,7 @@ public sealed class BlockUpdates : IDisposable
         // Clicking the ground's top places the block above it, facing the player (east, for a player facing west).
         var ground = new Vector(4, Ground, 4);
         var above = ground + Vector.Up;
+        player.Level.TryAddPlayer(player);
         await UseOn(ground, BlockFace.Up).HandleAsync(context.Server, player);
 
         Assert.Equal(1, events);
@@ -210,6 +211,7 @@ public sealed class BlockUpdates : IDisposable
         Assert.Equal(2, player.GetHeldItem()?.Count);
 
         cancel = false;
+        player.Level.TryAddPlayer(player);
         await UseOn(ground, BlockFace.Up).HandleAsync(context.Server, player);
 
         var placed = world.GetLoadedChunk(0, 0)!.GetBlock(above);
@@ -223,6 +225,7 @@ public sealed class BlockUpdates : IDisposable
         var filled = new Vector(6, Ground + 1, 6);
         meanwhile = () => world.SetBlockAsync(filled, BlocksRegistry.Stone);
         client.ClearPackets();
+        player.Level.TryAddPlayer(player);
         await UseOn(filled + Vector.Down, BlockFace.Up).HandleAsync(context.Server, player);
 
         Assert.True(world.GetLoadedChunk(0, 0)!.GetBlock(filled).Is(BlockIds.Stone));
@@ -237,6 +240,7 @@ public sealed class BlockUpdates : IDisposable
         var doorTop = door + Vector.Up;
         meanwhile = () => world.SetBlockAsync(doorTop, BlocksRegistry.Stone);
         player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.Get("minecraft:oak_door"), 1));
+        player.Level.TryAddPlayer(player);
         await UseOn(door + Vector.Down, BlockFace.Up).HandleAsync(context.Server, player);
 
         Assert.True(world.GetLoadedChunk(0, 0)!.GetBlock(door).IsAir);
@@ -250,6 +254,7 @@ public sealed class BlockUpdates : IDisposable
         async Task<IBlock> PlaceVanillaAsync(string item, Vector clicked, BlockFace face)
         {
             player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.Get(item), 1));
+            player.Level.TryAddPlayer(player);
             await UseOn(clicked, face).HandleAsync(context.Server, player);
             return world.GetLoadedChunk(0, 0)!.GetBlock(clicked + face.ToVector());
         }
@@ -283,6 +288,7 @@ public sealed class BlockUpdates : IDisposable
         async Task<IBlock> PlaceAsync(string item, Vector spot)
         {
             player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.Get(item), 1));
+            player.Level.TryAddPlayer(player);
             await UseOn(spot + Vector.Down, BlockFace.Up).HandleAsync(context.Server, player);
             return world.GetLoadedChunk(0, 0)!.GetBlock(spot);
         }
