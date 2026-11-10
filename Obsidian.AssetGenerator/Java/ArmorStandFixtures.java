@@ -195,7 +195,8 @@ public final class ArmorStandFixtures {
         var result = user.interactOn(stand, hand, location);
         if (result instanceof InteractionResult.Success success) {
             var awarded = success.wasItemInteraction() ? used : ItemStack.EMPTY;
-            net.minecraft.advancements.triggers.CriteriaTriggers.PLAYER_INTERACTED_WITH_ENTITY.trigger(user, awarded, stand);
+            var trigger = net.minecraft.advancements.triggers.CriteriaTriggers.PLAYER_INTERACTED_WITH_ENTITY;
+            trigger.trigger(user, awarded, stand);
             if (success.shouldSwing()) {
                 user.swingAndResetAttackStrength(hand, used.getInteractAnimation(),
                     success.swingSource() != InteractionResult.SwingSource.PREDICTED);

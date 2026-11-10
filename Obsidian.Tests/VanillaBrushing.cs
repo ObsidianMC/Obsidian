@@ -459,14 +459,20 @@ public sealed class VanillaBrushing(ITestOutputHelper output)
         {
             var expectedRecord = wanted.GetValueOrDefault(tick) ?? new JsonObject();
             var actualRecord = got.GetValueOrDefault(tick) ?? new JsonObject();
-            string[] fields = ["result", "writes", "sounds", "levelEvents", "particles", "entityEvents", "gameEvents", "stats",
-                "criteria", "hand", "using", "blockEntity", "clientData", "entities"];
+            string[] fields =
+            [
+                "result", "writes", "sounds", "levelEvents", "particles", "entityEvents", "gameEvents", "stats",
+                "criteria", "hand", "using", "blockEntity", "clientData", "entities"
+            ];
             foreach (var field in fields)
             {
                 var want = expectedRecord[field];
                 var have = actualRecord[field];
                 if (!NbtJson.Same(want, have))
-                    yield return $"tick {tick} {field}: expected {NbtJson.Canonical(want)}, got {NbtJson.Canonical(have)}";
+                {
+                    yield return $"tick {tick} {field}: expected {NbtJson.Canonical(want)}, "
+                        + $"got {NbtJson.Canonical(have)}";
+                }
             }
         }
     }

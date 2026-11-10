@@ -38,7 +38,9 @@ internal static class NbtJson
     /// <summary>Whether two JSON values are equal, with numbers compared by value and keys in any order.</summary>
     public static bool Same(JsonNode? expected, JsonNode? actual) => Canonical(expected) == Canonical(actual);
 
-    /// <summary>The value with sorted keys and numbers as Java prints doubles, for comparing and for messages.</summary>
+    /// <summary>
+    /// The value with sorted keys and numbers as Java prints doubles, for comparing and for messages.
+    /// </summary>
     public static string Canonical(JsonNode? node) => node switch
     {
         null => "null",

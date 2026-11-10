@@ -88,7 +88,9 @@ public abstract partial class AbstractLevel
         }
     }
 
-    /// <summary>Drops <paramref name="stack"/> at <paramref name="position"/> moving as given, under the tick lock.</summary>
+    /// <summary>
+    /// Drops <paramref name="stack"/> at <paramref name="position"/> moving as given, under the tick lock.
+    /// </summary>
     internal bool DropItemAt(VectorD position, ItemStack stack, VectorD motion)
     {
         lock (this.Fluids.TickLock)
