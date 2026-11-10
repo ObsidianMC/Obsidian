@@ -31,7 +31,11 @@ internal static class CombatEffects
     internal static float Protect(Living entity, float amount, CombatDamageKind kind)
     {
         if (kind is CombatDamageKind.Void or CombatDamageKind.Starvation) return amount;
-        if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact && entity.HasPotionEffect((int)PotionEffect.FireResistance - 1)) return 0;
+        if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact or CombatDamageKind.HotFloor
+            && entity.HasPotionEffect((int)PotionEffect.FireResistance - 1))
+        {
+            return 0;
+        }
         if (entity.ActivePotionEffects.TryGetValue((int)PotionEffect.Resistance - 1, out var resistance))
             amount *= Math.Max(0, 1 - 0.2f * (resistance.EffectData.Amplifier + 1));
         if (kind == CombatDamageKind.SonicBoom) return amount;
@@ -42,7 +46,8 @@ internal static class CombatEffects
             protection += kind switch
             {
                 CombatDamageKind.Fall => 3 * CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.FeatherFalling),
-                CombatDamageKind.Fire or CombatDamageKind.FireContact => 2 * CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.FireProtection),
+                CombatDamageKind.Fire or CombatDamageKind.FireContact or CombatDamageKind.HotFloor =>
+                    2 * CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.FireProtection),
                 CombatDamageKind.Explosion => 2 * CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.BlastProtection),
                 CombatDamageKind.Projectile => 2 * CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.ProjectileProtection), _ => 0
             };

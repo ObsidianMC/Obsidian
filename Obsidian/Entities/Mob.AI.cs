@@ -206,12 +206,16 @@ public partial class Mob
     /// Replaces the mob with a new one of <paramref name="type"/> where it stands, keeping its name, persistence, flags
     /// and equipment.
     /// </summary>
+    /// <returns>The resident replacement, or null if the original left the level before conversion committed.</returns>
     /// <param name="keepHealth">
     /// Whether the new mob keeps the old one's health; vanilla's own conversions start it at full health.
     /// </param>
-    internal async ValueTask<Mob> ConvertToAsync(EntityType type, bool keepHealth = true)
+    internal async ValueTask<Mob?> ConvertToAsync(EntityType type, bool keepHealth = true)
     {
-        var replacement = Obsidian.Entities.Factories.EntitySpawner.CreateMob(Level, type)
+        if (Level is not AbstractLevel level)
+            return null;
+
+        var replacement = Obsidian.Entities.Factories.EntitySpawner.CreateMob(level, type)
             ?? throw new ArgumentOutOfRangeException(nameof(type));
         replacement.EntityId = Server.GetNextEntityId();
         replacement.Position = Position;
@@ -244,8 +248,24 @@ public partial class Mob
             replacement.equipmentDropChances[slot] = GetEquipmentDropChance(slot);
         }
         replacement.BoundingBox = replacement.Dimension.CreateBBFromPosition(Position);
+
+        // Preparation may run arbitrary entity code. Only membership changes belong under transfer, shared with
+        // saving and unloading; a snapshot must see either the original or its replacement, never both.
+        using (level.TransferLock.Enter())
+        {
+            if (Position != replacement.Position || !IsTravelResident(level)
+                || !level.AdmitsTravellersAt(replacement.Position))
+                return null;
+
+            if (!level.TryAddEntity(replacement, hostOwned: true))
+                return null;
+
+            level.RemoveEntity(this, transferring: false);
+            IsRemoved = true;
+        }
+
         await RemoveAsync();
-        Level.SpawnEntity(replacement);
+        replacement.SpawnEntity();
         return replacement;
     }
 
@@ -545,7 +565,7 @@ public partial class Mob
 
     internal ValueTask DamageEnvironmentAsync(float amount) => ApplyDamageAsync(this, amount, false);
     internal ValueTask DamageMagicAsync(IEntity source, float amount, bool ignoreHurtCooldown = false) => ApplyDamageAsync(source, amount, false, ignoreHurtCooldown);
-    protected virtual bool CanTakeDamage(IEntity source) => true;
+    protected virtual bool CanTakeDamage(IEntity? source) => true;
 
     /// <summary>
     /// Lets a mob change damage it's about to take, after its immunities: the amount it takes, or null for none.
@@ -565,18 +585,22 @@ public partial class Mob
 
     private async ValueTask ApplyDamageAsync(IEntity source, float amount, bool applyArmor, bool ignoreHurtCooldown = false)
     {
+        var attacker = IncomingDamageKind.HasValue ? IncomingAttacker : source;
         var kind = IncomingDamageKind ?? (applyArmor ? CombatDamageKind.Melee : CombatDamageKind.Magic);
         applyArmor &= kind is CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion
-            or CombatDamageKind.FireContact or CombatDamageKind.Thorns or CombatDamageKind.FallingStalactite
-            or CombatDamageKind.Lightning;
+            or CombatDamageKind.FireContact or CombatDamageKind.HotFloor
+            or CombatDamageKind.Lightning or CombatDamageKind.Thorns or CombatDamageKind.FallingStalactite;
         if (!UsesAi)
         {
             await base.DamageAsync(source, amount);
             return;
         }
-        if (IsRemoved || !Alive || source.Level != Level || !float.IsFinite(amount) || amount <= 0 || kind != CombatDamageKind.Void && !CanTakeDamage(source))
+        if (IsRemoved || !Alive || source.Level != Level || !float.IsFinite(amount) || amount <= 0
+            || kind != CombatDamageKind.Void && !CanTakeDamage(attacker))
+        {
             return;
-        if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact &&
+        }
+        if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact or CombatDamageKind.HotFloor &&
             (IsFireImmune || HasPotionEffect((int)PotionEffect.FireResistance - 1)))
         {
             return;
@@ -597,9 +621,9 @@ public partial class Mob
                 return;
             amount -= lastDamage;
         }
-        else if (!ignoreHurtCooldown && kind != CombatDamageKind.SonicBoom)
+        else if (!ignoreHurtCooldown && kind != CombatDamageKind.SonicBoom && attacker is not null)
         {
-            var direction = Position - source.Position;
+            var direction = Position - attacker.Position;
             var horizontal = Math.Sqrt(direction.X * direction.X + direction.Z * direction.Z);
             var strength = 0.4f * (1 - Math.Clamp(GetAttributeValue("minecraft:generic.knockback_resistance"), 0, 1));
             if (horizontal > 0.0001f && strength > 0)
@@ -619,9 +643,9 @@ public partial class Mob
             lastPlayerHurtTick = AiTick;
             lastHurtByPlayer = player;
         }
-        if (!ReferenceEquals(source, this))
+        if (attacker is not null && !ReferenceEquals(attacker, this))
         {
-            LastAttacker = source;
+            LastAttacker = attacker;
             LastHurtTick = AiTick;
         }
         if (!recentlyHurt)

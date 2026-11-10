@@ -21,7 +21,7 @@ public sealed partial class CopperGolem : PathfinderMob
         get => weather;
         set => weather = Math.Clamp(value, 0, WeatherStates.Length - 1);
     }
-    private long nextWeather;
+    private long nextWeather = -1;
     private IBlockEntity? destination;
     private long searchAt;
     private int interactionState;
@@ -44,7 +44,8 @@ public sealed partial class CopperGolem : PathfinderMob
             return;
 
         weather--;
-        nextWeather = Level.LevelData.GameTime + Random.Next(504000, 552001);
+        // Lightning invalidates the deadline; the next server tick draws its replacement from the level random.
+        nextWeather = -1;
         SynchronizeMetadata();
     }
 
@@ -63,7 +64,6 @@ public sealed partial class CopperGolem : PathfinderMob
     protected override void FinalizeSpawn()
     {
         PersistenceRequired = true;
-        nextWeather = Level.LevelData.GameTime + Random.Next(504000, 552001);
     }
 
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
@@ -77,10 +77,10 @@ public sealed partial class CopperGolem : PathfinderMob
 
     protected override async ValueTask TickMobAsync()
     {
+        TickWeathering();
         if (MobBitMask.HasFlag(MobBitmask.NoAi))
             return;
 
-        TickWeathering();
         if (CanBecomeStatue())
         {
             await BecomeStatueAsync();
@@ -113,6 +113,12 @@ public sealed partial class CopperGolem : PathfinderMob
 
     private void TickWeathering()
     {
+        if (nextWeather == -1 && Level is AbstractLevel level)
+        {
+            nextWeather = Level.LevelData.GameTime + 504000 + level.GrowthRandom.NextInt(48001);
+            return;
+        }
+
         if (nextWeather >= 0 && Level.LevelData.GameTime >= nextWeather)
         {
             nextWeather = Level.LevelData.GameTime + Random.Next(504000, 552001);

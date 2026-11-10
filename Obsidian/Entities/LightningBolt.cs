@@ -171,11 +171,16 @@ public sealed partial class LightningBolt : Entity
     // channeled_lightning trigger then sees them all.
     private async ValueTask StrikeEntitiesAsync()
     {
-        var struck = this.EntitiesAround(StrikeReach).Where(IsAlive).ToList();
-        foreach (var entity in struck)
+        var targets = this.EntitiesAround(StrikeReach);
+        var struck = new List<IEntity>();
+        foreach (var entity in targets)
         {
-            if (entity is Entity concrete)
-                await concrete.ThunderHitAsync(this);
+            // An earlier hit can wait for inventory while another flow saves and unloads a later target.
+            if (entity is not Entity concrete || !IsAlive(entity) || !concrete.IsTravelResident(this.Level))
+                continue;
+
+            struck.Add(entity);
+            await concrete.ThunderHitAsync(this);
         }
 
         this.hitEntities.UnionWith(struck);

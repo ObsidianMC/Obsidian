@@ -308,6 +308,75 @@ public sealed class PluginMobs
         Assert.Equal(3, drop.Item.Count);
     }
 
+    [Fact]
+    public async Task DamageHooksPreserveAttackersAndAttackerlessLightning()
+    {
+        await using var context = TestServerFactory.CreateServer($"damage-sources-{Guid.NewGuid():N}");
+        await BlockUpdates.AddChunksAsync(context.World);
+        var owner = new PluginContainer
+        {
+            Info = new PluginInfo("damagesources"),
+            Archive = PluginArchive.Open("damagesources.obby", PluginArchives.Zip(new Dictionary<string, byte[]>
+            {
+                [PluginMetadata.FileName] = PluginArchives.Metadata("damagesources", "1.0.0", "Damage sources")
+            }))
+        };
+        var behavior = new DamageSourceRecorder();
+        var definition = EntityDefinitionsRegistry.Register("damagesources:mob", EntityKind.Mob);
+        Assert.True(EntityDefinitionsRegistry.TryBind(definition, new EntityProperties { Behavior = behavior },
+            owner, () => false));
+        var mob = Assert.IsType<PluginMob>(PluginEntity.Create(definition, context.World));
+        mob.EntityId = Server.GetNextEntityId();
+        mob.Position = new VectorD(8.5, 71, 8.5);
+        context.World.SpawnEntity(mob);
+        var attacker = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Attacker");
+        var projectile = new Arrow { Level = context.World };
+
+        // The scoped combat bridge must keep the attacker and direct entity for every kind of attributed damage.
+        foreach (var kind in Enum.GetValues<CombatDamageKind>())
+        {
+            await mob.DamageCombatAsync(attacker, 1, kind, directSource: projectile);
+            Assert.Same(attacker, behavior.Last!.Attacker);
+            Assert.Same(projectile, behavior.Last.DirectEntity);
+        }
+
+        await mob.ThunderHitAsync(new LightningBolt { Level = context.World });
+        Assert.Equal("minecraft:lightning_bolt", behavior.Last!.Type);
+        Assert.Null(behavior.Last.Attacker);
+        Assert.Null(behavior.Last.DirectEntity);
+        Assert.Null(mob.LastAttacker);
+
+        // An absent source must not leak into a later public damage call, or turn self-damage into an attack.
+        await mob.DamageAsync(attacker);
+        Assert.Same(attacker, behavior.Last!.Attacker);
+        Assert.Same(attacker, behavior.Last.DirectEntity);
+        await mob.DamageCombatAsync(mob, 1, CombatDamageKind.Fall);
+        Assert.Null(behavior.Last.Attacker);
+        Assert.Null(behavior.Last.DirectEntity);
+
+        behavior.CancelDamage = false;
+        await mob.DamageCombatAsync(attacker, 1, CombatDamageKind.Melee);
+        Assert.Same(attacker, mob.LastAttacker);
+        Assert.Same(attacker, mob.RecentPlayerAttacker);
+        await mob.DamageCombatAsync(null, 2, CombatDamageKind.Lightning);
+        Assert.Same(attacker, mob.LastAttacker);
+        Assert.Null(behavior.Last.Attacker);
+        Assert.Null(behavior.Last.DirectEntity);
+    }
+
+    private sealed class DamageSourceRecorder : IEntityBehavior
+    {
+        public DamageSource? Last { get; private set; }
+        public bool CancelDamage { get; set; } = true;
+
+        public ValueTask HurtAsync(IEntity entity, EntityDamage damage)
+        {
+            this.Last = damage.Source;
+            damage.Cancelled = this.CancelDamage;
+            return ValueTask.CompletedTask;
+        }
+    }
+
     private sealed class DrakeBehavior : IEntityBehavior
     {
         public List<string> Hurt { get; } = [];

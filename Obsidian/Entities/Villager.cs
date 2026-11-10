@@ -149,7 +149,8 @@ public sealed partial class Villager : AgeableMob
         if (JobSite is { } job)
             level.ReleaseVillagePoi(job, Uuid);
 
-        var witch = await ConvertToAsync(EntityType.Witch, keepHealth: false);
+        if (await ConvertToAsync(EntityType.Witch, keepHealth: false) is not Mob witch)
+            return;
         witch.PersistenceRequired = true;
     }
 

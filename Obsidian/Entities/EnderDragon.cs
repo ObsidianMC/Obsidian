@@ -76,7 +76,7 @@ public sealed partial class EnderDragon : BossMob
     protected override IEnumerable<IPlayer> BarPlayers => Level.GetPlayersInRange(new VectorD(0, 128, 0), 192)
         .Where(player => player.GameMode != GameMode.Spectator);
 
-    protected override bool CanTakeDamage(IEntity source) => source is IPlayer or EndCrystal;
+    protected override bool CanTakeDamage(IEntity? source) => source is IPlayer or EndCrystal;
     internal override bool Hostile => false;
     protected override bool CanDespawn => false;
     protected override bool TakesFallDamage => false;

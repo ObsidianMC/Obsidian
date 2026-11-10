@@ -7347,6 +7347,7 @@
     },
     {
       "name": "copper_golem_loses_a_stage",
+      "recordWeathering": true,
       "seed": 39,
       "boltSeed": 49,
       "entities": [
@@ -7377,6 +7378,8 @@
             "minecraft:copper_golem 1.500,0.000,0.500 fire 1 health 7.00 persistent weather exposed",
             "minecraft:lightning_bolt 0.500,0.000,0.500 fire 0"
           ],
+          "weatherDeadlines": [-1],
+          "next": 749859585,
           "sounds": [
             "minecraft:entity.copper_golem_weathered.hurt 1.500,0.000,0.500 volume 1.00"
           ],
@@ -7393,6 +7396,8 @@
             "minecraft:copper_golem 1.500,0.000,0.500 fire 1 health 7.00 persistent weather exposed",
             "minecraft:lightning_bolt 0.500,0.000,0.500 fire 0"
           ],
+          "weatherDeadlines": [542446],
+          "next": -1727319087,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7404,6 +7409,8 @@
             "minecraft:copper_golem 1.500,0.000,0.500 fire 1 health 7.00 persistent weather exposed",
             "minecraft:lightning_bolt 0.500,0.000,0.500 fire 0"
           ],
+          "weatherDeadlines": [542445],
+          "next": -1028562648,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7415,6 +7422,8 @@
             "minecraft:copper_golem 1.500,0.000,0.500 fire 1 health 7.00 persistent weather exposed",
             "minecraft:lightning_bolt 0.500,0.000,0.500 fire 0"
           ],
+          "weatherDeadlines": [542444],
+          "next": -299623943,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7426,6 +7435,8 @@
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed",
             "minecraft:lightning_bolt 0.500,0.000,0.500 fire 0"
           ],
+          "weatherDeadlines": [542443],
+          "next": 352740062,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7437,6 +7448,8 @@
             "minecraft:copper_golem 1.500,0.000,0.500 fire 1 health 7.00 persistent weather exposed",
             "minecraft:lightning_bolt 0.500,0.000,0.500 fire 0"
           ],
+          "weatherDeadlines": [542442],
+          "next": -1911616520,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7448,6 +7461,8 @@
             "minecraft:copper_golem 1.500,0.000,0.500 fire 1 health 7.00 persistent weather exposed",
             "minecraft:lightning_bolt 0.500,0.000,0.500 fire 0"
           ],
+          "weatherDeadlines": [542441],
+          "next": 1304422827,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7459,6 +7474,8 @@
             "minecraft:copper_golem 1.500,0.000,0.500 fire 1 health 7.00 persistent weather exposed",
             "minecraft:lightning_bolt 0.500,0.000,0.500 fire 0"
           ],
+          "weatherDeadlines": [542440],
+          "next": -495313177,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7470,6 +7487,8 @@
             "minecraft:copper_golem 1.500,0.000,0.500 fire 1 health 7.00 persistent weather exposed",
             "minecraft:lightning_bolt 0.500,0.000,0.500 fire 0"
           ],
+          "weatherDeadlines": [542439],
+          "next": -1067827065,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7480,6 +7499,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542438],
+          "next": -1575239213,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7490,6 +7511,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542437],
+          "next": -1108032010,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7500,6 +7523,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542436],
+          "next": 1763842152,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7510,6 +7535,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542435],
+          "next": -100212868,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7520,6 +7547,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542434],
+          "next": 1115043863,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7530,6 +7559,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542433],
+          "next": 422986614,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7540,6 +7571,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542432],
+          "next": -878737941,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7550,6 +7583,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542431],
+          "next": 278515206,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7560,6 +7595,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542430],
+          "next": -1921281893,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7570,6 +7607,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542429],
+          "next": 1498417654,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7580,6 +7619,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542428],
+          "next": -942194266,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7590,6 +7631,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542427],
+          "next": 282215618,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7600,6 +7643,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542426],
+          "next": 1320874355,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7610,6 +7655,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542425],
+          "next": -261358303,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7620,6 +7667,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542424],
+          "next": -271311411,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7630,6 +7679,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542423],
+          "next": 897895881,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7640,6 +7691,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542422],
+          "next": 2017331005,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7650,6 +7703,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542421],
+          "next": -1887882683,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7660,6 +7715,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542420],
+          "next": 756785409,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7670,6 +7727,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542419],
+          "next": 1190115856,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7680,6 +7739,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542418],
+          "next": -1960388422,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7690,6 +7751,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542417],
+          "next": -505020839,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7700,6 +7763,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542416],
+          "next": 992843270,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7710,6 +7775,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542415],
+          "next": -266925806,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7720,6 +7787,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542414],
+          "next": 1159643040,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7730,6 +7799,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542413],
+          "next": 1423859777,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7740,6 +7811,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542412],
+          "next": 2134926009,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7750,6 +7823,24 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542411],
+          "next": -1861966165,
+          "sounds": [],
+          "levelEvents": [],
+          "gameEvents": []
+        },
+        {
+          "writes": [
+            "0,0,0 minecraft:fire[age=1] flags 260"
+          ],
+          "changes": [
+            "0,0,0=minecraft:fire[age=1]"
+          ],
+          "entities": [
+            "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
+          ],
+          "weatherDeadlines": [542410],
+          "next": -1422646457,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7760,6 +7851,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
+          "weatherDeadlines": [542409],
+          "next": -843215617,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -7770,16 +7863,8 @@
           "entities": [
             "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
           ],
-          "sounds": [],
-          "levelEvents": [],
-          "gameEvents": []
-        },
-        {
-          "writes": [],
-          "changes": [],
-          "entities": [
-            "minecraft:copper_golem 1.500,0.000,0.500 fire 0 health 7.00 persistent weather exposed"
-          ],
+          "weatherDeadlines": [542408],
+          "next": 2047579661,
           "sounds": [],
           "levelEvents": [],
           "gameEvents": []
@@ -9548,6 +9633,194 @@
       "added": [],
       "randValueAfter": 1013941258,
       "next": -171802620
+    },
+    {
+      "name": "breeze_takes_lightning_damage",
+      "seed": 71,
+      "boltSeed": 81,
+      "fireSpread": 0,
+      "bolt": [0.5, 0, 0.5],
+      "ticks": 12,
+      "setup": [
+        {
+          "pos": [-3, -1, -3],
+          "to": [3, -1, 3],
+          "state": "minecraft:stone"
+        }
+      ],
+      "entities": [
+        {
+          "type": "minecraft:breeze",
+          "pos": [1.5, 0, 0.5]
+        }
+      ],
+      "checkpoints": [
+        {
+          "writes": [],
+          "changes": [],
+          "entities": [
+            "minecraft:breeze 1.500,0.000,0.500 fire 1 health 25.00",
+            "minecraft:lightning_bolt 0.500,0.000,0.500 fire 0"
+          ],
+          "sounds": [
+            "minecraft:entity.breeze.hurt 1.500,0.000,0.500 volume 1.00"
+          ],
+          "levelEvents": [],
+          "gameEvents": [
+            "minecraft:lightning_strike 0,0,0 minecraft:lightning_bolt",
+            "minecraft:entity_damage 1,0,0 minecraft:breeze"
+          ]
+        },
+        {
+          "writes": [],
+          "changes": [],
+          "entities": [
+            "minecraft:breeze 1.500,0.000,0.500 fire 1 health 25.00",
+            "minecraft:lightning_bolt 0.500,0.000,0.500 fire 0"
+          ],
+          "sounds": [],
+          "levelEvents": [],
+          "gameEvents": []
+        },
+        {
+          "writes": [],
+          "changes": [],
+          "entities": [
+            "minecraft:breeze 1.500,0.000,0.500 fire 0 health 25.00",
+            "minecraft:lightning_bolt 0.500,0.000,0.500 fire 0"
+          ],
+          "sounds": [],
+          "levelEvents": [],
+          "gameEvents": []
+        },
+        {
+          "writes": [],
+          "changes": [],
+          "entities": [
+            "minecraft:breeze 1.500,0.000,0.500 fire 1 health 25.00",
+            "minecraft:lightning_bolt 0.500,0.000,0.500 fire 0"
+          ],
+          "sounds": [],
+          "levelEvents": [],
+          "gameEvents": []
+        },
+        {
+          "writes": [],
+          "changes": [],
+          "entities": [
+            "minecraft:breeze 1.500,0.000,0.500 fire 1 health 25.00",
+            "minecraft:lightning_bolt 0.500,0.000,0.500 fire 0"
+          ],
+          "sounds": [],
+          "levelEvents": [],
+          "gameEvents": []
+        },
+        {
+          "writes": [],
+          "changes": [],
+          "entities": [
+            "minecraft:breeze 1.500,0.000,0.500 fire 0 health 25.00"
+          ],
+          "sounds": [],
+          "levelEvents": [],
+          "gameEvents": []
+        },
+        {
+          "writes": [],
+          "changes": [],
+          "entities": [
+            "minecraft:breeze 1.500,0.000,0.500 fire 0 health 25.00"
+          ],
+          "sounds": [],
+          "levelEvents": [],
+          "gameEvents": []
+        },
+        {
+          "writes": [],
+          "changes": [],
+          "entities": [
+            "minecraft:breeze 1.500,0.000,0.500 fire 0 health 25.00"
+          ],
+          "sounds": [],
+          "levelEvents": [],
+          "gameEvents": []
+        },
+        {
+          "writes": [],
+          "changes": [],
+          "entities": [
+            "minecraft:breeze 1.500,0.000,0.500 fire 0 health 25.00"
+          ],
+          "sounds": [],
+          "levelEvents": [],
+          "gameEvents": []
+        },
+        {
+          "writes": [],
+          "changes": [],
+          "entities": [
+            "minecraft:breeze 1.500,0.000,0.500 fire 0 health 25.00"
+          ],
+          "sounds": [],
+          "levelEvents": [],
+          "gameEvents": []
+        },
+        {
+          "writes": [],
+          "changes": [],
+          "entities": [
+            "minecraft:breeze 1.500,0.000,0.500 fire 0 health 25.00"
+          ],
+          "sounds": [],
+          "levelEvents": [],
+          "gameEvents": []
+        },
+        {
+          "writes": [],
+          "changes": [],
+          "entities": [
+            "minecraft:breeze 1.500,0.000,0.500 fire 0 health 25.00"
+          ],
+          "sounds": [],
+          "levelEvents": [],
+          "gameEvents": []
+        }
+      ],
+      "advancements": []
+    },
+    {
+      "name": "natural_redirected_trap_uses_target_chunk",
+      "kind": "natural",
+      "seed": 6913698,
+      "randValue": 12345,
+      "spawnMobs": true,
+      "difficulty": "hard",
+      "inhabitedChunks": [
+        {
+          "offset": [-1, 0],
+          "time": 3600000
+        }
+      ],
+      "setup": [
+        {
+          "pos": [-10, -1, -8],
+          "to": [7, -1, 7],
+          "state": "minecraft:stone"
+        }
+      ],
+      "entities": [
+        {
+          "type": "minecraft:pig",
+          "pos": [-8.5, 0, -6.5]
+        }
+      ],
+      "effectiveDifficulty": 2.25,
+      "added": [
+        "minecraft:skeleton_horse -9.000,0.000,-7.000 fire 0 health 15.00 trap",
+        "minecraft:lightning_bolt -8.500,0.000,-6.500 fire 0 visual"
+      ],
+      "randValueAfter": 1013941258,
+      "next": -1442959244
     }
   ]
 }

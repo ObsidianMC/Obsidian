@@ -41,8 +41,9 @@ public abstract partial class AbstractLevel
         if (!this.RainsOn(target))
             return;
 
+        var targetChunk = this.GetLoadedChunk(target.X >> 4, target.Z >> 4);
         var trap = this.LevelData.GetBooleanRule("spawn_mobs")
-            && random.NextDouble() < this.StrikeDifficulty(chunk) * 0.01
+            && random.NextDouble() < this.StrikeDifficulty(targetChunk) * 0.01
             && !this.IsLightningRod(target + Vector.Down);
         if (trap)
             this.SpawnSkeletonTrap(target);
@@ -212,7 +213,7 @@ public abstract partial class AbstractLevel
     }
 
     // Vanilla's getCurrentDifficultyAt, which the skeleton trap's chance scales with.
-    private float StrikeDifficulty(IChunk chunk)
+    private float StrikeDifficulty(IChunk? chunk)
     {
         var inhabited = chunk is Chunk concrete ? concrete.InhabitedTime : 0;
         ReadOnlySpan<float> moon = [1, 0.75f, 0.5f, 0.25f, 0, 0.25f, 0.5f, 0.75f];

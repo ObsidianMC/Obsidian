@@ -284,14 +284,19 @@ replaces only what vanilla produced.
   level's random between the strike's draws. Mobs' own randoms aren't seeded, so their ambient sounds, a witch's
   drinking and whether a pig's zombified piglin holds a golden sword or spear aren't recorded. A `natural` case runs
   `ServerLevel.tickThunder` once on its chunk in a thunderstorm, with the level's random seeded and `randValue` set,
-  and records the entities it added, `randValue` afterwards and the level random's next `nextInt()`. The cases cover
+  and records the entities it added, `randValue` afterwards and the level random's next `nextInt()`.
+  `inhabitedChunks` sets neighbouring chunks' relative `offset` and inhabited `time`; their entities are included
+  when recording a redirected strike. The copper golem case's `recordWeathering` also records the saved deadline
+  relative to game time and the level random's next integer after each tick, including the strike's -1 deadline
+  and the following tick's reschedule. The cases cover
   rods (up, sideways, weathered, waxed) powering lamps on their side and beside their support, copper cleared around a
   rod and under a bolt, fire on grass and planks with the fire spread rule on and off (26.3 has no `do_fire_tick`;
   `fire_spread_radius_around_player` is 0 or -1), easy (fire only on flashes) and peaceful (no conversions), a charged
   creeper, a zombified piglin, a witch, mooshrooms changing colour, a turtle (with mob drops off), items, a copper
-  golem, an armor stand, a channeled bolt and the advancements, a visual-only bolt, and storms striking open ground, a
+  golem, a Breeze, an armor stand, a channeled bolt and the advancements, a visual-only bolt, and storms striking open ground, a
   rod (and not a covered one), a mob under the sky, a skeleton trap (none above a rod or without mob spawning), a
-  missed chance, no thunder and an empty column. The replay runs every case in one world, through the level's ticks
+  redirected trap in a neighbouring chunk with a different inhabited time, a missed chance, no thunder and an empty
+  column. The replay runs every case in one world, through the level's ticks
   with a ticking chunk ticket for each, and compares all of it; its pinned differences are listed in [the known
   gaps](known-gaps/lightning.md).
 
@@ -552,9 +557,34 @@ scenario has checkpoints) and capture again; the tests pick it up.
 For redstone, `CaptureCases` accepts exact `+`-separated scenario names and records only those; the other
 scenarios keep what they hold.
 
-`block_contact` is captured only when named, and takes about 15 seconds for every scenario. A scenario gives its
-number of `ticks` and starts with empty `checkpoints`; `CaptureCases` records only the scenarios it names, the others
-keep what they hold.
+`block_contact` is captured only when named. Its original 16 RCON scenarios take about 15 seconds each. A scenario
+gives its number of `ticks` and starts with empty `checkpoints`; `CaptureCases` records only the exact names supplied,
+and the other cases keep their recordings.
+
+The 81 `contactMoves` scenarios use `Java/BlockContactFixtures.java` on a real dedicated server, with the same
+scratch-only block-write instrumentation as block uses. They drive native `Entity.move` and
+`applyEffectsFromBlocks` with controlled velocities: falls, stationary contacts, walking and external pushes.
+This boundary exercises native collision, fall accounting, restitution and block hooks without AI or travel forces.
+Each case has a seeded level random and each living entity an `entitySeed`; `noGravity` also controls native
+restitution's gravity compensation. Inputs may set initial `fallDistance`, equipment, effects, age and health.
+`jumpBoost` supplies an amplifier (zero for Jump Boost I), and a tick event's `removeJumpBoost` names the entity
+whose effect is removed before movement. `recordSafeFallDistance: true` also records the living entity's effective
+safe-fall-distance attribute at every checkpoint, including checkpoint zero. The review cases cover water at impact,
+water crossed before a dry landing, fluid touching only the body's edge, slime and bed support outside the centre,
+and Jump Boost I, II, a control fall and effect removal.
+
+From checkpoint zero onwards, the replay compares every recorded block, position, velocity, fall distance,
+grounded flag, health and last accepted damage type; ordered block writes with their exact flags; unexpected
+writes anywhere; drops; sounds in order with category, position, volume and pitch; level events, block events and
+game events. It also compares the next level random integer after each case. Sound playback seeds come from an
+independent generator and are not recorded. The initial 16 cases retain their original block/position checkpoints.
+`VanillaBlockContact.ScenariosMatchVanilla` collects all failures across both kinds of case in one test.
+
+For example, to record only a changed contact case:
+
+```sh
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=block_contact -p:CaptureCases=egg_step_stationary_later_tick
+```
 
 For sulfur, `CaptureCases` accepts exact scenario names separated by `+`. It replaces only those cases' checkpoints
 and skips the Java probes. Other scenarios retain their stored absolute times and are replayed independently.

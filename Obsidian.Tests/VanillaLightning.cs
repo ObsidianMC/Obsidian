@@ -164,6 +164,7 @@ public sealed class VanillaLightning(ITestOutputHelper output)
         foreach (var checkpoint in probe.GetProperty("checkpoints").EnumerateArray())
         {
             tick++;
+            var recordWeathering = probe.TryGetProperty("recordWeathering", out var record) && record.GetBoolean();
             await level.DoWorldTickAsync();
 
             var actual = new Dictionary<string, List<string>>
@@ -175,6 +176,19 @@ public sealed class VanillaLightning(ITestOutputHelper output)
                 ["levelEvents"] = LevelEvents(listener.Client, origin),
                 ["gameEvents"] = [.. gameEvents]
             };
+            if (recordWeathering)
+            {
+                var deadlines = EntitiesInChunk(level, origin).OfType<CopperGolem>()
+                    .Select(golem => EntityNbt.Save(golem)!.GetLong("next_weather_age"))
+                    .Select(deadline => deadline < 0 ? deadline : deadline - level.LevelData.GameTime)
+                    .ToArray();
+                var expected = checkpoint.GetProperty("weatherDeadlines").EnumerateArray()
+                    .Select(deadline => deadline.GetInt64()).ToArray();
+                BlockProbes.Expect(differences, $"tick {tick} weatherDeadlines",
+                    string.Join(",", expected), string.Join(",", deadlines));
+                BlockProbes.Expect(differences, $"tick {tick} next", checkpoint.GetProperty("next").GetInt32(),
+                    level.GrowthRandom.NextInt());
+            }
             writes.Clear();
             gameEvents.Clear();
             listener.Client.ClearPackets();
@@ -204,8 +218,20 @@ public sealed class VanillaLightning(ITestOutputHelper output)
         var listener = replay.Listen(origin + ListenerOffset, Name(probe));
         listener.Player.GameMode = GameMode.Spectator;
 
-        var chunk = level.GetLoadedChunk(origin.X >> 4, origin.Z >> 4)!;
-        var existing = EntitiesInChunk(level, origin).Select(entity => entity.EntityId).ToHashSet();
+        var chunk = (Chunk)level.GetLoadedChunk(origin.X >> 4, origin.Z >> 4)!;
+        chunk.InhabitedTime = 0;
+        if (probe.TryGetProperty("inhabitedChunks", out var inhabitedChunks))
+        {
+            foreach (var entry in inhabitedChunks.EnumerateArray())
+            {
+                var offset = entry.GetProperty("offset");
+                var chunkOrigin = origin + new Vector(offset[0].GetInt32() * 16, 0, offset[1].GetInt32() * 16);
+                var target = (Chunk)level.GetLoadedChunk(chunkOrigin.X >> 4, chunkOrigin.Z >> 4)!;
+                target.InhabitedTime = entry.GetProperty("time").GetInt64();
+                LightColumns(level, chunkOrigin);
+            }
+        }
+        var existing = NaturalEntities(level, probe, origin).Select(entity => entity.EntityId).ToHashSet();
         level.LevelData.Raining = !probe.TryGetProperty("raining", out var raining) || raining.GetBoolean();
         level.LevelData.Thundering = !probe.TryGetProperty("thundering", out var thundering) || thundering.GetBoolean();
         level.GrowthRandom = new LegacyRandomSource(probe.GetProperty("seed").GetInt64());
@@ -214,7 +240,7 @@ public sealed class VanillaLightning(ITestOutputHelper output)
         if (level.StormStrikes)
             level.TickThunder(chunk);
 
-        var added = EntitiesInChunk(level, origin)
+        var added = NaturalEntities(level, probe, origin)
             .Where(entity => !existing.Contains(entity.EntityId))
             .Select(entity => Describe(entity, origin) + (entity is LightningBolt { VisualOnly: true } ? " visual" : ""))
             .ToList();
@@ -227,6 +253,15 @@ public sealed class VanillaLightning(ITestOutputHelper output)
 
         level.LevelData.Raining = false;
         level.LevelData.Thundering = false;
+        foreach (var entity in NaturalEntities(level, probe, origin).ToList())
+            await entity.RemoveAsync();
+        foreach (var placement in probe.GetProperty("setup").EnumerateArray())
+        {
+            var from = origin + BlockProbes.Position(placement.GetProperty("pos"));
+            var to = placement.TryGetProperty("to", out var end) ? origin + BlockProbes.Position(end) : from;
+            foreach (var position in Box(from, to))
+                level.BlockUpdates.SetBlock(position, BlocksRegistry.Air, Quiet);
+        }
         await replay.ClearAsync(origin);
         return differences;
     }
@@ -390,6 +425,21 @@ public sealed class VanillaLightning(ITestOutputHelper output)
             .Where(entity => (int)Math.Floor(entity.Position.X) >> 4 == origin.X >> 4
                 && (int)Math.Floor(entity.Position.Z) >> 4 == origin.Z >> 4)
             .OrderBy(entity => entity.EntityId);
+
+    private static IEnumerable<Entity> NaturalEntities(AbstractLevel level, JsonElement probe, Vector origin)
+    {
+        var entities = EntitiesInChunk(level, origin);
+        if (probe.TryGetProperty("inhabitedChunks", out var chunks))
+        {
+            foreach (var entry in chunks.EnumerateArray())
+            {
+                var offset = entry.GetProperty("offset");
+                var chunkOrigin = origin + new Vector(offset[0].GetInt32() * 16, 0, offset[1].GetInt32() * 16);
+                entities = entities.Concat(EntitiesInChunk(level, chunkOrigin));
+            }
+        }
+        return entities.Distinct().OrderBy(entity => entity.EntityId);
+    }
 
     private static bool Overlaps(Entity entity, VectorD min, VectorD max)
     {

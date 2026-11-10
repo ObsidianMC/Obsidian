@@ -304,7 +304,8 @@ internal interface IFallOnBehavior
     /// <paramref name="fallDistance"/> blocks.
     /// </summary>
     ValueTask FallenOnAsync(
-        IContactLevel level, Vector position, IBlock block, Entities.Entity entity, double fallDistance);
+        IContactLevel level, Vector position, IBlock block, Entities.Entity entity,
+        double fallDistance, VectorD impactPosition);
 }
 
 /// <summary>
@@ -351,16 +352,31 @@ internal static class EntityInsideBehaviors
 
 /// <summary>
 /// Obsidian implementations of vanilla classes that override <c>stepOn</c>, bound from
-/// <c>block_step_on_classes.json</c> (<c>BlocksRegistry.GetStepOnBehavior</c>). None has one yet.
+/// <c>block_step_on_classes.json</c> (<c>BlocksRegistry.GetStepOnBehavior</c>).
 /// </summary>
 internal static class StepOnBehaviors
 {
+    internal static IStepOnBehavior MagmaBlock { get; } = new MagmaContactBehavior();
+
+    internal static IStepOnBehavior TurtleEggBlock { get; } = new TurtleEggContactBehavior();
 }
 
 /// <summary>
 /// Obsidian implementations of vanilla classes that override <c>fallOn</c>, bound from
-/// <c>block_fall_on_classes.json</c> (<c>BlocksRegistry.GetFallOnBehavior</c>). None has one yet.
+/// <c>block_fall_on_classes.json</c> (<c>BlocksRegistry.GetFallOnBehavior</c>).
 /// </summary>
 internal static class FallOnBehaviors
 {
+    internal static IFallOnBehavior FarmlandBlock { get; } = new FarmlandContactBehavior();
+
+    internal static IFallOnBehavior TurtleEggBlock { get; } = new TurtleEggContactBehavior();
+
+    internal static IFallOnBehavior SlimeBlock { get; } = new SoftLandingBehavior(0);
+
+    internal static IFallOnBehavior HayBlock { get; } = new SoftLandingBehavior(0.2f);
+
+    internal static IFallOnBehavior HoneyBlock { get; } = new SoftLandingBehavior(0.2f, honey: true);
+
+    // Beds inherit Block.fallOn in 26.3; their property halves distance before the safe distance is subtracted.
+    internal static IFallOnBehavior BedBlock { get; } = new SoftLandingBehavior(1, distanceScale: 0.5f);
 }

@@ -8,8 +8,8 @@ namespace Obsidian.AssetGenerator;
 
 /// <summary>
 /// Re-records <c>Obsidian.Tests/Assets/block_contact_scenarios.json</c>, the tick-by-tick vanilla scenarios of entities
-/// touching blocks (pressure plates and tripwires) that <c>VanillaBlockContact</c> replays, on a headless vanilla
-/// server (<see cref="ScenarioServer"/>).
+/// touching blocks, replayed by <c>VanillaBlockContact</c>. Original command-driven cases use
+/// <see cref="ScenarioServer"/>; controlled native moves use <c>Java/BlockContactFixtures.java</c>.
 /// </summary>
 /// <remarks>
 /// The fixture is its own input: each scenario's box, setup and entity events are kept, and only its checkpoints are
@@ -64,9 +64,6 @@ internal static class ScenarioContactCaptures
         var path = Path.Combine(assetsDirectory, FileName);
         var root = JsonNode.Parse(await File.ReadAllTextAsync(path))!.AsObject();
 
-        await using var vanilla = await ScenarioServer.StartAsync(server, null);
-        await PrepareAsync(vanilla);
-
         var scenarios = root["scenarios"]!.AsArray().Select(node => node!.AsObject()).ToArray();
         var selected = scenarios
             .Where(scenario => cases is null || cases.Contains(scenario["name"]!.GetValue<string>()))
@@ -74,13 +71,29 @@ internal static class ScenarioContactCaptures
         if (cases is not null && selected.Length != cases.Count)
             throw new ArgumentException("Every selected block contact scenario must exist and be named once.");
 
-        foreach (var scenario in selected)
-            await CaptureAsync(vanilla, scenario);
+        var commandCases = selected.Where(scenario => scenario["contactMoves"] is null).ToArray();
+        if (commandCases.Length > 0)
+        {
+            await using var vanilla = await ScenarioServer.StartAsync(server, null);
+            await PrepareAsync(vanilla);
+            foreach (var scenario in commandCases)
+                await CaptureAsync(vanilla, scenario);
+        }
 
         root["_notes"] = Notes.ReplaceLineEndings(" ");
         root["version"] = server.Version;
         var text = root.ToJsonString(WriteOptions) + "\n";
         await File.WriteAllTextAsync(path, text.ReplaceLineEndings("\n"), new UTF8Encoding(false));
+        var moveCases = selected.Where(scenario => scenario["contactMoves"] is not null)
+            .Select(scenario => scenario["name"]!.GetValue<string>()).ToArray();
+        if (moveCases.Length > 0)
+        {
+            await FixtureDumper.DumpBlockContactsAsync(server, path, moveCases);
+            var captured = JsonNode.Parse(await File.ReadAllTextAsync(path))!;
+            var formatted = captured.ToJsonString(WriteOptions) + "\n";
+            await File.WriteAllTextAsync(path, formatted.ReplaceLineEndings("\n"), new UTF8Encoding(false));
+        }
+
         Console.WriteLine($"Captured {FileName}.");
     }
 

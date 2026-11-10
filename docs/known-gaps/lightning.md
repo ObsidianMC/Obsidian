@@ -52,6 +52,57 @@ All of it is replayed from vanilla by `lightning_bolts.json`, and a Channeling t
   left out of it: their ambient sounds, a witch drinking potions, and whether the zombified piglin a pig becomes
   holds a golden spear (1 in 20) or sword.
 
+- **Copper golem weathering beyond lightning.** Lightning sets the weathering deadline to -1; the next server tick,
+  including a NoAI tick, schedules it from the level random. Normal age advancement, unwaxing and the missing-save
+  fallback still use the mob random, and normal advancement schedules from the current time rather than extending
+  the old deadline. Those pre-existing paths need their own captures and follow-up.
+
+## Pinned replay differences
+
+`VanillaLightning.KnownDifferences` pins **11 exact difference strings across six cases**. Each string must still
+occur exactly; the replay fails if a pin disappears or any other difference appears.
+
+`rod_powers_and_sets_fire`:
+
+```text
+tick 1 writes: vanilla [0,0,0 minecraft:lightning_rod[powered=true] flags 3; 1,0,0 minecraft:redstone_lamp[lit=true] flags 2; 0,-1,1 minecraft:redstone_lamp[lit=true] flags 2], Obsidian [0,0,0 minecraft:lightning_rod[powered=true] flags 3; 1,0,0 minecraft:redstone_lamp[lit=true] flags 514; 0,-1,1 minecraft:redstone_lamp[lit=true] flags 514]
+tick 13 writes: vanilla [1,0,0 minecraft:redstone_lamp flags 2; 0,-1,1 minecraft:redstone_lamp flags 2], Obsidian [1,0,0 minecraft:redstone_lamp flags 514; 0,-1,1 minecraft:redstone_lamp flags 514]
+```
+
+`rod_fire_spread_off`:
+
+```text
+tick 1 writes: vanilla [0,0,0 minecraft:lightning_rod[powered=true] flags 3; 1,0,0 minecraft:redstone_lamp[lit=true] flags 2; 0,-1,1 minecraft:redstone_lamp[lit=true] flags 2], Obsidian [0,0,0 minecraft:lightning_rod[powered=true] flags 3; 1,0,0 minecraft:redstone_lamp[lit=true] flags 514; 0,-1,1 minecraft:redstone_lamp[lit=true] flags 514]
+tick 13 writes: vanilla [1,0,0 minecraft:redstone_lamp flags 2; 0,-1,1 minecraft:redstone_lamp flags 2], Obsidian [1,0,0 minecraft:redstone_lamp flags 514; 0,-1,1 minecraft:redstone_lamp flags 514]
+```
+
+`rod_with_villager_and_no_fire`:
+
+```text
+tick 1 writes: vanilla [0,0,0 minecraft:lightning_rod[powered=true] flags 3; 1,0,0 minecraft:redstone_lamp[lit=true] flags 2; 0,-1,1 minecraft:redstone_lamp[lit=true] flags 2], Obsidian [0,0,0 minecraft:lightning_rod[powered=true] flags 3; 1,0,0 minecraft:redstone_lamp[lit=true] flags 514; 0,-1,1 minecraft:redstone_lamp[lit=true] flags 514]
+tick 13 writes: vanilla [1,0,0 minecraft:redstone_lamp flags 2; 0,-1,1 minecraft:redstone_lamp flags 2], Obsidian [1,0,0 minecraft:redstone_lamp flags 514; 0,-1,1 minecraft:redstone_lamp flags 514]
+```
+
+`visual_only_bolt_on_rod`:
+
+```text
+tick 1 writes: vanilla [0,0,0 minecraft:lightning_rod[powered=true] flags 3; 1,0,0 minecraft:redstone_lamp[lit=true] flags 2; 0,-1,1 minecraft:redstone_lamp[lit=true] flags 2], Obsidian [0,0,0 minecraft:lightning_rod[powered=true] flags 3; 1,0,0 minecraft:redstone_lamp[lit=true] flags 514; 0,-1,1 minecraft:redstone_lamp[lit=true] flags 514]
+tick 13 writes: vanilla [1,0,0 minecraft:redstone_lamp flags 2; 0,-1,1 minecraft:redstone_lamp flags 2], Obsidian [1,0,0 minecraft:redstone_lamp flags 514; 0,-1,1 minecraft:redstone_lamp flags 514]
+```
+
+`rod_sideways_powers_its_wall`:
+
+```text
+tick 1 writes: vanilla [-1,0,-1 minecraft:fire flags 3; 0,0,0 minecraft:lightning_rod[facing=east,powered=true] flags 3; -1,0,1 minecraft:redstone_lamp[lit=true] flags 2], Obsidian [-1,0,-1 minecraft:fire flags 3; 0,0,0 minecraft:lightning_rod[facing=east,powered=true] flags 3; -1,0,1 minecraft:redstone_lamp[lit=true] flags 514]
+tick 13 writes: vanilla [-1,0,1 minecraft:redstone_lamp flags 2], Obsidian [-1,0,1 minecraft:redstone_lamp flags 514]
+```
+
+`natural_strike_into_the_void`:
+
+```text
+added: vanilla [], Obsidian [minecraft:lightning_bolt -5.500,-128.000,-6.500 fire 0]
+```
+
 ## Where to start
 
 `Obsidian/Entities/LightningBolt.cs` is the bolt, `Obsidian/WorldData/LightningRods.cs` the rods and the copper,

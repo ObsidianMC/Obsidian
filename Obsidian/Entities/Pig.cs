@@ -39,7 +39,8 @@ public sealed partial class Pig : Animal, IItemSteerable
         }
 
         var weapon = Random.Next(20) == 0 ? ItemsRegistry.GoldenSpear : ItemsRegistry.GoldenSword;
-        var piglin = await ConvertToAsync(EntityType.ZombifiedPiglin, keepHealth: false);
+        if (await ConvertToAsync(EntityType.ZombifiedPiglin, keepHealth: false) is not Mob piglin)
+            return;
         piglin.SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(weapon));
         piglin.PersistenceRequired = true;
     }

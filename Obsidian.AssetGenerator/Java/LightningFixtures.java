@@ -104,6 +104,7 @@ public final class LightningFixtures {
     private static ServerLevel level;
     private static Thread serverThread;
     private static BlockPos origin;
+    private static JsonObject currentCase;
 
     public static void main(String[] args) throws Exception {
         var fixturePath = Path.of(args[0]);
@@ -181,6 +182,7 @@ public final class LightningFixtures {
 
     private static void capture(JsonObject input, int index) {
         origin = originOf(index);
+        currentCase = input;
         server.submit(() -> {
             clear();
             discardEntities();
@@ -388,10 +390,30 @@ public final class LightningFixtures {
 
         checkpoint.add("changes", changes(state.blocks));
         checkpoint.add("entities", entities());
+        if (currentCase.has("recordWeathering") && currentCase.get("recordWeathering").getAsBoolean()) {
+            var deadlines = new JsonArray();
+            for (var entity : level.getEntities((Entity) null, box(), entity -> entity instanceof CopperGolem)) {
+                var deadline = weatherDeadline((CopperGolem) entity);
+                deadlines.add(deadline < 0 ? deadline : deadline - level.getGameTime());
+            }
+            checkpoint.add("weatherDeadlines", deadlines);
+            checkpoint.addProperty("next", level.getRandom().nextInt());
+        }
         recordEvents(checkpoint, heard, gameEvents);
         heard.clear();
         gameEvents.clear();
         return checkpoint;
+    }
+
+    // The saved deadline makes the strike's invalidation and the following tick's reschedule observable.
+    private static long weatherDeadline(CopperGolem golem) {
+        try {
+            var field = CopperGolem.class.getDeclaredField("nextWeatheringTick");
+            field.setAccessible(true);
+            return field.getLong(golem);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     // The blocks of the area that changed since the last checkpoint, which then become the ones compared against.
@@ -515,7 +537,16 @@ public final class LightningFixtures {
     private static void captureNatural(JsonObject input) {
         var chunk = level.getChunkAt(origin);
         chunk.setInhabitedTime(0);
-        var existing = level.getEntities((Entity) null, chunkBox(), entity -> true).stream().map(Entity::getId).toList();
+        if (input.has("inhabitedChunks")) {
+            for (var element : input.getAsJsonArray("inhabitedChunks")) {
+                var entry = element.getAsJsonObject();
+                var offset = entry.getAsJsonArray("offset");
+                level.getChunkAt(origin.offset(offset.get(0).getAsInt() * 16, 0, offset.get(1).getAsInt() * 16))
+                    .setInhabitedTime(entry.get("time").getAsLong());
+            }
+        }
+        var bounds = naturalBox(input);
+        var existing = level.getEntities((Entity) null, bounds, entity -> true).stream().map(Entity::getId).toList();
 
         var raining = !input.has("raining") || input.get("raining").getAsBoolean();
         var thundering = !input.has("thundering") || input.get("thundering").getAsBoolean();
@@ -528,7 +559,7 @@ public final class LightningFixtures {
         level.tickThunder(chunk);
 
         var added = new JsonArray();
-        for (var entity : level.getEntities((Entity) null, chunkBox(), entity -> !existing.contains(entity.getId()))) {
+        for (var entity : level.getEntities((Entity) null, bounds, entity -> !existing.contains(entity.getId()))) {
             var text = describe(entity);
             if (entity instanceof LightningBolt bolt && visualOnly(bolt))
                 text += " visual";
@@ -542,7 +573,15 @@ public final class LightningFixtures {
         level.setRainLevel(0);
         level.setThunderLevel(0);
         clear();
-        discardEntities();
+        for (var entity : level.getEntities((Entity) null, bounds, entity -> !(entity instanceof Player)))
+            entity.discard();
+        for (var element : input.getAsJsonArray("setup")) {
+            var placement = element.getAsJsonObject();
+            var from = origin.offset(position(placement.getAsJsonArray("pos")));
+            var to = placement.has("to") ? origin.offset(position(placement.getAsJsonArray("to"))) : from;
+            for (var pos : BlockPos.betweenClosed(from, to))
+                level.setBlock(pos, Blocks.AIR.defaultBlockState(), QuietFlags);
+        }
     }
 
     private static boolean visualOnly(LightningBolt bolt) {
@@ -648,6 +687,19 @@ public final class LightningFixtures {
         var from = Vec3.atLowerCornerOf(origin.offset(-Reach, -Below, -Reach));
         var to = Vec3.atLowerCornerOf(origin.offset(Reach + 1, Above + 1, Reach + 1));
         return new AABB(from, to);
+    }
+
+    // A redirection can leave the origin's chunk; record both its residents and its additions.
+    private static AABB naturalBox(JsonObject input) {
+        var bounds = chunkBox();
+        if (input.has("inhabitedChunks")) {
+            for (var element : input.getAsJsonArray("inhabitedChunks")) {
+                var offset = element.getAsJsonObject().getAsJsonArray("offset");
+                bounds = bounds.minmax(chunkBox().move(offset.get(0).getAsInt() * 16, 0,
+                    offset.get(1).getAsInt() * 16));
+            }
+        }
+        return bounds;
     }
 
     // The origin's whole chunk, from the bottom of the area to the build height.
