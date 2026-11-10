@@ -409,7 +409,6 @@ public partial class PlayerBase
 
     private async ValueTask TickPlayerAsync()
     {
-        this.TickTeleportClock();
         Obsidian.Commands.CommandSpam.Tick(this);
 
         if (damageCooldown > 0)

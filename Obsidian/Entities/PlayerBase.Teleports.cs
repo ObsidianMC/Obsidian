@@ -6,7 +6,8 @@ namespace Obsidian.Entities;
 
 public partial class PlayerBase
 {
-    // Protects movement admission, its synchronous position/broadcast commit, and all pending-teleport state.
+    // Protects serverbound player movement admission/commit and pending-teleport state. It does not cover every
+    // Entity position writer (such as piston displacement); see docs/known-gaps/movement-and-swing-details.md.
     // Chunk lookups, gameplay callbacks and awaits happen outside this lock.
     private readonly Lock teleportStateGate = new();
     private PendingTeleport? pendingTeleport;
@@ -21,6 +22,8 @@ public partial class PlayerBase
     /// <summary>
     /// The pending teleport's id, or -1 when none is pending. Prefer TeleportAsync to setting an id: the setter is
     /// retained for plugins that already issue their own position packet and registers the current position.
+    /// Setting this property and sending that packet are not atomic together: another teleport can intervene.
+    /// TeleportAsync is the reliable way to register and send a server teleport.
     /// </summary>
     public int TeleportId
     {
@@ -78,10 +81,24 @@ public partial class PlayerBase
         released?.TrySetResult();
     }
 
-    private void TickTeleportClock()
+    internal void TickTeleportClock()
     {
         lock (this.teleportStateGate)
             this.teleportClock++;
+    }
+
+    // Disposal must release a confirmation handler even when the travel holding movement never finishes.
+    // Invalidate its generation so waking the waiter cannot apply the confirmation after disconnect.
+    internal void StopTeleportWaits()
+    {
+        TaskCompletionSource? released;
+        lock (this.teleportStateGate)
+        {
+            this.movementGeneration++;
+            released = this.movementReleased;
+        }
+
+        released?.TrySetResult();
     }
 
     /// <summary>
@@ -145,10 +162,10 @@ public partial class PlayerBase
         bool invalid;
         lock (this.teleportStateGate)
         {
-            if (id != this.teleportCounter)
+            var pending = this.pendingTeleport;
+            if (id != (pending?.Id ?? this.teleportCounter))
                 return;
 
-            var pending = this.pendingTeleport;
             invalid = pending is null || double.IsNaN(position.X) || double.IsNaN(position.Y)
                 || double.IsNaN(position.Z) || !float.IsFinite(yaw) || !float.IsFinite(pitch);
             if (!invalid && pending!.Generation != this.movementGeneration)
@@ -174,6 +191,9 @@ public partial class PlayerBase
         if (released is not null)
             await released;
 
+        if (!this.Connected)
+            return;
+
         // 26.3 confirmations report the client's resolved transform. Start from the stored destination, then use
         // the same movement path with ground/collision flags cleared; a newer teleport can invalidate this work.
         var flags = this.MovementFlags & ~(MovementFlags.OnGround | MovementFlags.HorizontalCollision);
@@ -195,7 +215,7 @@ public partial class PlayerBase
         }
     }
 
-    internal bool PositionFromClientVehicle(Entity vehicle, VectorD position, long generation)
+    internal bool PositionFromVehicle(Entity vehicle, VectorD position, long generation)
     {
         lock (this.teleportStateGate)
         {
@@ -211,6 +231,22 @@ public partial class PlayerBase
             this.LastPosition = this.Position;
             this.Position = position;
             return true;
+        }
+    }
+
+    // The boat's owning-level transfer lock is already held. Keep validation and the synchronous transform commit
+    // together with player teleport admission; the transfer lock serializes a teleport of the boat itself.
+    internal void ApplyClientBoatMovement(Boat boat, VehicleMove move, long generation)
+    {
+        lock (this.teleportStateGate)
+        {
+            if (generation != this.movementGeneration || this.pendingTeleport is not null
+                || this.movementHolds != 0 || this.Vehicle != boat || this.Level != boat.Level)
+            {
+                return;
+            }
+
+            boat.CommitClientMovement(move);
         }
     }
 

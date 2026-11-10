@@ -12,6 +12,7 @@ using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using MoveVehiclePacket = Obsidian.Net.Packets.Play.Serverbound.MoveVehiclePacket;
@@ -58,9 +59,17 @@ public sealed class PendingTeleports
         var support = new Vector(6, 79, 4);
         await context.World.SetBlockAsync(support, BlocksRegistry.Stone);
         player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.Stone));
-        await BlockUpdates.UseOn(support, BlockFace.Up).HandleAsync(context.Server, player);
+        var use = BlockUpdates.UseOn(support, BlockFace.Up);
+        await use.HandleAsync(context.Server, player);
         Assert.True((await context.World.GetBlockAsync(support + Vector.Up))!.IsAir);
-        Assert.Contains(client.SentPackets, packet => packet is BlockChangedAckPacket);
+        Assert.DoesNotContain(client.SentPackets, packet => packet is BlockChangedAckPacket);
+        Assert.Contains(client.SentPackets, packet => packet is ContainerSetSlotPacket);
+        Assert.Contains(client.SentPackets, packet => packet is BlockUpdatePacket { Position: var corrected }
+            && corrected == support);
+        Assert.Contains(client.SentPackets, packet => packet is BlockUpdatePacket { Position: var corrected }
+            && corrected == support + Vector.Up);
+        await context.Server.TickConnectionsAsync(sendKeepAlive: false);
+        Assert.Equal(use.Sequence, Assert.Single(client.SentPackets.OfType<BlockChangedAckPacket>()).SequenceID);
 
         // The 26.3 confirmation's reported position is applied from the server destination, with cleared flags.
         var resolved = destination + new VectorD(0.25, 0, 0);
@@ -123,12 +132,18 @@ public sealed class PendingTeleports
         var original = client.SentPackets.OfType<PlayerPositionPacket>().Last();
         await Rotate(90, 45).HandleAsync(context.Server, player);
 
+        // A travelling player outside level membership and a paused world still have connection passes.
+        Assert.True(context.Server.RemovePlayer(player));
+        using (context.World.TransferLock.Enter())
+            Assert.True(context.World.RemoveEntity(player, transferring: true));
+        Assert.False(context.World.Players.ContainsKey(player.Uuid));
+        Assert.True(await context.Server.PauseAsync());
         for (var tick = 0; tick < 20; tick++)
-            await player.TickAsync();
+            await context.Server.TickConnectionsAsync(sendKeepAlive: false);
         await Status(MovementFlags.OnGround).HandleAsync(context.Server, player);
         Assert.Single(client.SentPackets.OfType<PlayerPositionPacket>());
 
-        await player.TickAsync();
+        await context.Server.TickConnectionsAsync(sendKeepAlive: false);
         // The clock alone doesn't resend. A vehicle packet triggers it even if the player has no vehicle.
         Assert.Single(client.SentPackets.OfType<PlayerPositionPacket>());
         await VehicleMove(start).HandleAsync(context.Server, player);
@@ -144,6 +159,9 @@ public sealed class PendingTeleports
         await Move(start).HandleAsync(context.Server, player);
         Assert.Equal(retry.Position, player.Position);
         await client.ConfirmTeleportAsync(retry);
+        Assert.True(context.Server.AddPlayer(player));
+        Assert.True(context.World.TryAddPlayer(player));
+        Assert.True(context.World.TryAddEntity(player));
         await Move(start).HandleAsync(context.Server, player);
         Assert.Equal(start, player.Position);
     }
@@ -179,7 +197,7 @@ public sealed class PendingTeleports
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task TeleportWinsWhileAnEarlierMovementAwaitsItsChunk()
+    public async Task ServerboundMovementAwaitingItsChunkCannotOverwriteANewerTeleport()
     {
         await using var context = Create();
         var world = context.World;
@@ -250,6 +268,217 @@ public sealed class PendingTeleports
         await client.ConfirmTeleportAsync();
         boat.PositionPassengers();
         Assert.Equal(destination, player.Position);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task PluginTeleportIdsIncludingNegativeValuesCanBeConfirmed()
+    {
+        await using var context = Create();
+        var watcher = AddPlayer(context, "PluginWatcher");
+        var watching = (TestClient)watcher.Client;
+        int[] ids = [17, 0, -42, int.MinValue];
+        foreach (var id in ids)
+        {
+            var player = AddPlayer(context, $"Plugin-{id}");
+            var client = (TestClient)player.Client;
+            var destination = start + new VectorD(1, 0, 0);
+            player.Position = destination;
+            player.TeleportId = id;
+            await player.QueuePacketAsync(new PlayerPositionPacket
+            {
+                TeleportId = id,
+                Position = destination,
+                Yaw = player.Yaw,
+                Pitch = player.Pitch
+            });
+            watching.ClearPackets();
+
+            await Move(start).HandleAsync(context.Server, player);
+            Assert.Equal(destination, player.Position);
+            await client.ConfirmTeleportAsync();
+            var next = destination + new VectorD(0.5, 0, 0);
+            await Move(next).HandleAsync(context.Server, player);
+
+            Assert.True(client.Connected);
+            Assert.Equal(next, player.Position);
+            var broadcast = Assert.Single(watching.SentPackets.OfType<MoveEntityPosPacket>());
+            Assert.Equal(new Vector(2048, 0, 0), broadcast.Delta);
+        }
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task BoatTeleportOvertakesAnAcceptedClientMoveBeforeItsCommit()
+    {
+        await using var context = Create();
+        var player = AddPlayer(context, "BoatRider");
+        var client = (TestClient)player.Client;
+        var boat = new Boat
+        {
+            Level = context.World,
+            EntityId = Server.GetNextEntityId(),
+            Position = start
+        };
+        Assert.True(context.World.TrySpawnEntity(boat, hostOwned: true));
+        Assert.True(player.Ride(boat));
+        await VehicleMove(start + new VectorD(0.5, 0, 0)).HandleAsync(context.Server, player);
+        boat.ClientControl.Tick(boat, new Entities.AI.MobTerrain(context.World), player, flying: false);
+        var accepted = boat.ClientControl.AcceptedMove;
+        Assert.NotNull(accepted);
+
+        // The move has passed the first generation check. Travel must invalidate this already-taken snapshot.
+        var destination = start + new VectorD(2, 0, 0);
+        await boat.TeleportAsync(destination);
+        await client.ConfirmTeleportAsync();
+        var riderDestination = player.Position;
+        boat.ApplyClientMovement(accepted);
+
+        Assert.Equal(destination, boat.Position);
+        Assert.Equal(riderDestination, player.Position);
+        Assert.Same(boat, player.Vehicle);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ServerDrivenSeatCannotOverwritePlayerTravelAfterItsRidingCheck()
+    {
+        await using var context = Create();
+        var player = AddPlayer(context, "SeatRider");
+        var client = (TestClient)player.Client;
+        var readingSeat = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var release = new ManualResetEventSlim();
+        var vehicle = new PausingSeat
+        {
+            Level = context.World,
+            EntityId = Server.GetNextEntityId(),
+            Position = start,
+            ReadSeat = () =>
+            {
+                readingSeat.TrySetResult();
+                release.Wait();
+            }
+        };
+        Assert.True(context.World.TryAddEntity(vehicle));
+        Assert.True(player.Ride(vehicle));
+        var positioning = Task.Run(vehicle.PositionPassengers);
+        var destination = start + new VectorD(2, 0, 0);
+        try
+        {
+            await readingSeat.Task;
+            await player.TeleportAsync(destination);
+            await client.ConfirmTeleportAsync();
+        }
+        finally
+        {
+            release.Set();
+        }
+
+        await positioning;
+        Assert.Null(player.Vehicle);
+        Assert.Equal(destination, player.Position);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task DisconnectReleasesConfirmationWhileItsTravelIsStillHeld()
+    {
+        await using var context = Create();
+        var player = AddPlayer(context, "Disconnecting");
+        var watcher = AddPlayer(context, "DisconnectWatcher");
+        var client = (TestClient)player.Client;
+        var watching = (TestClient)watcher.Client;
+        var queued = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        client.AfterQueue = packet =>
+        {
+            if (packet is not PlayerPositionPacket)
+                return default;
+
+            queued.TrySetResult();
+            return new ValueTask(release.Task);
+        };
+        var destination = start + new VectorD(1, 0, 0);
+        var travel = player.TeleportAsync(destination).AsTask();
+        try
+        {
+            await queued.Task;
+            watching.ClearPackets();
+            var confirmation = client.ConfirmTeleportAsync(position: destination + new VectorD(0.5, 0, 0))
+                .AsTask();
+            Assert.False(confirmation.IsCompleted);
+
+            client.Dispose();
+            await confirmation.WaitAsync(TimeSpan.FromSeconds(10));
+
+            Assert.False(client.Connected);
+            Assert.False(travel.IsCompleted);
+            Assert.Equal(destination, player.Position);
+            Assert.DoesNotContain(watching.SentPackets, IsPositionUpdate);
+        }
+        finally
+        {
+            client.AfterQueue = null;
+            release.TrySetResult();
+            await travel;
+        }
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task TeleportDuringBlockLookupRefusesUseBeforePlacementAndDefersAcknowledgement()
+    {
+        await using var context = Create();
+        var world = context.World;
+        var player = AddPlayer(context, "LookupUser");
+        player.Position = new VectorD(14.5, 80, 4.5);
+        player.GameMode = GameMode.Survival;
+        player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.Stone));
+        var client = (TestClient)player.Client;
+        var support = new Vector(16, 79, 4);
+        var chunk = new Chunk(1, 0, world.MinY, world.Height, ChunkGenStage.full);
+        chunk.SetBlock(support.X, support.Y, support.Z, BlocksRegistry.Stone);
+        var region = (Region)world.LoadRegionByChunk(1, 0);
+        region.SetChunk(chunk);
+        await region.UnloadChunk(1, 0);
+        var reading = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        region.ChunkFile.Observe = step =>
+        {
+            if (step is not { Step: RegionFile.Step.Reading, ChunkX: 1, ChunkZ: 0 })
+                return default;
+
+            reading.TrySetResult();
+            return new ValueTask(release.Task);
+        };
+        var use = BlockUpdates.UseOn(support, BlockFace.Up, sequence: 71);
+        var clicking = use.UseAsync(context.Server, player).AsTask();
+        try
+        {
+            await reading.Task;
+            await player.SendPositionAsync(VectorD.Zero);
+            client.ClearPackets();
+        }
+        finally
+        {
+            release.TrySetResult();
+        }
+
+        Assert.Null(await clicking);
+        region.ChunkFile.Observe = null;
+        Assert.True((await world.GetBlockAsync(support + Vector.Up))!.IsAir);
+        Assert.Equal(1, player.GetHeldItem()!.Count);
+        Assert.Equal(2, client.SentPackets.OfType<BlockUpdatePacket>().Count());
+        Assert.Contains(client.SentPackets, packet => packet is ContainerSetSlotPacket);
+        Assert.DoesNotContain(client.SentPackets, packet => packet is BlockChangedAckPacket);
+        await context.Server.TickConnectionsAsync(sendKeepAlive: false);
+        Assert.Equal(71, Assert.Single(client.SentPackets.OfType<BlockChangedAckPacket>()).SequenceID);
+    }
+
+    private sealed class PausingSeat : Entity
+    {
+        internal required Action ReadSeat { get; init; }
+
+        protected override VectorD PassengerOffset(int index)
+        {
+            this.ReadSeat();
+            return new VectorD(0, 1, 0);
+        }
     }
 
     private static RealServerContext Create()

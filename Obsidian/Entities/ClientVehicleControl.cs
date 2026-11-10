@@ -36,7 +36,7 @@ internal sealed class ClientVehicleControl
     private const double WronglySquared = 0.0625;
     private const int FloatingTicks = 80;
 
-    private sealed record QueuedMove(IPlayer Sender, VehicleMove Move, long? Generation)
+    internal sealed record QueuedMove(IPlayer Sender, VehicleMove Move, long? Generation)
     {
         internal bool CanApply => this.Sender is not PlayerBase player
             || this.Generation is long generation && player.CanApplyVehicleMovement(generation);
@@ -132,8 +132,22 @@ internal sealed class ClientVehicleControl
     /// <summary>
     /// Where the moves taken this tick put the mob, if any were: the mob goes there instead of travelling, takes the
     /// move's rotation, and stands on the ground if the client says so.
+    /// This is a snapshot, not an atomic commit. Boats use ApplyAcceptedTo; the deferred custom-mob transform still
+    /// has the travel race documented in docs/known-gaps/movement-and-swing-details.md.
     /// </summary>
     public VehicleMove? Accepted => this.accepted is { CanApply: true } accepted ? accepted.Move : null;
+
+    // A boat carries this snapshot's generation through to its locked commit, even if travel intervenes now.
+    internal QueuedMove? AcceptedMove => this.accepted is { CanApply: true } accepted ? accepted : null;
+
+    // The boat owns its level's transfer lock here. No callback or await separates validation from its commit.
+    internal void ApplyAcceptedTo(Boat boat, QueuedMove move)
+    {
+        if (move.Sender is PlayerBase player && move.Generation is long generation)
+            player.ApplyClientBoatMovement(boat, move.Move, generation);
+        else if (move.CanApply && ReferenceEquals(move.Sender.Vehicle, boat))
+            boat.CommitClientMovement(move.Move);
+    }
 
     // Retain the generation even after it becomes invalid: the end of a vehicle tick must not carry a rider back
     // after a teleport that overtook the move, including one that has already been confirmed.

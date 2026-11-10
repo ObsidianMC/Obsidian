@@ -564,9 +564,9 @@ public abstract partial class PlayerBase : Avatar, IPlayer
         combatPosition = null;
         CancelWeaponUse();
 
-        // The move, the client's view and the position packet change together under chunkUpdates, like a respawn's
-        // and a level change's, so that the last position packet queued is always the player's position, whichever
-        // travel came last.
+        // Serialize this travel's move, client view and position packet with other teleports, respawns and level
+        // changes. HoldClientMovement separately excludes serverbound movement commits; it does not serialize
+        // unrelated Entity position writers, which are recorded in the movement known gaps.
         await this.chunkUpdates.WaitAsync();
         VectorD from;
         Angle fromYaw;
