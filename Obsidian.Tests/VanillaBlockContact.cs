@@ -19,10 +19,11 @@ using Xunit;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Entities touching blocks, against <c>Assets/block_contact_scenarios.json</c>: pressure plates of every kind and
-/// tripwires with and without hooks, with items, armor stands and mobs dropped, pushed, walked, removed and killed,
-/// recorded tick by tick from a headless vanilla server (<c>Obsidian.AssetGenerator/ScenarioContactCaptures.cs</c>,
-/// <c>dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=block_contact</c>).
+/// Entities touching blocks, against <c>Assets/block_contact_scenarios.json</c>: pressure plates, tripwires,
+/// farmland, eggs, magma and soft landing surfaces. Items, armor stands and mobs are dropped, pushed, walked,
+/// removed and killed. References come from headless vanilla servers (<c>ScenarioContactCaptures.cs</c> and
+/// <c>Java/BlockContactFixtures.java</c>), using
+/// <c>dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=block_contact</c>.
 /// </summary>
 /// <remarks>
 /// Every scenario replays on one shared test server, each in its own box, with a player high above it so that its
@@ -31,7 +32,7 @@ namespace Obsidian.Tests;
 /// </remarks>
 // The server merges plugin tags into vanilla's, as PluginTagFiles does.
 [Collection(nameof(PluginTagFiles))]
-public class VanillaBlockContact
+public partial class VanillaBlockContact
 {
     private const string Symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -41,7 +42,7 @@ public class VanillaBlockContact
     // Chunks loaded on each side of the box's chunks, so that the box's chunks tick as a player's do.
     private const int ChunkRing = 2;
 
-    [Fact(DisplayName = "Pressure plates and tripwires react to the entities touching them as vanilla's do")]
+    [Fact(DisplayName = "Block contacts match vanilla movement, effects and ordered writes")]
     public async Task ScenariosMatchVanilla()
     {
         var document = LoadFixture();
@@ -67,16 +68,20 @@ public class VanillaBlockContact
     }
 
     /// <summary>One test server whose world every scenario replays in, each in its own box.</summary>
-    private sealed class Replay : IAsyncDisposable
+    private sealed partial class Replay : IAsyncDisposable
     {
         private readonly RealServerContext context = TestServerFactory.CreateServer($"contact-{Guid.NewGuid():N}");
         private readonly HashSet<(int X, int Z)> loaded = [];
+        private Obsidian.Entities.Player contactObserver;
 
         public async Task<List<string>> RunAsync(JsonElement scenario)
         {
             var min = ReadVector(scenario.GetProperty("min"));
             var max = ReadVector(scenario.GetProperty("max"));
             await this.PrepareAsync(min, max);
+            if (scenario.TryGetProperty("contactMoves", out _))
+                return await this.RunContactMovesAsync(scenario);
+
 
             var world = this.context.World;
             foreach (var placement in scenario.GetProperty("setup").EnumerateArray())
@@ -136,6 +141,8 @@ public class VanillaBlockContact
             var name = $"Watcher{world.Players.Count}";
             var player = TestServerFactory.CreateConnectedPlayer(this.context.Server, world, name, above);
             await TestServerFactory.JoinConnectedPlayerAsync(this.context.Server, player);
+            player.LoadedChunks.Add(0);
+            this.contactObserver = player;
         }
     }
 
@@ -193,6 +200,10 @@ public class VanillaBlockContact
 
         if (entity is Mob mob && entry.TryGetProperty("noAi", out var noAi) && noAi.GetBoolean())
             mob.MobBitMask |= MobBitmask.NoAi;
+
+        // /summon constructs an entity without natural-spawn finalization (random age, equipment and bonuses).
+        if (entity is Mob summonedMob)
+            summonedMob.InitializeAi(finalizeSpawn: false);
 
         world.SpawnEntity(entity);
         return entity;

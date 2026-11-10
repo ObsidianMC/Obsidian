@@ -5,6 +5,28 @@ public partial class Entity
     // The fall that ended in landing since the entity contact pass last looked, in blocks, or 0.
     private double landedFall;
 
+    internal virtual double ContactFallDistance { get; set; }
+
+    internal bool ContactBounced { get; set; }
+
+    internal void TrackContactFall(double descent, bool grounded)
+    {
+        // Bat.checkFallDamage intentionally does nothing, even when externally moved.
+        if (this is Bat)
+            return;
+
+        if (descent < 0)
+            this.ContactFallDistance -= (float)descent;
+
+        if (!grounded)
+            return;
+
+        this.RecordLanding(this.ContactFallDistance);
+        this.ContactFallDistance = 0;
+    }
+
+    internal virtual ValueTask CauseContactFallAsync(double distance, float multiplier = 1) => default;
+
     /// <summary>
     /// Records that the entity landed after falling <paramref name="fallDistance"/> blocks, which the entity contact
     /// pass (<see cref="WorldData.EntityContactPass"/>) reports to the block it landed on after the entity's tick, as

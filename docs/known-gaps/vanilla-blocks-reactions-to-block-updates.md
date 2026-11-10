@@ -16,8 +16,10 @@ tick behaviour (`TickBehaviors`: leaves, fire, farmland, sugar cane, cactus, bam
 sand, magma, composters, frogspawn, sulfur spikes) and for redstone components and falling blocks; the rest do
 nothing when they come due.
 Of vanilla's own blocks, pressure plates, tripwire, wooden buttons, detector rails and bubble columns react to
-entities inside them; none has a stepped-on reaction, though magma, turtle eggs and sculk shriekers are handled by
-checks of their own. The [block interactions plan](../block-interactions-plan.md) lists what is missing, phase by
+entities inside them. Magma and turtle eggs bind stepped-on owners; farmland, turtle eggs, slime, hay and honey
+bind fallen-on owners, and beds use their inherited fall-distance reduction. Sculk shriekers still use their own
+checks. Contact capture limits and remaining phase 3 work are listed in
+[stepped and fallen-on contacts](stepped-and-fallen-on-contacts.md). The [block interactions plan](../block-interactions-plan.md) lists what is missing, phase by
 phase. Some vanilla blocks' shape rules aren't modelled yet:
 a bell keeps its `single_wall` or `double_wall` attachment when a wall beside it is added or removed, and doesn't drop
 when it loses all support (vanilla's `BellBlock.updateShape`). Dead coral plants and fans don't break when their

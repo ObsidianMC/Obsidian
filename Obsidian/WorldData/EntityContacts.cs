@@ -69,6 +69,10 @@ internal static class ContactFlags
             var inside = BlocksRegistry.GetEntityInsideBehavior(registryId) is null ? 0 : Inside;
             var steppedOn = BlocksRegistry.GetStepOnBehavior(registryId) is null ? 0 : SteppedOn;
             var fallenOn = BlocksRegistry.GetFallOnBehavior(registryId) is null ? 0 : FallenOn;
+            // Beds inherit the base fall hook in 26.3, with a distance-reduction property.
+            if (BlocksRegistry.GetDefault(registryId).BlockClass() == "BedBlock")
+                fallenOn = FallenOn;
+
             flags[stateId] = (byte)(inside | steppedOn | fallenOn);
         }
 
@@ -122,6 +126,12 @@ internal sealed class EntityContactPass(IContactLevel level)
                 return this.AfterFallAsync(pending, entity);
 
             pending.GetAwaiter().GetResult();
+            this.LandingEvents(entity);
+        }
+        else if (entity.ContactBounced)
+        {
+            // Restitution also runs for a downward push while already resting on the surface.
+            this.BounceEvent(entity);
         }
 
         return this.StepAndInsideAsync(entity);
@@ -167,12 +177,34 @@ internal sealed class EntityContactPass(IContactLevel level)
     private async ValueTask AfterFallAsync(ValueTask pending, Entity entity)
     {
         await pending;
+        this.LandingEvents(entity);
         await this.StepAndInsideAsync(entity);
+    }
+
+    private void LandingEvents(Entity entity)
+    {
+        if (level.Level is AbstractLevel world && !IsRemoved(entity))
+        {
+            world.EmitGameEvent(MobGameEvent.Land, entity.Position, entity);
+        }
+
+        this.BounceEvent(entity);
+    }
+
+    private void BounceEvent(Entity entity)
+    {
+        if (entity.ContactBounced && level.Level is AbstractLevel world && !IsRemoved(entity))
+            world.EmitGameEvent(MobGameEvent.Bounce, entity.Position, entity);
+
+        entity.ContactBounced = false;
     }
 
     private ValueTask StepAndInsideAsync(Entity entity)
     {
-        if (entity.MovementFlags.HasFlag(MovementFlags.OnGround))
+        if (IsRemoved(entity))
+            return default;
+
+        if ((entity.MovementFlags & MovementFlags.OnGround) != 0)
         {
             var pending = this.SteppedOnAsync(entity);
             if (!pending.IsCompletedSuccessfully)
@@ -193,12 +225,12 @@ internal sealed class EntityContactPass(IContactLevel level)
     private ValueTask FallenOnAsync(Entity entity, double distance)
     {
         if (this.SupportCell(entity, ContactFlags.FallenOn) is not (Vector position, IBlock state))
-            return default;
+            return entity.CauseContactFallAsync(distance);
 
         if (BlocksRegistry.GetFallOnBehavior(state.RegistryId) is IFallOnBehavior owner)
             return owner.FallenOnAsync(level, position, state, entity, distance);
 
-        return default;
+        return FallOnBehaviors.BedBlock.FallenOnAsync(level, position, state, entity, distance);
     }
 
     private ValueTask SteppedOnAsync(Entity entity)
@@ -215,7 +247,7 @@ internal sealed class EntityContactPass(IContactLevel level)
     private ValueTask InsideAsync(Entity entity)
     {
         // Vanilla stops looking for blocks an entity is inside once it's dead, while it still steps on them.
-        if (entity is Living { Alive: false })
+        if (IsRemoved(entity) || entity is Living { Alive: false })
             return default;
 
         var box = entity.Dimension.CreateBBFromPosition(entity.Position);
@@ -236,7 +268,7 @@ internal sealed class EntityContactPass(IContactLevel level)
                 continue;
 
             // A block the entity was inside can kill it, and vanilla goes no further then.
-            if (entity is Living { Alive: false })
+            if (IsRemoved(entity) || entity is Living { Alive: false })
                 return default;
 
             var pending = this.EntityInsideAsync(entity, cell, state);

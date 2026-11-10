@@ -25,6 +25,7 @@ and where to start.
 - [Plant growth beyond saplings](plant-growth-beyond-saplings.md)
 - [Recursive placement callbacks](recursive-placement-callbacks.md)
 - [Redstone](redstone.md)
+- [Stepped and fallen-on contacts](stepped-and-fallen-on-contacts.md)
 - [Saplings that 26.3 added](saplings-that-26-3-added.md)
 - [Sign interactions](sign-interactions.md)
 - [Tilling and other block transformers](tilling-and-other-block-transformers.md)

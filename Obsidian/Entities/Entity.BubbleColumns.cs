@@ -30,9 +30,7 @@ public partial class Entity
     }
 
     /// <summary>Vanilla's <c>Entity.resetFallDistance</c>: only entities that track a fall distance override this.</summary>
-    internal virtual void ResetFallDistance()
-    {
-    }
+    internal virtual void ResetFallDistance() => this.ContactFallDistance = 0;
 
     private void SendBubbleMotion() =>
         this.PacketBroadcaster.QueuePacketToLevelInRange(this.Level, this.Position, new SetEntityMotionPacket

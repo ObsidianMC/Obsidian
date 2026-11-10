@@ -14,7 +14,7 @@ public partial class Entity
 public partial class Mob
 {
     internal override void CheckGeyserFallDistance() =>
-        this.fallDistance = GeyserFallDistance(this.fallDistance, this.Motion.Y);
+        this.fallDistance = GeyserFallDistance((float)this.fallDistance, this.Motion.Y);
 }
 
 public partial class PlayerBase

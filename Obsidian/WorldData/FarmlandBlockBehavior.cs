@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Blocks;
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.Entities;
 using Obsidian.Entities.AI;
 using Obsidian.Registries;
 using Obsidian.WorldData.Fluids;
@@ -12,10 +13,6 @@ namespace Obsidian.WorldData;
 /// out and turns back to dirt without water nearby (unless something grows on it), is soaked by water within four
 /// blocks, and turns to dirt when a solid block is above it.
 /// </summary>
-/// <remarks>
-/// Not ported: <c>Block.pushEntitiesUp</c> when it turns to dirt, and <c>fallOn</c> trampling, which wait on a landing
-/// hook for entities.
-/// </remarks>
 internal sealed partial class FarmlandBlockBehavior : IRandomTickBehavior, IScheduledTickBehavior, IShapeUpdateBehavior
 {
     public IShapeUpdateBehavior? SharedPassRule => null;
@@ -99,11 +96,18 @@ internal sealed partial class FarmlandBlockBehavior : IRandomTickBehavior, ISche
         return false;
     }
 
-    // Vanilla's FarmlandBlock.turnToDirt, without pushing entities up.
-    private static void TurnToDirt(IBlockLevel level, Vector position, IBlock block)
+    // Only the added top sixteenth pushes entities; lift them before publishing the full dirt collision.
+    internal static void TurnToDirt(IBlockLevel level, Vector position, IBlock block, Entity? source = null)
     {
+        if (level.Level is not AbstractLevel world)
+            return;
+
+        world.LiftEntitiesForSurfaceRise(position, 0.9375, 1);
+
         level.SetBlock(position, BlocksRegistry.Dirt, BlockUpdateFlags.All);
-        Log.ToDirt(((AbstractLevel)level.Level).Logger, position, Moisture(block));
+        world.EmitGameEvent(MobGameEvent.BlockChange, (VectorD)position + 0.5, source,
+            affectedBlock: BlocksRegistry.Dirt);
+        Log.ToDirt(world.Logger, position, Moisture(block));
     }
 
     private static partial class Log

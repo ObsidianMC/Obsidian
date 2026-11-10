@@ -11,6 +11,10 @@ public partial class Living : Entity, ILiving
     protected const byte LivingMetadataCount = 15;
 
     internal CombatDamageKind? IncomingDamageKind { get; private set; }
+
+    // The last accepted source, retained after the scoped incoming source has been restored.
+    internal CombatDamageKind? LastDamageKind { get; set; }
+
     internal ItemStack? IncomingWeapon { get; private set; }
     internal IEntity? IncomingDirectSource { get; private set; }
     internal int AcceptedDamageCount { get; set; }
@@ -37,14 +41,19 @@ public partial class Living : Entity, ILiving
         IncomingDamageKind = kind;
         IncomingWeapon = weapon;
         IncomingDirectSource = directSource;
+        var acceptedBefore = this.AcceptedDamageCount;
         try
-        { await DamageAsync(source, amount); }
+        {
+            await DamageAsync(source, amount);
+            if (this.AcceptedDamageCount != acceptedBefore)
+                this.LastDamageKind = kind;
+        }
         finally
         {
             IncomingDamageKind = previousKind;
             IncomingWeapon = previousWeapon;
             IncomingDirectSource = previousDirectSource;
-    }
+        }
     }
 
     public LivingBitMask LivingBitMask { get; set; }

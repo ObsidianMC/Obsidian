@@ -92,7 +92,7 @@ public partial class Mob
         writer.WriteShort("Fire", (short)Math.Clamp(FireTicks, 0, short.MaxValue));
         writer.WriteBool("OnGround", MovementFlags.HasFlag(MovementFlags.OnGround));
         writer.WriteInt("TicksFrozen", PowderedSnowTicks);
-        writer.WriteFloat("FallDistance", fallDistance);
+        writer.WriteFloat("FallDistance", (float)fallDistance);
     }
 
     private void WriteMobFlagsSave(INbtWriter writer)
