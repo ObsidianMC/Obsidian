@@ -1,10 +1,14 @@
 using Obsidian.API;
 using Obsidian.API.Registries;
+using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.API.World.Features;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Registries;
 using Obsidian.Tests;
 using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
 using Obsidian.WorldData.BlockNotifications;
+using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Features.Tree;
 using System;
 using System.Diagnostics;
@@ -71,6 +75,17 @@ internal static class BlockRun
             () => result = ShapeUpdater.UpdateShape(view, stone, position, BlockFace.West, stone));
         Measure("UpdateShape/air", 1_000_000,
             () => result = ShapeUpdater.UpdateShape(view, air, position, BlockFace.West, stone));
+
+        // The same pass as generation reads it, through a generating level that is no live view.
+        var generation = new GenerationLevel(world);
+        var fence = BlocksRegistry.OakFence;
+        Measure("UpdateShape/generation-stone", 1_000_000,
+            () => result = ShapeUpdater.UpdateShape(generation, stone, position, BlockFace.West, stone));
+        Measure("UpdateShape/generation-fence", 1_000_000,
+            () => result = ShapeUpdater.UpdateShape(generation, fence, position, BlockFace.West, stone));
+        var cactus = BlocksRegistry.Cactus;
+        Measure("CanSurvive/generation-cactus", 1_000_000,
+            () => flag = cactus.CanSurvive(generation, position));
 
         for (var x = 3; x <= 5; x++)
         {
@@ -236,5 +251,43 @@ internal static class BlockRun
         var median = samples[samples.Length / 2];
         var row = FormattableString.Invariant($"{name},{iterations},{median.Nanoseconds:F2},{median.Bytes:F2}");
         Console.WriteLine(row);
+    }
+
+    /// <summary>
+    /// A generating level over the test world's blocks, as trees and templates hand the shape pass one.
+    /// </summary>
+    private sealed class GenerationLevel(RedstoneTestWorld world) : IWorldGenLevel
+    {
+        public long Seed => 0;
+
+        public int MinY => -64;
+
+        public int Height => 384;
+
+        public int SeaLevel => 63;
+
+        public IRandomSource Random => throw new NotSupportedException();
+
+        public IBlock GetBlock(Vector position) => world.GetLoadedBlock(position) ?? BlocksRegistry.VoidAir;
+
+        public bool SetBlock(Vector position, IBlock block) => throw new NotSupportedException();
+
+        public bool EnsureCanWrite(Vector position) => false;
+
+        public int GetHeight(HeightmapType type, int x, int z) => throw new NotSupportedException();
+
+        public BiomeCodec GetBiome(Vector position) => throw new NotSupportedException();
+
+        public void SetBlockEntity(Vector position, IBlockEntity blockEntity) => throw new NotSupportedException();
+
+        public IBlockEntity? GetBlockEntity(Vector position) => null;
+
+        public void AddEntity(GeneratedEntity entity) => throw new NotSupportedException();
+
+        public void MarkForPostProcessing(Vector position) => throw new NotSupportedException();
+
+        public void ScheduleFluidTick(Vector position)
+        {
+        }
     }
 }

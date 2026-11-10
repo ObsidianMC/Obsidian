@@ -81,7 +81,11 @@ replaces only what vanilla produced.
   and music probes from `Java/MoreBlockFixtures.java`. Placement runs the chosen block's placement routine and
   survival check; signs are already a standing or ceiling variant. It records full states for every wool/concrete
   stair/slab color and poplar construction families, including powered placement, waterlogging and stair corners.
-  Shape cases record scheduled fluid/block ticks and replay through live notifications. Leaf-distance ticks and
+  Shape cases record scheduled fluid/block ticks and replay through live notifications; where vanilla's shape
+  update breaks the block, the replay runs one level tick, which is when Obsidian removes it. Each shape case also
+  runs through the shared shape pass as generation reads it, wherever that pass has a rule for the block, so the
+  fence, stair and survival cases cover generation's rules too. The grindstone, wall button and nether wart cases
+  check blocks that gained a shape rule when rules were bound by declaring class. Leaf-distance ticks and
   axe providers also capture the next random draw; stripping checks state, sound ID and durability cost. Door,
   trapdoor and gate uses check state and sound ID (their captured pitch is not asserted by this replay); door
   placement checks the upper half. Note cases invoke vanilla's note and block-event routines, capture trigger

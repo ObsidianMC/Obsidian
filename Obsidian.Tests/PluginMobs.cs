@@ -56,7 +56,7 @@ public sealed class PluginMobs
             Width = 0.9f,
             Height = 0.9f,
             Movement = EntityMovementMode.Flying,
-            PassengerAttachments = [new VectorF(0, 1, 0)],
+            PassengerAttachments = [new VectorF(0, 1, 0), new VectorF(0, 1, -0.5f)],
             DataFields = [Saddled],
             Behavior = behavior
         };
@@ -198,7 +198,8 @@ public sealed class PluginMobs
         await drake.TickAsync();
         Assert.Equal(1.4, player.Position.Y - drake.Position.Y, 5);
         drake.RemoveAttributeModifier("minecraft:scale", "pluginmobs:size");
-        Assert.Contains(client.SentPackets, packet => packet is SetEntityDataPacket data && data.EntityId == drake.EntityId);
+        Assert.Contains(client.SentPackets,
+            packet => packet is SetEntityDataPacket data && data.EntityId == drake.EntityId);
 
         // Once the rider's client sends where it moved the mob, the client moves it: the server takes a move it can
         // make, and stops steering from the input.
@@ -240,6 +241,27 @@ public sealed class PluginMobs
 
         Assert.True(walkingControl.FloatingTooLong);
         drake.NoGravity = true;
+
+        // A move already accepted from the first seat cannot commit after its sender boards behind someone else.
+        var secondRider = TestServerFactory.CreateConnectedPlayer(
+            context.Server, world, "NewController", player.Position);
+        Assert.True(secondRider.Ride(drake));
+        drake.ClientControl.Enqueue(player, new VehicleMove(drake.Position + new VectorD(0, 0, 0.5), 90, 0, false));
+        drake.ClientControl.Tick(drake, terrain, player, flying: true);
+        var accepted = drake.ClientControl.AcceptedMove;
+        Assert.NotNull(accepted);
+        var beforeControlSwap = drake.Position;
+        player.LeaveVehicle();
+        Assert.True(player.Ride(drake));
+        Assert.Same(secondRider, drake.Rider);
+        drake.ApplyClientMovement(accepted);
+        Assert.Equal(beforeControlSwap, drake.Position);
+
+        var movedByNewController = beforeControlSwap + new VectorD(0, 0, 0.5);
+        drake.ClientControl.Enqueue(secondRider, new VehicleMove(movedByNewController, 90, 0, false));
+        await drake.TickAsync();
+        Assert.Equal(movedByNewController, drake.Position);
+        secondRider.LeaveVehicle();
 
         player.Input = PlayerInput.Sneak;
         await drake.TickAsync();

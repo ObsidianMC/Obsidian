@@ -338,9 +338,7 @@ internal sealed class FluidLevel
     {
         if (shapes == VanillaShapes.All)
         {
-            var brightness = block.BlockClass() == "MushroomBlock" ? this.access.GetRawBrightness(position) : 15;
-            return ShapeUpdater.UpdateShape(this.ShapeView, block, position, direction, neighbor, brightness,
-                scheduleFluidTick, this.access.ScheduleBlockTick);
+            return ShapeUpdater.UpdateShape(this.ShapeView, block, position, direction, neighbor, scheduleFluidTick);
         }
 
         if (scheduleFluidTick)
@@ -456,10 +454,11 @@ internal sealed class FluidLevel
     }
 
     /// <summary>
-    /// The level as world generation code sees it, for <see cref="ShapeUpdater.UpdateShape"/>, which only reads blocks and
-    /// schedules fluid ticks.
+    /// The level as the shared shape pass (<see cref="ShapeUpdater.UpdateShape"/>) reads it: blocks, the light
+    /// mushrooms survive by, and the fluid and block ticks rules schedule, through the level's access. It has no
+    /// random to draw from and reads no scheduled ticks.
     /// </summary>
-    private sealed class ShapeUpdateView(FluidLevel level) : IWorldGenLevel
+    private sealed class ShapeUpdateView(FluidLevel level) : IWorldGenLevel, IShapeLevel
     {
         public long Seed => throw new NotSupportedException();
 
@@ -498,6 +497,20 @@ internal sealed class FluidLevel
             if (!fluid.IsEmpty)
                 level.ScheduleTick(position, fluid.Kind, fluid.Type!.GetTickDelay(level));
         }
+
+        public bool IsFaceSturdy(Vector position, BlockFace face, SupportType support = SupportType.Full) =>
+            ShapeViews.IsFaceSturdy(level.GetBlock(position), face, support);
+
+        public int GetRawBrightness(Vector position) => level.access.GetRawBrightness(position);
+
+        public void ScheduleTick(
+            Vector position,
+            IBlock block,
+            int delay,
+            TickPriority priority = TickPriority.Normal) =>
+            level.access.ScheduleBlockTick(position, block, delay);
+
+        public bool HasScheduledTick(Vector position, IBlock block) => false;
     }
 }
 

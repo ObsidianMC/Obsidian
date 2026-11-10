@@ -13,6 +13,7 @@ internal sealed partial class PlayClientHandler : ClientHandler
         { MovePlayerPosPacket.PacketId, new MovePlayerPosPacket() },
         { MovePlayerPosRotPacket.PacketId, new MovePlayerPosRotPacket() },
         { MovePlayerRotPacket.PacketId, new MovePlayerRotPacket() },
+        { MovePlayerStatusOnlyPacket.PacketId, new MovePlayerStatusOnlyPacket() },
         { PlayerAbilitiesPacket.PacketId, new PlayerAbilitiesPacket() },
         { ClientTickEndPacket.PacketId, new ClientTickEndPacket() }
     }.ToFrozenDictionary();

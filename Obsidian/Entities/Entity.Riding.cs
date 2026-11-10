@@ -168,10 +168,29 @@ public partial class Entity
         for (var index = 0; index < riders.Count; index++)
         {
             var passenger = riders[index];
+            var player = passenger as PlayerBase;
+            var generation = player?.CaptureMovementGeneration();
             if (passenger.Vehicle != this)
                 continue;
 
             var position = this.Position + this.PassengerOffset(index);
+            var clientGeneration = this switch
+            {
+                Boat boat when passenger is IPlayer rider => boat.ClientControl.AcceptedGeneration(rider),
+                PluginMob mob when passenger is IPlayer rider => mob.ClientControl.AcceptedGeneration(rider),
+                _ => null
+            };
+            // Server-driven seats need the same generation/membership recheck as accepted client moves. The
+            // virtual offset calculation above may have been overtaken by travel, including detach and reseat.
+            if (player is not null && (clientGeneration ?? generation) is long seatGeneration)
+            {
+                if (!player.PositionFromVehicle(this, position, seatGeneration))
+                    passenger.LeaveVehicle();
+
+                passenger.PositionPassengers();
+                continue;
+            }
+
             if (this.Level is AbstractLevel level && !level.TryMoveEntity(passenger, passenger.Position, position))
             {
                 passenger.LeaveVehicle();

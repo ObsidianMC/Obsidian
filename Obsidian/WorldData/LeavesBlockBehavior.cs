@@ -13,6 +13,8 @@ namespace Obsidian.WorldData;
 /// </summary>
 internal sealed partial class LeavesBlockBehavior : IRandomTickBehavior, IScheduledTickBehavior, IShapeUpdateBehavior
 {
+    public IShapeUpdateBehavior? SharedPassRule => null;
+
     // Vanilla's LeavesBlock.DECAY_DISTANCE: the distance of leaves with no log within six blocks.
     private const int DecayDistance = 7;
 
@@ -44,7 +46,7 @@ internal sealed partial class LeavesBlockBehavior : IRandomTickBehavior, ISchedu
     /// Vanilla's <c>LeavesBlock.updateShape</c>: when the neighbour's distance says the leaves should change, a tick is
     /// scheduled for a tick later. The state is kept.
     /// </summary>
-    public IBlock? UpdateShape(IBlockLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
+    public IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
     {
         var expected = OptionalDistance(neighbor) + 1;
         if (expected != 1 || Distance(state) != expected)

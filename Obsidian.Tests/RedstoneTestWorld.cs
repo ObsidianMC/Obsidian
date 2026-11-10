@@ -26,7 +26,8 @@ namespace Obsidian.Tests;
 /// <summary>An arrow that enters <see cref="Block"/> at <see cref="Location"/> through <see cref="Face"/>.</summary>
 public sealed record ArrowHit(Vector Block, VectorD Location, BlockFace Face);
 
-internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, IBlockTickLevel, IBlockLevel
+internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, IBlockTickLevel, IBlockLevel,
+    IShapeLevel
 {
     private readonly Dictionary<long, Chunk> chunks = [];
     private readonly Queue<Func<ValueTask>> simulation = new();
@@ -193,7 +194,7 @@ internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, I
 
     IBlock? IBlockChangeWorld.UpdateShape(Vector position, IBlock state, BlockFace face,
         Vector neighborPosition, IBlock neighbor) =>
-        BlocksRegistry.GetShapeUpdateBehavior(state.RegistryId)?.UpdateShape(
+        ShapeDispatch.LiveOwner(state.RegistryId)?.UpdateShape(
             this, position, state, face, neighborPosition, neighbor);
 
     ILevel IBlockLevel.Level => throw new NotSupportedException();
@@ -226,6 +227,24 @@ internal sealed class RedstoneTestWorld : IPressurePlateWorld, IRedstoneLevel, I
         ((IRedstoneLevel)this).NotifyComparatorsAroundAsync(position).GetAwaiter().GetResult();
 
     IItemAccess? IBlockLevel.GetItemAccess(Vector position, BlockFace? side) => throw new NotSupportedException();
+
+    // Shape owners read the test world as the live level supplies it, with sturdiness from block states alone.
+    IRandomSource IShapeLevel.Random => throw new NotSupportedException();
+
+    IBlock IShapeLevel.GetBlock(Vector position) => ((IBlockLevel)this).GetBlock(position);
+
+    bool IShapeLevel.IsFaceSturdy(Vector position, BlockFace face, SupportType support) =>
+        ((IBlockLevel)this).GetBlock(position).IsFaceSturdy(face, support);
+
+    IBlockEntity? IShapeLevel.GetBlockEntity(Vector position) => ((IBlockLevel)this).GetBlockEntity(position);
+
+    int IShapeLevel.GetRawBrightness(Vector position) => this.SkyLight;
+
+    void IShapeLevel.ScheduleTick(Vector position, IBlock block, int delay, API.Blocks.TickPriority priority) =>
+        ((IBlockLevel)this).ScheduleTick(position, block, delay, priority);
+
+    bool IShapeLevel.HasScheduledTick(Vector position, IBlock block) =>
+        ((IBlockLevel)this).HasScheduledTick(position, block);
 
     public int GetSignal(Vector position, BlockFace direction) => this.Engine.GetSignal(position, direction);
 

@@ -22,7 +22,7 @@ internal static class Coral
         [BlockFace.Down, BlockFace.Up, BlockFace.North, BlockFace.South, BlockFace.West, BlockFace.East];
 
     /// <summary>Vanilla's <c>scanForWater</c>: water (flowing, or a waterlogged block's) touches a face.</summary>
-    public static bool TouchesWater(IBlockLevel level, Vector position)
+    public static bool TouchesWater(IShapeLevel level, Vector position)
     {
         foreach (var face in faces)
         {
@@ -34,7 +34,7 @@ internal static class Coral
     }
 
     /// <summary>Schedules <paramref name="state"/>'s death, drawing its delay from <paramref name="random"/>.</summary>
-    public static void ScheduleDeath(IBlockLevel level, Vector position, IBlock state, IRandomSource random) =>
+    public static void ScheduleDeath(IShapeLevel level, Vector position, IBlock state, IRandomSource random) =>
         level.ScheduleTick(position, state, DeathDelay + random.NextInt(DeathDelaySpread));
 
     /// <summary>
@@ -46,7 +46,7 @@ internal static class Coral
     /// the pending tick keeps the level's random to vanilla's one draw per change; vanilla also draws, and discards
     /// the delay, for a change while a death is already pending, which this skips.
     /// </remarks>
-    public static void ScheduleDeathOnChange(IBlockLevel level, Vector position, IBlock state)
+    public static void ScheduleDeathOnChange(IShapeLevel level, Vector position, IBlock state)
     {
         if (!level.HasScheduledTick(position, state))
             ScheduleDeath(level, position, state, level.Random);
@@ -73,14 +73,16 @@ internal static class Coral
 /// <summary>Vanilla's <c>CoralBlock</c>: its <c>tick</c> and <c>updateShape</c> overrides.</summary>
 internal sealed class CoralBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior
 {
+    public IShapeUpdateBehavior? SharedPassRule => null;
+
     public void Tick(IBlockLevel level, Vector position, IBlock block, IRandomSource random)
     {
-        if (!Coral.TouchesWater(level, position))
+        if (!Coral.TouchesWater(level.AsShapeLevel(), position))
             level.SetBlock(position, Coral.Dead(block), BlockUpdateFlags.Clients);
     }
 
     public IBlock? UpdateShape(
-        IBlockLevel level,
+        IShapeLevel level,
         Vector position,
         IBlock state,
         BlockFace direction,
@@ -101,15 +103,18 @@ internal sealed class CoralBlockBehavior : IScheduledTickBehavior, IShapeUpdateB
 /// </summary>
 internal sealed class CoralPlantBehavior(bool onWall) : IOnPlaceBehavior, IScheduledTickBehavior, IShapeUpdateBehavior
 {
+    public IShapeUpdateBehavior? SharedPassRule => null;
+
     public void OnPlace(IBlockLevel level, Vector position, IBlock state, IBlock oldState)
     {
-        if (!IsWet(level, position, state))
-            Coral.ScheduleDeath(level, position, state, level.Random);
+        var view = level.AsShapeLevel();
+        if (!IsWet(view, position, state))
+            Coral.ScheduleDeath(view, position, state, level.Random);
     }
 
     public void Tick(IBlockLevel level, Vector position, IBlock block, IRandomSource random)
     {
-        if (IsWet(level, position, block))
+        if (IsWet(level.AsShapeLevel(), position, block))
             return;
 
         var dead = Coral.Dead(block).WithProperty("waterlogged", false);
@@ -120,7 +125,7 @@ internal sealed class CoralPlantBehavior(bool onWall) : IOnPlaceBehavior, ISched
     }
 
     public IBlock? UpdateShape(
-        IBlockLevel level,
+        IShapeLevel level,
         Vector position,
         IBlock state,
         BlockFace direction,
@@ -142,7 +147,7 @@ internal sealed class CoralPlantBehavior(bool onWall) : IOnPlaceBehavior, ISched
     }
 
     // Vanilla's BaseCoralPlantTypeBlock.scanForWater: waterlogged, or touching water.
-    private static bool IsWet(IBlockLevel level, Vector position, IBlock state) =>
+    private static bool IsWet(IShapeLevel level, Vector position, IBlock state) =>
         state.GetProperty("waterlogged") == "true" || Coral.TouchesWater(level, position);
 
     // The face its support is on: below a plant or fan, behind a wall fan.
@@ -150,7 +155,7 @@ internal sealed class CoralPlantBehavior(bool onWall) : IOnPlaceBehavior, ISched
         onWall ? FeatureHelpers.ParseFace(state.GetProperty("facing")!).Opposite() : BlockFace.Down;
 
     // Vanilla's canSurvive: the support's face toward the coral is sturdy.
-    private bool Survives(IBlockLevel level, Vector position, IBlock state)
+    private bool Survives(IShapeLevel level, Vector position, IBlock state)
     {
         var support = Support(state);
         return level.IsFaceSturdy(position.Offset(support), support.Opposite());
