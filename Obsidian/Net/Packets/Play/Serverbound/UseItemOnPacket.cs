@@ -278,7 +278,6 @@ public partial class UseItemOnPacket
         ResendBlocks(use.Level, player, use.Position, use.Face);
         if (use.ResyncHand || !result.ConsumesAction())
             await player.SyncInventorySlotAsync(use.HandSlot);
-
     }
 
     private static async ValueTask FireAsync(BlockUse use, string trigger)

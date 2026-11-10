@@ -297,7 +297,8 @@ add it to `contexts` and capture again. For `block_use`, add inputs to `cases` a
 `+`-separated names to record only the added cases. A setup's `text` seeds both sign faces, and `handUsed: offhand`
 selects the other hand. An optional `randomSeed` seeds the level random immediately before use; the failed-growth
 case verifies that a valid bone-meal target consumes the item even when its growth chance fails. Optional checks
-record sign text flags and editor, attack charge after a started and a refused swing, explicit and periodic container close sources, and awarded advancement criteria. The fixture lists
+record sign text flags and editor, attack charge after a started and a refused swing, explicit and periodic
+container close sources, and awarded advancement criteria. The fixture lists
 location predicate terms in Obsidian's existing format; the probe converts them to 26.3's `all_of` and `match_block`
 encoding before registering them with vanilla's advancement system.
 

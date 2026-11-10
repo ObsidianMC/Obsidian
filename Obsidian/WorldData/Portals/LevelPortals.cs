@@ -124,14 +124,15 @@ internal sealed class LevelPortals(AbstractLevel level)
                 {
                     lock (level.Fluids.TickLock)
                     {
-                        if (!use.TryCommit(() =>
+                        var committed = use.TryCommit(() =>
                         {
                             if (read.Any(pair => !level.BlockUpdates.GetBlock(pair.Key).IsSameState(pair.Value)))
                                 return false;
 
                             ItemDamage.ApplyIgniterCost(use, igniter!);
                             return true;
-                        }))
+                        });
+                        if (!committed)
                             return false;
 
                         // A plugin portal block can create a plugin block entity. Its factory and the normal
