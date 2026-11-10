@@ -75,7 +75,12 @@ internal sealed class BlockPlacement(IPlayer player, int slot, ItemStack item)
     internal void Consume()
     {
         if (player.GameMode != GameMode.Creative)
-            player.Inventory.RemoveItem(slot, 1);
+        {
+            if (item.Holder.Id == ItemIds.PowderSnowBucket)
+                player.Inventory.SetItem(slot, new ItemStack(ItemsRegistry.Bucket, 1));
+            else
+                player.Inventory.RemoveItem(slot, 1);
+        }
     }
 
     internal sealed class Prepared(BlockEntity? entity, IDisposable? call) : IDisposable

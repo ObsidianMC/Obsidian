@@ -20,7 +20,7 @@
 		<ProjectReference Include="..\Obsidian\Obsidian.csproj" />
 		<!-- One harness for replay tests and the offline block probe; no test assembly dependency. -->
 		<Compile Include="..\Obsidian.Tests\RedstoneTestWorld.cs" Link="RedstoneTestWorld.cs" />
-		<!-- The block entity case ticks a real level, built the way the tests build one. -->
+		<!-- The block entity and live level cases run a real level, built the way the tests build one. -->
 		<Compile Include="..\Obsidian.Tests\Fakes\FakeInfrastructure.cs" Link="FakeInfrastructure.cs" />
 	</ItemGroup>
 </Project>

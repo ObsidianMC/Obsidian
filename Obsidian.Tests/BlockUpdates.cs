@@ -8,6 +8,7 @@ using Obsidian.API.Inventory;
 using Obsidian.API.Plugins;
 using Obsidian.API.Registries;
 using Obsidian.API.World;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Commands.Framework;
 using Obsidian.Entities;
 using Obsidian.Nbt;
@@ -270,6 +271,171 @@ public sealed class BlockUpdates : IDisposable
         Assert.All(["north", "east", "south", "west"], side => Assert.Equal("side", dust.GetProperty(side)));
 
         await manager.UnloadPluginAsync(container);
+    }
+
+    // A chunk is complete in its region slot before the fluid level tracks it (generation and loads from disk track it
+    // after publishing it), and the shape updates of a change beside it must still reach across the border.
+    [Fact(DisplayName = "A change reshapes its neighbour in a complete chunk the level doesn't track yet",
+        Timeout = TestServerFactory.TestTimeout)]
+    public async Task ShapeUpdatesReachACompleteUntrackedChunk()
+    {
+        await using var context = TestServerFactory.CreateServer($"untracked-neighbour-{Guid.NewGuid():N}");
+        var world = context.World;
+        var fence = new Vector(32, 70, 8);
+        var placed = new Vector(31, 70, 8);
+
+        // Chunk (1, 0) is tracked; chunk (2, 0) holds the fence and is published complete, but not tracked.
+        var tracked = new Chunk(1, 0);
+        tracked.SetChunkStatus(ChunkGenStage.full);
+        world.LoadRegionByChunk(1, 0).SetChunk(tracked);
+        await world.GetChunkAsync(1, 0, scheduleGeneration: false);
+
+        var untracked = new Chunk(2, 0);
+        untracked.SetBlock(fence.X, fence.Y, fence.Z, VanillaSulfurBlocks.ParseState("minecraft:oak_fence"));
+        untracked.SetChunkStatus(ChunkGenStage.full);
+        world.LoadRegionByChunk(2, 0).SetChunk(untracked);
+
+        lock (world.Fluids.TickLock)
+        {
+            Assert.Contains(tracked, world.Fluids.TrackedChunks());
+            Assert.DoesNotContain(untracked, world.Fluids.TrackedChunks());
+        }
+
+        await world.SetBlockUntrackedAsync(placed.X, placed.Y, placed.Z, BlocksRegistry.Stone, BlockUpdateFlags.All);
+
+        Assert.Equal("true", untracked.GetBlock(fence.X, fence.Y, fence.Z).GetProperty("west"));
+    }
+
+    // Publishing and tracking are separate operations. A shape-triggered tick belongs to the published chunk,
+    // including across its own save/unload/reload, and its delay starts only when tracking catches up.
+    [Theory(Timeout = TestServerFactory.TestTimeout)]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ObserverTickWaitsForCompleteUntrackedChunk(bool reload)
+    {
+        await using var context = TestServerFactory.CreateServer($"untracked-observer-{Guid.NewGuid():N}");
+        var world = context.World;
+        world.LevelData.GameRules["random_tick_speed"] = "0";
+        world.LevelData.GameRules["spawn_mobs"] = "false";
+        var fence = new Vector(32, 70, 8);
+        var observer = new Vector(32, 70, 9);
+        var region = Assert.IsType<Region>(world.LoadRegionByChunk(2, 0));
+
+        // The target's eight neighbours are ready, including the chunk where stone will be placed.
+        for (var x = 1; x <= 3; x++)
+        {
+            for (var z = -1; z <= 1; z++)
+            {
+                if (x == 2 && z == 0)
+                    continue;
+
+                var neighbor = new Chunk(x, z);
+                neighbor.SetChunkStatus(ChunkGenStage.full);
+                world.LoadRegionByChunk(x, z).SetChunk(neighbor);
+                await world.GetChunkAsync(x, z, scheduleGeneration: false);
+            }
+        }
+
+        var chunk = new Chunk(2, 0);
+        IChunk blocks = chunk;
+        blocks.SetBlock(fence, VanillaSulfurBlocks.ParseState("minecraft:oak_fence"));
+        blocks.SetBlock(observer, VanillaSulfurBlocks.ParseState("minecraft:observer[facing=north,powered=false]"));
+        chunk.SetChunkStatus(ChunkGenStage.full);
+        region.SetChunk(chunk);
+        var listener = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Listener",
+            new VectorD(40, 80, 8));
+        world.Players.TryAdd(listener.Uuid, listener);
+
+        // Save first so that retaining the tick must also mark the previously saved chunk dirty.
+        if (reload)
+            await region.FlushAsync();
+
+        var transitions = new List<string>();
+        world.Fluids.BlockStored = (position, state, _) =>
+        {
+            if (position == observer)
+                transitions.Add(state.GetProperty("powered")!);
+        };
+        await world.SetBlockUntrackedAsync(31, 70, 8, BlocksRegistry.Stone, BlockUpdateFlags.All);
+
+        Assert.Equal("true", blocks.GetBlock(fence).GetProperty("west"));
+        Assert.True(world.BlockUpdates.HasScheduledTick(observer, blocks.GetBlock(observer)));
+        var pending = Assert.Single(chunk.BlockTicks.Pack());
+        Assert.Equal((observer, "minecraft:observer", 2), (pending.Position, pending.Block, pending.Delay));
+
+        if (reload)
+        {
+            await region.FlushAsync();
+            await region.UnloadChunksAsync([(2, 0)]);
+            var loaded = Assert.IsType<Chunk>(await region.GetChunkAsync(2, 0));
+            Assert.NotSame(chunk, loaded);
+            chunk = loaded;
+            blocks = chunk;
+            Assert.Equal(pending, Assert.Single(chunk.BlockTicks.Pack()));
+        }
+
+        // Advancing the level while the chunk is untracked neither consumes the tick nor its relative delay.
+        // Run the scheduler directly: a full world tick also discovers and tracks published chunks.
+        for (var tick = 0; tick < 8; tick++)
+            world.Fluids.Tick();
+
+        Assert.False(chunk.BlockTicks.IsTicking);
+        Assert.Equal(pending, Assert.Single(chunk.BlockTicks.Pack()));
+        Assert.Empty(transitions);
+
+        await world.GetChunkAsync(2, 0, scheduleGeneration: false);
+        world.Fluids.Track(chunk);
+        await world.DoWorldTickAsync();
+        Assert.Empty(transitions);
+
+        await world.DoWorldTickAsync();
+        Assert.Equal(["true"], transitions);
+
+        for (var tick = 0; tick < 6; tick++)
+            await world.DoWorldTickAsync();
+
+        Assert.Equal(["true", "false"], transitions);
+        Assert.Empty(chunk.BlockTicks.Pack());
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task CancelledCoralDestructionPreservesLevelRandomAndTicks()
+    {
+        await using var context = TestServerFactory.CreateServer($"coral-validation-{Guid.NewGuid():N}");
+        var world = context.World;
+        await AddChunksAsync(world);
+        var blocks = world.GetLoadedChunk(0, 0)!;
+        var chunk = Assert.IsType<Chunk>(blocks);
+        var position = new Vector(8, 70, 8);
+        var north = VanillaSulfurBlocks.ParseState(
+            "minecraft:tube_coral_wall_fan[facing=north,waterlogged=false]");
+        var east = north.WithProperty("facing", "east");
+        blocks.SetBlock(position + Vector.South, BlocksRegistry.Stone);
+        blocks.SetBlock(position + Vector.West, BlocksRegistry.Stone);
+        blocks.SetBlock(position, north);
+
+        // Losing the southern support queues the break. A state change before the entity phase gives the same
+        // block a valid western support, so the queued transaction must revalidate and cancel without effects.
+        await world.SetBlockAsync(position + Vector.South, BlocksRegistry.Air, BlockUpdateFlags.All);
+        blocks.SetBlock(position, east);
+        var pending = chunk.BlockTicks.Pack();
+        var random = new LegacyRandomSource(12345);
+        var expected = new LegacyRandomSource(12345);
+        world.GrowthRandom = random;
+
+        await world.RunQueuedEntityActionsAsync();
+
+        Assert.True(blocks.GetBlock(position).IsSameState(east));
+        Assert.Equal(expected.NextLong(), random.NextLong());
+        Assert.Equal(pending, chunk.BlockTicks.Pack());
+
+        // With no pending death tick either, validation must not create one through its six shape queries.
+        var isolated = new Vector(12, 70, 8);
+        blocks.SetBlock(isolated + Vector.West, BlocksRegistry.Stone);
+        blocks.SetBlock(isolated, east);
+        Assert.False(world.BlockUpdates.IsUnsupported(isolated, east));
+        Assert.False(world.BlockUpdates.HasScheduledTick(isolated, east));
+        Assert.Equal(expected.NextLong(), random.NextLong());
     }
 
     [Fact(DisplayName = "A vanilla furnace and chest placed by a west-facing player face away from the player",

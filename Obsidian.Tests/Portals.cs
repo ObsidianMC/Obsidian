@@ -41,6 +41,9 @@ public partial class Portals
         player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.FlintAndSteel));
         Assert.True(world.TryAddPlayer(player));
         Assert.True(world.TryAddEntity(player));
+        var bystander = TestServerFactory.CreateConnectedPlayer(
+            context.Server, world, "Bystander", new VectorD(1.5, 64, -2.5));
+        Assert.True(world.TryAddPlayer(bystander));
 
         await BlockUpdates.UseOn(new Vector(0, 63, 0), BlockFace.Up).HandleAsync(context.Server, player);
 
@@ -48,7 +51,12 @@ public partial class Portals
         Assert.True(frame!.Value.IsComplete);
         player.FlushBlockAcknowledgement();
         Assert.Contains(((TestClient)player.Client).SentPackets, packet => packet is BlockChangedAckPacket);
-        Assert.Contains(((TestClient)player.Client).SentPackets, packet => packet is SoundPacket
+        // The acting client predicts flint and steel; only the bystander receives its server sound.
+        Assert.DoesNotContain(((TestClient)player.Client).SentPackets, packet => packet is SoundPacket
+        {
+            SoundLocation: "minecraft:item.flintandsteel.use"
+        });
+        Assert.Contains(((TestClient)bystander.Client).SentPackets, packet => packet is SoundPacket
         {
             SoundLocation: "minecraft:item.flintandsteel.use"
         });
@@ -185,6 +193,34 @@ public partial class Portals
         Assert.False(target.World.GetRegionForLocation(mob.Position)!.Entities.ContainsKey(mob.EntityId));
         Assert.Throws<InvalidOperationException>(() =>
             attachments.Set("travelprobe:value", new NbtTag<int>("travelprobe:value", 3)));
+    }
+
+    [Fact(DisplayName = "Entities keep their portal cooldown across a save, as vanilla's PortalCooldown",
+        Timeout = TestServerFactory.TestTimeout)]
+    public async Task PortalCooldownSurvivesSaving()
+    {
+        await using var context = TestServerFactory.CreateServer($"portal-cooldown-{Guid.NewGuid():N}");
+        var world = context.World;
+
+        // A piglin a portal spawned, which must not walk back into it once reloaded.
+        var piglin = new ZombifiedPiglin { Level = world, Position = new VectorD(0.5, 65, 0.5) };
+        piglin.InitializeAi(false);
+        piglin.StartPortalCooldown();
+
+        var saved = EntityNbt.Save(piglin)!;
+        Assert.Equal(300, saved.GetInt("PortalCooldown"));
+        var loaded = Assert.IsType<ZombifiedPiglin>(EntityNbt.Load(saved, world));
+        Assert.Equal(300, loaded.PortalCooldownTicks);
+
+        // Saving again writes the live value, not the one the mob was loaded with.
+        loaded.PortalCooldownTicks = 12;
+        Assert.Equal(12, EntityNbt.Save(loaded)!.GetInt("PortalCooldown"));
+
+        // Entities other than mobs save it the same way.
+        var boat = new Boat { Level = world, Position = new VectorD(0.5, 65, 0.5) };
+        boat.StartPortalCooldown();
+        var loadedBoat = Assert.IsAssignableFrom<Boat>(EntityNbt.Load(EntityNbt.Save(boat)!, world));
+        Assert.Equal(300, loadedBoat.PortalCooldownTicks);
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]

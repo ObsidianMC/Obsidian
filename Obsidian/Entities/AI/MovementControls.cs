@@ -98,6 +98,9 @@ public sealed class LookControl(Mob mob)
     private float pitchSpeed = 40;
     internal Angle HeadYaw { get; private set; }
 
+    /// <summary>Turns the head to <paramref name="yaw"/> at once, as vanilla does for a mob it creates.</summary>
+    internal void SnapHeadYaw(Angle yaw) => HeadYaw = yaw;
+
     public void LookAt(VectorD position, float maxYawChange = 10, float maxPitchChange = 40)
     {
         wantedPosition = position;

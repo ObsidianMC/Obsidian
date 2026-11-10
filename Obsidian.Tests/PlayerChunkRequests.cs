@@ -55,6 +55,42 @@ public sealed class PlayerChunkRequests
         Assert.Null(world.GetLoadedChunk(10_000 >> 4, 0));
     }
 
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ChunkLoopSkipsBusyPlayerAndRefreshesPositionOnNextPass()
+    {
+        await using var context = TestServerFactory.CreateServer($"requests-busy-{Guid.NewGuid():N}");
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Viewer", new VectorD(0.5, 64, 0.5));
+        player.ClientInformation = player.ClientInformation with { ViewDistance = 2 };
+        Assert.True(context.World.TryAddPlayer(player));
+        context.World.ChunkManagementPaused = true;
+        await player.UpdateChunksAsync();
+        var client = (TestClient)player.Client;
+        var centers = client.SentPackets.OfType<SetChunkCacheCenterPacket>().Count();
+
+        // Passenger positioning changes Position directly, without a player movement packet.
+        player.Position = new VectorD(10_000.5, 64, 0.5);
+        var gate = (System.Threading.SemaphoreSlim)typeof(Entities.PlayerBase)
+            .GetField("chunkUpdates", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .GetValue(player)!;
+        await gate.WaitAsync();
+        try
+        {
+            var send = player.SendPendingChunksAsync();
+            Assert.True(send.IsCompletedSuccessfully, "A busy player must not hold up the chunk loop.");
+            await send;
+            Assert.Equal(centers, client.SentPackets.OfType<SetChunkCacheCenterPacket>().Count());
+        }
+        finally
+        {
+            gate.Release();
+        }
+
+        await player.SendPendingChunksAsync();
+        Assert.Equal(centers + 1, client.SentPackets.OfType<SetChunkCacheCenterPacket>().Count());
+        Assert.True(player.WantsChunk(10_000 >> 4, 0));
+        Assert.False(player.WantsChunk(0, 0));
+    }
+
     // Starts queued jobs until the condition holds. How long generation takes depends on how busy the machine is, so
     // this fails only once it stops making progress: no chunk loaded and no request dropped for a while.
     private static async Task GenerateUntilAsync(WorldData.World world, Func<bool> done)

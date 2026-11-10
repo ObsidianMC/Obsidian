@@ -1,4 +1,5 @@
 using Obsidian.API;
+using Obsidian.API.Blocks;
 using Obsidian.API.Registries;
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.World.Features;
@@ -107,6 +108,7 @@ internal static class BlockRun
 
         DustLine(15);
         DustLine(30);
+        LiveLevel();
 
         BlockEntityPass();
 
@@ -146,7 +148,13 @@ internal static class BlockRun
 
     // A level's block entity pass over 25 block-ticking chunks holding 4,000 chests and signs, which don't tick,
     // and an idle furnace and hopper in each chunk, which do. One operation is one level tick's pass.
-    private static void BlockEntityPass()
+    private static void BlockEntityPass() => WithTemporaryLevel(MeasureBlockEntityPass);
+
+    // The same changes as the test world cases on a real level, where every block change runs both update engines:
+    // the fluid level's vanilla-ordered updater and then the notification pipeline (redstone).
+    private static void LiveLevel() => WithTemporaryLevel(MeasureLiveLevel);
+
+    private static void WithTemporaryLevel(Action<World> measure)
     {
         // The level writes region files: keep them out of the working directory, and gone however the case ends.
         var folder = Path.Join(Path.GetTempPath(), $"obsidian-block-probe-{Guid.NewGuid():N}");
@@ -155,7 +163,7 @@ internal static class BlockRun
             var world = TestWorldFactory.Create("block-probe", folder: folder);
             try
             {
-                MeasureBlockEntityPass(world);
+                measure(world);
             }
             finally
             {
@@ -208,6 +216,66 @@ internal static class BlockRun
 
         chunk.SetBlock(x, y, z, block);
         chunk.SetBlockEntity(x, y, z, BlockEntityNbt.Create(block.BlockEntityType()!, position));
+    }
+
+    private static void MeasureLiveLevel(World world)
+    {
+        for (var chunkX = -1; chunkX <= 1; chunkX++)
+        {
+            for (var chunkZ = -1; chunkZ <= 1; chunkZ++)
+            {
+                var chunk = new Chunk(chunkX, chunkZ);
+                chunk.SetChunkStatus(ChunkGenStage.full);
+                world.LoadRegionByChunk(chunkX, chunkZ).SetChunk(chunk);
+                Complete(world.GetChunkAsync(chunkX, chunkZ, scheduleGeneration: false).AsTask());
+            }
+        }
+
+        // A change inside solid stone, as the test world case above.
+        for (var x = 3; x <= 5; x++)
+        {
+            for (var y = 63; y <= 65; y++)
+            {
+                for (var z = 3; z <= 5; z++)
+                    SetQuietly(world, new Vector(x, y, z), BlocksRegistry.Stone);
+            }
+        }
+
+        var toggle = false;
+        Measure("Level/solid-stone-change", 20_000, () =>
+        {
+            toggle = !toggle;
+            var block = toggle ? BlocksRegistry.Granite : BlocksRegistry.Stone;
+            Complete(world.SetBlockUntrackedAsync(4, 64, 4, block, BlockUpdateFlags.All));
+        });
+
+        // A 15-dust line on stone, switched by a redstone block at its west end.
+        for (var x = -10; x <= 6; x++)
+            SetQuietly(world, new Vector(x, 63, -8), BlocksRegistry.Stone);
+
+        for (var x = -9; x <= 5; x++)
+            Complete(world.SetBlockUntrackedAsync(x, 64, -8, BlocksRegistry.RedstoneWire, BlockUpdateFlags.All));
+
+        var powered = false;
+        Measure("Level/toggle-15-dust", 500, () =>
+        {
+            powered = !powered;
+            var block = powered ? BlocksRegistry.RedstoneBlock : BlocksRegistry.Air;
+            Complete(world.SetBlockUntrackedAsync(-10, 64, -8, block, BlockUpdateFlags.All));
+        });
+
+        if (world.BlockNotifications.DroppedWork != 0)
+            throw new InvalidOperationException("Live dust benchmark exceeded the pipeline work limit.");
+    }
+
+    // A block stored without updates, as a case's setup.
+    private static void SetQuietly(World world, Vector position, IBlock block) =>
+        world.BlockUpdates.SetBlock(position, block, BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace);
+
+    private static void Complete(System.Threading.Tasks.Task operation)
+    {
+        if (!operation.IsCompletedSuccessfully)
+            throw new InvalidOperationException("Block benchmark unexpectedly yielded.");
     }
 
     private static void Complete(System.Threading.Tasks.ValueTask operation)

@@ -132,7 +132,9 @@ internal static partial class UseBehaviors
                 use.Level.BlockUpdates.SetBlock(use.Position, use.Block.WithProperty("has_record", true));
                 return true;
             }, consumeItem: true))
+            {
                 return UseResult.Fail;
+            }
 
             await use.Player.SyncInventorySlotAsync(use.HandSlot);
             use.Level.EmitGameEvent(MobGameEvent.BlockChange, use.Center);
@@ -201,13 +203,43 @@ internal static partial class UseBehaviors
     {
         public async ValueTask<UseResult> UseItemOnAsync(BlockUse use)
         {
-            if (use.BlockEntity is not CampfireBlockEntity campfire || !use.TryCommit(() =>
+            if (use.BlockEntity is not CampfireBlockEntity campfire)
+                return UseResult.TryWithEmptyHand;
+
+            if (use.HasItem && TagsRegistry.Item.DousesCampfires.Entries.Contains(use.Item!.Holder.Id)
+                && use.Block.GetProperty("lit") == "true")
+            {
+                if (!use.TryCommit(() =>
+                {
+                    if (!use.Level.BlockUpdates.SetBlock(use.Position, use.Block.WithProperty("lit", false)))
+                        return false;
+
+                    if (use.Player.GameMode != GameMode.Creative)
+                        CombatItems.HurtItem(use.Item!, 1, false);
+                    if (use.Item.Count == 0)
+                        use.Player.Inventory.RemoveItem(use.HandSlot);
+
+                    return true;
+                }))
+                {
+                    return UseResult.Fail;
+                }
+
+                use.Level.BroadcastLevelEvent(1009, use.Position, 0);
+                use.Level.EmitGameEvent(MobGameEvent.BlockChange, use.Center, use.Player);
+                await use.Player.SyncInventorySlotAsync(use.HandSlot);
+                return UseResult.Success;
+            }
+
+            if (!use.TryCommit(() =>
             {
                 var recipe = use.Item is null ? null : use.Level.CookingRecipes.FindCooking(
                     CraftingType.CampfireCooking, use.Item);
                 return recipe is not null && campfire.Place(use.Item!, recipe.CookingTime);
             }, consumeItem: true, destination: campfire.Inventory))
+            {
                 return UseResult.TryWithEmptyHand;
+            }
 
             await use.Player.SyncInventorySlotAsync(use.HandSlot);
             campfire.SendUpdate();
@@ -242,7 +274,9 @@ internal static partial class UseBehaviors
                 use.Level.Fill(use.Position, layers.Value);
                 return true;
             }, consumeItem: true))
+            {
                 return UseResult.TryWithEmptyHand;
+            }
 
             await use.Player.SyncInventorySlotAsync(use.HandSlot);
 
@@ -262,7 +296,9 @@ internal static partial class UseBehaviors
                 use.Level.TakeBoneMeal(use.Position);
                 return true;
             }))
+            {
                 return UseResult.Fail;
+            }
 
             use.Level.EmitGameEvent(MobGameEvent.BlockChange, use.Center, use.Player);
 
@@ -366,7 +402,9 @@ internal static partial class UseBehaviors
                 ItemDamage.ApplyIgniterCost(use, use.Item!);
                 return true;
             }))
+            {
                 return UseResult.Fail;
+            }
 
             PrimedTnt.Prime(use.Level, use.Position, use.Player);
             use.Level.EmitGameEvent(MobGameEvent.PrimeFuse, use.Center, use.Player);

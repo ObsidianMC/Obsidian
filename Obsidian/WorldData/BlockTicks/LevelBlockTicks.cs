@@ -43,6 +43,7 @@ internal sealed class LevelBlockTicks
     private readonly Dictionary<string, Action<Vector, IBlock>> behaviors = new(StringComparer.Ordinal);
     private readonly Lock sync;
     private readonly Func<Vector, IBlock, bool>? unregistered;
+    private readonly Func<Vector, Chunk?>? getChunk;
 
     /// <param name="level">The level's block reads.</param>
     /// <param name="sync">The lock ticks and their block changes run under (the level's shared tick lock).</param>
@@ -50,11 +51,20 @@ internal sealed class LevelBlockTicks
     /// Runs a due tick of a block with no registration, while its block is still there. Returns false to hold the tick: it's
     /// scheduled again for the next game tick, until it can run.
     /// </param>
-    public LevelBlockTicks(IBlockTickLevel level, Lock sync, Func<Vector, IBlock, bool>? unregistered = null)
+    /// <param name="getChunk">
+    /// Resolves resident complete chunks, including those published before tracking. Their ticks stay pending in
+    /// the chunk until Track starts its container. Without this resolver, only tracked chunks accept ticks.
+    /// </param>
+    public LevelBlockTicks(
+        IBlockTickLevel level,
+        Lock sync,
+        Func<Vector, IBlock, bool>? unregistered = null,
+        Func<Vector, Chunk?>? getChunk = null)
     {
         this.level = level;
         this.sync = sync;
         this.unregistered = unregistered;
+        this.getChunk = getChunk;
     }
 
     /// <summary>
@@ -144,8 +154,7 @@ internal sealed class LevelBlockTicks
     {
         lock (this.sync)
         {
-            if (this.chunks.TryGetValue(BlockTickScheduler.ChunkKey(position), out var chunk))
-                chunk.BlockTicks.Schedule(position, block, delay, priority);
+            this.GetChunk(position)?.BlockTicks.Schedule(position, block, delay, priority);
         }
     }
 
@@ -155,8 +164,13 @@ internal sealed class LevelBlockTicks
     public bool IsScheduled(Vector position, string block)
     {
         lock (this.sync)
-            return this.chunks.TryGetValue(BlockTickScheduler.ChunkKey(position), out var chunk) && chunk.BlockTicks.IsScheduled(position, block);
+            return this.GetChunk(position)?.BlockTicks.IsScheduled(position, block) == true;
     }
+
+    // Called under the shared tick lock, just like the fluid scheduler's resident-chunk lookup.
+    private Chunk? GetChunk(Vector position) => this.getChunk is not null
+        ? this.getChunk(position)
+        : this.chunks.GetValueOrDefault(BlockTickScheduler.ChunkKey(position));
 
     /// <summary>
     /// Runs one level tick of block ticks.

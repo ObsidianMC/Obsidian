@@ -20,7 +20,8 @@ internal static class ProgressConditions
                 "player" => Entity(player, condition.Value),
                 "items" when trigger == "inventory_changed" => Inventory(player, condition.Value),
                 "slots" when trigger == "inventory_changed" => Slots(player, condition.Value),
-                "item" when trigger is "consume_item" or "enchanted_item" => Item(item, condition.Value),
+                "item" when trigger is "consume_item" or "enchanted_item" or "filled_bucket" =>
+                    Item(item, condition.Value),
                 "entity" when trigger is "player_killed_entity" or "entity_killed_player" =>
                     entity is not null && Entity(entity, condition.Value),
                 "recipe" when trigger == "recipe_unlocked" =>

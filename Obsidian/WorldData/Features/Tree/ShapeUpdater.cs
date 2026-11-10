@@ -6,12 +6,12 @@ namespace Obsidian.WorldData.Features.Tree;
 
 /// <summary>
 /// The shared shape pass: vanilla's <c>updateShape</c> for generation post-processing, trees, templates and
-/// placement's derivation, and for the live engines once no live owner or plugin answered.
+/// placement's derivation, and for a live level's shape update once no live owner or plugin answered.
 /// </summary>
 /// <remarks>
 /// A block's rule is the one of the vanilla class that declares its <c>updateShape</c>, bound by the generator
 /// (<see cref="ShapeDispatch.SharedRule"/>); the rules live in <c>WorldData/ShapeRules</c> and beside their owners.
-/// Rules only the live engines run (<see cref="ShapeReach.LiveOwner"/>) are left out, and blocks without a rule keep
+/// Rules only a live level runs (<see cref="ShapeReach.LiveOwner"/>) are left out, and blocks without a rule keep
 /// their state; the vanilla classes still missing one are tracked in the known gaps.
 /// </remarks>
 internal static class ShapeUpdater
@@ -59,8 +59,8 @@ internal static class ShapeUpdater
     /// became <paramref name="neighbor"/>, scheduling the fluid tick vanilla schedules there.
     /// </summary>
     /// <param name="level">
-    /// The level the rule reads. Views that are an <see cref="IShapeLevel"/> already (the live pipeline's and the fluid
-    /// engine's) supply its ticks and light; any other level reads as generation (<see cref="GenerationView"/>).
+    /// The level the rule reads. Views that are an <see cref="IShapeLevel"/> already (the fluid engine's, and the
+    /// pipeline's where it's the only engine) supply its ticks and light; any other level reads as generation (<see cref="GenerationView"/>).
     /// </param>
     internal static IBlock UpdateShape(
         IWorldGenLevel level,

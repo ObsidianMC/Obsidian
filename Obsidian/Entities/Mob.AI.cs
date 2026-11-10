@@ -176,6 +176,19 @@ public partial class Mob
 
     protected virtual void RegisterGoals(GoalSelector actionGoals, GoalSelector targetGoals) { }
     protected virtual void FinalizeSpawn() { }
+
+    /// <summary>
+    /// Vanilla's <c>Mob.finalizeSpawn</c>, drawing from the level's random (<paramref name="random"/>) as vanilla's
+    /// does: the follow range's spawn bonus, <c>triangle(0, 0.11485)</c> as a multiple of its base, then
+    /// left-handedness one time in 20. The draws and their order are part of the level's random sequence.
+    /// </summary>
+    internal void FinalizeMobSpawnFromLevel(API.World.Generator.RandomSources.IRandomSource random)
+    {
+        var followBonus = 0.11485000000000001 * (random.NextDouble() - random.NextDouble());
+        TryUpdateAttribute("minecraft:generic.follow_range", (float)(FollowRange * (1 + followBonus)));
+        if (random.NextFloat() < 0.05f)
+            MobBitMask |= MobBitmask.LeftHanded;
+    }
     protected virtual ValueTask TickMobAsync() => default;
     protected virtual int DeathDuration => 20;
     protected virtual ValueTask TickDeathAsync() => default;

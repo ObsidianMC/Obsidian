@@ -114,6 +114,22 @@ internal static class FixtureDumper
         VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
             Source("HatchingFixtures.java"), fixture);
 
+    // An on-request gameplay probe: eyeblossoms, potted eyeblossoms, dried ghasts and nether portals ticking against
+    // each case's block view.
+    internal static Task DumpEyeblossomGhastPortalAsync(
+        VanillaServer server, string fixture, IReadOnlyCollection<string>? cases = null)
+    {
+        var arguments = new List<string>
+        {
+            "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("EyeblossomGhastPortalFixtures.java"),
+            fixture
+        };
+        if (cases is not null)
+            arguments.Add(string.Join('+', cases));
+
+        return VanillaServer.RunJavaAsync(server.ScratchDirectory, arguments.ToArray());
+    }
+
     // An on-request gameplay probe: vanilla's randomTick against each case's block view, with a seeded random.
     internal static Task DumpGrowingPlantTicksAsync(VanillaServer server, string fixture) =>
         VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
@@ -166,7 +182,7 @@ internal static class FixtureDumper
     }
 
     // An on-request probe: a dedicated server of its own, in a new flat world under the scratch directory.
-    internal static Task DumpBlockUseAsync(VanillaServer server, string fixture,
+    internal static async Task DumpBlockUseAsync(VanillaServer server, string fixture,
         IReadOnlyCollection<string>? cases = null)
     {
         var world = Path.Combine(server.ScratchDirectory, "block-use");
@@ -175,10 +191,17 @@ internal static class FixtureDumper
 
         Directory.CreateDirectory(world);
 
+        var observed = Path.Combine(world, "observed-classes");
+        await VanillaServer.RunJavaAsync(world,
+            "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("BlockUseInstrumentation.java"),
+            server.ClassPath[0], observed);
+        var observedJar = Path.Combine(observed, "vanilla-observed.jar");
+        var classPath = string.Join(Path.PathSeparator, new[] { observedJar }.Concat(server.ClassPath.Skip(1)));
+
         // The probe finds the server in the shutdown hook vanilla's Main registers.
-        return VanillaServer.RunJavaAsync(world,
+        await VanillaServer.RunJavaAsync(world,
             "--add-opens", "java.base/java.lang=ALL-UNNAMED",
-            "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("BlockUseFixtures.java"), fixture,
+            "-cp", classPath, Source("BlockUseFixtures.java"), fixture,
             cases is null ? "" : string.Join('+', cases));
     }
 

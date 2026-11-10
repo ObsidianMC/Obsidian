@@ -17,6 +17,12 @@ public abstract partial class AbstractLevel
     internal IRandomSource GrowthRandom { get; set; } = new LegacyRandomSource(Random.Shared.NextInt64());
 
     /// <summary>
+    /// The clock the level reads the server's local date from, as vanilla's <c>SpecialDates</c> reads it (Halloween
+    /// pumpkins on mobs). Tests give it a fixed date.
+    /// </summary>
+    internal TimeProvider TimeProvider { get; set; } = TimeProvider.System;
+
+    /// <summary>
     /// Where random ticks and the precipitation pass pick their next block from (vanilla's <c>randValue</c>), which
     /// moves on once for each block they pick. Tests set it to replay vanilla's picks.
     /// </summary>

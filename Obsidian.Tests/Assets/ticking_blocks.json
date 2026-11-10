@@ -15938,6 +15938,211 @@
           "state": "minecraft:stone"
         }
       ]
+    },
+    {
+      "name": "door_support_becomes_soul_sand",
+      "call": "set",
+      "origin": [
+        8,
+        9,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false,powered=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:oak_door[facing=north,half=upper,hinge=left,open=false,powered=false]"
+        }
+      ],
+      "state": "minecraft:soul_sand",
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:soul_sand",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:soul_sand"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false,powered=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:oak_door[facing=north,half=upper,hinge=left,open=false,powered=false]"
+        }
+      ]
+    },
+    {
+      "name": "door_support_becomes_oak_leaves",
+      "call": "set",
+      "origin": [
+        8,
+        9,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false,powered=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:oak_door[facing=north,half=upper,hinge=left,open=false,powered=false]"
+        }
+      ],
+      "state": "minecraft:oak_leaves[distance=7,persistent=true,waterlogged=false]",
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:oak_leaves[distance=7,persistent=true,waterlogged=false]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "type": "minecraft:oak_leaves",
+          "delay": 1
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false,powered=false]",
+          "drops": true
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:oak_door[facing=north,half=upper,hinge=left,open=false,powered=false]",
+          "drops": true
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:oak_leaves[distance=7,persistent=true,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
     }
   ],
   "_notes": "Vanilla block routines, recorded by the asset generator's TickingBlockFixtures.java against a block view of the case's setup (air elsewhere, void air outside the build height of -64 to 319) in the overworld, with a legacy random seeded with seed (0 by default) as both the routine's random and the level's. call is randomTick (the origin's state, only when its isRandomlyTicking holds, which ticks records), tick (the origin's scheduled tick), set (Level.setBlock of state at the origin with UPDATE_ALL) or landing (a falling block of state settling at the origin, with the entityDrops rule and silent flag). Writes store the block and, as Level.setBlock does, run the new state's onPlace and then, unless UPDATE_KNOWN_SHAPE is set, the neighbours' shape updates; neighbour notifications are not run. draws lists each draw in order; writes the block changes with their flags; scheduled the block and fluid ticks scheduled with their delays (a block tick counts as pending for hasScheduledTick); events the level events; gameEvents the game events with the state they carry; entities the entities added, with a falling block's state, position and damage; destroyed the blocks destroyed and whether they drop; items the items a landing dropped. after holds the final state of every setup or written position. Optional dimension uses that dimension type's environment attributes; actions are later UPDATE_ALL writes. call findTip invokes the native speleothem tip search with maxLength and includeMerged, recording tip as a position or null."
