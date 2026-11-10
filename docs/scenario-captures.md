@@ -21,7 +21,10 @@ replaces only what vanilla produced.
   gives the fence `west=true`, the connection vanilla's `/setblock` derives beside the piston, because Obsidian's
   commands don't derive placed states; recording again with the property given left every checkpoint unchanged.
   `piston_pushes_carpet_off_support` pushes a carpet over air: the finished move breaks it at tick 6 and one carpet
-  drops. A scenario naming an `item` also records in each checkpoint the total count of that item lying as item
+  drops. `hopper_fills_chiseled_bookshelf`, `hopper_drains_chiseled_bookshelf`,
+  `dropper_fills_chiseled_bookshelf_from_behind`, `hopper_fills_decorated_pot` and `hopper_drains_decorated_pot`
+  move items into and out of the blocks that hold them, each read by a comparator into a dust: the shelf's slots
+  and the last slot used, and how full the pot is. A scenario naming an `item` also records in each checkpoint the total count of that item lying as item
   entities within two blocks of its box, and the replay counts Obsidian's the same way, so it must be `level`.
 - `fluid_scenarios.json` (`VanillaFluids`) defines the box, setup fills, actions, dimension and checkpoint ticks; the
   capture records the checkpoints.
@@ -271,8 +274,9 @@ replaces only what vanilla produced.
   the game events within 16 blocks (with their source), the statistics awarded and the menu opened, and when a menu
   opened, what closing it changed and played. The replay drives `UseItemOnPacket` in one world, with full sky light
   as the capture's open sky has, runs the queued entity actions and the tick's block events, and checks swings from
-  the result. The 92 cases cover the dispatcher, sign applications and editing, advancement context, use swing charge and
-  container close sources; mob ambient sounds aren't compared (see
+  the result. The cases cover the dispatcher, sign applications and editing, advancement context, use swing charge,
+  container close sources, and the blocks that hold items (flower pots, chiseled bookshelves, decorated pots,
+  lodestone compasses and jukeboxes); mob ambient sounds aren't compared (see
   [mob ambient sounds](known-gaps/mob-ambient-sounds.md)).
 
 - `turtle_eggs.json` (`VanillaTurtleEggs.ReplayTurtleEggReference`) records vanilla's turtle eggs, from
@@ -434,7 +438,21 @@ add it to `contexts` and capture again. For `block_use`, add inputs to `cases` a
 selects the other hand. An optional `randomSeed` seeds the level random immediately before use; the failed-growth
 case verifies that a valid bone-meal target consumes the item even when its growth chance fails. Optional checks
 record sign text flags and editor, attack charge after a started and a refused swing, explicit and periodic
-container close sources, and awarded advancement criteria. The fixture lists
+container close sources, and awarded advancement criteria.
+
+Further optional inputs, for blocks that hold items, are recorded after everything else and change nothing the other
+cases record. A setup placement's `nbt` loads that block entity data (SNBT without the id and position) as a chunk
+load would, telling no comparator. `fillInventory` fills every main inventory slot but the held one with a full
+stack of the item; a case with it or `checkInventory` starts with nothing but its hands, and `checkInventory`
+records each slot the use changed as `inventory` (vanilla's slot numbers: 0 to 8 the hotbar, 40 the offhand), with
+the components a stack changes from its item's as SNBT and a lodestone tracker's target relative to the target.
+`checkBlockEntity` records the clicked block entity's saved data, as a chunk saves it without its position, as
+`blockEntity`. `comparator` names a comparator's offset from the setup: once the use is recorded, its pending tick
+runs and its output is recorded as `comparatorSignal`, which shows both that it heard of the change and what it
+read. `destroy` makes the user break the clicked block afterwards with what they hold, and records under
+`destroyed` what changed, the entities around (with their items' components), what the bystander heard and the
+game events and statistics. The replay compares all of them: SNBT is compared as Obsidian writes the same NBT, the
+comparator's tick runs by ticking the level's scheduled ticks twice, and a break goes through a finished dig. The fixture lists
 location predicate terms in Obsidian's existing format; the probe converts them to 26.3's `all_of` and `match_block`
 encoding before registering them with vanilla's advancement system.
 
