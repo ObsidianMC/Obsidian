@@ -476,12 +476,12 @@ adds.
 | Cauldrons: buckets, bottles, washing | Missing | Only the comparator output exists |
 | Flower pots | Missing | Planting and taking plants; potted eyeblossoms turn with the time of day (`eyeblossom_ghast_portal_ticks.json`) |
 | Item frames, glow item frames | Works | |
-| Armor stands | Missing | Poses only |
+| Armor stands | Works | Equipment use captured (`armor_stand_use.json`); hitting and breaking stands; other entities' interaction trigger and swing ([gaps](known-gaps/brushing-and-armor-stands.md)) |
 | Signs, hanging signs: edit | Works | The edit reservation stores no side or expiry, and another player can take it |
 | Signs: ink, glow ink, dye | Works | Dyes found by item name, not the dye component |
 | Signs: wax | Works | Vanilla has no way to remove sign wax (confirm) |
 | Beehives, bee nests: honey, honeycomb | Missing | Honey accumulates; nothing harvests it |
-| Suspicious sand, suspicious gravel | Missing | Loot data is there; no brushing |
+| Suspicious sand, suspicious gravel | Works | Brushing captured (`brushing.json`); entities in the brush's way; landing `hit_ground` ([gaps](known-gaps/brushing-and-armor-stands.md)) |
 
 ### 5. Tool and item dependent interactions
 

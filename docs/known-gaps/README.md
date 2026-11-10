@@ -19,6 +19,7 @@ and where to start.
 - [26.3 blocks](26-3-blocks.md)
 - [Block item placement](block-item-placement.md)
 - [Block-use state validation](block-use-stale-state.md)
+- [Brushing and armor stands](brushing-and-armor-stands.md)
 - [Bubble columns started by water](bubble-columns-started-by-water.md)
 - [Comparators reading unopened loot containers](comparators-reading-unopened-loot-containers.md)
 - [Eyeblossoms, dried ghasts and portal piglins](eyeblossoms-dried-ghasts-and-portal-piglins.md)
