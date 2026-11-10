@@ -100,10 +100,14 @@ internal sealed class KelpBlockBehavior : IScheduledTickBehavior, IShapeUpdateBe
     /// </summary>
     public IBlock? UpdateShape(IBlockLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
     {
-        if (GrowingPlantShapes.NeedsSupportCheck(level.GetBlock, position, state, direction))
+        if (GrowingPlantShapes.NeedsSupportCheck(state, direction, neighbor))
             level.ScheduleTick(position, state, 1);
 
-        return GrowingPlantShapes.Converts(level.GetBlock, position, state, direction, neighbor)
+        var ahead = GrowingPlantShapes.BlockAheadToRead(position, state, direction) is Vector at
+            ? level.GetBlock(at)
+            : null;
+
+        return GrowingPlantShapes.Converts(state, direction, neighbor, ahead)
             ? GrowingPlantShapes.Convert(state, level.Random)
             : state;
     }

@@ -10,7 +10,10 @@ namespace Obsidian.WorldData;
 /// </summary>
 /// <remarks>
 /// <see cref="Converts"/> draws nothing, so both the shape update (<see cref="KelpBlockBehavior"/>) and the fluid
-/// scheduling read it: kelp converting returns before vanilla schedules its water tick.
+/// scheduling read it: kelp converting returns before vanilla schedules its water tick. The predicates take the blocks
+/// they read rather than a way to read them, since they run on every shape update of these plants: an update from the
+/// support side carries the support block as its neighbour, and only the block ahead may need reading (see
+/// <see cref="BlockAheadToRead"/>).
 /// </remarks>
 internal static class GrowingPlantShapes
 {
@@ -18,11 +21,22 @@ internal static class GrowingPlantShapes
     private const int PlacementAges = 25;
 
     /// <summary>
-    /// Whether the update from <paramref name="neighbor"/> in <paramref name="direction"/> turns
-    /// <paramref name="state"/> into its plant's other part.
+    /// Where the block <see cref="Converts"/> needs as its block ahead is, or null when it needs none: only a head
+    /// updated from its support side looks ahead of it.
     /// </summary>
-    internal static bool Converts(Func<Vector, IBlock> getBlock, Vector position, IBlock state, BlockFace direction,
-        IBlock neighbor)
+    internal static Vector? BlockAheadToRead(Vector position, IBlock state, BlockFace direction) =>
+        PlantOf(state.RegistryId) is Plant plant
+        && state.RegistryId == plant.Head
+        && direction == plant.Growth.Opposite()
+            ? position.Offset(plant.Growth)
+            : null;
+
+    /// <summary>
+    /// Whether the update from <paramref name="neighbor"/> in <paramref name="direction"/> turns
+    /// <paramref name="state"/> into its plant's other part. <paramref name="ahead"/> is the block at
+    /// <see cref="BlockAheadToRead"/>, when that names one.
+    /// </summary>
+    internal static bool Converts(IBlock state, BlockFace direction, IBlock neighbor, IBlock? ahead)
     {
         if (PlantOf(state.RegistryId) is not Plant plant)
             return false;
@@ -33,10 +47,11 @@ internal static class GrowingPlantShapes
         if (direction == plant.Growth)
             return plant.Contains(neighbor);
 
-        // From the support side, a head that can stay checks the block ahead of it instead.
+        // From the support side, which the neighbour is, a head that can stay checks the block ahead of it instead.
         return direction == plant.Growth.Opposite()
-            && CanSurvive(getBlock, position, plant)
-            && plant.Contains(getBlock(position.Offset(plant.Growth)));
+            && ahead is not null
+            && CanSurvive(neighbor, plant)
+            && plant.Contains(ahead);
     }
 
     /// <summary>
@@ -59,16 +74,15 @@ internal static class GrowingPlantShapes
     /// Whether the update schedules the plant's support check: it came from the support side, and the plant can't
     /// stay there.
     /// </summary>
-    internal static bool NeedsSupportCheck(Func<Vector, IBlock> getBlock, Vector position, IBlock state,
-        BlockFace direction) =>
+    internal static bool NeedsSupportCheck(IBlock state, BlockFace direction, IBlock neighbor) =>
         PlantOf(state.RegistryId) is Plant plant
         && direction == plant.Growth.Opposite()
-        && !CanSurvive(getBlock, position, plant);
+        && !CanSurvive(neighbor, plant);
 
-    // Vanilla's GrowingPlantBlock.canSurvive: on its own plant, or on a sturdy face (never magma, for kelp).
-    private static bool CanSurvive(Func<Vector, IBlock> getBlock, Vector position, Plant plant)
+    // Vanilla's GrowingPlantBlock.canSurvive, given the block behind the plant: its own plant, or a sturdy face (never
+    // magma, for kelp).
+    private static bool CanSurvive(IBlock support, Plant plant)
     {
-        var support = getBlock(position.Offset(plant.Growth.Opposite()));
         if (plant.Head == BlockIds.Kelp && support.Is(BlockIds.MagmaBlock))
             return false;
 
