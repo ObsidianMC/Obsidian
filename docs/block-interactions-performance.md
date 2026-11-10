@@ -249,6 +249,27 @@ complete chunk is in its region slot before generation or a load from disk track
 its slot, read-only, after its final save snapshot. The pipeline's shape pass read both, so a fence across such a
 border connected only through it. The fluid level now writes any resident complete chunk and reads any complete chunk
 in its slot, as the rest of the level does (`LevelFluids.TryGetChunk`, `GetBlock`); only ticks wait for tracking.
+Block ticks use that same resident-chunk lookup for scheduling and pending-tick queries. Both kinds wait in their
+chunk's pending list, mark it unsaved and save with their original relative delay; tracking starts that delay once.
+
+"Once per change" describes neighbour dispatch, not every call to a shape rule. Other callers are:
+
+- Deferred destruction's survival validation (`FluidLevel.IsUnsupported`) asks all six faces about the current
+  state because its attachment may have changed while queued. This Obsidian-only recheck has no scheduling or
+  level-random effects: its validation view drops tick requests and supplies a private random for discarded delays.
+  The regression checks a dry wall fan reattached before the entity phase, including its unchanged random sequence.
+- Piston completion (`NeighborShapeDerivation`) derives the moved state before placement, as vanilla's
+  `Block.updateFromNeighbourShapes` does. It keeps live owner effects, including block ticks and random draws;
+  fluid requests still go through the level's current block, as described in the redstone known gaps.
+- Command observer placement (`RedstoneObserver.PrepareCommandPlacement`) retains its scheduled pulse: vanilla's
+  command placement derives the input from neighbours too, including the observer's watched-side shape effect.
+- Stair and wall placement (`BlockPlacements`) and wire placement (`RedstoneWire`) reuse the shared rules only to
+  derive connection geometry. Vanilla's placement methods compute that geometry too. These rules have no block-tick
+  or random effects, and stair/wall derivation suppresses fluid scheduling.
+- Item transformations (`ItemUseOnBehaviors`), tree edges, structure edges and final states (`ShapeUpdater`,
+  `StructureTemplate`), and chunk post-processing (`BiomeTerrain`) perform vanilla's actual derivation or edge
+  updates. They keep the effects their views support, including fluid ticks and generation's pending ticks.
+  Generation still has no live level random or live-owner block-tick dispatch.
 
 Steps:
 

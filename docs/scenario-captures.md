@@ -219,7 +219,8 @@ replaces only what vanilla produced.
   Explicit expected differences pin the resource-spawn draws of the two stalagmite cases and the door on leaves (the
   bounded probe suppresses loot), and the door's upper half breaking in the next entity phase, where vanilla breaks
   the chain at once (the replay runs that phase alone, without block ticks); each fails when it disappears. The
-  `review_*` cases also cover mud in the nether, mixed sulfur/dripstone columns (growth and native `findTip`, including opposite-direction tips), and independent drops/silence landings.
+  `review_*` cases also cover mud in the nether, mixed sulfur/dripstone columns (growth and native `findTip`,
+  including opposite-direction tips), and independent drops/silence landings.
 - `eyeblossom_ghast_portal_ticks.json` (`VanillaEyeblossomGhastPortalTicks.ReplayEyeblossomGhastPortalReference`)
   records eyeblossoms, potted eyeblossoms, dried ghasts and nether portals from
   `Java/EyeblossomGhastPortalFixtures.java` (`CaptureFixtures=eyeblossom_ghast_portal`): a random tick, a scheduled

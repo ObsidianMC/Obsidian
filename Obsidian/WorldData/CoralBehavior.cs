@@ -125,9 +125,7 @@ internal sealed class CoralPlantBehavior(bool onWall) : IOnPlaceBehavior, ISched
         if (direction == Support(state) && !survives)
             return BlocksRegistry.Air;
 
-        // A coral without support is about to break: Obsidian's support check before the break asks every face's
-        // shape update, which mustn't draw. Vanilla draws here only for a coral placed without support and without
-        // updates, and changed beside it.
+        // A coral without support is about to break; only supported dry coral needs a death tick.
         if (survives && !IsWet(level, position, state))
             Coral.ScheduleDeath(level, position, state, level.Random);
 

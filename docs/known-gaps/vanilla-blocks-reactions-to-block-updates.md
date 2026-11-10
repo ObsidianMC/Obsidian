@@ -31,8 +31,12 @@ which the captures pinned as differences that are now gone with their pins: in `
 write of six dripstone and mixed sulfur cases stored with flags 3 instead of vanilla's 2, and live coral skipping
 vanilla's death-delay draw while a death was pending; in `growing_plant_ticks.json`, a kelp or vines head growing
 into a one-block gap stored as body with flags 3, and kelp water ticks vanilla never schedules. The support check
-before a queued break still asks a block's shape update for every face, so live coral plants and fans draw their
-death delay only while they still have their support.
+before a queued break still asks a block's shape update for every face, but uses a validation view that schedules
+nothing and never draws from the level's random, including when a changed attachment cancels the break.
+
+Block and fluid ticks scheduled in a resident complete chunk before tracking are retained in the chunk's pending
+list. They save with the chunk, including across unload/reload before tracking, and their delay starts when tracking
+starts the container. Updates can reshape that chunk immediately without dropping the ticks they schedule there.
 
 A block that another block's removal breaks through its shape update is removed a tick later: removals run in the
 level tick's entity phase, which runs only the actions queued when it starts, where vanilla breaks the whole chain

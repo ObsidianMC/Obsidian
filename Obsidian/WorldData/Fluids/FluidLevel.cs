@@ -34,12 +34,14 @@ internal sealed class FluidLevel
 
     private readonly IFluidLevelAccess access;
     private readonly NeighborUpdater neighborUpdater;
+    private readonly IShapeLevel validationView;
 
     public FluidLevel(IFluidLevelAccess access)
     {
         this.access = access;
         this.neighborUpdater = new NeighborUpdater(this);
         this.ShapeView = new ShapeUpdateView(this);
+        this.validationView = new ShapeValidationView((IShapeLevel)this.ShapeView);
     }
 
     /// <summary>
@@ -382,15 +384,22 @@ internal sealed class FluidLevel
         return this.SetBlock(position, fluid, BlockUpdateFlags.All, updateLimit, shapes);
     }
 
-    // Re-evaluate shape survival against all current neighbours: the state's attachment face may have changed.
+    // Obsidian defers destruction, unlike vanilla's immediate updateOrDestroy. Rechecking the current attachment
+    // must not repeat updateShape's tick requests or random draws when the queued break is cancelled.
     internal bool IsUnsupported(Vector position, IBlock state)
     {
         foreach (var direction in updateShapeOrder)
         {
             var neighborPosition = position.Offset(direction);
             var neighbor = this.GetBlock(neighborPosition);
-            var updated = this.access.Reactions?.UpdateShape(position, state, direction, neighborPosition, neighbor)
-                ?? this.UpdateVanillaShape(state, position, direction, neighbor, VanillaShapes.All);
+            var updated = this.access.Reactions?.UpdateShape(
+                position, state, direction, neighborPosition, neighbor, validation: true);
+            if (updated is null)
+            {
+                var rule = ShapeDispatch.SharedRule(state.RegistryId);
+                updated = rule?.UpdateShape(this.validationView, position, state, direction, neighborPosition, neighbor)
+                    ?? state;
+            }
             if (updated.IsAir)
                 return true;
         }

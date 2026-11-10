@@ -11,7 +11,8 @@ namespace Obsidian.WorldData;
 /// </summary>
 /// <remarks>
 /// Views that can't do something say so: generation has no block ticks to schedule or read (scheduling does nothing
-/// and nothing reads as scheduled), and only the live level has a random to draw from.
+/// and nothing reads as scheduled), and only the live level has a level random to draw from. Survival validation
+/// drops scheduling and uses a private random, so evaluating a rule cannot shift the level's random sequence.
 /// </remarks>
 internal interface IShapeLevel
 {
