@@ -26,8 +26,9 @@ What isn't covered yet:
   that's clicked. Obsidian places it where it was clicked, and refuses it where nothing would hold it.
 - **Random ages.** Kelp and weeping, twisting and cave vines take an age from the level's random, which Obsidian draws
   from its own; the replay compares them without their age.
-- **Placement side effects.** Coral blocks placed away from water don't die later (vanilla schedules it), a mossy
-  carpet's random topper isn't placed, and bamboo placed onto bamboo still uses Obsidian's older rule.
+- **Placement side effects.** Coral blocks placed away from water don't die until a neighbour changes (vanilla's
+  placement schedules it; coral plants and fans schedule it themselves when placed, and do die), a mossy carpet's
+  random topper isn't placed, and bamboo placed onto bamboo still uses Obsidian's older rule.
 
 **Where to start:** add a context to `block_placement.json`'s `contexts` (a clicked candle, a scaffolding tower,
 water below air) and capture again (`CaptureFixtures=placement`); the replay picks up every item in it.

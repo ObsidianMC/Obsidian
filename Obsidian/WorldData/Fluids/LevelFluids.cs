@@ -233,6 +233,12 @@ internal sealed class LevelFluids : IFluidLevelAccess
         return true;
     }
 
+    /// <summary>
+    /// Hears each block the level's block updates store, with its flags, in the order they're stored. Parity tests
+    /// compare it with vanilla's <c>setBlock</c> calls; called under the tick lock.
+    /// </summary>
+    internal Action<Vector, IBlock, BlockUpdateFlags>? BlockStored { get; set; }
+
     /// <inheritdoc/>
     /// <remarks>
     /// Players see the change with <see cref="BlockUpdateFlags.Clients"/>, and portals check their frames around it
@@ -240,6 +246,8 @@ internal sealed class LevelFluids : IFluidLevelAccess
     /// </remarks>
     public void OnBlockStored(Vector position, IBlock block, BlockUpdateFlags flags)
     {
+        this.BlockStored?.Invoke(position, block, flags);
+
         if ((flags & BlockUpdateFlags.Clients) != 0)
             this.level.BroadcastBlockChange(block, position);
 

@@ -64,7 +64,9 @@ the latter is recorded by `SulfurFixtures.java` through `CaptureFixtures=sulfur`
 
 Remaining sulfur limits:
 
-- Falling spikes use the shared simplified falling-block flight and collision implementation. Captures cover
+- Falling spikes (and falling pointed dripstone, which shares them) use the shared simplified falling-block flight
+  and collision implementation. They always break where they land, where vanilla places one that lands in a cell it
+  can hang in. Captures cover
   support-loss timing, shattering, raw impact damage and vertical sand contacts with full/partial floors and a
   moving piston. General horizontal flight and per-tick spike trajectories remain unaudited. Falling
   entities do not yet persist the spike's damage multiplier. Helmet-specific damage reduction and durability loss

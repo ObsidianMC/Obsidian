@@ -189,6 +189,32 @@ replaces only what vanilla produced.
   path fireballs, explosions and end crystals use. It compares blocks and dropped items once the levels have
   ticked, as Obsidian removes fire a shape update destroys, drops a removed block entity's items, and lights a
   portal around new fire later in that tick.
+- `ticking_blocks.json` (`VanillaTickingBlocks.ReplayTickingBlockReference`) records single block routines from
+  `Java/TickingBlockFixtures.java`, against a bounded block view of the case's setup with a seeded, recording random
+  as both the routine's and the level's: a random tick (only of a state that random-ticks), a scheduled tick, a
+  `Level.setBlock` with its on-place and neighbour shape updates (not neighbour notifications), or a falling block's
+  landing. Each case records the draws, block writes, scheduled block and fluid ticks with their delays, level events,
+  game events, the entities added (a falling block's state and stalactite damage) and the blocks destroyed. The cases
+  cover pointed dripstone growing (the block and water source above, column length, stalagmite search), dripping
+  water and lava into each kind of cauldron or drying mud into clay, a waterlogged block counting as water (above
+  the column, ahead of the tip and as a floor), falling and breaking when the support goes,
+  thickness along a column, landing, and cauldrons taking the drip; budding amethyst starting a bud on each face and
+  growing each stage, into air, water sources and falling water, and the faces it skips; lit redstone ore going dark;
+  nylium under blocks that do and don't let light down; dirt paths turning to dirt, and which new blocks above or
+  beside them schedule that; coral blocks, plants, fans and wall fans dying dry or staying by water, scheduling their
+  death when placed or when a neighbour changes, and breaking when their support goes; chorus plants staying, breaking
+  and connecting as their support and neighbours change. The replay runs each case through Obsidian's generated
+  owners, or a live block change, in its own world, and compares everything but the game events. Obsidian destroys
+  blocks in the tick's entity phase, so a case that destroys one runs the world tick before comparing, keeping the
+  recording random active. Ordered writes compare every flag bit; destruction compares state and drops intent;
+  falling entities compare type, position, state, damage enablement, damage per distance and maximum damage. The
+  replay rejects unexpected entities and writes outside the case and scans the loaded chunks for unexpected blocks.
+  Explicit expected differences pin six third-write flag changes from the duplicate shape-update pipeline, the
+  skipped pending-coral draw, and the two stalagmite cases' resource-spawn draws (the bounded probe suppresses loot).
+  Each exception fails when it disappears. The `review_*` cases also cover mud in the nether, mixed sulfur/dripstone
+  columns (growth and native `findTip`, including opposite-direction tips), and independent drops/silence landings.
+  An optional `dimension` supplies that dimension type's environment attributes; optional `actions` are subsequent
+  `UPDATE_ALL` writes. `findTip` takes `maxLength` and `includeMerged` and records the returned position or null.
 
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.
@@ -216,6 +242,8 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=fire
 
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=ticking_blocks
+
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=sulfur -p:CaptureCases=spike_shatters_after_falling+review_spike_pending_fall_keeps_frustum
 ```
 
@@ -234,6 +262,13 @@ with the vanilla server and libraries on the classpath, to re-record only new or
 
 For `fire`, `CaptureCases` accepts exact `+`-separated case names in `fire_ticks.json` and records only those
 cases' runs; the others keep theirs.
+
+For `ticking_blocks`, `CaptureCases` accepts exact `+`-separated names and records only those Java cases. For example,
+`dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=ticking_blocks -p:CaptureCases=review_dripstone_mud_in_nether`.
+Append new inputs, select only their names, and verify existing case text is unchanged. The Java probe accepts the
+same selection as its second argument when run directly with the cached server and libraries on its classpath.
+`scheduled` records scheduling attempts: the first request per position/type remains pending, even when later
+attempts use another delay. The pending-coral case records delays 85 and 88, but only the first is pending.
 
 For `more_blocks`, `CaptureCases` accepts exact `+`-separated names in `more_blocks.json` and re-records only those
 Java probes. No RCON server is started and no other fixture is changed. Its source and the reusable runtime

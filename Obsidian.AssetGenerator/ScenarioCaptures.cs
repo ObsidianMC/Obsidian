@@ -30,6 +30,7 @@ internal static class ScenarioCaptures
     public const string Placement = "placement";
     public const string CopperWeathering = "copper_weathering";
     public const string Fire = "fire";
+    public const string TickingBlocks = "ticking_blocks";
 
     private const string Symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -57,11 +58,12 @@ internal static class ScenarioCaptures
     };
 
     // The fixtures whose probes record only the cases asked for.
-    private static readonly string[] SelectableCases = [Redstone, Sulfur, MoreBlocks, StructurePieces, Fire];
+    private static readonly string[] SelectableCases =
+        [Redstone, Sulfur, MoreBlocks, StructurePieces, Fire, TickingBlocks];
 
     public static readonly string[] All =
         [Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps, SavedHeightmaps, Mining,
-            Placement, CopperWeathering, Fire];
+            Placement, CopperWeathering, Fire, TickingBlocks];
 
     private const string RedstoneNotes = """
         Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a
@@ -103,7 +105,8 @@ internal static class ScenarioCaptures
         if (cases is not null && (fixtures.Count != 1 || !SelectableCases.Any(fixtures.Contains)))
         {
             throw new ArgumentException(
-                "Case selection requires CaptureFixtures=redstone, sulfur, more_blocks, structure_pieces or fire.");
+                "Case selection requires CaptureFixtures=redstone, sulfur, more_blocks, structure_pieces, "
+                + "fire or ticking_blocks.");
         }
 
         if (fixtures.Contains(CopperWeathering))
@@ -117,6 +120,14 @@ internal static class ScenarioCaptures
         if (fixtures.Contains(Placement))
         {
             await FixtureDumper.DumpPlacementAsync(server, Path.Combine(assetsDirectory, "block_placement.json"));
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(TickingBlocks))
+        {
+            await FixtureDumper.DumpTickingBlocksAsync(server,
+                Path.Combine(assetsDirectory, "ticking_blocks.json"), cases);
             if (fixtures.Count == 1)
                 return;
         }

@@ -392,7 +392,7 @@ adds.
 | Buttons | Works | Feedback; no capture of press and release |
 | Note blocks | Works | Custom player-head sounds; refused in adventure mode |
 | Repeaters, comparators, daylight detectors: toggle by hand | Works | Daylight detector's adventure rule unconfirmed |
-| Redstone ore lights up | Missing | Use, step-on and the random tick that turns it off |
+| Redstone ore lights up | Missing | Use and step-on; the random tick that turns lit ore off works (`ticking_blocks.json`) |
 | Bells ring | Missing | No activation at all; the block event queue already carries bell events |
 | Crafters toggle slots | Works | |
 | Iron doors, iron trapdoors respond to redstone | Works | Feedback; no capture |
@@ -535,7 +535,7 @@ adds.
 | Farmland: hydrate | Works | |
 | Turtle eggs: hatch | Partial | Wrong time window; `Random.Shared`; sand and red sand only |
 | Frogspawn | Partial | Only frogspawn a frog laid hatches |
-| Sculk catalysts, pointed dripstone, amethyst buds | Missing | |
+| Sculk catalysts, pointed dripstone, amethyst buds | Partial | Pointed dripstone and amethyst buds work (`ticking_blocks.json`); mud-to-clay and path-to-dirt do not lift entities; sculk catalysts missing |
 | Trial spawners, vaults | Missing | |
 
 ### 9. Special block interactions
