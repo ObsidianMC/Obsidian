@@ -36,7 +36,7 @@ Find out about plugin development [here](https://docs.obsidianmc.net/articles/co
 
 ## 🔥 Development builds
 Very early development builds are available over at the [GitHub Actions](https://github.com/ObsidianMC/Obsidian/actions) page for this repository.
-- Ensure you have the latest [.NET 10 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) installed
+- Ensure you have the latest [.NET 11 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/11.0) installed
 - Find the latest `.NET Build` [action](https://github.com/ObsidianMC/Obsidian/actions?query=branch%3A26.3.x) and scroll to the bottom of the page to find the artifacts.
 - Unzip the artifact and run `dotnet ObsidianApp.dll` to start the server.
 - On first run, a config file is generated. Fill this file with your preferenced values and run the previous command again.
@@ -44,7 +44,7 @@ Very early development builds are available over at the [GitHub Actions](https:/
 Easy, isn't it?
 
 ## 🛠️ Building from source
-Building needs the .NET 10 SDK, Java 25 or newer (on the `PATH` or in `JAVA_HOME`) and internet access.
+Building needs the .NET 11 SDK, Java 25 or newer (on the `PATH` or in `JAVA_HOME`) and internet access.
 `dotnet build Obsidian.slnx` downloads the vanilla server jar of the version set in `Obsidian/Obsidian.csproj`
 (`MinecraftVersion`), runs its data generators, and generates the git-ignored `Obsidian/Assets` on the first build.
 Later builds reuse those assets while the version marker and required outputs exist and are newer than the generator's
