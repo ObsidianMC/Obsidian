@@ -77,9 +77,9 @@ different one. Obsidian deliberately doesn't emulate Java's heap layout for this
 
 ## Shape rules not implemented yet
 
-`Assets/block_update_shape_classes.json` names 108 vanilla classes that declare `updateShape`. These have no member
-in `ShapeUpdateBehaviors` yet (the coral, coral plant and fan, dirt path and chorus plant rules come with the
-dripstone and amethyst work), so their blocks keep their state on a shape update. The shared pass still schedules the
+`Assets/block_update_shape_classes.json` names 108 vanilla classes that declare `updateShape`; 55 have a member in
+`ShapeUpdateBehaviors`, covering 496 of its 854 blocks. These 53 have none yet, so their blocks keep their state on
+a shape update. The shared pass still schedules the
 fluid tick of every waterlogged state, so where a class's rule does only that, nothing is lost. Each needs a capture
 before it is implemented. "Phase" refers to the [block interactions plan](../block-interactions-plan.md).
 
@@ -131,11 +131,9 @@ before it is implemented. "Phase" refers to the [block interactions plan](../blo
 | `SoulFireBlock` | soul fire | Doesn't go out off a soul fire base | 5 (fire) |
 | `TripWireBlock`, `TripWireHookBlock` | tripwire, hooks | Don't reconnect or drop on shape updates | 3 |
 
-Three kinds of block have their class's rule but miss part of it:
+Two kinds of block have their class's rule but miss part of it:
 
 - Torchflower crops have `VegetationBlock`'s rule, but Obsidian's survival check knows no torchflower crop, so one
   never breaks; vanilla's crops also need light, which no crop checks yet. The `more_blocks` probe can't record
   crops: their survival reads light, and its bounded level has no light engine. Phase 5.
-- Pointed dripstone has `SpeleothemBlock`'s rule for its shape, but schedules no fall or break: only sulfur spikes
-  tick. Phase 5.
 - Mushrooms (`VegetationBlock`) read the live level's light; generation's shape pass reads 15, as it always has.

@@ -304,17 +304,22 @@ implement). The shared view in step 2 is where that is fixed.
 
 Done. Every arm of the switch is now a member of `ShapeUpdateBehaviors` named after its declaring class, in
 `WorldData/ShapeRules`, and the rules take one read-only view (`IShapeLevel`) that the live level, the notification
-pipeline, the fluid engine and generation all supply. Each member's `Reach` keeps the split between the two update
-engines as it was: live owners run first in both, the former arms run only in the shared pass (`ShapeUpdater`), and
-fences, bars, kelp, bubble columns and speleothems run in both. Grindstones and nether wart gained a rule (both
-captured in `more_blocks.json`); torchflower crops gained one that has no effect yet. The declaring classes still
-without a rule are listed in
+pipeline, the fluid engine and generation all supply. Step 2's "return a state and schedule ticks" turned out too
+narrow: the view also checks for a pending tick and hands out the live level's random, which coral's rule (#708)
+draws its death delay from; it still has no way to write. Each member's `Reach` keeps the split between the two
+update engines as it was: live owners (coral, dirt paths and chorus plants among them) run first in both, the former
+arms run only in the shared pass (`ShapeUpdater`), and fences, bars, kelp, bubble columns and speleothems run in
+both. Generation's view schedules no ticks and has no random, so speleothems there only reshape, as before.
+Grindstones and nether wart gained a rule (both captured in `more_blocks.json`); torchflower crops gained one that
+has no effect yet. The generator now binds 55 of the 108 declaring classes; the 53 still without a rule (dead coral
+among them; live coral has one since #708) are listed in
 [known gaps](known-gaps/vanilla-blocks-reactions-to-block-updates.md#shape-rules-not-implemented-yet).
 
 The observer gap is still open. Generation's shape pass has no block ticks to schedule, so an observer placed by a
 template needs a tick executor during generation (or ticks saved with the chunk) before running its rule there
-helps; leaves and soul sand would then schedule ticks in generated chunks too, which `IPostProcessBehavior` does for
-soul sand and magma today. Owners other than those five stay out of generation until that is designed.
+helps; leaves and soul sand would then schedule ticks in generated chunks too. Owners other than those five stay
+out of generation until that is designed. (`IPostProcessBehavior` was meant to give soul sand and magma their
+post-processing reaction, but 26.3's dump names neither class as declaring `updateShape`, so neither binds.)
 
 ### Phase 5: ticking (L)
 
