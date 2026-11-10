@@ -196,7 +196,8 @@ replaces only what vanilla produced.
   landing. Each case records the draws, block writes, scheduled block and fluid ticks with their delays, level events,
   game events, the entities added (a falling block's state and stalactite damage) and the blocks destroyed. The cases
   cover pointed dripstone growing (the block and water source above, column length, stalagmite search), dripping
-  water and lava into each kind of cauldron or drying mud into clay, falling and breaking when the support goes,
+  water and lava into each kind of cauldron or drying mud into clay, a waterlogged block counting as water (above
+  the column, ahead of the tip and as a floor), falling and breaking when the support goes,
   thickness along a column, landing, and cauldrons taking the drip; budding amethyst starting a bud on each face and
   growing each stage, into air, water sources and falling water, and the faces it skips; lit redstone ore going dark;
   nylium under blocks that do and don't let light down; dirt paths turning to dirt, and which new blocks above or
