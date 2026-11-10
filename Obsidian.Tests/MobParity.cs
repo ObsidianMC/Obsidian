@@ -125,6 +125,49 @@ public sealed class MobParity
     }
 
     [Fact]
+    public async Task WardenLegacySaveRestoresUsablePoseAndDefaultCooldowns()
+    {
+        await using var context = TestServerFactory.CreateServer($"warden-legacy-{Guid.NewGuid():N}");
+        var warden = new Warden { Level = context.World };
+        warden.InitializeAi(false);
+        var saved = EntityNbt.Save(warden)!;
+        saved.Set(new NbtTag<int>("ObsidianWardenPose", (int)Pose.Emerging));
+        saved.Remove("ObsidianWardenPoseTicks");
+        saved.Remove("ObsidianWardenSniffCooldown");
+        saved.Remove("ObsidianWardenSonicCooldown");
+
+        var loaded = Assert.IsType<Warden>(EntityNbt.Load(saved, context.World));
+        var restored = EntityNbt.Save(loaded)!;
+
+        Assert.Equal(Pose.Standing, loaded.Pose);
+        Assert.Equal(100, restored.GetInt("ObsidianWardenSniffCooldown"));
+        Assert.Equal(200, restored.GetInt("ObsidianWardenSonicCooldown"));
+    }
+
+    [Fact]
+    public async Task DragonProjectileDamageHonorsPerchingAndRecordsAcceptedHits()
+    {
+        await using var context = TestServerFactory.CreateServer($"dragon-projectile-{Guid.NewGuid():N}");
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Archer");
+        var dragon = new EnderDragon { Level = context.World };
+        dragon.InitializeAi(false);
+        var saved = EntityNbt.Save(dragon)!;
+        saved.Set(new NbtTag<int>("DragonPhase", 6));
+        dragon = Assert.IsType<EnderDragon>(EntityNbt.Load(saved, context.World));
+
+        await dragon.DamageCombatAsync(player, 12, CombatDamageKind.Projectile);
+
+        Assert.Equal(200, dragon.Health);
+        Assert.Equal(0, dragon.AcceptedDamageCount);
+
+        dragon.BeginFight(new VectorD(0, 64, 0));
+        await dragon.DamagePartAsync(player, 12, 0, projectile: true);
+
+        Assert.Equal(188, dragon.Health);
+        Assert.Equal(1, dragon.AcceptedDamageCount);
+    }
+
+    [Fact]
     public async Task InfinitePotionDurationSurvivesTicksAndSaving()
     {
         await using var context = TestServerFactory.CreateServer($"potion-infinite-{Guid.NewGuid():N}");

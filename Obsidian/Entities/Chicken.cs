@@ -11,6 +11,8 @@ public sealed partial class Chicken : FarmAnimal
     public int Variant { get; set; } = 1;
     public int EggLayTime { get; internal set; } = Random.Shared.Next(6000, 12000);
     public bool IsChickenJockey { get; set; }
+    protected override bool CanDespawn => IsChickenJockey;
+    protected override int GetExperienceReward() => IsChickenJockey ? 10 : base.GetExperienceReward();
     protected override string? SoundName => "chicken";
     protected override float PanicSpeed => 1.4f;
     protected override float TemptSpeed => 1;

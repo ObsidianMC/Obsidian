@@ -43,6 +43,7 @@ public sealed partial class Wither : BossMob
         (Navigator as Navigator)?.Stop();
         for (var head = 0; head < headTargets.Length; head++)
             SetHeadTarget(head, 0);
+        SynchronizeMetadata();
     }
 
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
@@ -73,8 +74,11 @@ public sealed partial class Wither : BossMob
             SynchronizeMetadata();
             return;
         }
-        if (AiTick % 20 == 0)
+        if (AiTick % 20 == 0 && Health < GetAttributeValue("minecraft:generic.max_health"))
+        {
             Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + 1);
+            SynchronizeMetadata();
+        }
         if (AttackTarget != null && (!CanAttack(AttackTarget) || !CanSee(AttackTarget)))
             AttackTarget = null;
         if (headTargets[0] != (AttackTarget?.EntityId ?? 0))
@@ -143,8 +147,8 @@ public sealed partial class Wither : BossMob
                 {
                     var point = position + new Vector(x, y, z);
                     var block = Terrain.GetBlock(point);
-                            if (block == null || block.IsAir || TagsRegistry.Block.WitherImmune.Entries.Contains(block.RegistryId))
-                                continue;
+                    if (block == null || block.IsAir || TagsRegistry.Block.WitherImmune.Entries.Contains(block.RegistryId))
+                        continue;
                     // Vanilla destroyBlock(pos, true, this): the block's loot drops.
                     Level.DestroyBlock(point, dropItems: true, this);
                     broken = true;

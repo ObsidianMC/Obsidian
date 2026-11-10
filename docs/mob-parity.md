@@ -1,5 +1,7 @@
 # Mob parity gaps — Java Edition 26.3
 
+See the [2026-11-10 follow-up](mob-parity-follow-up.md) for subsequent localized fixes, deferred work and corrections to stale entries below.
+
 This document inventories missing and approximate mob behavior in the current source, including shared systems and older mobs. A concrete factory implementation does not imply vanilla parity. **Missing** means no corresponding behavior was found in the audited implementation; **approximate** means behavior exists but uses a reduced model; **unverified** means equivalence still needs a targeted comparison or runtime validation. Shared gaps apply to every relevant mob, even when not repeated in its entry.
 
 The audit covers `Obsidian/Entities`, mob spawning/storage, village/raid systems, game events, explosions and End-fight

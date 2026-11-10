@@ -475,19 +475,23 @@ public sealed partial class Warden : PathfinderMob
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         idleTicks = ReadTimer(tag, "ObsidianWardenIdle", 1200);
-        sniffCooldown = ReadTimer(tag, "ObsidianWardenSniffCooldown", 200);
+        sniffCooldown = ReadTimer(tag, "ObsidianWardenSniffCooldown", 200, 100);
         vibrationCooldown = ReadTimer(tag, "ObsidianWardenVibrationCooldown", 40);
         meleeCooldown = ReadTimer(tag, "ObsidianWardenMeleeCooldown", 18);
         touchCooldown = ReadTimer(tag, "ObsidianWardenTouchCooldown", 20);
         projectileMemoryTicks = ReadTimer(tag, "ObsidianWardenProjectileMemory", 100);
         poseTicks = ReadTimer(tag, "ObsidianWardenPoseTicks", 134);
-        sonicCooldown = ReadTimer(tag, "ObsidianWardenSonicCooldown", 200);
+        sonicCooldown = ReadTimer(tag, "ObsidianWardenSonicCooldown", 200, 200);
         sonicTicks = ReadTimer(tag, "ObsidianWardenSonicTicks", 60);
         if (tag.TryGetNumber<int>("ObsidianWardenPose", out var pose)
             && (Pose)pose is Pose.Standing or Pose.Roaring or Pose.Sniffing or Pose.Digging or Pose.Emerging)
         {
             Pose = (Pose)pose;
         }
+
+        // An expired or missing pose timer must not leave the warden permanently digging or emerging.
+        if (poseTicks == 0)
+            Pose = Pose.Standing;
 
         anger.Clear();
         if (tag.TryGetTag<NbtList>("ObsidianWardenAnger", out var saved))
@@ -505,8 +509,8 @@ public sealed partial class Warden : PathfinderMob
         }
     }
 
-    private static int ReadTimer(NbtCompound tag, string name, int maximum) =>
-        tag.TryGetNumber<int>(name, out var value) ? Math.Clamp(value, 0, maximum) : 0;
+    private static int ReadTimer(NbtCompound tag, string name, int maximum, int defaultValue = 0) =>
+        tag.TryGetNumber<int>(name, out var value) ? Math.Clamp(value, 0, maximum) : defaultValue;
 }
 
 internal sealed class WardenStrollGoal(Warden warden) : NavigationGoal(warden, 0.5f)

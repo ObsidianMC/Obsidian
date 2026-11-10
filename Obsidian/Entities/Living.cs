@@ -215,7 +215,13 @@ public partial class Living : Entity, ILiving
     {
         if (Type is EntityType.Wither or EntityType.EnderDragon)
             return;
-        if (effectId == (int)PotionEffect.Poison - 1 && Type is EntityType.Zombie or EntityType.Husk or EntityType.Skeleton or EntityType.Stray or EntityType.Bogged or EntityType.Parched or EntityType.Spider or EntityType.CaveSpider or EntityType.WitherSkeleton or EntityType.Drowned or EntityType.ZombifiedPiglin or EntityType.Zoglin or EntityType.CamelHusk or EntityType.ZombieNautilus or EntityType.ZombieVillager or EntityType.Giant or EntityType.Phantom or EntityType.SkeletonHorse or EntityType.ZombieHorse ||
+        if ((effectId == (int)PotionEffect.Poison - 1 || effectId == (int)PotionEffect.Regeneration - 1) &&
+            TagsRegistry.EntityType.IgnoresPoisonAndRegen.Entries.Contains(TypeId))
+        {
+            return;
+        }
+
+        if (effectId == (int)PotionEffect.Poison - 1 && Type is EntityType.Spider or EntityType.CaveSpider ||
             effectId == (int)PotionEffect.Wither - 1 && Type == EntityType.WitherSkeleton ||
             effectId == (int)PotionEffect.Weakness - 1 && Type == EntityType.Parched)
         {

@@ -11,6 +11,7 @@ public sealed partial class Dolphin : AgeableMob
     internal override bool SwimmingNavigation => true;
     protected override bool TakesFallDamage => false;
     protected override string? SoundName => "dolphin";
+    protected override int GetExperienceReward() => IsBaby ? 0 : Random.Next(1, 4);
     protected override float DimensionScale => IsBaby ? 0.65f : 1;
     protected override VectorD Travel() => AI.VolumeMovement.Travel(this, InWater);
     protected override void FinalizeSpawn() => Air = 4800;
@@ -55,7 +56,7 @@ public sealed partial class Dolphin : AgeableMob
 
     protected override async ValueTask TickAirSupplyAsync()
     {
-        if (Terrain.GetBlock((Vector)EyePosition.Floor())?.RegistryId != BlockIds.Water)
+        if (MobBitMask.HasFlag(MobBitmask.NoAi) || !Terrain.IsInFluid(EyePosition, water: true))
         {
             Air = 4800;
         }
@@ -63,7 +64,7 @@ public sealed partial class Dolphin : AgeableMob
         {
             Air = 0;
             await DamageEnvironmentAsync(2);
-    }
+        }
     }
 
     internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
