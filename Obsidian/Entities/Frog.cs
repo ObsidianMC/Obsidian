@@ -100,8 +100,8 @@ public sealed partial class Frog : FarmAnimal
                     var above = new Vector(water.X, water.Y + 1, water.Z);
                     if (Terrain.GetBlock(water)?.RegistryId != BlockIds.Water || Terrain.GetBlock(above)?.IsAir != true)
                         continue;
+                    // Placing it schedules its hatch (FrogspawnBlockBehavior).
                     await level.SetBlockAsync(above, BlocksRegistry.Frogspawn, true);
-                    level.ScheduleFrogspawn(above, Random.Next(3600, 12001));
                     Pregnant = false;
                     PlayMobSound("lay_spawn");
                     return;

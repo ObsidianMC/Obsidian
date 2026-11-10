@@ -1,0 +1,7493 @@
+{
+  "_notes": "Vanilla randomTick of the origin's state, recorded by the asset generator's GrowingPlantTickFixtures.java against a block view of the case's setup (air elsewhere, void air outside the build height of -64 to 319), with every raw brightness the case's light (15 by default), the spread_vines rule as spreadVines says (true by default), and a legacy random seeded with seed as both the tick's random and the level's. ticks is the state's isRandomlyTicking; a state that doesn't tick isn't ticked, and a case without an origin ticks nothing. After the tick, each of the case's actions sets its state with Level.setBlock and UPDATE_ALL, or without a state removes the block (Level.removeBlock). draws lists each draw in order with its bound and result, the shape updates' included. writes are the block changes in order with their update flags, including those of the neighbour shape updates they cause (neighbour notifications are not run). scheduled lists the block and fluid ticks scheduled. after holds the final state of every setup or written position.",
+  "version": "26.3",
+  "cases": [
+    {
+      "name": "kelp_grows",
+      "seed": 3069683297484132604,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp[age=3]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.11748061455539649
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:kelp[age=4]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp_plant",
+          "flags": 2
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp_plant"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:kelp[age=4]"
+        }
+      ]
+    },
+    {
+      "name": "kelp_draw_misses",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp[age=3]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.8220058236633325
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp[age=3]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "kelp_blocked_above",
+      "seed": 3069683297484132604,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp[age=3]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.11748061455539649
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp[age=3]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "kelp_does_not_grow_into_air",
+      "seed": 3069683297484132604,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp[age=3]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.11748061455539649
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp[age=3]"
+        }
+      ]
+    },
+    {
+      "name": "kelp_grows_into_flowing_water",
+      "seed": 3069683297484132604,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp[age=3]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:water[level=1]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.11748061455539649
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:kelp[age=4]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp_plant",
+          "flags": 2
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp_plant"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:kelp[age=4]"
+        }
+      ]
+    },
+    {
+      "name": "kelp_grows_to_max_age",
+      "seed": 3069683297484132604,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp[age=24]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.11748061455539649
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:kelp[age=25]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp_plant",
+          "flags": 2
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp_plant"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:kelp[age=25]"
+        }
+      ]
+    },
+    {
+      "name": "kelp_max_age_does_not_tick",
+      "seed": 3069683297484132604,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp[age=25]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ],
+      "ticks": false,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp[age=25]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "kelp_on_kelp_plant_grows",
+      "seed": 3069683297484132604,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            62,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:kelp_plant"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp[age=10]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.11748061455539649
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:kelp[age=11]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp_plant",
+          "flags": 2
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            62,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:kelp_plant"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp_plant"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:kelp[age=11]"
+        }
+      ]
+    },
+    {
+      "name": "cave_vines_grows_without_berries",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=3,berries=false]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.07084079573375046
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.6680418
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=4,berries=false]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines_plant[berries=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=4,berries=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines_plant[berries=false]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "cave_vines_grows_with_berries",
+      "seed": 713712782862115666,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=3,berries=false]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.020333224974889985
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.070610404
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=4,berries=true]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines_plant[berries=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=4,berries=true]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines_plant[berries=false]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "cave_vines_body_keeps_berries",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=3,berries=true]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.07084079573375046
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.6680418
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=4,berries=false]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines_plant[berries=true]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=4,berries=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines_plant[berries=true]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "cave_vines_draw_misses",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=3,berries=false]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.8220058236633325
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=3,berries=false]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "cave_vines_blocked_below",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=3,berries=false]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.07084079573375046
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=3,berries=false]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "cave_vines_max_age_does_not_tick",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=25,berries=false]"
+        }
+      ],
+      "ticks": false,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=25,berries=false]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "weeping_vines_grows",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:weeping_vines[age=7]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.07084079573375046
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:weeping_vines[age=8]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:weeping_vines_plant",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:weeping_vines[age=8]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:weeping_vines_plant"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        }
+      ]
+    },
+    {
+      "name": "weeping_vines_does_not_grow_into_water",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:weeping_vines[age=7]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.07084079573375046
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:weeping_vines[age=7]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        }
+      ]
+    },
+    {
+      "name": "twisting_vines_grows",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=7]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.07084079573375046
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=8]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:twisting_vines_plant",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:twisting_vines_plant"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=8]"
+        }
+      ]
+    },
+    {
+      "name": "twisting_vines_draw_misses",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=7]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.8220058236633325
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=7]"
+        }
+      ]
+    },
+    {
+      "name": "twisting_vines_at_build_limit",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        319,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            318,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            8,
+            319,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=7]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.07084079573375046
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            318,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            8,
+            319,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=7]"
+        }
+      ]
+    },
+    {
+      "name": "melon_stem_ages",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=0]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=1]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=1]"
+        }
+      ]
+    },
+    {
+      "name": "melon_stem_draw_misses",
+      "seed": 4354685564936845354,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=0]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 1
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=0]"
+        }
+      ]
+    },
+    {
+      "name": "melon_stem_in_light_8_draws_nothing",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "light": 8,
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=0]"
+        }
+      ],
+      "ticks": true,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=0]"
+        }
+      ]
+    },
+    {
+      "name": "melon_stem_in_light_9_ages",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "light": 9,
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=6]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=7]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=7]"
+        }
+      ]
+    },
+    {
+      "name": "melon_stem_places_melon_east",
+      "seed": 2677021545047129781,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            7
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            7,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=7]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 1
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:melon",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:attached_melon_stem[facing=east]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            7
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            7,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:attached_melon_stem[facing=east]"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:melon"
+        }
+      ]
+    },
+    {
+      "name": "melon_stem_places_melon_north",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            7
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            7,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=7]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 0
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:melon",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:attached_melon_stem[facing=north]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            7
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            7,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:melon"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:attached_melon_stem[facing=north]"
+        }
+      ]
+    },
+    {
+      "name": "melon_stem_fruit_spot_occupied",
+      "seed": 2041681483521962404,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            7
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            7,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=7]"
+        },
+        {
+          "pos": [
+            7,
+            64,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 3
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            7
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            7,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            7,
+            64,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=7]"
+        }
+      ]
+    },
+    {
+      "name": "melon_stem_fruit_spot_unsupported",
+      "seed": 2041681483521962404,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            7,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=7]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 3
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            7,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=7]"
+        }
+      ]
+    },
+    {
+      "name": "pumpkin_stem_places_pumpkin_south",
+      "seed": 2934021998537672331,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            7
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            7,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pumpkin_stem[age=7]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 2
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            9
+          ],
+          "state": "minecraft:pumpkin",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:attached_pumpkin_stem[facing=south]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            7
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            7,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:attached_pumpkin_stem[facing=south]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            9
+          ],
+          "state": "minecraft:pumpkin"
+        }
+      ]
+    },
+    {
+      "name": "pumpkin_stem_places_pumpkin_on_farmland",
+      "seed": 4583041729622631912,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            7
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            7,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pumpkin_stem[age=7]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 3
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            7,
+            64,
+            8
+          ],
+          "state": "minecraft:pumpkin",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:attached_pumpkin_stem[facing=west]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            7,
+            63,
+            8
+          ],
+          "type": "minecraft:farmland",
+          "delay": 1
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            7
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            7,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            7,
+            64,
+            8
+          ],
+          "state": "minecraft:pumpkin"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:attached_pumpkin_stem[facing=west]"
+        }
+      ]
+    },
+    {
+      "name": "melon_stem_crowded_on_both_axes",
+      "seed": 1149340968506252477,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            7,
+            63,
+            7
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            7,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            7,
+            63,
+            9
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            7
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            7
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            9
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=2]"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=0]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:melon_stem[age=0]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 13,
+          "value": 0
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=3]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            7,
+            63,
+            7
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            7
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            7
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            7,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            7,
+            63,
+            9
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            9
+          ],
+          "state": "minecraft:farmland[moisture=0]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:melon_stem[age=0]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=3]"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=0]"
+        }
+      ]
+    },
+    {
+      "name": "pumpkin_stem_crowded_on_a_diagonal",
+      "seed": 2555682390503047504,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            7,
+            63,
+            7
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            7,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            7,
+            63,
+            9
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            7
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            7
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            9
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pumpkin_stem[age=2]"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            9
+          ],
+          "state": "minecraft:pumpkin_stem[age=0]"
+        },
+        {
+          "pos": [
+            7,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=0]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 0
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pumpkin_stem[age=3]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            7,
+            63,
+            7
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            7
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            7
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            7,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            7,
+            63,
+            9
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            9
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            7,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=0]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pumpkin_stem[age=3]"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            9
+          ],
+          "state": "minecraft:pumpkin_stem[age=0]"
+        }
+      ]
+    },
+    {
+      "name": "pitcher_crop_ages",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=0,half=lower]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=1,half=lower]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=1,half=lower]"
+        }
+      ]
+    },
+    {
+      "name": "pitcher_crop_draw_misses",
+      "seed": 4354685564936845354,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=0,half=lower]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 1
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=0,half=lower]"
+        }
+      ]
+    },
+    {
+      "name": "pitcher_crop_grows_upper_half",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=2,half=lower]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=3,half=lower]",
+          "flags": 2
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=3,half=upper]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=3,half=lower]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=3,half=upper]"
+        }
+      ]
+    },
+    {
+      "name": "pitcher_crop_blocked_above",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=2,half=lower]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=2,half=lower]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "pitcher_crop_grows_both_halves",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=3,half=lower]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=3,half=upper]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=4,half=lower]",
+          "flags": 2
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=4,half=upper]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=4,half=lower]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=4,half=upper]"
+        }
+      ]
+    },
+    {
+      "name": "pitcher_crop_in_light_7_draws_but_stays",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "light": 7,
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=1,half=lower]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=1,half=lower]"
+        }
+      ]
+    },
+    {
+      "name": "pitcher_crop_in_light_8_ages",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "light": 8,
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=1,half=lower]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=2,half=lower]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=2,half=lower]"
+        }
+      ]
+    },
+    {
+      "name": "pitcher_crop_upper_half_does_not_tick",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=3,half=lower]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=3,half=upper]"
+        }
+      ],
+      "ticks": false,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=3,half=lower]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=3,half=upper]"
+        }
+      ]
+    },
+    {
+      "name": "pitcher_crop_max_age_does_not_tick",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=4,half=lower]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=4,half=upper]"
+        }
+      ],
+      "ticks": false,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=4,half=lower]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=4,half=upper]"
+        }
+      ]
+    },
+    {
+      "name": "pitcher_crop_at_build_limit",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        319,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            318,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            319,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=0,half=lower]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            318,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            319,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=0,half=lower]"
+        }
+      ]
+    },
+    {
+      "name": "vine_spread_rule_off",
+      "seed": 3069683297484132604,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "spreadVines": false,
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        }
+      ],
+      "ticks": true,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        }
+      ]
+    },
+    {
+      "name": "vine_draw_misses",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 3
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        }
+      ]
+    },
+    {
+      "name": "vine_spreads_along_wall_east",
+      "seed": 3069683297484132604,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 5
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        }
+      ]
+    },
+    {
+      "name": "vine_spreads_along_wall_west",
+      "seed": 4597363874025009908,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            7,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 4
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            7,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            7,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            7,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        }
+      ]
+    },
+    {
+      "name": "vine_wraps_around_corner_east",
+      "seed": 3069683297484132604,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 5
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            9,
+            64,
+            7
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=false,west=true]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            7
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=false,west=true]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        }
+      ]
+    },
+    {
+      "name": "vine_hangs_from_ceiling_beside_it",
+      "seed": 2005477049639886725,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 5
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.0023642778
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            9,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "vine_ceiling_chance_misses",
+      "seed": 3069683297484132604,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 5
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.05044675
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            9,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "vine_attaches_to_block_east",
+      "seed": 3069683297484132604,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 5
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=true,north=true,south=false,up=false,west=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=true,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "vine_ignores_plant_east",
+      "seed": 3069683297484132604,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:poppy"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 5
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:poppy"
+        }
+      ]
+    },
+    {
+      "name": "vine_spreads_with_four_vines_near",
+      "seed": 3069683297484132604,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            5,
+            65,
+            11
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            11,
+            63,
+            5
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            12,
+            64,
+            12
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 5
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            11,
+            63,
+            5
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            12,
+            64,
+            12
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            5,
+            65,
+            11
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        }
+      ]
+    },
+    {
+      "name": "vine_stops_with_five_vines_near",
+      "seed": 3069683297484132604,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            5,
+            65,
+            11
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            11,
+            63,
+            5
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            12,
+            64,
+            12
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            4,
+            65,
+            4
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 5
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            11,
+            63,
+            5
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            12,
+            64,
+            12
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            4,
+            65,
+            4
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            5,
+            65,
+            11
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        }
+      ]
+    },
+    {
+      "name": "vine_existing_face_grows_down",
+      "seed": 1227713689843200766,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 2
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        },
+        {
+          "call": "nextBoolean",
+          "value": false
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        }
+      ]
+    },
+    {
+      "name": "vine_grows_down_copying_no_face",
+      "seed": 3176700307625836885,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 0
+        },
+        {
+          "call": "nextBoolean",
+          "value": false
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        },
+        {
+          "call": "nextBoolean",
+          "value": false
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        }
+      ]
+    },
+    {
+      "name": "vine_grows_down_copying_north",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 0
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        }
+      ]
+    },
+    {
+      "name": "vine_grows_down_onto_vine",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:vine[east=true,north=false,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 0
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:vine[east=true,north=true,south=false,up=false,west=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:vine[east=true,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        }
+      ]
+    },
+    {
+      "name": "vine_grows_down_ignoring_spread_limit",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            5,
+            65,
+            11
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            11,
+            63,
+            5
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            12,
+            64,
+            12
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            4,
+            65,
+            4
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 0
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            11,
+            63,
+            5
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            12,
+            64,
+            12
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            4,
+            65,
+            4
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            5,
+            65,
+            11
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        }
+      ]
+    },
+    {
+      "name": "vine_does_not_grow_into_block_below",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        }
+      ]
+    },
+    {
+      "name": "vine_attaches_to_ceiling",
+      "seed": 1270680123050334754,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 1
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=true,west=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "vine_climbs_keeping_north",
+      "seed": 4461702575078549635,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            7
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 1
+        },
+        {
+          "call": "nextBoolean",
+          "value": false
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        },
+        {
+          "call": "nextBoolean",
+          "value": false
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        }
+      ]
+    },
+    {
+      "name": "vine_climbs_losing_every_face",
+      "seed": 1270680123050334754,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            7
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 1
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        },
+        {
+          "call": "nextBoolean",
+          "value": false
+        },
+        {
+          "call": "nextBoolean",
+          "value": false
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            7
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "vine_climb_stopped_by_spread_limit",
+      "seed": 4461702575078549635,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            5,
+            65,
+            11
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            11,
+            63,
+            5
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            12,
+            64,
+            12
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            4,
+            65,
+            4
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 1
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            11,
+            63,
+            5
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            12,
+            64,
+            12
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            4,
+            65,
+            4
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            5,
+            65,
+            11
+          ],
+          "state": "minecraft:vine[east=false,north=false,south=false,up=true,west=false]"
+        }
+      ]
+    },
+    {
+      "name": "vine_climb_blocked_grows_down",
+      "seed": 1270680123050334754,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:vine[east=true,north=false,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 1
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        },
+        {
+          "call": "nextBoolean",
+          "value": false
+        },
+        {
+          "call": "nextBoolean",
+          "value": false
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:vine[east=true,north=false,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            9,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "vine_at_bottom_of_world",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        -64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            -64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            -64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            -64,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            -64,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        }
+      ]
+    },
+    {
+      "name": "vine_at_top_of_world_grows_down",
+      "seed": 1270680123050334754,
+      "origin": [
+        8,
+        319,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            319,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            319,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 6,
+          "value": 1
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        },
+        {
+          "call": "nextBoolean",
+          "value": false
+        },
+        {
+          "call": "nextBoolean",
+          "value": false
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            318,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            318,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        },
+        {
+          "pos": [
+            8,
+            319,
+            7
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            319,
+            8
+          ],
+          "state": "minecraft:vine[east=false,north=true,south=false,up=false,west=false]"
+        }
+      ]
+    },
+    {
+      "name": "kelp_tip_broken_after_growing",
+      "seed": 3069683297484132604,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp[age=3]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        },
+        {
+          "pos": [
+            8,
+            66,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ],
+      "actions": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ]
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.11748061455539649
+        },
+        {
+          "call": "nextInt",
+          "bound": 25,
+          "value": 21
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:kelp[age=4]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp_plant",
+          "flags": 2
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:water[level=0]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp[age=21]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        },
+        {
+          "pos": [
+            8,
+            66,
+            8
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        },
+        {
+          "pos": [
+            8,
+            66,
+            8
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp[age=21]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        },
+        {
+          "pos": [
+            8,
+            66,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "cave_vines_tip_broken_after_growing",
+      "seed": 713712782862115666,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=3,berries=true]"
+        }
+      ],
+      "actions": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ]
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.020333224974889985
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.070610404
+        },
+        {
+          "call": "nextInt",
+          "bound": 25,
+          "value": 24
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=4,berries=true]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines_plant[berries=true]",
+          "flags": 2
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=24,berries=true]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=24,berries=true]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "weeping_vines_tip_broken_after_growing",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:weeping_vines[age=7]"
+        }
+      ],
+      "actions": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ]
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.07084079573375046
+        },
+        {
+          "call": "nextInt",
+          "bound": 25,
+          "value": 18
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:weeping_vines[age=8]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:weeping_vines_plant",
+          "flags": 2
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:weeping_vines[age=18]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:weeping_vines[age=18]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        }
+      ]
+    },
+    {
+      "name": "twisting_vines_tip_broken_after_growing",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=7]"
+        }
+      ],
+      "actions": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ]
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.07084079573375046
+        },
+        {
+          "call": "nextInt",
+          "bound": 25,
+          "value": 18
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=8]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:twisting_vines_plant",
+          "flags": 2
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=18]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=18]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "kelp_plant_loses_its_head",
+      "seed": 3069683297484132604,
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp_plant"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:kelp[age=9]"
+        }
+      ],
+      "actions": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ]
+        }
+      ],
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 25,
+          "value": 8
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:water[level=0]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp[age=8]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp[age=8]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "kelp_grows_into_gap",
+      "seed": 3069683297484132604,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp[age=3]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        },
+        {
+          "pos": [
+            8,
+            66,
+            8
+          ],
+          "state": "minecraft:kelp[age=5]"
+        },
+        {
+          "pos": [
+            8,
+            67,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.11748061455539649
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:kelp[age=4]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp_plant",
+          "flags": 2
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:kelp_plant",
+          "flags": 2
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        },
+        {
+          "pos": [
+            8,
+            66,
+            8
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        },
+        {
+          "pos": [
+            8,
+            66,
+            8
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp_plant"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:kelp_plant"
+        },
+        {
+          "pos": [
+            8,
+            66,
+            8
+          ],
+          "state": "minecraft:kelp[age=5]"
+        },
+        {
+          "pos": [
+            8,
+            67,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "cave_vines_grows_into_gap",
+      "seed": 713712782862115666,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=3,berries=false]"
+        },
+        {
+          "pos": [
+            8,
+            62,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=5,berries=true]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.020333224974889985
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.070610404
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=4,berries=true]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines_plant[berries=false]",
+          "flags": 2
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:cave_vines_plant[berries=true]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            62,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=5,berries=true]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:cave_vines_plant[berries=true]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines_plant[berries=false]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "weeping_vines_grows_into_gap",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:weeping_vines[age=7]"
+        },
+        {
+          "pos": [
+            8,
+            62,
+            8
+          ],
+          "state": "minecraft:weeping_vines[age=5]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.07084079573375046
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:weeping_vines[age=8]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:weeping_vines_plant",
+          "flags": 2
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:weeping_vines_plant",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            62,
+            8
+          ],
+          "state": "minecraft:weeping_vines[age=5]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:weeping_vines_plant"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:weeping_vines_plant"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        }
+      ]
+    },
+    {
+      "name": "twisting_vines_grows_into_gap",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=7]"
+        },
+        {
+          "pos": [
+            8,
+            66,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=5]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.07084079573375046
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=8]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:twisting_vines_plant",
+          "flags": 2
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:twisting_vines_plant",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:twisting_vines_plant"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:twisting_vines_plant"
+        },
+        {
+          "pos": [
+            8,
+            66,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=5]"
+        }
+      ]
+    },
+    {
+      "name": "twisting_vines_head_gets_support_below_head",
+      "seed": 3191022452028214881,
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=7]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=5]"
+        }
+      ],
+      "actions": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        }
+      ],
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:netherrack",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:twisting_vines_plant",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:twisting_vines_plant"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=5]"
+        }
+      ]
+    },
+    {
+      "name": "twisting_vines_head_loses_support_below_head",
+      "seed": 3191022452028214881,
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=7]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=5]"
+        }
+      ],
+      "actions": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ]
+        }
+      ],
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "type": "minecraft:twisting_vines",
+          "delay": 1
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=7]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=5]"
+        }
+      ]
+    },
+    {
+      "name": "kelp_head_on_magma_below_head",
+      "seed": 3069683297484132604,
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp[age=7]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:kelp[age=5]"
+        },
+        {
+          "pos": [
+            8,
+            66,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ],
+      "actions": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:magma_block"
+        }
+      ],
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:magma_block",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "type": "minecraft:kelp",
+          "delay": 1
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:magma_block"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp[age=7]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:kelp[age=5]"
+        },
+        {
+          "pos": [
+            8,
+            66,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "kelp_head_on_stone_below_head",
+      "seed": 3069683297484132604,
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp[age=7]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:kelp[age=5]"
+        },
+        {
+          "pos": [
+            8,
+            66,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ],
+      "actions": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp_plant",
+          "flags": 2
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp_plant"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:kelp[age=5]"
+        },
+        {
+          "pos": [
+            8,
+            66,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    }
+  ]
+}

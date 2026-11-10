@@ -4,6 +4,8 @@ using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.WorldData;
 
+// Sniffer eggs hatch on delays this file counts down. Turtle eggs hatch on random ticks
+// (TurtleEggBlockBehavior); trampling them is here.
 public abstract partial class AbstractLevel
 {
     internal void TrackMobEgg(Vector position, IBlock block)
@@ -12,8 +14,6 @@ public abstract partial class AbstractLevel
             return;
         if (block.Is(BlockIds.SnifferEgg))
             chunk.MobEggTicks.TryAdd(position, SnifferEggDelay(position));
-        else if (block.Is(BlockIds.TurtleEgg))
-            chunk.MobEggTicks.TryAdd(position, 0);
         else
             chunk.MobEggTicks.TryRemove(position, out _);
         chunk.MarkUnsaved();
@@ -31,7 +31,7 @@ public abstract partial class AbstractLevel
             var hasEggs = false;
             for (var index = 0; index < palette.Count; index++)
             {
-                if (palette.GetValueFromIndex(index)?.RegistryId is BlockIds.SnifferEgg or BlockIds.TurtleEgg)
+                if (palette.GetValueFromIndex(index)?.RegistryId is BlockIds.SnifferEgg)
                 {
                     hasEggs = true;
                     break;
@@ -47,10 +47,10 @@ public abstract partial class AbstractLevel
                     for (var x = 0; x < 16; x++)
                     {
                         var block = section.GetBlock(x, y, z);
-                                if (block.RegistryId is not BlockIds.SnifferEgg and not BlockIds.TurtleEgg)
-                                    continue;
+                        if (block.RegistryId is not BlockIds.SnifferEgg)
+                            continue;
                         var point = new Vector(chunk.X * 16 + x, chunk.MinY + sectionIndex * 16 + y, chunk.Z * 16 + z);
-                        if (chunk.MobEggTicks.TryAdd(point, block.Is(BlockIds.SnifferEgg) ? SnifferEggDelay(point) : 0))
+                        if (chunk.MobEggTicks.TryAdd(point, SnifferEggDelay(point)))
                             chunk.MarkUnsaved();
                     }
                 }
@@ -58,9 +58,16 @@ public abstract partial class AbstractLevel
         }
     }
 
-    private int SnifferEggDelay(Vector position) =>
-        (GameEventBlock(position - new Vector(0, 1, 0))?.RegistryId == BlockIds.MossBlock ? 4000 : 8000)
-            + Random.Shared.Next(300);
+    // Vanilla's SnifferEggBlock.onPlace: a third of 12000 ticks on a block of #sniffer_egg_hatch_boost, else of
+    // 24000, and up to 299 more.
+    private int SnifferEggDelay(Vector position)
+    {
+        var below = GameEventBlock(position - new Vector(0, 1, 0));
+        var boosted = below is not null
+            && TagsRegistry.Block.SnifferEggHatchBoost.Entries.Contains(below.RegistryId);
+
+        return (boosted ? 4000 : 8000) + Random.Shared.Next(300);
+    }
 
     internal async ValueTask TickMobEggsAsync()
     {
@@ -72,62 +79,36 @@ public abstract partial class AbstractLevel
             {
                 foreach (var (point, delay) in chunk.MobEggTicks.ToArray())
                 {
+                    // Saves from before turtle eggs hatched on random ticks track them here too; they're dropped.
                     var block = GameEventBlock(point);
-                    if (block?.RegistryId is not BlockIds.SnifferEgg and not BlockIds.TurtleEgg)
+                    if (block?.RegistryId is not BlockIds.SnifferEgg)
                     {
                         chunk.MobEggTicks.TryRemove(point, out _);
                         continue;
                     }
-                    if (block.Is(BlockIds.SnifferEgg))
+                    if (delay > 1)
                     {
-                        if (delay > 1)
-                        {
-                            chunk.MobEggTicks[point] = delay - 1;
-                            continue;
-                        }
-                    }
-                    else
-                    {
-                        var randomTicks = LevelData.GetIntegerRule("random_tick_speed", 3);
-                        if (randomTicks <= 0 || Random.Shared.NextDouble() >= 1 - Math.Pow(4095d / 4096, randomTicks))
-                            continue;
-                        var time = ((DayTime % 24000) + 24000) % 24000;
-                        if (time is < 15600 or > 16560 && Random.Shared.Next(500) != 0)
-                            continue;
-                        if (GameEventBlock(point - new Vector(0, 1, 0))?.RegistryId
-                            is not (BlockIds.Sand or BlockIds.RedSand))
-                        {
-                            continue;
-                        }
+                        chunk.MobEggTicks[point] = delay - 1;
+                        continue;
                     }
                     var hatch = int.TryParse(block.GetProperty("hatch"), out var value) ? value : 0;
                     if (hatch < 2)
                     {
                         await SetBlockAsync(point, block.WithProperty("hatch", hatch + 1), true);
-                        if (block.Is(BlockIds.SnifferEgg))
-                            chunk.MobEggTicks[point] = SnifferEggDelay(point);
+                        chunk.MobEggTicks[point] = SnifferEggDelay(point);
                         EmitGameEvent(MobGameEvent.BlockChange, (VectorD)point + new VectorD(0.5, 0.5, 0.5));
                         continue;
                     }
                     chunk.MobEggTicks.TryRemove(point, out _);
                     await SetBlockAsync(point, BlocksRegistry.Air, true);
                     PacketBroadcaster.QueuePacketToLevelInRange(this, (VectorD)point, new LevelEventPacket(2001, point, block.GetHashCode()));
-                    var count = block.Is(BlockIds.TurtleEgg) && int.TryParse(block.GetProperty("eggs"), out var eggs)
-                        ? eggs
-                        : 1;
-                    for (var index = 0; index < count; index++)
-                    {
-                        var position = (VectorD)point + new VectorD(0.3 + index * 0.2, 0, 0.3);
-                        var child = GetNewEntitySpawner()
-                            .WithEntityType(block.Is(BlockIds.SnifferEgg) ? EntityType.Sniffer : EntityType.Turtle)
-                            .AtPosition(position)
-                            .AsBaby()
-                            .Spawn();
-                        if (child is Sniffer sniffer)
-                            sniffer.Age = -48000;
-                        if (child is Turtle turtle)
-                            turtle.SetHome(point);
-                    }
+                    var child = GetNewEntitySpawner()
+                        .WithEntityType(EntityType.Sniffer)
+                        .AtPosition((VectorD)point + new VectorD(0.3, 0, 0.3))
+                        .AsBaby()
+                        .Spawn();
+                    if (child is Sniffer sniffer)
+                        sniffer.Age = -48000;
                 }
             }
             finally

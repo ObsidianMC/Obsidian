@@ -4,6 +4,7 @@ using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Utilities.Collections;
+using Obsidian.WorldData.BlockTicks;
 using Obsidian.WorldData.Fluids;
 using Obsidian.WorldData.Generators.Mojang;
 using Obsidian.WorldData.Generators.Mojang.Structures;
@@ -2150,10 +2151,14 @@ public partial class Region : IRegion
                 chunk.MobEggTicks[new Vector(tick.GetInt("x"), tick.GetInt("y"), tick.GetInt("z"))] = Math.Clamp(tick.GetInt("delay"), 0, 8300);
         }
 
+        // Frogspawn a frog laid used to hatch on a countdown of Obsidian's own; it hatches on its scheduled block tick
+        // now, which the countdowns of older saves become.
         if (chunkCompound.TryGetTag<NbtList>("ObsidianFrogspawnTicks", out var frogspawnTicks))
         {
-            foreach (var tick in frogspawnTicks.OfType<NbtCompound>())
-                chunk.FrogspawnTicks[new Vector(tick.GetInt("x"), tick.GetInt("y"), tick.GetInt("z"))] = Math.Clamp(tick.GetInt("delay"), 1, 12000);
+            chunk.BlockTicks.Load(frogspawnTicks.OfType<NbtCompound>().Select(tick => new SavedBlockTick(
+                new Vector(tick.GetInt("x"), tick.GetInt("y"), tick.GetInt("z")),
+                "minecraft:frogspawn",
+                Math.Clamp(tick.GetInt("delay"), 1, 12000))));
         }
 
         if (chunkCompound.TryGetTagValue<long>("InhabitedTime", out var inhabitedTime))
@@ -2458,18 +2463,6 @@ public partial class Region : IRegion
             var mobEggTicks = generated.HasMobEggTicks ? generated.MobEggTicks.ToArray() : [];
             writer.WriteListStart("ObsidianMobEggTicks", NbtTagType.Compound, mobEggTicks.Length);
             foreach (var (position, delay) in mobEggTicks)
-            {
-                writer.WriteCompoundStart();
-                writer.WriteInt("x", position.X);
-                writer.WriteInt("y", position.Y);
-                writer.WriteInt("z", position.Z);
-                writer.WriteInt("delay", delay);
-                writer.EndCompound();
-            }
-            writer.EndList();
-            var frogspawnTicks = generated.HasFrogspawnTicks ? generated.FrogspawnTicks.ToArray() : [];
-            writer.WriteListStart("ObsidianFrogspawnTicks", NbtTagType.Compound, frogspawnTicks.Length);
-            foreach (var (position, delay) in frogspawnTicks)
             {
                 writer.WriteCompoundStart();
                 writer.WriteInt("x", position.X);

@@ -1,0 +1,1554 @@
+{
+  "_notes": "Vanilla 26.3 blocks' own routines, recorded by the asset generator's HatchingFixtures.java against a block view of the case's setup (air elsewhere). A case with place sets that state at the origin with every update, as /setblock does; a case with tick runs the origin's scheduled tick, as the level runs a tick that is due; any other case random-ticks the origin's state if its isRandomlyTicking holds. The random is a legacy random seeded with seed, as both the tick's random and the level's. The level's environment attributes are the dimension type's own attributes and its timelines (from the dimension type's timeline tag) on a clock at time; biomes and weather add no layer. draws lists each draw in order. writes are the block changes in order with their update flags; each runs the new state's onPlace as a chunk does, then with UPDATE_NEIGHBORS its neighbours' neighborChanged, then the neighbour shape updates it causes. scheduled lists the block and fluid ticks scheduled, with their delays, once for each block or fluid and position as the level schedules them. sounds, levelEvents and gameEvents are what the level was asked to play or emit, in order (sounds without their seed, which vanilla draws from another random). entities are the entities added, with their position, yaw, age, home and persistence. after holds the final state of every setup or written position. chances samples gameplay/turtle_egg_hatch_chance at the centre of block 0, 64, 0 for a dimension and a clock time.",
+  "version": "26.3",
+  "cases": [
+    {
+      "name": "placed_on_water_schedules_its_hatch",
+      "seed": 1,
+      "setup": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ],
+      "origin": [
+        0,
+        64,
+        0
+      ],
+      "place": "minecraft:frogspawn",
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 8400,
+          "value": 585
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:frogspawn",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "type": "minecraft:frogspawn",
+          "delay": 4185
+        },
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ],
+      "sounds": [],
+      "levelEvents": [],
+      "gameEvents": [],
+      "entities": [],
+      "after": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:water[level=0]"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:frogspawn"
+        }
+      ]
+    },
+    {
+      "name": "placed_on_stone_schedules_its_hatch",
+      "seed": 2,
+      "setup": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "origin": [
+        0,
+        64,
+        0
+      ],
+      "place": "minecraft:frogspawn",
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 8400,
+          "value": 6508
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:frogspawn",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "type": "minecraft:frogspawn",
+          "delay": 10108
+        }
+      ],
+      "sounds": [],
+      "levelEvents": [],
+      "gameEvents": [],
+      "entities": [],
+      "after": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:frogspawn"
+        }
+      ]
+    },
+    {
+      "name": "placed_on_a_waterlogged_slab",
+      "seed": 3,
+      "setup": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:oak_slab[type=bottom,waterlogged=true]"
+        }
+      ],
+      "origin": [
+        0,
+        64,
+        0
+      ],
+      "place": "minecraft:frogspawn",
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 8400,
+          "value": 7334
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:frogspawn",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "type": "minecraft:frogspawn",
+          "delay": 10934
+        },
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ],
+      "sounds": [],
+      "levelEvents": [],
+      "gameEvents": [],
+      "entities": [],
+      "after": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:oak_slab[type=bottom,waterlogged=true]"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:frogspawn"
+        }
+      ]
+    },
+    {
+      "name": "hatches_two_tadpoles",
+      "seed": 40595,
+      "setup": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:water[level=0]"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:frogspawn"
+        }
+      ],
+      "origin": [
+        0,
+        64,
+        0
+      ],
+      "tick": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 0
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.7690157298266609
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.2710399705123929
+        },
+        {
+          "call": "nextInt",
+          "bound": 360,
+          "value": 138
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.12571622941780347
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.04815632789708091
+        },
+        {
+          "call": "nextInt",
+          "bound": 360,
+          "value": 277
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ],
+      "sounds": [
+        {
+          "sound": "minecraft:block.frogspawn.hatch",
+          "pos": [
+            0.5,
+            64.5,
+            0.5
+          ],
+          "source": "block",
+          "volume": 1.0,
+          "pitch": 1.0
+        }
+      ],
+      "levelEvents": [
+        {
+          "type": 2001,
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "data": 35441
+        }
+      ],
+      "gameEvents": [
+        {
+          "event": "minecraft:block_destroy",
+          "pos": [
+            0.5,
+            64.5,
+            0.5
+          ]
+        }
+      ],
+      "entities": [
+        {
+          "type": "minecraft:tadpole",
+          "pos": [
+            0.7690157298266609,
+            63.5,
+            0.2710399705123929
+          ],
+          "yaw": 139.0,
+          "persistent": true
+        },
+        {
+          "type": "minecraft:tadpole",
+          "pos": [
+            0.20000000298023224,
+            63.5,
+            0.20000000298023224
+          ],
+          "yaw": 278.0,
+          "persistent": true
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:water[level=0]"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "hatches_three_tadpoles",
+      "seed": 16838,
+      "setup": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:water[level=0]"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:frogspawn"
+        }
+      ],
+      "origin": [
+        0,
+        64,
+        0
+      ],
+      "tick": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 1
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.10304819257269815
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.9918881660072644
+        },
+        {
+          "call": "nextInt",
+          "bound": 360,
+          "value": 165
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.6615359283970131
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.40141881091967646
+        },
+        {
+          "call": "nextInt",
+          "bound": 360,
+          "value": 46
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.01058309997934026
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.36159881052546605
+        },
+        {
+          "call": "nextInt",
+          "bound": 360,
+          "value": 257
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ],
+      "sounds": [
+        {
+          "sound": "minecraft:block.frogspawn.hatch",
+          "pos": [
+            0.5,
+            64.5,
+            0.5
+          ],
+          "source": "block",
+          "volume": 1.0,
+          "pitch": 1.0
+        }
+      ],
+      "levelEvents": [
+        {
+          "type": 2001,
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "data": 35441
+        }
+      ],
+      "gameEvents": [
+        {
+          "event": "minecraft:block_destroy",
+          "pos": [
+            0.5,
+            64.5,
+            0.5
+          ]
+        }
+      ],
+      "entities": [
+        {
+          "type": "minecraft:tadpole",
+          "pos": [
+            0.20000000298023224,
+            63.5,
+            0.7999999970197678
+          ],
+          "yaw": 166.0,
+          "persistent": true
+        },
+        {
+          "type": "minecraft:tadpole",
+          "pos": [
+            0.6615359283970131,
+            63.5,
+            0.40141881091967646
+          ],
+          "yaw": 47.0,
+          "persistent": true
+        },
+        {
+          "type": "minecraft:tadpole",
+          "pos": [
+            0.20000000298023224,
+            63.5,
+            0.36159881052546605
+          ],
+          "yaw": 258.0,
+          "persistent": true
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:water[level=0]"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "hatches_four_tadpoles",
+      "seed": 1000,
+      "setup": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:water[level=0]"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:frogspawn"
+        }
+      ],
+      "origin": [
+        0,
+        64,
+        0
+      ],
+      "tick": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 2
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.24691546819860266
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.46028809169559504
+        },
+        {
+          "call": "nextInt",
+          "bound": 360,
+          "value": 29
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.039405954311386604
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.4864098780914311
+        },
+        {
+          "call": "nextInt",
+          "bound": 360,
+          "value": 99
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.043502622854919126
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.41084893867934
+        },
+        {
+          "call": "nextInt",
+          "bound": 360,
+          "value": 315
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.6580583901495688
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.9744965039734514
+        },
+        {
+          "call": "nextInt",
+          "bound": 360,
+          "value": 342
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ],
+      "sounds": [
+        {
+          "sound": "minecraft:block.frogspawn.hatch",
+          "pos": [
+            0.5,
+            64.5,
+            0.5
+          ],
+          "source": "block",
+          "volume": 1.0,
+          "pitch": 1.0
+        }
+      ],
+      "levelEvents": [
+        {
+          "type": 2001,
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "data": 35441
+        }
+      ],
+      "gameEvents": [
+        {
+          "event": "minecraft:block_destroy",
+          "pos": [
+            0.5,
+            64.5,
+            0.5
+          ]
+        }
+      ],
+      "entities": [
+        {
+          "type": "minecraft:tadpole",
+          "pos": [
+            0.24691546819860266,
+            63.5,
+            0.46028809169559504
+          ],
+          "yaw": 30.0,
+          "persistent": true
+        },
+        {
+          "type": "minecraft:tadpole",
+          "pos": [
+            0.20000000298023224,
+            63.5,
+            0.4864098780914311
+          ],
+          "yaw": 100.0,
+          "persistent": true
+        },
+        {
+          "type": "minecraft:tadpole",
+          "pos": [
+            0.20000000298023224,
+            63.5,
+            0.41084893867934
+          ],
+          "yaw": 316.0,
+          "persistent": true
+        },
+        {
+          "type": "minecraft:tadpole",
+          "pos": [
+            0.6580583901495688,
+            63.5,
+            0.7999999970197678
+          ],
+          "yaw": 343.0,
+          "persistent": true
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:water[level=0]"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "hatches_five_tadpoles",
+      "seed": 8919,
+      "setup": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:water[level=0]"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:frogspawn"
+        }
+      ],
+      "origin": [
+        0,
+        64,
+        0
+      ],
+      "tick": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 3
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.772381825745748
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.6492979763935884
+        },
+        {
+          "call": "nextInt",
+          "bound": 360,
+          "value": 65
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.28032935781289237
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.4045922612110068
+        },
+        {
+          "call": "nextInt",
+          "bound": 360,
+          "value": 355
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.20793614148321005
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.6334424313254503
+        },
+        {
+          "call": "nextInt",
+          "bound": 360,
+          "value": 200
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.6221230129277752
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.9922175277306526
+        },
+        {
+          "call": "nextInt",
+          "bound": 360,
+          "value": 284
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.3720201279419003
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.46339822179351764
+        },
+        {
+          "call": "nextInt",
+          "bound": 360,
+          "value": 327
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ],
+      "sounds": [
+        {
+          "sound": "minecraft:block.frogspawn.hatch",
+          "pos": [
+            0.5,
+            64.5,
+            0.5
+          ],
+          "source": "block",
+          "volume": 1.0,
+          "pitch": 1.0
+        }
+      ],
+      "levelEvents": [
+        {
+          "type": 2001,
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "data": 35441
+        }
+      ],
+      "gameEvents": [
+        {
+          "event": "minecraft:block_destroy",
+          "pos": [
+            0.5,
+            64.5,
+            0.5
+          ]
+        }
+      ],
+      "entities": [
+        {
+          "type": "minecraft:tadpole",
+          "pos": [
+            0.772381825745748,
+            63.5,
+            0.6492979763935884
+          ],
+          "yaw": 66.0,
+          "persistent": true
+        },
+        {
+          "type": "minecraft:tadpole",
+          "pos": [
+            0.28032935781289237,
+            63.5,
+            0.4045922612110068
+          ],
+          "yaw": 356.0,
+          "persistent": true
+        },
+        {
+          "type": "minecraft:tadpole",
+          "pos": [
+            0.20793614148321005,
+            63.5,
+            0.6334424313254503
+          ],
+          "yaw": 201.0,
+          "persistent": true
+        },
+        {
+          "type": "minecraft:tadpole",
+          "pos": [
+            0.6221230129277752,
+            63.5,
+            0.7999999970197678
+          ],
+          "yaw": 285.0,
+          "persistent": true
+        },
+        {
+          "type": "minecraft:tadpole",
+          "pos": [
+            0.3720201279419003,
+            63.5,
+            0.46339822179351764
+          ],
+          "yaw": 328.0,
+          "persistent": true
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:water[level=0]"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "hatches_on_a_waterlogged_slab",
+      "seed": 4,
+      "setup": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:oak_slab[type=bottom,waterlogged=true]"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:frogspawn"
+        }
+      ],
+      "origin": [
+        0,
+        64,
+        0
+      ],
+      "tick": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 2
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.9075698691414893
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.810723556855427
+        },
+        {
+          "call": "nextInt",
+          "bound": 360,
+          "value": 345
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.6795571637816596
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.07838777450255496
+        },
+        {
+          "call": "nextInt",
+          "bound": 360,
+          "value": 212
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.8526162758358073
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.7992049575587654
+        },
+        {
+          "call": "nextInt",
+          "bound": 360,
+          "value": 132
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.15123210213417404
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.9245810422363743
+        },
+        {
+          "call": "nextInt",
+          "bound": 360,
+          "value": 275
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ],
+      "sounds": [
+        {
+          "sound": "minecraft:block.frogspawn.hatch",
+          "pos": [
+            0.5,
+            64.5,
+            0.5
+          ],
+          "source": "block",
+          "volume": 1.0,
+          "pitch": 1.0
+        }
+      ],
+      "levelEvents": [
+        {
+          "type": 2001,
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "data": 35441
+        }
+      ],
+      "gameEvents": [
+        {
+          "event": "minecraft:block_destroy",
+          "pos": [
+            0.5,
+            64.5,
+            0.5
+          ]
+        }
+      ],
+      "entities": [
+        {
+          "type": "minecraft:tadpole",
+          "pos": [
+            0.7999999970197678,
+            63.5,
+            0.7999999970197678
+          ],
+          "yaw": 346.0,
+          "persistent": true
+        },
+        {
+          "type": "minecraft:tadpole",
+          "pos": [
+            0.6795571637816596,
+            63.5,
+            0.20000000298023224
+          ],
+          "yaw": 213.0,
+          "persistent": true
+        },
+        {
+          "type": "minecraft:tadpole",
+          "pos": [
+            0.7999999970197678,
+            63.5,
+            0.7992049575587654
+          ],
+          "yaw": 133.0,
+          "persistent": true
+        },
+        {
+          "type": "minecraft:tadpole",
+          "pos": [
+            0.20000000298023224,
+            63.5,
+            0.7999999970197678
+          ],
+          "yaw": 276.0,
+          "persistent": true
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:oak_slab[type=bottom,waterlogged=true]"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "dies_on_flowing_water",
+      "seed": 5,
+      "setup": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:water[level=1]"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:frogspawn"
+        }
+      ],
+      "origin": [
+        0,
+        64,
+        0
+      ],
+      "tick": true,
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "type": "minecraft:flowing_water",
+          "delay": 5
+        }
+      ],
+      "sounds": [],
+      "levelEvents": [
+        {
+          "type": 2001,
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "data": 35441
+        }
+      ],
+      "gameEvents": [
+        {
+          "event": "minecraft:block_destroy",
+          "pos": [
+            0.5,
+            64.5,
+            0.5
+          ]
+        }
+      ],
+      "entities": [],
+      "after": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:water[level=1]"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "dies_on_falling_water",
+      "seed": 6,
+      "setup": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:water[level=8]"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:frogspawn"
+        }
+      ],
+      "origin": [
+        0,
+        64,
+        0
+      ],
+      "tick": true,
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "type": "minecraft:flowing_water",
+          "delay": 5
+        }
+      ],
+      "sounds": [],
+      "levelEvents": [
+        {
+          "type": 2001,
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "data": 35441
+        }
+      ],
+      "gameEvents": [
+        {
+          "event": "minecraft:block_destroy",
+          "pos": [
+            0.5,
+            64.5,
+            0.5
+          ]
+        }
+      ],
+      "entities": [],
+      "after": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:water[level=8]"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "dies_on_stone",
+      "seed": 7,
+      "setup": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:frogspawn"
+        }
+      ],
+      "origin": [
+        0,
+        64,
+        0
+      ],
+      "tick": true,
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "sounds": [],
+      "levelEvents": [
+        {
+          "type": 2001,
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "data": 35441
+        }
+      ],
+      "gameEvents": [
+        {
+          "event": "minecraft:block_destroy",
+          "pos": [
+            0.5,
+            64.5,
+            0.5
+          ]
+        }
+      ],
+      "entities": [],
+      "after": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "dies_on_ice",
+      "seed": 8,
+      "setup": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:ice"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:frogspawn"
+        }
+      ],
+      "origin": [
+        0,
+        64,
+        0
+      ],
+      "tick": true,
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "sounds": [],
+      "levelEvents": [
+        {
+          "type": 2001,
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "data": 35441
+        }
+      ],
+      "gameEvents": [
+        {
+          "event": "minecraft:block_destroy",
+          "pos": [
+            0.5,
+            64.5,
+            0.5
+          ]
+        }
+      ],
+      "entities": [],
+      "after": [
+        {
+          "pos": [
+            0,
+            63,
+            0
+          ],
+          "state": "minecraft:ice"
+        },
+        {
+          "pos": [
+            0,
+            64,
+            0
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    }
+  ]
+}

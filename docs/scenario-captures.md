@@ -229,6 +229,48 @@ replaces only what vanilla produced.
   container close sources; mob ambient sounds aren't compared (see
   [mob ambient sounds](known-gaps/mob-ambient-sounds.md)).
 
+- `turtle_eggs.json` (`VanillaTurtleEggs.ReplayTurtleEggReference`) records vanilla's turtle eggs, from
+  `Java/HatchingFixtures.java` (`CaptureFixtures=turtle_eggs`). Each case is its input: the blocks of a small block
+  view (air elsewhere), the origin, a seed, the overworld clock's time and the dimension, and either a random tick or
+  a state to `place` with every update. The probe builds the level's environment attributes from the dimension
+  type's own attributes and its timelines at that time (no biome or weather layers), uses a legacy random of the seed
+  as both the tick's and the level's random, and runs each write's `onPlace` as a chunk does, then its neighbour
+  notifications (with `UPDATE_NEIGHBORS`) and shape updates. It records the draws, the writes, the ticks scheduled, the sounds (without their seed), level events, game events, the entities added
+  (position, yaw, age, home) and the final blocks. The cases cover cracking on each block of `#sand`, hatching one and
+  four eggs, eggs on dirt and sandstone, the hatch window's edges, a later day, chance cracks outside the window and
+  in the nether, and placing on and off sand. `chances` samples `gameplay/turtle_egg_hatch_chance` by dimension and
+  time. The replay runs every case in one world, moved along x, through the random-tick dispatch or a block change,
+  and compares everything recorded but the game events, which no client sees; the writes in order with every flag,
+  as the level stores them (`LevelFluids.BlockStored`).
+
+- `frogspawn.json` (`VanillaFrogspawn.ReplayFrogspawnReference`) records vanilla's frogspawn, from the same probe
+  (`CaptureFixtures=frogspawn`). A case either places frogspawn with every update, which schedules its hatch with a
+  draw of the level's random, or runs its scheduled tick (`tick`), which breaks it, then on a water source (or a
+  waterlogged block) plays its sound and hatches two to five tadpoles at drawn offsets and yaws. The cases cover
+  placing on water, stone and a waterlogged slab, hatching each number of tadpoles, and dying on flowing and falling
+  water, stone and ice. The replay places through a block change and ticks through the level's scheduled-tick
+  dispatch, in one world, and compares the draws, the writes in order with their flags, blocks, ticks, sounds, level
+  events and tadpoles.
+
+- `growing_plant_ticks.json` (`VanillaGrowingPlantTicks.ReplayGrowingPlantTickReference`) records vanilla's
+  `randomTick` of growing plants, and the shape updates of kelp and the vines, from
+  `Java/GrowingPlantTickFixtures.java` (`CaptureFixtures=growing_plant_ticks`). Each case is its input: the blocks of
+  a small block view (air elsewhere), an optional ticked origin, optional actions after the tick (a state set with
+  `UPDATE_ALL`, or a block removed), a seed, and optionally the raw light everywhere (`light`) and the `spread_vines`
+  rule (`spreadVines`). The probe ticks the origin only if its state randomly ticks, with a legacy random of the seed
+  as both the tick's and the level's random. It records whether the state ticks, every draw with its bound and result
+  (a body turning back into a head draws its age), the ordered writes with their flags (neighbour shape updates run,
+  so an old head turning into its body is one), the block and fluid ticks scheduled with their delays, and the final
+  state of every position it set up or wrote. The cases cover kelp and the cave, weeping and twisting vines, melon and
+  pumpkin stems, wall vines and the pitcher crop: growing, a missed draw, being blocked, the last age, light, the
+  build height limits, each way a vine spreads, a tip broken off after growing, a head growing into a one-block gap
+  below its plant, and support placed or removed under a head. The replay builds each case in a fresh world with the
+  recording random as the level's, dispatches the state as `AbstractLevel.TickChunkBlocks` does (its
+  `isRandomlyTicking`, then its generated owner), runs the actions, and compares the draws, the ordered writes and
+  their neighbour, client and known-shape flags, the final blocks, that nothing else in the chunk around them changed,
+  and the ticks pending in the chunk with their delays. Six cases list exactly where the block notification pipeline
+  still parts from vanilla (see
+  [reactions to block updates](known-gaps/vanilla-blocks-reactions-to-block-updates.md)).
 
 - `melting_weather.json` (`VanillaMeltingWeather.ReplayMeltingAndWeatherReference`) records ice, frosted ice and
   snow layers melting and the chunk tick's precipitation pass, from `Java/MeltingWeatherFixtures.java`. The probe runs
@@ -278,6 +320,12 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=block_use
 
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=turtle_eggs
+
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=frogspawn
+
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=growing_plant_ticks
+
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=melting_weather
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=sulfur -p:CaptureCases=spike_shatters_after_falling+review_spike_pending_fall_keeps_frustum
@@ -320,6 +368,14 @@ container close sources, and awarded advancement criteria. The fixture lists
 location predicate terms in Obsidian's existing format; the probe converts them to 26.3's `all_of` and `match_block`
 encoding before registering them with vanilla's advancement system.
 
+The `turtle_eggs` and `frogspawn` captures run no server and re-record every case. To add one, add a case with its
+`name`, `seed`, `origin` and `setup` (and `time`, `dimension`, `place` or `tick`) and capture again; pick a seed whose
+first draw takes the branch the case is about.
+
+The `growing_plant_ticks` capture runs no server and re-records every case. To add one, add a case with its `name`,
+`seed`, `setup` and an `origin` or `actions`, and capture again; pick a seed whose first draws take the branch the case
+is about.
+
 For `melting_weather`, `CaptureCases` accepts exact `+`-separated case names and records only those, leaving the
 other cases unchanged. For example, add a case's inputs to `cases` and capture it with
 `-p:CaptureFixtures=melting_weather -p:CaptureCases=review_frosted_pair_collapses`. Each generator group takes
@@ -337,7 +393,7 @@ other dumpers, so editing it regenerates the assets once.
 The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft version> <cache directory>
 <scratch directory> <test assets directory>
 [redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+heightmaps+saved_heightmaps+mining+placement+
-copper_weathering+fire+ticking_blocks+block_use+melting_weather]
+copper_weathering+fire+ticking_blocks+block_use+turtle_eggs+frogspawn+growing_plant_ticks+melting_weather]
 [case names]`.
 
 ## How it captures
