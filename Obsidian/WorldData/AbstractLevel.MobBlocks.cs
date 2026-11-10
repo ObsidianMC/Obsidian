@@ -45,10 +45,14 @@ public abstract partial class AbstractLevel
     /// from the top down.
     /// </summary>
     /// <returns>Whether a snow golem was built.</returns>
-    internal ValueTask<bool> BuildSnowGolemAsync(Vector head) =>
-        ValueTask.FromResult(this.BuildDispensedSnowGolem(head));
+    internal ValueTask<bool> BuildSnowGolemAsync(Vector head)
+    {
+        // The pattern is checked and cleared in one tick-lock section, so a block placed meanwhile isn't removed.
+        lock (this.Fluids.TickLock)
+            return ValueTask.FromResult(this.BuildDispensedSnowGolem(head));
+    }
 
-    // Synchronous resident-only commit used while a dispenser owns its inventory.
+    // Synchronous resident-only commit; call holding the tick lock (a dispenser's commit holds it already).
     internal bool BuildDispensedSnowGolem(Vector head)
     {
         var terrain = new MobTerrain(this);
@@ -87,10 +91,14 @@ public abstract partial class AbstractLevel
     /// too) playing its breaking effect, column by column.
     /// </summary>
     /// <returns>Whether a wither was built.</returns>
-    internal ValueTask<bool> BuildWitherAsync(Vector skull) =>
-        ValueTask.FromResult(this.BuildDispensedWither(skull));
+    internal ValueTask<bool> BuildWitherAsync(Vector skull)
+    {
+        // The pattern is checked and cleared in one tick-lock section, so a block placed meanwhile isn't removed.
+        lock (this.Fluids.TickLock)
+            return ValueTask.FromResult(this.BuildDispensedWither(skull));
+    }
 
-    // Synchronous resident-only commit used while a dispenser owns its inventory.
+    // Synchronous resident-only commit; call holding the tick lock (a dispenser's commit holds it already).
     internal bool BuildDispensedWither(Vector skull)
     {
         if (skull.Y < this.MinY || LevelData.Difficulty == Difficulty.Peaceful)
