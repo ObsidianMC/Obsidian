@@ -68,6 +68,9 @@ internal static class AnalogOutputs
             ChestSignal(level, state, position),
         "LecternBlock" => level.GetBlockEntity(position) is LecternBlockEntity lectern ? lectern.AnalogSignal() : 0,
         "CrafterBlock" => level.GetBlockEntity(position) is CrafterBlockEntity crafter ? crafter.AnalogSignal() : 0,
+        "ChiseledBookShelfBlock" => level.GetBlockEntity(position) is ChiseledBookshelfBlockEntity shelf
+            ? shelf.AnalogSignal()
+            : 0,
         "DetectorRailBlock" => DetectorSignal(level, state, position),
         _ => ContainerSignal(level, level.GetBlockEntity(position))
     };

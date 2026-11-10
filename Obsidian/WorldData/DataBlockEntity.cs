@@ -29,7 +29,7 @@ public sealed class DataBlockEntity : BlockEntity
     // preRemoveSideEffects calls Containers.dropContents.
     private static readonly HashSet<string> droppingTypes =
     [
-        "minecraft:campfire", "minecraft:chiseled_bookshelf", "minecraft:crafter"
+        "minecraft:campfire", "minecraft:crafter"
     ];
 
     public NbtCompound Data { get; init; } = new();
