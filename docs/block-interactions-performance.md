@@ -128,7 +128,7 @@ the entity loop are gone.
 
 Same harness as the re-runnable block probe below, in a temporary level that is deleted afterwards: 400 armor stands
 standing on stone over 25 chunks, then the same with four pressed oak plates under four of them. One operation is
-the contact work of one level tick for all of them, not their own ticks. Before is `01a9f3f15` (the plugin pass per
+the contact work of one level tick for all of them, not their own ticks. Before is `51062463a` (the plugin pass per
 entity, then the plate and tripwire passes over a fresh snapshot); after is this change. Runs made on 2026-11-09 on
 the machine described below; ranges are over three runs.
 
