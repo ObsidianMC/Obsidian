@@ -31,50 +31,6 @@ public abstract partial class AbstractLevel
         : BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace;
 
     /// <summary>
-    /// Runs the hooks of the plugin blocks an entity touches after it ticked, like vanilla's entity movement: the
-    /// <see cref="IBlockBehavior.EntityInsideAsync"/> of each block its box overlaps, and the
-    /// <see cref="IBlockBehavior.SteppedOnAsync"/> of the block it stands on. Vanilla's pressure plates and wooden
-    /// buttons it's inside react too.
-    /// </summary>
-    internal async ValueTask TouchPluginBlocksAsync(IEntity entity)
-    {
-        // Vanilla's checkInsideBlocks: the box shrunk by 1.0E-5, so that touching a block's face isn't being inside.
-        const double inset = 1.0E-5;
-        var dimension = (entity as Entities.Entity)?.Dimension ?? EntityDimension.Zero;
-        var halfWidth = dimension.Width / 2.0;
-        var position = entity.Position;
-
-        var min = new Vector(
-            (int)Math.Floor(position.X - halfWidth + inset),
-            (int)Math.Floor(position.Y + inset),
-            (int)Math.Floor(position.Z - halfWidth + inset));
-        var max = new Vector(
-            (int)Math.Floor(position.X + halfWidth - inset),
-            (int)Math.Floor(position.Y + dimension.Height - inset),
-            (int)Math.Floor(position.Z + halfWidth - inset));
-
-        for (var x = min.X; x <= max.X; x++)
-        {
-            for (var y = min.Y; y <= max.Y; y++)
-            {
-                for (var z = min.Z; z <= max.Z; z++)
-                    await this.TouchAsync(entity, new Vector(x, y, z), inside: true);
-            }
-        }
-
-        if (!entity.MovementFlags.HasFlag(MovementFlags.OnGround))
-            return;
-
-        // Vanilla's getOnPosLegacy, without its look for a fence or wall below: the block 0.2 below the feet.
-        var below = new Vector(
-            (int)Math.Floor(position.X),
-            (int)Math.Floor(position.Y - 0.2),
-            (int)Math.Floor(position.Z));
-
-        await this.TouchAsync(entity, below, inside: false);
-    }
-
-    /// <summary>
     /// Runs the side effects of a block <see cref="TrySetBlockUntrackedAsync"/> stored in place of
     /// <paramref name="old"/>, as <paramref name="flags"/> ask, like vanilla's <c>setBlock</c>: players see it, then
     /// the old block's removal, the new block's placement and its neighbours' updates run, and portals check their
@@ -140,38 +96,5 @@ public abstract partial class AbstractLevel
             this.BlockNotifications.EnqueueNeighbors(position.Offset(face));
 
         this.BlockNotifications.DrainAsync().GetAwaiter().GetResult();
-    }
-
-    private async ValueTask TouchAsync(IEntity entity, Vector position, bool inside)
-    {
-        if (this.GameEventBlock(position) is not IBlock state)
-            return;
-
-        // A vanilla class's entityInside override, found from the class that declares it.
-        if (inside && entity is Entities.Entity concrete
-            && BlocksRegistry.GetEntityInsideBehavior(state.RegistryId) is IEntityInsideBehavior owner)
-        {
-            owner.EntityInside(this.BlockUpdates, position, state, concrete);
-        }
-
-        // A redstone block's entity contact, like a detector rail's minecart press.
-        if (inside && this.RedstoneRules.ContactFor(state) is IRedstoneContact contact)
-            await contact.EntityInsideAsync(this, position, state);
-
-        if (!BlockBehaviors.HasBehavior(state))
-            return;
-
-        var context = new EntityBlockContext
-        {
-            Entity = entity,
-            Level = this,
-            Position = position,
-            State = state
-        };
-
-        if (inside)
-            await BlockBehaviors.EntityInsideAsync(context, this.Logger);
-        else
-            await BlockBehaviors.SteppedOnAsync(context, this.Logger);
     }
 }

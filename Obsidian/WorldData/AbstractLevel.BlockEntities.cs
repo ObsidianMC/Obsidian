@@ -651,24 +651,11 @@ public abstract partial class AbstractLevel
             case DataBlockEntity data when data.KeptContainer() is ContainerBlockEntity kept:
                 await this.RemoveContentsAsync(kept);
                 break;
-            case DataBlockEntity { Id: "minecraft:decorated_pot" } pot:
-                // Vanilla's pot spills its item separately; its block loot copies only pot_decorations.
-                NbtCompound potData;
-                lock (pot.Data)
-                {
-                    potData = pot.SnapshotData();
-                    pot.Remove("item");
-                }
-
-                if (potData.TryGetTag<NbtCompound>("item", out var itemTag)
-                    && itemTag.ItemFromNbt() is ItemStack potItem && !potItem.IsAir && potItem.Count > 0)
-                {
-                    this.DropItemStack(pot.BlockPosition, potItem);
-                }
-
-                break;
             case DataBlockEntity { DropsItems: true } data:
                 this.DropSavedItems(data);
+                break;
+            case DataBlockEntity { Id: "minecraft:jukebox" } jukebox:
+                this.RemoveJukebox(jukebox);
                 break;
         }
     }

@@ -44,8 +44,9 @@ retaining their complete-neighbor readiness checks. Notes, normal/sticky pistons
 chest/trapped/copper chest lids (both halves), ender chest and shulker lids, sulfur geysers, gateway cooldowns and
 block-spawner resets use this phase. Native captures cover both note/piston orders, mixed duplicates, notification-
 queued playback during draining, every key field, replacement and inactive-chunk retry, plus the client event
-forms for lids, bells, gateways, spawners and geysers. Bell events can use the same queue, but bell activation and
-server-side ringing behavior remain unimplemented; there was no separate bell-event producer to migrate.
+forms for lids, bells, gateways, spawners and geysers. A bell rung by a player's use queues its event here too;
+bells rung by redstone or projectiles, and the bell's server-side ringing state, are still missing (see
+[waxing, bells and redstone ore](waxing-bells-and-redstone-ore.md)).
 
 Remaining block work needs separate interaction/lifecycle captures:
 

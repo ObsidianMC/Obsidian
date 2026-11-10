@@ -10,13 +10,18 @@ What follows is what still differs.
   sound, and dispensers only dispense boats and minecarts and drop everything else (see
   [item access](item-access-beyond-containers.md)).
 - **Sources.** Trapped chests and lightning rods give no power, though dust connects to them as to any signal
-  source. Observers, daylight detectors, target blocks (hit by arrows, spectral arrows and tridents only), tripwire
+  source, and a jukebox gives none while it plays, where vanilla's gives 15 (`JukeboxBlock.isSignalSource`).
+  Observers, daylight detectors, target blocks (hit by arrows, spectral arrows and tridents only), tripwire
   hooks, detector rails, sculk sensors and lecterns do.
-- **Analog outputs.** Comparators read 0 from jukeboxes, chiseled bookshelves, decorated pots,
-  shelves, command blocks, sculk sensors, creaking hearts, copper bulbs and copper golem statues.
+- **Analog outputs.** Comparators read 0 from shelves, command blocks, sculk sensors, creaking hearts, copper bulbs
+  and copper golem statues.
 - **Timing.** Comparators hear of a container's items changing at the end of the level's block entity tick (through
   item access) or on its next one (players' clicks), and only near players, where vanilla's `setChanged` tells them
-  at once; and entities press plates and arrows press buttons after they tick, where vanilla's do as they move.
+  at once. Entities press plates, trip wires and press wooden buttons (arrows) straight after their own tick, as
+  vanilla's do, but only from where they end up: vanilla also finds the blocks an entity passed through in that tick.
+  Which entities touch blocks and which leave plates and tripwires alone (vexes touch them, bats don't trigger them,
+  an entity its own tick removed touches nothing) follows vanilla's source; `block_contact_scenarios.json` doesn't
+  capture those kinds yet.
   Cats sitting on a chest don't stop comparators reading it.
   Solid-block obstruction above a single chest or either double-chest half leaves the comparator's output stale
   until another notification, as captured in vanilla; removing it alone does too. Observers use the shape owner,

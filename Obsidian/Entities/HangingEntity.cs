@@ -30,6 +30,9 @@ public abstract class HangingEntity : Entity, IPlayerInteractable
     private int checkTicks;
     private bool broken;
 
+    // Its box hangs against its block rather than around its position, and always follows it.
+    internal override BoundingBox CurrentBox => this.BoundingBox;
+
     /// <summary>The direction it faces, away from the block it hangs on.</summary>
     public BlockFace Facing { get; set; } = BlockFace.South;
 

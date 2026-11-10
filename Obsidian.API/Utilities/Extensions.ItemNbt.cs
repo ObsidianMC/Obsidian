@@ -316,13 +316,20 @@ public partial class Extensions
     // Vanilla's PotDecorations codec: the back, left, right and front faces' items.
     private static readonly string[] PotFaces = ["back", "left", "right", "front"];
 
+    // Each face is vanilla's ItemStackTemplate, whose count is written only when it isn't 1.
     private static NbtCompound PotDecorationsToNbt(string name, ImmutableArray<ItemStack> decorations)
     {
         var result = new NbtCompound(name);
         for (var i = 0; i < 4; i++)
         {
-            if (decorations[i] is ItemStack stack)
-                result.Add(stack.ToNbt(PotFaces[i]));
+            if (decorations[i] is not ItemStack stack)
+                continue;
+
+            var face = stack.ToNbt(PotFaces[i]);
+            if (stack.Count == 1)
+                face.Remove("count");
+
+            result.Add(face);
         }
 
         return result;

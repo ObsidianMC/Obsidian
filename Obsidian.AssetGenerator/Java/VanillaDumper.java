@@ -164,6 +164,7 @@ public final class VanillaDumper {
         dumper.dumpItemUseClasses();
         dumper.dumpItemClickClasses();
         dumper.dumpItemPlacedBlocks();
+        dumper.dumpFlowerPotContents();
         dumper.dumpItemAttachments();
         dumper.dumpCollisionShapes();
         dumper.dumpBlastResistance();
@@ -911,6 +912,12 @@ public final class VanillaDumper {
             ENTITY,
             "net.minecraft.world.entity.InsideBlockEffectApplier",
             "boolean");
+        // An entity standing on a block, and one landing on it, from Entity's movement; both are declared by Block.
+        var anyLevel = "net.minecraft.world.level.Level";
+        dumpOverrideClassesOf(
+            "block_step_on_classes.json", BLOCK, "stepOn", anyLevel, BLOCK_POS, BLOCK_STATE, ENTITY);
+        dumpOverrideClassesOf(
+            "block_fall_on_classes.json", BLOCK, "fallOn", anyLevel, BLOCK_STATE, BLOCK_POS, ENTITY, "double");
         dumpBlockOverrideClasses(
             "block_on_place_classes.json",
             "onPlace",
@@ -1149,9 +1156,18 @@ public final class VanillaDumper {
     }
 
     private void dumpBlockOverrideClasses(String file, String name, String... parameterTypes) throws IOException {
-        // The base no-op is declared by BlockBehaviour.
+        // Most hooks' base no-op is declared by BlockBehaviour.
         var behaviour = "net.minecraft.world.level.block.state.BlockBehaviour";
-        var baseMethod = Vanilla.method(behaviour, name, parameterTypes);
+        dumpOverrideClassesOf(file, behaviour, name, parameterTypes);
+    }
+
+    /**
+     * The hook-owner file of a hook whose base is declared by {@code base}: each block's class that overrides it, or
+     * none for blocks inheriting the base.
+     */
+    private void dumpOverrideClassesOf(String file, String base, String name, String... parameterTypes)
+        throws IOException {
+        var baseMethod = Vanilla.method(base, name, parameterTypes);
         var parameters = new Class<?>[parameterTypes.length];
         for (var i = 0; i < parameters.length; i++) {
             parameters[i] = Vanilla.type(parameterTypes[i]);
@@ -1169,7 +1185,7 @@ public final class VanillaDumper {
                 }
             }
 
-            if (owner != null && owner != Vanilla.type(behaviour)) {
+            if (owner != null && owner != Vanilla.type(base)) {
                 classes.put(key(blockRegistry, block), owner.getName());
             }
         }
@@ -1341,6 +1357,26 @@ public final class VanillaDumper {
         }
 
         Json.write(output.resolve("item_placed_blocks.json"), placed, false);
+    }
+
+    /**
+     * {@code flower_pot_contents.json}: the block each {@code FlowerPotBlock} holds ({@code getPotted}), air for the
+     * empty pot. Planting an item's block in an empty pot gives the pot that holds it, and taking it out gives the
+     * held block's item.
+     */
+    private void dumpFlowerPotContents() throws IOException {
+        var flowerPot = Vanilla.type("net.minecraft.world.level.block.FlowerPotBlock");
+        var getPotted = Vanilla.method("net.minecraft.world.level.block.FlowerPotBlock", "getPotted");
+        var blockRegistry = Vanilla.get(REGISTRIES, "BLOCK");
+        var contents = new TreeMap<String, String>();
+
+        for (var block : (Iterable<?>) blockRegistry) {
+            if (flowerPot.isInstance(block)) {
+                contents.put(key(blockRegistry, block), key(blockRegistry, Vanilla.call(getPotted, block)));
+            }
+        }
+
+        Json.write(output.resolve("flower_pot_contents.json"), contents, false);
     }
 
     /**
