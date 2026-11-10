@@ -37,6 +37,6 @@ internal sealed class PathBlockBehavior : IScheduledTickBehavior, IShapeUpdateBe
     private static bool CanSurvive(IBlockLevel level, Vector position)
     {
         var above = level.GetBlock(position + Vector.Up);
-        return !above.IsSolid() || above.BlockClass() == "FenceGateBlock";
+        return !above.IsSolid() || above.ClassId() == BlockClassId.FenceGateBlock;
     }
 }

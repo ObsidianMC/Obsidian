@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using Obsidian.API.Blocks;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.Features;
@@ -52,8 +53,21 @@ internal static class Coral
     }
 
     /// <summary>The dead coral of <paramref name="state"/>'s kind, in its default state.</summary>
-    public static IBlock Dead(IBlock state) =>
-        BlocksRegistry.Get(state.UnlocalizedName.Replace("minecraft:", "minecraft:dead_"));
+    public static IBlock Dead(IBlock state) => deadForms.Value[state.RegistryId];
+
+    // Each live coral's dead form, by registry id: vanilla names it dead_ followed by the live coral's name.
+    private static readonly Lazy<FrozenDictionary<int, IBlock>> deadForms = new(() =>
+    {
+        string[] classes = ["CoralBlock", "CoralPlantBlock", "CoralFanBlock", "CoralWallFanBlock"];
+        var forms = new Dictionary<int, IBlock>();
+        foreach (var id in classes.SelectMany(BlockPhysics.BlocksOfClass))
+        {
+            var live = BlocksRegistry.GetDefault(id).UnlocalizedName;
+            forms[id] = BlocksRegistry.Get(live.Replace("minecraft:", "minecraft:dead_"));
+        }
+
+        return forms.ToFrozenDictionary();
+    });
 }
 
 /// <summary>Vanilla's <c>CoralBlock</c>: its <c>tick</c> and <c>updateShape</c> overrides.</summary>
