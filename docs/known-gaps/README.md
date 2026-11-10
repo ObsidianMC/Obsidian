@@ -21,6 +21,7 @@ and where to start.
 - [Block-use state validation](block-use-stale-state.md)
 - [Bubble columns started by water](bubble-columns-started-by-water.md)
 - [Comparators reading unopened loot containers](comparators-reading-unopened-loot-containers.md)
+- [Eyeblossoms, dried ghasts and portal piglins](eyeblossoms-dried-ghasts-and-portal-piglins.md)
 - [Plant growth beyond saplings](plant-growth-beyond-saplings.md)
 - [Recursive placement callbacks](recursive-placement-callbacks.md)
 - [Redstone](redstone.md)
