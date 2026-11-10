@@ -7,7 +7,21 @@ namespace Obsidian.WorldData.Redstone;
 /// Registers every redstone behavior that reacts to neighbors or gives signal. A level and its tests call this once, so both use the
 /// same behavior set.
 /// </summary>
-internal sealed record RedstoneInstall(RedstoneEngine Engine, TripWire Tripwires, TargetBlock Targets);
+internal sealed record RedstoneInstall(
+    RedstoneEngine Engine,
+    TripWire Tripwires,
+    TargetBlock Targets,
+    RedstoneContacts Contacts);
+
+/// <summary>
+/// A level's redstone blocks that entities press or trip by touching them, which the entity contact pass's block
+/// owners (<see cref="EntityInsideBehaviors"/>) hand the contact to.
+/// </summary>
+internal sealed record RedstoneContacts(
+    IRedstoneLevel Level,
+    PressurePlates Plates,
+    TripWire Tripwires,
+    RedstoneDetectorRail DetectorRails);
 
 internal static class RedstoneRegistration
 {
@@ -28,10 +42,14 @@ internal static class RedstoneRegistration
         RedstoneLectern.Register(world, ticks, redstone);
         RedstoneCrafter.Register(world, ticks, neighbors, engine);
         RedstoneDispenser.Register(world, engine, ticks, neighbors);
-        RedstoneRails.Register(world, engine, ticks, redstone, neighbors);
+        var detectorRails = RedstoneRails.Register(world, engine, ticks, redstone, neighbors);
         RedstoneHopper.Register(world, neighbors, engine);
         var tripwires = TripWire.Register(world, ticks, redstone, neighbors);
         var targets = TargetBlock.Register(world, ticks, redstone);
-        return new RedstoneInstall(engine, tripwires, targets);
+        var plates = new PressurePlates(world);
+        plates.RegisterTicks(ticks);
+
+        var contacts = new RedstoneContacts(world, plates, tripwires, detectorRails);
+        return new RedstoneInstall(engine, tripwires, targets, contacts);
     }
 }

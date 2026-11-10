@@ -506,7 +506,7 @@ adds.
 
 | Line | Status | What's left |
 |---|---|---|
-| Pressure plates, weighted plates | Works | Fire after entities tick, not as they move; armor stands don't press stone plates; contact box |
+| Pressure plates, weighted plates | Works | An entity passing over a plate within one tick doesn't press it |
 | Tripwire, tripwire hooks | Works | No hook sounds; shears don't disarm |
 | Farmland: trample | Missing | |
 | Turtle eggs: trample | Partial | Rolled per step event, not per tick; sneaking doesn't protect |
@@ -628,8 +628,8 @@ To confirm by capture or by running a server before the work that depends on it:
 
 - Whether powder snow's recorded collision shape lets mobs fall through.
 - Whether a bubble column's motion packet also reaches the pushed player, doubling the push on their client.
-- Vanilla values quoted from memory: the pressure plate touch box, the calibrated sensor's active time, the
-  shrieker's darkness and cooldown rules.
+- Vanilla values quoted from memory: the calibrated sensor's active time, the shrieker's darkness and cooldown rules.
+  (The pressure plate touch box is settled: `block_contact_scenarios.json`.)
 - Whether survival players may change a spawner with a spawn egg in 26.3, and whether creative mode consumes eyes of
   ender.
 - What the issue means by "vines trim" (stopping a growing vine head, or shearing wall vines). Honeycomb waxing is

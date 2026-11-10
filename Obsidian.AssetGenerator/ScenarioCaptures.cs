@@ -112,6 +112,19 @@ internal static class ScenarioCaptures
     public static async Task RunAsync(VanillaServer server, string assetsDirectory,
         IReadOnlyCollection<string> fixtures, IReadOnlyCollection<string>? cases = null)
     {
+        // Entities touching blocks, recorded by name only (CaptureFixtures=block_contact), with or without cases.
+        if (fixtures.Contains(ScenarioContactCaptures.Fixture))
+        {
+            if (cases is not null && fixtures.Count != 1)
+                throw new ArgumentException("Case selection for block_contact requires CaptureFixtures=block_contact.");
+
+            await ScenarioContactCaptures.RunAsync(server, assetsDirectory, cases);
+            if (fixtures.Count == 1)
+                return;
+
+            fixtures = [.. fixtures.Where(fixture => fixture != ScenarioContactCaptures.Fixture)];
+        }
+
         if (cases is not null && (fixtures.Count != 1 || !SelectableCases.Any(fixtures.Contains)))
         {
             throw new ArgumentException(
