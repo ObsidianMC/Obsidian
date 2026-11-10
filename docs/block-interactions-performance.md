@@ -232,14 +232,17 @@ change before → after:
 | A 15-dust line toggled on and off (81 writes) | 972 → 486 | 0 | 486 + 1949 | 0 |
 
 The re-runnable probe below times the same changes on a real level (its `Level/` rows); its `RedstoneTestWorld`
-rows don't see this, since there the pipeline is the only engine and keeps its shape steps. Base `ffacf749a` with the
-probe added against this change, three alternating runs each on the machine below under load (ns per operation,
-bytes per operation):
+rows don't see this, since there the pipeline is the only engine and keeps its shape steps. Base `2f155e17a` with the
+probe added against this change, three alternating runs each on the machine below under heavy load (the unchanged
+`RedstoneTestWorld` rows ran about 40% slower than in quieter runs), in ns and bytes per operation:
 
 | Operation | Base | One shape update per change |
 |---|---:|---:|
-| Level / change inside solid stone | 2,353 – 4,174 (2,208 B) | 1,558 – 1,600 (2,208 B) |
-| Level / toggle 15 dust | 355,799 – 380,665 (165–173 KB) | 281,063 – 291,300 (157.5 KB) |
+| Level / change inside solid stone | 2,820 – 2,908 (1,824–1,929 B) | 1,905 – 2,310 (1,824 B) |
+| Level / toggle 15 dust | 449,127 – 522,789 (149.4 KB) | 381,467 – 425,687 (142.0 KB) |
+
+An earlier quieter pair on `ffacf749a` measured 2,353 – 4,174 against 1,558 – 1,600 ns for the stone change and
+355,799 – 380,665 against 281,063 – 291,300 ns for the dust toggle.
 
 The fluid level's view of chunks had to widen with it. It reads and writes the chunks it tracks for ticks, but a
 complete chunk is in its region slot before generation or a load from disk tracks it, and an unloading chunk stays in
