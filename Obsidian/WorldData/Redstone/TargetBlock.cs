@@ -5,14 +5,18 @@ namespace Obsidian.WorldData.Redstone;
 /// <summary>
 /// A target block (vanilla <c>TargetBlock</c>, checked against the 1.21.11 bytecode). A projectile that enters it sets
 /// <c>power</c> from where it hit the face, and the pulse ends after 20 ticks for an arrow (8 for other projectiles). A second hit
-/// while a pulse is pending does nothing. The power is a weak signal in every direction.
+/// while a pulse is pending does nothing. The power is a weak signal in every direction. Projectiles reach it through
+/// <see cref="Entities.ProjectileBlockHits"/>.
 /// </summary>
 internal sealed class TargetBlock(IRedstoneLevel level) : IRedstoneBehavior
 {
     public const int BlockId = BlockIds.Target;
 
-    /// <summary>The pulse length for an arrow (vanilla <c>AbstractArrow</c>).</summary>
+    /// <summary>The pulse length for an arrow, spectral arrow or trident (vanilla <c>AbstractArrow</c>).</summary>
     public const int ArrowPulseTicks = 20;
+
+    /// <summary>The pulse length for any other projectile.</summary>
+    public const int PulseTicks = 8;
 
     public int GetSignal(IBlock state, Vector position, BlockFace direction, bool wiresGiveSignal) => Power(state);
 
@@ -42,15 +46,22 @@ internal sealed class TargetBlock(IRedstoneLevel level) : IRedstoneBehavior
     /// A projectile hit: sets the power and schedules the pulse's end, unless a pulse is already pending (vanilla
     /// <c>onProjectileHit</c>). Other blocks are ignored.
     /// </summary>
-    public async ValueTask HitAsync(Vector position, VectorD location, BlockFace face, int delay)
+    /// <returns>The hit's strength, which <c>target_hit</c> reports even when a pending pulse keeps the power; 0 when
+    /// the block isn't a loaded target block.</returns>
+    public async ValueTask<int> HitAsync(Vector position, VectorD location, BlockFace face, int delay)
     {
         var block = level.GetLoadedBlock(position);
-        if (block is null || !block.Is(BlockId) || level.IsBlockTickScheduled(position, BlocksRegistry.GetDefault(BlockId).UnlocalizedName))
-            return;
+        if (block is null || !block.Is(BlockId))
+            return 0;
 
-        var powered = block.WithProperty("power", StrengthAt(location, face).ToString());
+        var strength = StrengthAt(location, face);
+        if (level.IsBlockTickScheduled(position, BlocksRegistry.GetDefault(BlockId).UnlocalizedName))
+            return strength;
+
+        var powered = block.WithProperty("power", strength.ToString());
         await level.WriteAsync(position, powered, notifyNeighbors: true);
         level.ScheduleBlockTick(position, powered, delay);
+        return strength;
     }
 
     /// <summary>The scheduled end of a pulse: power goes to 0 if the block still has power.</summary>

@@ -26,6 +26,7 @@ and where to start.
 - [Eyeblossoms, dried ghasts and portal piglins](eyeblossoms-dried-ghasts-and-portal-piglins.md)
 - [Player break effects](player-break-effects.md)
 - [Plant growth beyond saplings](plant-growth-beyond-saplings.md)
+- [Projectile block hits](projectile-block-hits.md)
 - [Recursive placement callbacks](recursive-placement-callbacks.md)
 - [Redstone](redstone.md)
 - [Saplings that 26.3 added](saplings-that-26-3-added.md)

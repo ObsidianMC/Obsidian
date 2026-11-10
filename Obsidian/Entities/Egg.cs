@@ -1,4 +1,5 @@
 using Obsidian.API.Inventory;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -23,6 +24,11 @@ public sealed partial class Egg : Throwable
     private const float Speed = 1.5f;
 
     private int age;
+
+    /// <summary>
+    /// The egg's own random, which vanilla's hatch draws from (a <c>LegacyRandomSource</c>, as each entity's is).
+    /// </summary>
+    internal IRandomSource HatchRandom { get; set; } = new LegacyRandomSource(System.Random.Shared.NextInt64());
 
     public Egg() => this.Type = EntityType.Egg;
 
@@ -67,12 +73,8 @@ public sealed partial class Egg : Throwable
         await ThrowableItemUse.ConsumeAsync(player, hand, stack);
     }
 
-    public override void SpawnEntity(Velocity? velocity = null, int additionalData = 0)
-    {
+    public override void SpawnEntity(Velocity? velocity = null, int additionalData = 0) =>
         base.SpawnEntity(velocity ?? new Velocity(this.Motion.X, this.Motion.Y, this.Motion.Z), this.Owner?.EntityId ?? additionalData);
-        if (this.Level is AbstractLevel level)
-            level.EmitGameEvent(MobGameEvent.ProjectileShoot, this.Position, this.Owner ?? this);
-    }
 
     public override async ValueTask TickAsync()
     {
@@ -86,18 +88,9 @@ public sealed partial class Egg : Throwable
         }
 
         var terrain = new MobTerrain(level);
-        var end = this.Position + this.Motion;
-        var swept = new BoundingBox(
-            VectorD.Min(this.Position, end) - new VectorD(0.3f),
-            VectorD.Max(this.Position, end) + new VectorD(0.3f));
-        var fraction = 1d;
+        var blockHit = ProjectileBlockHits.Find(terrain, this.Position, this.Motion);
+        var fraction = blockHit?.Fraction ?? 1;
         IEntity? target = null;
-
-        foreach (var shape in terrain.GetCollisions(swept))
-        {
-            if (MobTerrain.RayIntersection(shape, this.Position, this.Motion) is double hit)
-                fraction = Math.Min(fraction, hit);
-        }
 
         foreach (var candidate in level.GetEntitiesInRange(this.Position, (float)this.Motion.Magnitude + 3))
         {
@@ -123,10 +116,20 @@ public sealed partial class Egg : Throwable
 
         this.Position = next;
         this.BoundingBox = this.Dimension.CreateBBFromPosition(this.Position);
+        this.EmitShotOnce(this.Owner);
 
-        if (fraction < 1 || target != null)
+        if (target != null)
         {
+            level.EmitGameEvent(MobGameEvent.ProjectileLand, this.Position, this, this.Owner);
             await this.OnHitAsync(level, target);
+            return;
+        }
+
+        if (blockHit is { } blockCollision)
+        {
+            if (await ProjectileBlockHits.HitAsync(level, this, this.Owner, blockCollision))
+                await this.OnHitAsync(level, null);
+
             return;
         }
 
@@ -148,8 +151,6 @@ public sealed partial class Egg : Throwable
     // Vanilla's ThrownEgg.onHit: the hit (no damage) and the hatch, then the crack effect, then the egg is gone.
     private async ValueTask OnHitAsync(AbstractLevel level, IEntity? target)
     {
-        level.EmitGameEvent(MobGameEvent.ProjectileLand, this.Position, this, this.Owner);
-
         if (target is Living living)
         {
             await living.DamageCombatAsync(this.Owner ?? this, 0, CombatDamageKind.Projectile, directSource: this);
@@ -157,9 +158,9 @@ public sealed partial class Egg : Throwable
                 mob.AlertedTarget = this.Owner;
         }
 
-        if (Globals.Random.Next(8) == 0)
+        if (this.HatchRandom.NextInt(8) == 0)
         {
-            var chicks = Globals.Random.Next(32) == 0 ? 4 : 1;
+            var chicks = this.HatchRandom.NextInt(32) == 0 ? 4 : 1;
             for (var i = 0; i < chicks; i++)
             {
                 var chick = new Chicken
