@@ -35,11 +35,20 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
 
     private static readonly JsonElement fixture = LoadFixture();
 
-    // The bounded vanilla destroyBlock override records drops intent but suppresses resource creation. These two
+    // The bounded vanilla destroyBlock override records drops intent but suppresses resource creation. These
     // replays actually spawn one item, consuming exactly these five level-random doubles during deferred removal.
     // Check that difference explicitly, including the item count; never swap out the recording random.
     private static readonly HashSet<string> deferredLootDifferences =
-        ["stalagmite_breaks", "stalagmite_column_breaks"];
+        ["stalagmite_breaks", "stalagmite_column_breaks", "door_support_becomes_oak_leaves"];
+
+    // Obsidian removes a block that another removal's shape updates break in the next tick's entity phase (a tick's
+    // entity actions run only those queued when it starts), where vanilla breaks the whole chain at once. The value is
+    // how many blocks are destroyed after the first tick; the replay then runs the next entity phase alone (no block
+    // ticks come due) and compares the rest. Each entry fails when the chain completes in one tick.
+    private static readonly Dictionary<string, int> chainedDestructionDifferences = new()
+    {
+        ["door_support_becomes_oak_leaves"] = 1,
+    };
 
     private static readonly double[] deferredItemDraws =
         [0.730967787376657, 0.24053641567148587, 0.6374174253501083, 0.5504370051176339, 0.5975452777972018];
@@ -153,6 +162,17 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
         if (probe.GetProperty("destroyed").GetArrayLength() > 0)
         {
             await world.DoWorldTickAsync();
+        }
+
+        if (chainedDestructionDifferences.TryGetValue(Name(probe), out var destroyedFirst))
+        {
+            if (destroyed.Count != destroyedFirst)
+            {
+                differences.Add($"{destroyed.Count} blocks destroyed in the first tick, not {destroyedFirst}: "
+                    + "remove it from chainedDestructionDifferences");
+            }
+
+            await world.RunQueuedEntityActionsAsync();
         }
 
         world.Fluids.BlockStored = null;
