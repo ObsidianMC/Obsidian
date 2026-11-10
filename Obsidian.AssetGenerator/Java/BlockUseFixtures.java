@@ -111,8 +111,15 @@ public final class BlockUseFixtures {
     // Forces the chunks around the target and waits until they tick blocks, so pending block events run and new
     // entities can be found, as around a player: the capture itself runs within one task, between ticks.
     private static void forceArea(JsonObject root) throws Exception {
+        forceArea(root, server.overworld());
+        if (root.getAsJsonArray("cases").asList().stream().anyMatch(element ->
+            element.getAsJsonObject().has("dimension"))) {
+            forceArea(root, server.getLevel(net.minecraft.world.level.Level.NETHER));
+        }
+    }
+
+    private static void forceArea(JsonObject root, ServerLevel level) throws Exception {
         var target = position(root.getAsJsonArray("target"));
-        var level = server.overworld();
         server.submit(() -> {
             for (int x = (target.getX() - Reach - 1) >> 4; x <= (target.getX() + Reach + 1) >> 4; x++) {
                 for (int z = (target.getZ() - Reach - 1) >> 4; z <= (target.getZ() + Reach + 1) >> 4; z++)
@@ -133,7 +140,15 @@ public final class BlockUseFixtures {
     }
 
     private static void capture(JsonObject root, Set<String> selected) throws Exception {
-        var level = server.overworld();
+        captureLevel(root, selected, server.overworld(), "minecraft:overworld");
+        if (root.getAsJsonArray("cases").asList().stream().anyMatch(element ->
+            element.getAsJsonObject().has("dimension"))) {
+            captureLevel(root, selected, server.getLevel(net.minecraft.world.level.Level.NETHER), "minecraft:the_nether");
+        }
+    }
+
+    private static void captureLevel(JsonObject root, Set<String> selected, ServerLevel level, String dimension)
+        throws Exception {
         var target = position(root.getAsJsonArray("target"));
         var standing = root.getAsJsonArray("player");
 
@@ -152,6 +167,7 @@ public final class BlockUseFixtures {
         bystander.connection = recorder(heard);
         bystander.snapTo(target.getX() + 0.5, target.getY() + 3, target.getZ() + 0.5, 0, 0);
         players(server.getPlayerList()).add(bystander);
+        level.players().add(bystander);
 
         var gameEvents = new ArrayList<String>();
         var listener = new Listener(target, user, gameEvents);
@@ -159,6 +175,11 @@ public final class BlockUseFixtures {
 
         for (var element : root.getAsJsonArray("cases")) {
             var input = element.getAsJsonObject();
+            var caseDimension = input.has("dimension")
+                ? input.get("dimension").getAsString() : "minecraft:overworld";
+            if (!caseDimension.equals(dimension))
+                continue;
+
             if (!selected.isEmpty() && !selected.contains(input.get("name").getAsString()))
                 continue;
 
@@ -182,6 +203,19 @@ public final class BlockUseFixtures {
             }
 
             prepare(user, standing, input);
+            if (input.has("cats")) {
+                for (var value : input.getAsJsonArray("cats")) {
+                    var catInput = value.getAsJsonObject();
+                    var catType = BuiltInRegistries.ENTITY_TYPE.getValue(Identifier.parse("minecraft:cat"));
+                    var cat = new net.minecraft.world.entity.animal.feline.Cat(
+                        (net.minecraft.world.entity.EntityType)catType, level);
+                    var at = target.offset(position(catInput.getAsJsonArray("offset")));
+                    cat.snapTo(at.getX() + 0.5, at.getY(), at.getZ() + 0.5, 0, 0);
+                    cat.setInSittingPose(catInput.get("sitting").getAsBoolean());
+                    level.addFreshEntity(cat);
+                }
+            }
+
             var before = snapshot(level, target);
             userPackets.clear();
             heard.clear();
@@ -218,6 +252,15 @@ public final class BlockUseFixtures {
             input.addProperty("result", result(result));
             input.addProperty("changes", changes(level, target, before));
             input.addProperty("hand", stack(user.getItemInHand(hand(input))));
+            if (input.has("checkInventory")) {
+                var inventory = new JsonArray();
+                for (int slot = 0; slot < 36; slot++)
+                    inventory.add(stack(user.getInventory().getItem(slot)));
+
+                input.add("inventory", inventory);
+            }
+            if (input.has("checkEffects"))
+                recordExtra(input, heard);
             if (input.has("checkSign")) {
                 var clicked = target.offset(position(input.getAsJsonArray("clicked")));
                 var sign = (SignBlockEntity) level.getBlockEntity(clicked);
@@ -284,6 +327,8 @@ public final class BlockUseFixtures {
         }
 
         clear(level, target);
+        players(server.getPlayerList()).remove(bystander);
+        level.players().remove(bystander);
         System.out.println("Used " + root.getAsJsonArray("cases").size() + " blocks");
     }
 
@@ -335,8 +380,12 @@ public final class BlockUseFixtures {
 
     // The case's game mode, sneaking and held item, with the user standing where the fixture says.
     private static void prepare(ProbePlayer user, JsonArray standing, JsonObject input) {
+        user.getInventory().clearContent();
         var mode = input.has("gameMode") ? input.get("gameMode").getAsString() : "survival";
         user.setGameMode(GameType.byName(mode));
+        if (input.has("player"))
+            standing = input.getAsJsonArray("player");
+
         user.snapTo(
             standing.get(0).getAsDouble(),
             standing.get(1).getAsDouble(),
@@ -347,6 +396,10 @@ public final class BlockUseFixtures {
         user.setShiftKeyDown(input.has("sneaking") && input.get("sneaking").getAsBoolean());
         user.setItemInHand(InteractionHand.MAIN_HAND, item(input, "item", "count"));
         user.setItemInHand(InteractionHand.OFF_HAND, item(input, "offhand", "offhandCount"));
+        if (input.has("fullInventory") && input.get("fullInventory").getAsBoolean()) {
+            for (int slot = 1; slot < 36; slot++)
+                user.getInventory().setItem(slot, new ItemStack(net.minecraft.world.item.Items.STONE, 64));
+        }
     }
 
     private static ItemStack item(JsonObject input, String name, String countName) {
@@ -371,7 +424,33 @@ public final class BlockUseFixtures {
         var hand = hand(input);
         var stack = user.getItemInHand(hand);
 
-        return user.gameMode.useItemOn(user, level, stack, hand, hit);
+        var result = user.gameMode.useItemOn(user, level, stack, hand, hit);
+        if (input.has("rayUse")) {
+            input.addProperty("useOnResult", result(result));
+            if (!result.consumesAction() && !(result instanceof InteractionResult.Fail))
+                return user.gameMode.useItem(user, level, user.getItemInHand(hand), hand);
+        }
+
+        return result;
+    }
+
+    // Extra observables are opt-in, keeping older case output byte-for-byte stable.
+    private static void recordExtra(JsonObject output, List<Packet<?>> heard) {
+        var particles = new JsonArray();
+        var sounds = new JsonArray();
+        for (var packet : heard) {
+            if (packet instanceof net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket particle) {
+                var type = BuiltInRegistries.PARTICLE_TYPE.getKey(particle.particle().getType());
+                particles.add(type + " " + particle.count());
+            } else if (packet instanceof ClientboundSoundPacket sound) {
+                var at = new BlockPos((int)Math.floor(sound.getX()), (int)Math.floor(sound.getY()),
+                    (int)Math.floor(sound.getZ()));
+                sounds.add(sound.getSound().value().location() + " " + offset(at) + " " + sound.getVolume());
+            }
+        }
+
+        output.add("particles", particles);
+        output.add("soundDetails", sounds);
     }
 
     private static InteractionHand hand(JsonObject input) {

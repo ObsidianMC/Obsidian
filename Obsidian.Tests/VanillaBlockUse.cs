@@ -39,8 +39,8 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
     // Setup and clearing, like the capture's: no neighbor or shape updates and nothing placed reacting.
     private const BlockUpdateFlags Quiet = BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace;
 
-    // Where the replay's target is: inside one chunk with room around it, unlike the capture's (0, 64, 0).
-    private static readonly Vector target = new(8, 64, 8);
+    // Keep vanilla's coordinates: plants' outline offsets, and therefore bucket ray hits, depend on position.
+    private static readonly Vector target = new(0, 64, 0);
 
     // Mobs don't make their ambient sounds in Obsidian (known-gaps/mob-ambient-sounds.md), and vanilla's spawn eggs
     // play one as the mob appears: those sounds aren't compared.
@@ -92,6 +92,8 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
         var cases = root.GetProperty("cases").EnumerateArray().Select(ReadCase).ToArray();
         var harness = await StartAsync(root);
         await using var context = harness.Context;
+        var nether = await StartAsync(root, "minecraft:the_nether");
+        await using var netherContext = nether.Context;
 
         var previous = AdvancementsRegistry.Current.Values.ToArray();
         try
@@ -107,7 +109,9 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
 
                 try
                 {
-                    await ReplayAsync(harness, use);
+                    var selected = OptionalString(use.Reference, "dimension") == "minecraft:the_nether"
+                        ? nether : harness;
+                    await ReplayAsync(selected, use);
                 }
                 finally
                 {
@@ -124,12 +128,21 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
     }
 
     // One world, with the user standing where the capture's player stood and a bystander above the target.
-    private static async Task<Harness> StartAsync(JsonElement root)
+    private static async Task<Harness> StartAsync(JsonElement root, string dimension = "minecraft:overworld")
     {
         var context = TestServerFactory.CreateServer($"block-use-{Guid.NewGuid():N}");
         var world = context.World;
+        if (dimension != "minecraft:overworld")
+            world.Initialize(CodecRegistry.Dimensions.All[dimension]);
+
         var chunk = WorldBlockEntities.AddEmptyChunk(world);
+        WorldBlockEntities.AddEmptyChunk(world, -1, -1);
+        WorldBlockEntities.AddEmptyChunk(world, -1, 0);
+        WorldBlockEntities.AddEmptyChunk(world, 0, -1);
         await world.GetBlockAsync(target);
+        await world.GetBlockAsync(new Vector(-1, 64, -1));
+        await world.GetBlockAsync(new Vector(-1, 64, 0));
+        await world.GetBlockAsync(new Vector(0, 64, -1));
 
         // The capture's world is air under open sky, so its sky light is full everywhere (a daylight detector reads
         // it).
@@ -189,6 +202,36 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
         }
 
         Prepare(user, use);
+        var standing = use.Reference.TryGetProperty("player", out var customPlayer)
+            ? customPlayer : default;
+        if (standing.ValueKind == JsonValueKind.Array)
+        {
+            user.Position = (VectorD)target + new VectorD(standing[0].GetDouble(),
+                standing[1].GetDouble() - 64, standing[2].GetDouble());
+            user.Yaw = standing[3].GetSingle();
+            user.Pitch = standing[4].GetSingle();
+        }
+        else
+        {
+            user.Position = (VectorD)target + new VectorD(0.5, 0, -2.5);
+            user.Yaw = 0;
+            user.Pitch = 30;
+        }
+
+        if (use.Reference.TryGetProperty("cats", out var cats))
+        {
+            foreach (var catInput in cats.EnumerateArray())
+            {
+                var cat = new Cat
+                {
+                    EntityId = Server.GetNextEntityId(),
+                    Level = world,
+                    Position = (VectorD)(target + Position(catInput.GetProperty("offset"))) + new VectorD(0.5, 0, 0.5),
+                    IsSitting = catInput.GetProperty("sitting").GetBoolean()
+                };
+                Assert.True(world.TrySpawnEntity(cat, hostOwned: true));
+            }
+        }
         if (use.Reference.TryGetProperty("checkAttack", out _))
             ChargeAttack(user);
 
@@ -206,6 +249,18 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
             world.GrowthRandom = new LegacyRandomSource(seed.GetInt64());
 
         var result = await packet.UseAsync(harness.Context.Server, user);
+        var useOnResult = result;
+        if (use.Reference.TryGetProperty("rayUse", out _) && result is not UseResult.Fail
+            && result?.ConsumesAction() != true)
+        {
+            var itemPacket = new UseItemPacket();
+            typeof(UseItemPacket).GetProperty(nameof(UseItemPacket.Hand))!.SetValue(itemPacket,
+                offhand ? InteractionHand.OffHand : InteractionHand.MainHand);
+            typeof(UseItemPacket).GetProperty(nameof(UseItemPacket.Yaw))!.SetValue(itemPacket, user.Yaw.Degrees);
+            typeof(UseItemPacket).GetProperty(nameof(UseItemPacket.Pitch))!.SetValue(itemPacket, user.Pitch.Degrees);
+            result = await itemPacket.UseAsync(harness.Context.Server, user);
+        }
+
         await world.RunQueuedEntityActionsAsync();
         await world.BlockNotifications.DrainAsync();
         await world.ProcessBlockEventsAsync();
@@ -213,6 +268,9 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
         var effects = Record(harness, before);
         var menu = Menu(user);
         var swings = Swings(harness);
+        var extra = ((TestClient)harness.Bystander.Client).SentPackets.ToArray();
+        var inventory = Enumerable.Range(0, 36)
+            .Select(slot => Text(user.Inventory.GetItem(slot < 9 ? slot + 36 : slot))).ToArray();
         var outcome = new Outcome(
             Name(result),
             Text(offhand ? user.GetOffHandItem() : user.GetHeldItem()),
@@ -222,8 +280,33 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
             menu,
             await CloseAsync(harness));
 
-        var expected = withoutAmbientSounds.Contains(use.Name) ? WithoutAmbientSounds(use.Expected) : use.Expected;
+        var expected = use.Expected;
+        if (withoutAmbientSounds.Contains(use.Name))
+            expected = ExpectSpawnEggAmbientSoundMissing(expected, outcome);
         var differences = Compare(expected, outcome).ToList();
+        if (use.Reference.TryGetProperty("useOnResult", out var onResult) && onResult.GetString() != Name(useOnResult))
+            differences.Add($"use-on result: expected {onResult.GetString()}, got {Name(useOnResult)}");
+
+        if (use.Reference.TryGetProperty("inventory", out var expectedInventory))
+            differences.AddRange(CompareLists("inventory", Strings(expectedInventory), inventory));
+
+        if (use.Reference.TryGetProperty("particles", out var particles))
+        {
+            var actual = extra.OfType<LevelParticlesPacket>()
+                .Select(particle => $"minecraft:{particle.Data.ParticleType.ToString().ToSnakeCase()} {particle.ParticleCount}")
+                .ToArray();
+            differences.AddRange(CompareLists("particles", Strings(particles), actual));
+        }
+
+        if (use.Reference.TryGetProperty("soundDetails", out var soundDetails))
+        {
+            var actual = extra.OfType<SoundPacket>()
+                .Select(sound => $"{sound.SoundLocation} {Offset(new Vector((int)Math.Floor(sound.SoundPosition.X / 8.0),
+                    (int)Math.Floor(sound.SoundPosition.Y / 8.0), (int)Math.Floor(sound.SoundPosition.Z / 8.0)))} "
+                    + sound.Volume.ToString("0.0####", System.Globalization.CultureInfo.InvariantCulture))
+                .ToArray();
+            differences.AddRange(CompareLists("sound details", Strings(soundDetails), actual));
+        }
         differences.AddRange(CompareSwings(use.Expected.Result, swings));
         if (use.Reference.TryGetProperty("criteria", out var criteria))
         {
@@ -316,6 +399,14 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
     {
         user.GameMode = use.GameMode;
         user.Sneaking = use.Sneaking;
+        for (var slot = 9; slot <= 45; slot++)
+            user.Inventory.SetItem(slot, null);
+
+        if (use.Reference.TryGetProperty("fullInventory", out var full) && full.GetBoolean())
+        {
+            for (var slot = 1; slot < 36; slot++)
+                user.Inventory.SetItem(slot < 9 ? slot + 36 : slot, new ItemStack(ItemsRegistry.Stone, 64));
+        }
 
         var held = use.Item is null ? null : new ItemStack(ItemsRegistry.Get(use.Item), use.Count);
         var offhand = use.Offhand is null ? null : new ItemStack(ItemsRegistry.Get(use.Offhand), 2);
@@ -413,13 +504,15 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
             yield return $"user swing: expected {user}, got {swings.User}";
     }
 
-    private static Outcome WithoutAmbientSounds(Outcome outcome)
+    private static Outcome ExpectSpawnEggAmbientSoundMissing(Outcome expected, Outcome actual)
     {
-        var sounds = outcome.Effects.Sounds
-            .Where(sound => !sound.EndsWith(".ambient", StringComparison.Ordinal))
+        Assert.Contains("minecraft:entity.sheep.ambient", expected.Effects.Sounds);
+        Assert.DoesNotContain("minecraft:entity.sheep.ambient", actual.Effects.Sounds);
+        var sounds = expected.Effects.Sounds
+            .Where(sound => sound != "minecraft:entity.sheep.ambient")
             .ToArray();
 
-        return outcome with { Effects = outcome.Effects with { Sounds = sounds } };
+        return expected with { Effects = expected.Effects with { Sounds = sounds } };
     }
 
     private static IEnumerable<string> Compare(Outcome expected, Outcome actual)
@@ -441,6 +534,9 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
 
         foreach (var difference in CompareEffects("", expected.Effects, actual.Effects))
             yield return difference;
+
+        if ((expected.Closed is null) != (actual.Closed is null))
+            yield return $"closed effects: expected {expected.Closed is not null}, got {actual.Closed is not null}";
 
         if (expected.Closed is null || actual.Closed is null)
             yield break;
