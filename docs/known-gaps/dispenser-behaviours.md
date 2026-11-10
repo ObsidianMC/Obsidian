@@ -46,9 +46,8 @@ Droppers are unchanged: they still put an item into the container they face or d
   aren't built, and vanilla also builds a golem lying on its side. A pumpkin or skull with nothing to complete is put
   on a mob's head instead, as in vanilla.
 - **Spawn eggs** spawn the egg's mob only: its other entity data and the stack's custom name aren't applied.
-- **Landing.** A mob that appears standing on a floor (a dispensed spawn egg's, the cow a sheared mooshroom turns into)
-  is heard landing (`hit_ground`) on its first tick in Obsidian; vanilla's emits nothing, as it hasn't fallen
-  (`pig_spawn_egg` and `shears_mooshroom`, pinned). This is Obsidian's landing game event, not the dispenser's.
+- **A grounded no-AI mob's motion.** The cow a sheared mooshroom turns into keeps a downward motion of -0.0784 in
+  Obsidian where vanilla's is zero (`shears_mooshroom`, pinned).
 
 ## Atomicity and locks
 

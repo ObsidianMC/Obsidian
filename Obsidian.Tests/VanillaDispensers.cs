@@ -56,8 +56,8 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
 
     private static Checkpoint ExpectedOutput(string name, Checkpoint reference)
     {
-        // The landing gap also leaves the grounded mob's gravity accumulator at -0.0784, while the no-AI
-        // vanilla mooshroom/cow zeroes it. Pin that exact value in this case; compare every other detail unchanged.
+        // A grounded no-AI mob keeps its gravity accumulator at -0.0784 in Obsidian, while the no-AI vanilla
+        // mooshroom/cow zeroes it. Pin that exact value in this case; compare every other detail unchanged.
         if (name == "shears_mooshroom")
         {
             reference = reference with
@@ -90,14 +90,6 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
                     + "0,0,0=minecraft:dispenser[facing=east,triggered=true]",
                 Items = ["0 minecraft:bone_meal x2"],
                 LevelEvents = reference.Tick == 4 ? ["1001 0,0,0 0", "2000 0,0,0 5"] : []
-            },
-            "shears_mooshroom" when reference.Tick == 4 => reference with
-            {
-                GameEvents = ["minecraft:shear 1,0,0 none", "minecraft:hit_ground 1,0,0 minecraft:cow"]
-            },
-            "pig_spawn_egg" when reference.Tick == 4 => reference with
-            {
-                GameEvents = ["minecraft:entity_place 0,0,0 none", "minecraft:hit_ground 1,0,0 minecraft:pig"]
             },
             _ => reference
         };
