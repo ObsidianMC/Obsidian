@@ -23,6 +23,9 @@ public enum BlockUpdateFlags
     /// </summary>
     Clients = 2,
 
+    /// <summary>Vanilla UPDATE_IMMEDIATE: retain immediate client-render updates, including through shape changes.</summary>
+    Immediate = 8,
+
     /// <summary>
     /// Vanilla <c>UPDATE_KNOWN_SHAPE</c>: neighbours don't get shape updates.
     /// </summary>
@@ -39,7 +42,10 @@ public enum BlockUpdateFlags
     SkipOnPlace = 512,
 
     /// <summary>
-    /// Vanilla <c>UPDATE_ALL</c>, what a player placing or breaking a block uses.
+    /// Vanilla <c>UPDATE_ALL</c>: ordinary neighbour and client notifications.
     /// </summary>
-    All = Neighbors | Clients
+    All = Neighbors | Clients,
+
+    /// <summary>Vanilla UPDATE_ALL_IMMEDIATE (11), used by bucket placement and direct hand lighting.</summary>
+    AllImmediate = All | Immediate
 }

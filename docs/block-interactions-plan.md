@@ -468,10 +468,10 @@ adds.
 | Line | Status | What's left |
 |---|---|---|
 | Beds: sleep, set respawn, explode | Works | `sleep_in_bed` statistic; stand-up position order |
-| Cake, candle cakes | Missing | Only the comparator output exists |
-| Candles: light and extinguish | Missing | Only water and wind charges put them out |
+| Cake, candle cakes | Partial | Candle-cake ignition and empty-hand extinguishing captured; eating remains missing |
+| Candles: light and extinguish | Works | Captured: flint and steel, fire charges, empty hands and waterlogging |
 | Campfires, soul campfires: cook | Works | Feedback |
-| Campfires, soul campfires: light and extinguish | Missing | Only water and wind charges put them out |
+| Campfires, soul campfires: light and extinguish | Partial | Hand ignition, shovel dousing and waterlogging captured; projectile ignition waits for phase 3 |
 | Composters: insert, collect | Works | Feedback; thrown items aren't taken |
 | Cauldrons: buckets, bottles, washing | Missing | Only the comparator output exists |
 | Flower pots | Missing | Planting and taking plants; potted eyeblossoms turn with the time of day (`eyeblossom_ghast_portal_ticks.json`) |
@@ -494,7 +494,7 @@ adds.
 | Grass to path; dirt, coarse dirt, rooted dirt with a hoe | Works | Captured, with drops |
 | Pumpkins: carve | Missing | |
 | Beehives, bee nests: shears | Missing | |
-| Campfires: shovel; candles and campfires: flint and steel | Missing | |
+| Campfires: shovel; candles and campfires: flint and steel | Works | Captured in `block_use.json`, including waterlogged and already-lit refusals |
 | Respawn anchors: glowstone | Works | Feedback |
 | End portal frames: eye | Works | |
 | Farmland: plant crops; soul sand: nether wart | Works | Captured (`block_placement.json`) |
@@ -587,8 +587,8 @@ adds.
 | Enchanting tables: animation; bookshelves: power | Works | The animation is the client's |
 | Ender chests: animation | Partial | Lid moves; no sound |
 | Shulker boxes: push entities | Missing | |
-| Chests: refuse when obstructed | Missing | |
-| Chests: lid by viewers | Works | Captured |
+| Chests: refuse when obstructed | Works | Captured: normal, trapped and copper; either half, conductors and sitting cats |
+| Chests: lid by viewers | Works | Captured, including one sound per double chest and right-half-first events |
 
 ### 10. 26.3 additions (not on the issue's list)
 
