@@ -151,9 +151,10 @@ public partial class PlayerBase
 
     internal ValueTask FireProgressAsync(string trigger, ItemStack? item = null, IEntity? entity = null,
         IBlock? block = null, Vector? position = null, string? recipe = null, string? from = null,
-        string? to = null, int? levels = null)
+        string? to = null, int? levels = null, string? lootTable = null)
     {
-        ValueTask Fire() => this.FireProgressNowAsync(trigger, item, entity, block, position, recipe, from, to, levels);
+        ValueTask Fire() =>
+            this.FireProgressNowAsync(trigger, item, entity, block, position, recipe, from, to, levels, lootTable);
 
         // Gameplay firing a trigger for this player from another's tick (a hit landing in it, say) can't wait for this
         // player's gate. The event is matched now, as it is (the killer's position and dimension, say), and what it
@@ -165,7 +166,7 @@ public partial class PlayerBase
             var matched = this.ProgressAdvancements.Match(
                 $"minecraft:{trigger}",
                 conditions => ProgressConditions.Match(
-                    this, trigger, conditions, item, entity, block, position, recipe, from, to, levels));
+                    this, trigger, conditions, item, entity, block, position, recipe, from, to, levels, lootTable));
             if (matched.Count > 0 && this.Server is Server server)
                 server.BackgroundWork.TryStart(() => this.GrantMatchedAsync(matched));
 
@@ -175,14 +176,56 @@ public partial class PlayerBase
         return DeferredInventoryWork.RunOrDeferAsync(Fire);
     }
 
+    /// <summary>
+    /// Matches a trigger's criteria against the world as it is now, for a use that changes the world before it can grant
+    /// them: vanilla fires some triggers before its write (honeycomb's first <c>item_used_on_block</c>, say), so their
+    /// location checks see the block as it was. <see cref="GrantProgressAsync"/> grants what matched once the change
+    /// committed.
+    /// </summary>
+    internal List<(string Advancement, string Criterion)> MatchProgress(string trigger, ItemStack? item = null,
+        IBlock? block = null, Vector? position = null) =>
+        this.ProgressAdvancements.Match(
+            $"minecraft:{trigger}",
+            conditions => ProgressConditions.Match(
+                this,
+                trigger,
+                conditions,
+                item,
+                entity: null,
+                block,
+                position,
+                recipe: null,
+                from: null,
+                to: null,
+                levels: null));
+
+    /// <summary>
+    /// Grants the criteria <see cref="MatchProgress"/> matched, the way <see cref="FireProgressAsync"/> grants them.
+    /// </summary>
+    internal ValueTask GrantProgressAsync(List<(string Advancement, string Criterion)> matched)
+    {
+        if (matched.Count == 0)
+            return ValueTask.CompletedTask;
+
+        if (this.HoldsAnotherPlayersGate)
+        {
+            if (this.Server is Server server)
+                server.BackgroundWork.TryStart(() => this.GrantMatchedAsync(matched));
+
+            return ValueTask.CompletedTask;
+        }
+
+        return DeferredInventoryWork.RunOrDeferAsync(() => new ValueTask(this.GrantMatchedAsync(matched)));
+    }
+
     // Fires the trigger at once, for a flow that holds no inventory lock: one under the player's own tick gate, say.
     private ValueTask FireProgressNowAsync(string trigger, ItemStack? item = null, IEntity? entity = null,
         IBlock? block = null, Vector? position = null, string? recipe = null, string? from = null,
-        string? to = null, int? levels = null) =>
+        string? to = null, int? levels = null, string? lootTable = null) =>
         this.ProgressAdvancements.FireAsync(
             $"minecraft:{trigger}",
             conditions => ProgressConditions.Match(
-                this, trigger, conditions, item, entity, block, position, recipe, from, to, levels));
+                this, trigger, conditions, item, entity, block, position, recipe, from, to, levels, lootTable));
 
     private async Task GrantMatchedAsync(List<(string Advancement, string Criterion)> matched)
     {

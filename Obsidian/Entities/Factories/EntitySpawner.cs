@@ -128,6 +128,7 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
         EntityType.OminousItemSpawner => new OminousItemSpawner { Level = level },
         EntityType.Marker or EntityType.WindCharge => new Entity { Level = level, Type = type },
         EntityType.Painting => new Painting { Level = level },
+        EntityType.ArmorStand => new ArmorStand { Level = level },
         EntityType.LeashKnot => new LeashKnot { Level = level },
         EntityType.ExperienceBottle => new ThrownExperienceBottle { Level = level },
         EntityType.DragonFireball => new DragonFireball(level),

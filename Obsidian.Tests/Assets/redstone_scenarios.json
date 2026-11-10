@@ -25302,6 +25302,1943 @@
      "items": 1
     }
    ]
+  },
+  {
+   "name": "hopper_fills_chiseled_bookshelf",
+   "description": "A hopper (facing down) holding a stone and two books stands on a chiseled bookshelf (facing north) whose slot 0 holds a book. The stone stays; the books go into the first empty slots, 1 then 2, one at a time. A comparator east of the shelf reads the last slot changed, plus one, into a dust.",
+   "coverage": [
+    "container_comparators"
+   ],
+   "level": true,
+   "min": [
+    1504,
+    63,
+    9
+   ],
+   "max": [
+    1506,
+    65,
+    9
+   ],
+   "setup": [
+    {
+     "pos": [
+      1504,
+      64,
+      9
+     ],
+     "state": "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+     "items": [
+      {
+       "slot": 0,
+       "id": "minecraft:book",
+       "count": 1
+      }
+     ]
+    },
+    {
+     "pos": [
+      1504,
+      65,
+      9
+     ],
+     "state": "minecraft:hopper[enabled=true,facing=down]",
+     "items": [
+      {
+       "slot": 0,
+       "id": "minecraft:stone",
+       "count": 1
+      },
+      {
+       "slot": 1,
+       "id": "minecraft:book",
+       "count": 2
+      }
+     ]
+    },
+    {
+     "pos": [
+      1505,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1506,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1505,
+      64,
+      9
+     ],
+     "state": "minecraft:comparator[facing=west,mode=compare,powered=false]"
+    },
+    {
+     "pos": [
+      1506,
+      64,
+      9
+     ],
+     "state": "minecraft:redstone_wire"
+    }
+   ],
+   "actions": [],
+   "entities": [],
+   "arrows": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 1,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=true,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 2,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=true,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 3,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=true,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=2,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 4,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=true,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=2,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 5,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=true,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=2,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 6,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=true,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=2,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 7,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=true,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=2,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 8,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=true,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=2,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 9,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=true,slot_2_occupied=true,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=2,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 10,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=true,slot_2_occupied=true,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=2,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 11,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=true,slot_2_occupied=true,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=3,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 12,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=true,slot_2_occupied=true,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=3,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 13,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=true,slot_2_occupied=true,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=3,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 14,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=true,slot_2_occupied=true,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=3,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 15,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=true,slot_2_occupied=true,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=3,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 16,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=true,slot_2_occupied=true,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=3,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 17,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=true,slot_2_occupied=true,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=3,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 18,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=true,slot_2_occupied=true,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=3,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 19,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=true,slot_2_occupied=true,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=3,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 20,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=true,slot_2_occupied=true,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=3,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "hopper_drains_chiseled_bookshelf",
+   "description": "A chiseled bookshelf (facing north) holding a book in slot 2 and an enchanted book in slot 4 stands on a hopper (facing down, over air), which takes them out lowest slot first, one at a time. A comparator east of the shelf reads the last slot changed, plus one, into a dust.",
+   "coverage": [
+    "container_comparators"
+   ],
+   "level": true,
+   "min": [
+    1536,
+    63,
+    9
+   ],
+   "max": [
+    1538,
+    65,
+    9
+   ],
+   "setup": [
+    {
+     "pos": [
+      1536,
+      63,
+      9
+     ],
+     "state": "minecraft:hopper[enabled=true,facing=down]"
+    },
+    {
+     "pos": [
+      1536,
+      64,
+      9
+     ],
+     "state": "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=true,slot_3_occupied=false,slot_4_occupied=true,slot_5_occupied=false]",
+     "items": [
+      {
+       "slot": 2,
+       "id": "minecraft:book",
+       "count": 1
+      },
+      {
+       "slot": 4,
+       "id": "minecraft:enchanted_book",
+       "count": 1
+      }
+     ]
+    },
+    {
+     "pos": [
+      1537,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1538,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1537,
+      64,
+      9
+     ],
+     "state": "minecraft:comparator[facing=west,mode=compare,powered=false]"
+    },
+    {
+     "pos": [
+      1538,
+      64,
+      9
+     ],
+     "state": "minecraft:redstone_wire"
+    }
+   ],
+   "actions": [],
+   "entities": [],
+   "arrows": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "palette": [
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=true,slot_3_occupied=false,slot_4_occupied=true,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "555"
+     ]
+    },
+    {
+     "tick": 1,
+     "palette": [
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=true,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "555"
+     ]
+    },
+    {
+     "tick": 2,
+     "palette": [
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=true,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "555"
+     ]
+    },
+    {
+     "tick": 3,
+     "palette": [
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=true,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=3,south=none,west=side]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "555"
+     ]
+    },
+    {
+     "tick": 4,
+     "palette": [
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=true,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=3,south=none,west=side]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "555"
+     ]
+    },
+    {
+     "tick": 5,
+     "palette": [
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=true,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=3,south=none,west=side]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "555"
+     ]
+    },
+    {
+     "tick": 6,
+     "palette": [
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=true,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=3,south=none,west=side]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "555"
+     ]
+    },
+    {
+     "tick": 7,
+     "palette": [
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=true,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=3,south=none,west=side]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "555"
+     ]
+    },
+    {
+     "tick": 8,
+     "palette": [
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=true,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=3,south=none,west=side]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "555"
+     ]
+    },
+    {
+     "tick": 9,
+     "palette": [
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=3,south=none,west=side]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "555"
+     ]
+    },
+    {
+     "tick": 10,
+     "palette": [
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=3,south=none,west=side]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "555"
+     ]
+    },
+    {
+     "tick": 11,
+     "palette": [
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=5,south=none,west=side]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "555"
+     ]
+    },
+    {
+     "tick": 12,
+     "palette": [
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=5,south=none,west=side]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "555"
+     ]
+    },
+    {
+     "tick": 13,
+     "palette": [
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=5,south=none,west=side]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "555"
+     ]
+    },
+    {
+     "tick": 14,
+     "palette": [
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=5,south=none,west=side]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "555"
+     ]
+    },
+    {
+     "tick": 15,
+     "palette": [
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=5,south=none,west=side]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "555"
+     ]
+    },
+    {
+     "tick": 16,
+     "palette": [
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=5,south=none,west=side]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "555"
+     ]
+    },
+    {
+     "tick": 17,
+     "palette": [
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=5,south=none,west=side]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "555"
+     ]
+    },
+    {
+     "tick": 18,
+     "palette": [
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=5,south=none,west=side]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "555"
+     ]
+    },
+    {
+     "tick": 19,
+     "palette": [
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=5,south=none,west=side]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "555"
+     ]
+    },
+    {
+     "tick": 20,
+     "palette": [
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=5,south=none,west=side]",
+      "minecraft:air"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "555"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "dropper_fills_chiseled_bookshelf_from_behind",
+   "description": "A dropper south of a chiseled bookshelf (facing north) faces it, holding a book. A redstone block placed west of the dropper at tick 2 fires it: the book goes into the shelf's first empty slot through its back. A comparator east of the shelf reads the last slot changed, plus one, into a dust.",
+   "coverage": [
+    "container_comparators"
+   ],
+   "level": true,
+   "min": [
+    1567,
+    63,
+    9
+   ],
+   "max": [
+    1570,
+    64,
+    10
+   ],
+   "setup": [
+    {
+     "pos": [
+      1568,
+      64,
+      9
+     ],
+     "state": "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]"
+    },
+    {
+     "pos": [
+      1568,
+      64,
+      10
+     ],
+     "state": "minecraft:dropper[facing=north,triggered=false]",
+     "items": [
+      {
+       "slot": 0,
+       "id": "minecraft:book",
+       "count": 1
+      }
+     ]
+    },
+    {
+     "pos": [
+      1569,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1570,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1569,
+      64,
+      9
+     ],
+     "state": "minecraft:comparator[facing=west,mode=compare,powered=false]"
+    },
+    {
+     "pos": [
+      1570,
+      64,
+      9
+     ],
+     "state": "minecraft:redstone_wire"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 2,
+     "pos": [
+      1567,
+      64,
+      10
+     ],
+     "state": "minecraft:redstone_block"
+    }
+   ],
+   "entities": [],
+   "arrows": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:dropper[facing=north,triggered=false]"
+     ],
+     "rows": [
+      "0011",
+      "0000",
+      "0234",
+      "0500"
+     ]
+    },
+    {
+     "tick": 1,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:dropper[facing=north,triggered=false]"
+     ],
+     "rows": [
+      "0011",
+      "0000",
+      "0234",
+      "0500"
+     ]
+    },
+    {
+     "tick": 2,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:redstone_block",
+      "minecraft:dropper[facing=north,triggered=true]"
+     ],
+     "rows": [
+      "0011",
+      "0000",
+      "0234",
+      "5600"
+     ]
+    },
+    {
+     "tick": 3,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:redstone_block",
+      "minecraft:dropper[facing=north,triggered=true]"
+     ],
+     "rows": [
+      "0011",
+      "0000",
+      "0234",
+      "5600"
+     ]
+    },
+    {
+     "tick": 4,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:redstone_block",
+      "minecraft:dropper[facing=north,triggered=true]"
+     ],
+     "rows": [
+      "0011",
+      "0000",
+      "0234",
+      "5600"
+     ]
+    },
+    {
+     "tick": 5,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:redstone_block",
+      "minecraft:dropper[facing=north,triggered=true]"
+     ],
+     "rows": [
+      "0011",
+      "0000",
+      "0234",
+      "5600"
+     ]
+    },
+    {
+     "tick": 6,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:redstone_block",
+      "minecraft:dropper[facing=north,triggered=true]"
+     ],
+     "rows": [
+      "0011",
+      "0000",
+      "0234",
+      "5600"
+     ]
+    },
+    {
+     "tick": 7,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:redstone_block",
+      "minecraft:dropper[facing=north,triggered=true]"
+     ],
+     "rows": [
+      "0011",
+      "0000",
+      "0234",
+      "5600"
+     ]
+    },
+    {
+     "tick": 8,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:redstone_block",
+      "minecraft:dropper[facing=north,triggered=true]"
+     ],
+     "rows": [
+      "0011",
+      "0000",
+      "0234",
+      "5600"
+     ]
+    },
+    {
+     "tick": 9,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:redstone_block",
+      "minecraft:dropper[facing=north,triggered=true]"
+     ],
+     "rows": [
+      "0011",
+      "0000",
+      "0234",
+      "5600"
+     ]
+    },
+    {
+     "tick": 10,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:redstone_block",
+      "minecraft:dropper[facing=north,triggered=true]"
+     ],
+     "rows": [
+      "0011",
+      "0000",
+      "0234",
+      "5600"
+     ]
+    },
+    {
+     "tick": 11,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:redstone_block",
+      "minecraft:dropper[facing=north,triggered=true]"
+     ],
+     "rows": [
+      "0011",
+      "0000",
+      "0234",
+      "5600"
+     ]
+    },
+    {
+     "tick": 12,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=true,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:redstone_block",
+      "minecraft:dropper[facing=north,triggered=true]"
+     ],
+     "rows": [
+      "0011",
+      "0000",
+      "0234",
+      "5600"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "hopper_fills_decorated_pot",
+   "description": "A hopper (facing down) holding two diamonds and an emerald stands on a decorated pot (facing north). The diamonds go in one at a time and stack; the emerald then stays. A comparator east of the pot reads how full it is into a dust.",
+   "coverage": [
+    "container_comparators"
+   ],
+   "level": true,
+   "min": [
+    1600,
+    63,
+    9
+   ],
+   "max": [
+    1602,
+    65,
+    9
+   ],
+   "setup": [
+    {
+     "pos": [
+      1600,
+      64,
+      9
+     ],
+     "state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]"
+    },
+    {
+     "pos": [
+      1600,
+      65,
+      9
+     ],
+     "state": "minecraft:hopper[enabled=true,facing=down]",
+     "items": [
+      {
+       "slot": 0,
+       "id": "minecraft:diamond",
+       "count": 2
+      },
+      {
+       "slot": 1,
+       "id": "minecraft:emerald",
+       "count": 1
+      }
+     ]
+    },
+    {
+     "pos": [
+      1601,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1602,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1601,
+      64,
+      9
+     ],
+     "state": "minecraft:comparator[facing=west,mode=compare,powered=false]"
+    },
+    {
+     "pos": [
+      1602,
+      64,
+      9
+     ],
+     "state": "minecraft:redstone_wire"
+    }
+   ],
+   "actions": [],
+   "entities": [],
+   "arrows": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 1,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 2,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 3,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 4,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 5,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 6,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 7,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 8,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 9,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 10,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 11,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 12,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 13,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 14,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 15,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 16,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 17,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 18,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 19,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 20,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "011",
+      "234",
+      "500"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "hopper_drains_decorated_pot",
+   "description": "A hopper (facing down) holding one diamond stands on a decorated pot (facing north), which takes it in. A hopper (facing down) placed under the pot at tick 4 takes it back out. A comparator east of the pot reads how full it is into a dust.",
+   "coverage": [
+    "container_comparators"
+   ],
+   "level": true,
+   "min": [
+    1632,
+    62,
+    9
+   ],
+   "max": [
+    1634,
+    65,
+    9
+   ],
+   "setup": [
+    {
+     "pos": [
+      1632,
+      64,
+      9
+     ],
+     "state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]"
+    },
+    {
+     "pos": [
+      1632,
+      65,
+      9
+     ],
+     "state": "minecraft:hopper[enabled=true,facing=down]",
+     "items": [
+      {
+       "slot": 0,
+       "id": "minecraft:diamond",
+       "count": 1
+      }
+     ]
+    },
+    {
+     "pos": [
+      1633,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1634,
+      63,
+      9
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1633,
+      64,
+      9
+     ],
+     "state": "minecraft:comparator[facing=west,mode=compare,powered=false]"
+    },
+    {
+     "pos": [
+      1634,
+      64,
+      9
+     ],
+     "state": "minecraft:redstone_wire"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 4,
+     "pos": [
+      1632,
+      63,
+      9
+     ],
+     "state": "minecraft:hopper[enabled=true,facing=down]"
+    }
+   ],
+   "entities": [],
+   "arrows": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "000",
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 1,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "000",
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 2,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "000",
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 3,
+     "palette": [
+      "minecraft:air",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]",
+      "minecraft:hopper[enabled=true,facing=down]"
+     ],
+     "rows": [
+      "000",
+      "011",
+      "234",
+      "500"
+     ]
+    },
+    {
+     "tick": 4,
+     "palette": [
+      "minecraft:air",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]"
+     ],
+     "rows": [
+      "000",
+      "122",
+      "345",
+      "100"
+     ]
+    },
+    {
+     "tick": 5,
+     "palette": [
+      "minecraft:air",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=true]",
+      "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]"
+     ],
+     "rows": [
+      "000",
+      "122",
+      "345",
+      "100"
+     ]
+    },
+    {
+     "tick": 6,
+     "palette": [
+      "minecraft:air",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+     ],
+     "rows": [
+      "000",
+      "122",
+      "345",
+      "100"
+     ]
+    },
+    {
+     "tick": 7,
+     "palette": [
+      "minecraft:air",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+     ],
+     "rows": [
+      "000",
+      "122",
+      "345",
+      "100"
+     ]
+    },
+    {
+     "tick": 8,
+     "palette": [
+      "minecraft:air",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+     ],
+     "rows": [
+      "000",
+      "122",
+      "345",
+      "100"
+     ]
+    },
+    {
+     "tick": 9,
+     "palette": [
+      "minecraft:air",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+     ],
+     "rows": [
+      "000",
+      "122",
+      "345",
+      "100"
+     ]
+    },
+    {
+     "tick": 10,
+     "palette": [
+      "minecraft:air",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+     ],
+     "rows": [
+      "000",
+      "122",
+      "345",
+      "100"
+     ]
+    },
+    {
+     "tick": 11,
+     "palette": [
+      "minecraft:air",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+     ],
+     "rows": [
+      "000",
+      "122",
+      "345",
+      "100"
+     ]
+    },
+    {
+     "tick": 12,
+     "palette": [
+      "minecraft:air",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+     ],
+     "rows": [
+      "000",
+      "122",
+      "345",
+      "100"
+     ]
+    },
+    {
+     "tick": 13,
+     "palette": [
+      "minecraft:air",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+     ],
+     "rows": [
+      "000",
+      "122",
+      "345",
+      "100"
+     ]
+    },
+    {
+     "tick": 14,
+     "palette": [
+      "minecraft:air",
+      "minecraft:hopper[enabled=true,facing=down]",
+      "minecraft:stone",
+      "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]",
+      "minecraft:comparator[facing=west,mode=compare,powered=false]",
+      "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+     ],
+     "rows": [
+      "000",
+      "122",
+      "345",
+      "100"
+     ]
+    }
+   ]
   }
  ]
 }

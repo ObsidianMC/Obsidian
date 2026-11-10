@@ -88,6 +88,17 @@ public abstract partial class AbstractLevel
         }
     }
 
+    /// <summary>
+    /// Drops <paramref name="stack"/> at <paramref name="position"/> moving as given, under the tick lock.
+    /// </summary>
+    internal bool DropItemAt(VectorD position, ItemStack stack, VectorD motion)
+    {
+        lock (this.Fluids.TickLock)
+        {
+            return this.SpawnItem(position, stack, motion);
+        }
+    }
+
     // Both direct drops and block resources use a detached stack and explicit host ownership.
     private bool SpawnItem(VectorD position, ItemStack stack, VectorD motion) => this.TrySpawnEntity(new ItemEntity
     {

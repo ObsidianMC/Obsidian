@@ -22,7 +22,10 @@ replaces only what vanilla produced.
   gives the fence `west=true`, the connection vanilla's `/setblock` derives beside the piston, because Obsidian's
   commands don't derive placed states; recording again with the property given left every checkpoint unchanged.
   `piston_pushes_carpet_off_support` pushes a carpet over air: the finished move breaks it at tick 6 and one carpet
-  drops. A scenario naming an `item` also records in each checkpoint the total count of that item lying as item
+  drops. `hopper_fills_chiseled_bookshelf`, `hopper_drains_chiseled_bookshelf`,
+  `dropper_fills_chiseled_bookshelf_from_behind`, `hopper_fills_decorated_pot` and `hopper_drains_decorated_pot`
+  move items into and out of the blocks that hold them, each read by a comparator into a dust: the shelf's slots
+  and the last slot used, and how full the pot is. A scenario naming an `item` also records in each checkpoint the total count of that item lying as item
   entities within two blocks of its box, and the replay counts Obsidian's the same way, so it must be `level`.
 - `fluid_scenarios.json` (`VanillaFluids`) defines the box, setup fills, actions, dimension and checkpoint ticks; the
   capture records the checkpoints.
@@ -276,16 +279,72 @@ replaces only what vanilla produced.
   the game events within 16 blocks (with their source), the statistics awarded and the menu opened, and when a menu
   opened, what closing it changed and played. The replay drives `UseItemOnPacket` in one world, with full sky light
   as the capture's open sky has, runs the queued entity actions and the tick's block events, and checks swings from
-  the result. The original 92 cases retain their captured bytes. Another 208 cases cover buckets (72), chest
-  obstructions (73) and lighting (63), including ordered block writes with every flag bit and successful block
+  the result. The original 92 cases retain their captured bytes. Another 285 cases cover buckets (72), chest
+  obstructions (73), lighting (63) and the blocks that hold items (77: flower pots, chiseled bookshelves, decorated
+  pots, including ones still waiting for their loot table, lodestone compasses and jukeboxes), including ordered block writes with every flag bit and successful block
   destructions. These cases observe all writes, including positions absent from their setup; an unexpected position
   fails the replay. The older 92 cases compare final block states only. Extending ordered-write checks to those
   cases remains an open follow-up. The replay uses the capture's absolute coordinates: translating plant
   outlines changes their position-dependent offsets and can change a bucket ray hit. It also checks whether
   closing effects exist, rather than comparing them only when both sides happened to open a menu.
   `SpawnEggAmbientSoundMissing` explicitly asserts the sheep spawn egg's missing ambient sound; it fails if the
-  sound starts working (see [mob ambient sounds](known-gaps/mob-ambient-sounds.md)). No new case has an expected
-  difference.
+  sound starts working (see [mob ambient sounds](known-gaps/mob-ambient-sounds.md)). The expected differences of
+  the newer cases are named, each pinned to its exact cases, and fail when they disappear (see below).
+
+- `brushing.json` (`VanillaBrushing.ReplayBrushingReference`) records a player brushing, from
+  `Java/BrushingFixtures.java` (`CaptureFixtures=brushing`). The probe runs a dedicated server of its own in a flat
+  world of air, in a temporary folder it deletes. A case sets up suspicious sand or gravel (or another block) with its
+  `lootTable` and `seed` or a `storedItem`, stands the user at `player` (head and last rotation the same) holding a
+  brush (`damage`, `handUsed`, `gameMode`), clicks a `face` through `ServerPlayerGameMode.useItemOn` at tick 0, then
+  steps `ticks` ticks as a server tick reaches the area: the game time, the due block ticks, the area's entities, then
+  the user's held use (`LivingEntity.updatingUsingItem`). `actions` between ticks look or move elsewhere, release the
+  use, set a block, choose another hotbar slot or click again. The probe wraps the level's neighbour updater to record
+  each write with its flags (`UPDATE_NEIGHBORS` from its neighbour update, the rest from its shape updates; a change
+  neither saw has null flags), tracks the user's entity so a bystander three blocks above sees it, and keeps each tick
+  that did something: the click's result, the writes, the bystander's sounds (with source, volume and pitch), level
+  events and particles, the user's entity events, game events, statistics, advancement criteria
+  (`player_generates_container_loot`), the used hand, whether the use goes on, the block entity's saved data when it
+  changed, its client update tag when its state was written, and the entities that appeared (items with position and
+  motion, falling blocks with their state) or went. The 16 cases cover a full brush of sand from the top and of gravel
+  from the north, a stored item, nothing inside, the off hand, releasing then decaying, looking away, moving out of
+  reach, the block replaced, a block that isn't brushable, the brush breaking, creative, adventure, a second click
+  inside the cooldown, another hotbar slot, and a block that falls after a stroke and breaks where it lands. The
+  replay drives the use-item-on packet and the same tick order in a world of nine chunks, and compares every field of
+  every kept tick. Two `hit_ground` events Obsidian doesn't send are pinned by case and tick (see [brushing and armor
+  stands](known-gaps/brushing-and-armor-stands.md)). Item entities' yaw and sound seeds aren't recorded; dust
+  particles are spawned by clients, so the server sends none, which the replay checks.
+
+- `armor_stand_use.json` (`VanillaArmorStandUse.ReplayArmorStandUseReference`) records a player using an armor stand,
+  from `Java/ArmorStandFixtures.java` (`CaptureFixtures=armor_stand_use`), on a dedicated server of its own in a
+  temporary folder. A case gives the stand's flags (`showArms`, `small`, `marker`, `noBasePlate`, `disabledSlots`) and
+  what it is `wearing`, the point `clicked` relative to the stand, and the user's `item`, `count`, `itemName`,
+  `handUsed` and `gameMode`; the probe runs what `handleInteract` does once the target is in reach
+  (`Player.interactOn`, then the trigger and the swing for a success) and ticks the stand once, which sends its
+  equipment. It records the result, the hand, the stand's equipment and saved fields, the bystander's sounds, swings
+  and equipment packets, the user's swings, game events, statistics and `completedCriteria`. The 41 cases cover each
+  slot picked by height on a normal and a small stand, items going to their own slot, stacks giving one, swaps,
+  disabled, removal-locked and placement-locked slots, hands without arms, markers, spectators, creative, adventure,
+  the off hand, a named item and a name tag. The replay sends the interact packet and compares everything but the
+  result itself, which decides the swing and trigger it compares.
+
+- `waxing_bells_redstone_ore.json` (`VanillaWaxingBellsOre.ReplayWaxingBellsAndRedstoneOreReference`) records
+  honeycomb waxing, bell ringing and redstone ore lighting by a use, from `Java/WaxingBellsOreFixtures.java`
+  (`CaptureFixtures=waxing_bells_ore`). Its cases take `block_use.json`'s inputs, and the probe runs on
+  `BlockUseFixtures.java`'s server, players, recorders and write observer, which it calls by reflection, so that probe
+  is unchanged; the source launcher compiles it from the same directory. Every case records what a `block_use` case
+  records with `checkWrites` and `checkEffects`, plus `userEffects`: the sounds, level events and block events sent to
+  the acting player's own client, in order. Vanilla leaves the user out of the waxing sound and particles its client
+  predicts, and sends it the bell's sound and block event. The 114 cases wax each of the 60 waxable blocks with
+  non-default properties, both halves of a door and of a double copper chest (the other half takes the wax through its
+  shape update), sneaking past and opening a door and trapdoor, creative, adventure, the last honeycomb, the off hand,
+  blocks that can't be waxed, and `item_used_on_block`, which vanilla fires before the write and again after it (a
+  location check sees the unwaxed block the first time and the waxed one the second). Bells
+  are rung on each face of each attachment, above and below the rim, powered, with an item (which isn't placed),
+  sneaking, in adventure and spectator, and from the off hand. Redstone ore is used lit and unlit, with nothing, a
+  stick, or a block item that can and can't be placed beside it, sneaking, in each game mode and from the off hand.
+  The replay drives `UseItemOnPacket` in one world and compares every recorded field from the start, ordered writes
+  with every flag bit and swings included; two cases pin the door and trapdoor opening flags (see
+  [waxing, bells and redstone ore](known-gaps/waxing-bells-and-redstone-ore.md)).
 
 - `turtle_eggs.json` (`VanillaTurtleEggs.ReplayTurtleEggReference`) records vanilla's turtle eggs, from
   `Java/HatchingFixtures.java` (`CaptureFixtures=turtle_eggs`). Each case is its input: the blocks of a small block
@@ -412,7 +471,13 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=block_use
 
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=waxing_bells_ore
+
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=eyeblossom_ghast_portal
+
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=brushing
+
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=armor_stand_use
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=turtle_eggs
 
@@ -480,6 +545,10 @@ For `eyeblossom_ghast_portal`, `CaptureCases` accepts exact `+`-separated names 
 `eyeblossom_ghast_portal_ticks.json` and records only those cases; the others keep theirs. The capture takes about ten
 seconds.
 
+For `brushing` and `armor_stand_use`, `CaptureCases` accepts exact `+`-separated case names and records only those;
+the others keep theirs. Each capture takes about ten seconds after its server starts. Their probes write their worlds
+to a temporary folder outside the checkout and delete it.
+
 For `more_blocks`, `CaptureCases` accepts exact `+`-separated names in `more_blocks.json` and re-records only those
 Java probes. No RCON server is started and no other fixture is changed. Its source and the reusable runtime
 instrument dumper are separate so editing these probes does not regenerate unrelated assets.
@@ -490,7 +559,18 @@ add it to `contexts` and capture again. For `block_use`, add inputs to `cases` a
 selects the other hand. An optional `randomSeed` seeds the level random immediately before use; the failed-growth
 case verifies that a valid bone-meal target consumes the item even when its growth chance fails. Optional checks
 record sign text flags and editor, attack charge after a started and a refused swing, explicit and periodic
-container close sources, and awarded advancement criteria. The fixture lists
+container close sources, and awarded advancement criteria.
+
+Further optional inputs, for blocks that hold items, are recorded after everything else and change nothing the other
+cases record. A setup placement's `nbt` loads that block entity data (SNBT without the id and position) as a chunk
+load would, telling no comparator. `checkBlockEntity` records the clicked block entity's saved data, as a chunk saves
+it without its position, as `blockEntity`. `comparator` names a comparator's offset from the setup: once the use is
+recorded, its pending tick runs and its output is recorded as `comparatorSignal`, which shows both that it heard of
+the change and what it read. `breakAfterUse` makes the user break the clicked block afterwards with what they hold,
+and records under `broken` what changed, the entities around (with their items' components), what the bystander
+heard and the game events and statistics. The replay compares all of them: SNBT is compared as Obsidian writes the
+same NBT, the comparator's tick runs by ticking the level's scheduled ticks twice, and a break goes through a
+finished dig. The fixture lists
 location predicate terms in Obsidian's existing format; the probe converts them to 26.3's `all_of` and `match_block`
 encoding before registering them with vanilla's advancement system.
 Criteria without a location predicate, including `filled_bucket` with item predicates, are registered unchanged.
@@ -508,8 +588,10 @@ New `block_use` probe inputs are optional, so existing cases record exactly thei
   of a fluid-place game event.
 - `cats: [{"offset": [0, 1, 0], "sitting": true}]` adds a cat before the snapshot. Sitting and standing cats are
   varied independently of conducting blocks and of either double-chest half.
-- `checkInventory: true` records all 36 storage slots in vanilla slot order. `fullInventory: true` fills every
-  storage slot except the hand with stone. The replay compares storage, the hand and dropped entities together.
+- `checkInventory: true` records all 36 storage slots in vanilla slot order, each stack followed by the components
+  it changes from its item's as SNBT, with a lodestone tracker's target relative to the target (compared as Obsidian
+  writes the same NBT). `fullInventory: true` fills every storage slot except the hand with stone. Every case starts
+  with nothing in its inventory but its hands. The replay compares storage, the hand and dropped entities together.
 - `checkEffects: true` records server particle packet types and counts, and each sound's position and volume
   alongside the existing sounds, level events, game events and statistics. The replay compares every added field.
   Candle smoke comes from client-local particles; campfire shovel dousing sends level event 1009. Neither sends
@@ -525,6 +607,9 @@ For example, after adding a case, run
 Select only added or deliberately changed cases, preserve existing line endings, and verify the original case
 text is unchanged. Drops are checked with deterministic sapling and torch cases; grass's random seed loot is
 not used as a fixed drop reference.
+
+For `waxing_bells_ore`, `CaptureCases` likewise takes exact `+`-separated names in
+`waxing_bells_redstone_ore.json` and records only those cases; the others keep what they hold.
 
 The `turtle_eggs` and `frogspawn` captures run no server and re-record every case. To add one, add a case with its
 `name`, `seed`, `origin` and `setup` (and `time`, `dimension`, `place` or `tick`) and capture again; pick a seed whose
@@ -552,8 +637,8 @@ other dumpers, so editing it regenerates the assets once.
 The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft version> <cache directory>
 <scratch directory> <test assets directory>
 [redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+heightmaps+saved_heightmaps+mining+placement+
-copper_weathering+fire+ticking_blocks+block_use+turtle_eggs+frogspawn+growing_plant_ticks+melting_weather+
-furnace_results]
+copper_weathering+fire+ticking_blocks+block_use+waxing_bells_ore+turtle_eggs+frogspawn+growing_plant_ticks+
+melting_weather+furnace_results+brushing+armor_stand_use]
 [case names]`.
 
 ## How it captures

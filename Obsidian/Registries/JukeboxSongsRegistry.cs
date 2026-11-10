@@ -5,14 +5,30 @@ namespace Obsidian.Registries;
 
 internal static class JukeboxSongsRegistry
 {
-    // Built-in 26.3 song data. The sent registry order also defines level-event song IDs.
-    internal static readonly (string Name, int Seconds)[] Songs =
+    // Built-in 26.3 song data: each song's length and the signal a comparator reads from a jukebox playing it
+    // (vanilla's comparator_output). The sent registry order also defines level-event song IDs.
+    internal static readonly (string Name, int Seconds, int Comparator)[] Songs =
     [
-        ("11", 71), ("13", 178), ("5", 178), ("blocks", 345), ("bounce", 234), ("cat", 185), ("chirp", 185),
-        ("creator", 176), ("creator_music_box", 73), ("far", 174), ("lava_chicken", 134),
-        ("mall", 197), ("mellohi", 96), ("otherside", 195), ("pigstep", 149), ("precipice", 299),
-        ("relic", 218), ("stal", 150), ("strad", 188), ("tears", 175), ("wait", 238), ("ward", 251)
+        ("11", 71, 11), ("13", 178, 1), ("5", 178, 15), ("blocks", 345, 3), ("bounce", 234, 8), ("cat", 185, 2),
+        ("chirp", 185, 4), ("creator", 176, 12), ("creator_music_box", 73, 11), ("far", 174, 5),
+        ("lava_chicken", 134, 9), ("mall", 197, 6), ("mellohi", 96, 7), ("otherside", 195, 14), ("pigstep", 149, 13),
+        ("precipice", 299, 13), ("relic", 218, 14), ("stal", 150, 8), ("strad", 188, 9), ("tears", 175, 10),
+        ("wait", 238, 12), ("ward", 251, 10)
     ];
+
+    /// <summary>
+    /// Vanilla's <c>JukeboxBlockEntity.getComparatorOutput</c>: the comparator output of the song of the disc in
+    /// <paramref name="jukebox"/>, or 0 without one. It reads the disc, playing or not.
+    /// </summary>
+    internal static int ComparatorOutput(Obsidian.WorldData.DataBlockEntity jukebox)
+    {
+        var record = jukebox.SnapshotTag<Obsidian.Nbt.NbtCompound>("RecordItem");
+        if (record?.ItemFromNbt() is not { IsAir: false } disc)
+            return 0;
+
+        var song = GetSong(disc);
+        return song < 0 ? 0 : Songs[song].Comparator;
+    }
 
     internal static IEnumerable<string> Identifiers => Songs.Select(song => "minecraft:" + song.Name);
 

@@ -1145,7 +1145,7 @@ public sealed class WorldBlockEntities : IDisposable
         human.GameMode = GameMode.Survival;
         var pot = BlocksRegistry.DecoratedPot.WithProperty("cracked", "true");
         await context.World.SetBlockAsync(position, pot);
-        var potEntity = Assert.IsType<DataBlockEntity>(chunk.GetBlockEntity(4, 70, 4));
+        var potEntity = Assert.IsType<DecoratedPotBlockEntity>(chunk.GetBlockEntity(4, 70, 4));
         var decoratedSherd = new ItemStack(ItemsRegistry.AnglerPotterySherd, 1, ComponentBuilder.CustomData with
         {
             Value = new NbtCompound { new NbtTag<int>("pattern", 7) }
@@ -1166,7 +1166,7 @@ public sealed class WorldBlockEntities : IDisposable
         Assert.Equal(7, droppedSherd.GetComponent<SimpleDataComponent<NbtCompound>>(DataComponentType.CustomData)!.Value.GetInt("pattern"));
         Assert.Equal(3, pieces.Count(item => item.Is(ItemsRegistry.Brick)));
         Assert.Equal(7, pieces.Where(item => item.Is(ItemsRegistry.Diamond)).Sum(item => item.Count));
-        Assert.False(potEntity.Data.HasTag("item"));
+        Assert.Null(potEntity.Inventory.GetItem(0));
 
         // Replacing an intact pot uses the same spill path, without relying on its loot table.
         await context.World.SetBlockAsync(position, BlocksRegistry.DecoratedPot);

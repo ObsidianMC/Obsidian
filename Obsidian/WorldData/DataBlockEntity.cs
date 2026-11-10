@@ -18,8 +18,8 @@ public sealed class DataBlockEntity : BlockEntity
     // Block entity types whose getUpdateTag sends data to clients; the others send nothing.
     private static readonly HashSet<string> clientDataTypes =
     [
-        "minecraft:banner", "minecraft:beacon", "minecraft:brushable_block", "minecraft:campfire",
-        "minecraft:conduit", "minecraft:creaking_heart", "minecraft:decorated_pot", "minecraft:end_gateway",
+        "minecraft:banner", "minecraft:beacon", "minecraft:campfire",
+        "minecraft:conduit", "minecraft:creaking_heart", "minecraft:end_gateway",
         "minecraft:hanging_sign", "minecraft:jigsaw", "minecraft:mob_spawner", "minecraft:shelf", "minecraft:sign",
         "minecraft:skull", "minecraft:structure_block", "minecraft:test_block", "minecraft:test_instance_block",
         "minecraft:trial_spawner", "minecraft:vault"
@@ -29,7 +29,7 @@ public sealed class DataBlockEntity : BlockEntity
     // preRemoveSideEffects calls Containers.dropContents.
     private static readonly HashSet<string> droppingTypes =
     [
-        "minecraft:campfire", "minecraft:chiseled_bookshelf", "minecraft:crafter"
+        "minecraft:campfire", "minecraft:crafter"
     ];
 
     public NbtCompound Data { get; init; } = new();
@@ -176,7 +176,7 @@ public sealed class DataBlockEntity : BlockEntity
         return copy;
     }
 
-    private static INbtTag Copy(INbtTag tag)
+    internal static INbtTag Copy(INbtTag tag)
     {
         switch (tag)
         {
