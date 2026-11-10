@@ -198,7 +198,8 @@ replaces only what vanilla produced.
   cover pointed dripstone growing (the block and water source above, column length, stalagmite search), dripping
   water and lava into each kind of cauldron or drying mud into clay, falling and breaking when the support goes,
   thickness along a column, landing, and cauldrons taking the drip; budding amethyst starting a bud on each face and
-  growing each stage, into air, water sources and falling water, and the faces it skips; lit redstone ore going dark.
+  growing each stage, into air, water sources and falling water, and the faces it skips; lit redstone ore going dark;
+  nylium under blocks that do and don't let light down.
   The replay runs each case
   through Obsidian's generated owners, or a live block change, in its own world, and compares everything but the game
   events. Obsidian destroys blocks in the tick's entity phase, so a case that destroys one runs the world tick before
