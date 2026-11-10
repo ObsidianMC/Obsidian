@@ -4498,7 +4498,7 @@ project uses the Razor SDK, and its components inherit `ModComponent` (set once 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk.Razor">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <!-- A mod has no web assets: its output is what its archive holds. -->
     <StaticWebAssetsEnabled>false</StaticWebAssetsEnabled>
   </PropertyGroup>

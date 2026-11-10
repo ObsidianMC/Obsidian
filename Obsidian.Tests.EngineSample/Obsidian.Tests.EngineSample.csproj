@@ -5,7 +5,7 @@
 	     ObsidianMC/ObsidianMod and ObsidianMC/ObsidianPlugin. The Razor SDK compiles its screens' .razor components
 	     into its assembly. -->
 	<PropertyGroup>
-		<TargetFramework>net10.0</TargetFramework>
+		<TargetFramework>net11.0</TargetFramework>
 		<AssemblyName>EngineSample</AssemblyName>
 		<RootNamespace>EngineSample</RootNamespace>
 		<EnablePreviewFeatures>true</EnablePreviewFeatures>
