@@ -1270,7 +1270,7 @@ public abstract partial class AbstractLevel : ILevel
     /// The level's entities in entity id order, each once, even while crossing a region boundary. Taken once per tick,
     /// so entities spawned during the tick wait for the next one. Valid until the next call.
     /// </summary>
-    private List<IEntity> SnapshotEntities()
+    internal List<IEntity> SnapshotEntities()
     {
         this.entitySnapshot.Clear();
         this.entitySnapshotIds.Clear();

@@ -15,6 +15,7 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace WorldgenBench;
@@ -111,6 +112,7 @@ internal static class BlockRun
         LiveLevel();
 
         BlockEntityPass();
+        EntityContacts();
 
         GC.KeepAlive(result);
         GC.KeepAlive(flag);
@@ -204,6 +206,91 @@ internal static class BlockRun
         using var ticket = world.AddChunkTicket(0, 0, radius: 1);
 
         Measure("BlockEntityPass/4000-idle-50-ticking", 2_000, () => Complete(world.TickBlockEntitiesAsync()));
+    }
+
+    // The contact work of one level tick for 400 armor stands standing on the ground over 25 chunks: everything
+    // the entities' contact with blocks costs, but not their own ticks. Once on plain stone with no plates or wire,
+    // then with four pressed plates under four of them. The level is a temporary one, deleted afterwards.
+    private static void EntityContacts()
+    {
+        var folder = Path.Join(Path.GetTempPath(), $"obsidian-contact-probe-{Guid.NewGuid():N}");
+        try
+        {
+            var world = TestWorldFactory.Create("contact-probe", folder: folder);
+            try
+            {
+                MeasureEntityContacts(world);
+            }
+            finally
+            {
+                world.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            }
+        }
+        finally
+        {
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, recursive: true);
+        }
+    }
+
+    private static void MeasureEntityContacts(World world)
+    {
+        for (var chunkX = -2; chunkX <= 2; chunkX++)
+        {
+            for (var chunkZ = -2; chunkZ <= 2; chunkZ++)
+            {
+                var chunk = new Chunk(chunkX, chunkZ);
+                for (var x = 0; x < 16; x++)
+                {
+                    for (var z = 0; z < 16; z++)
+                        chunk.SetBlock((chunkX << 4) + x, 63, (chunkZ << 4) + z, BlocksRegistry.Stone);
+                }
+
+                chunk.SetChunkStatus(ChunkGenStage.full);
+                world.LoadRegionByChunk(chunkX, chunkZ).SetChunk(chunk);
+            }
+        }
+
+        using var ticket = world.AddChunkTicket(0, 0, radius: 1);
+
+        // Two blocks apart, from -20 to 18 on both axes: 400 stands on the ground.
+        for (var x = -20; x < 20; x += 2)
+        {
+            for (var z = -20; z < 20; z += 2)
+            {
+                var stand = new Obsidian.Entities.ArmorStand
+                {
+                    Level = world,
+                    EntityId = Obsidian.Server.GetNextEntityId(),
+                    Position = new VectorD(x + 0.5, 64, z + 0.5),
+                    MovementFlags = MovementFlags.OnGround,
+                };
+
+                if (!world.TryAddEntity(stand))
+                    throw new InvalidOperationException("The probe couldn't add an armor stand.");
+            }
+        }
+
+        var entities = world.SnapshotEntities().ToArray();
+        Measure("EntityContacts/400-on-stone", 200, () => Complete(ContactTickAsync(world, entities)));
+
+        // Pressed already, as the entities on them keep them: a plate that doesn't change is the steady state.
+        var plate = BlocksRegistry.GetDefault(BlockIds.OakPressurePlate).WithProperty("powered", true);
+        foreach (var (x, z) in new[] { (-20, -20), (-10, 0), (0, 10), (10, -10) })
+            world.GetLoadedChunk(x >> 4, z >> 4)!.SetBlock(x, 64, z, plate);
+
+        Measure("EntityContacts/400-on-stone-4-plates", 200, () => Complete(ContactTickAsync(world, entities)));
+    }
+
+    // What the level's tick runs for entities touching blocks, apart from the entity loop's own snapshot.
+    private static async System.Threading.Tasks.ValueTask ContactTickAsync(World world, IEntity[] entities)
+    {
+        foreach (var entity in entities)
+            await world.TouchPluginBlocksAsync(entity);
+
+        var movers = world.SnapshotEntities().ToList();
+        await world.Plates.UpdateAsync(movers);
+        await world.RedstoneInstall.Tripwires.UpdateAsync(movers);
     }
 
     // Spaced so that no two block entities touch: index 0 to 255 covers the chunk's floor at y 64, two apart.
