@@ -53,7 +53,7 @@ internal static partial class DispenseBehaviors
     /// </summary>
     private sealed class BoneMeal : IDispenseBehavior
     {
-        public ValueTask<Dispensed> DispenseAsync(DispenseSource source, ItemStack stack)
+        public Dispensed Dispense(DispenseSource source, ItemStack stack)
         {
             var level = source.Level;
             var target = source.Target;
@@ -65,14 +65,18 @@ internal static partial class DispenseBehaviors
                 var block = level.BlockUpdates.GetBlock(target);
                 used = Growth.IsValidBonemealTarget(level, target, block);
                 if (used)
-                    Growth.ApplyBonemeal(level, target, block, level.GrowthRandom);
+                {
+                    var effects = level.ActiveBlockUse
+                        ?? throw new InvalidOperationException("Dispenser growth requires a state commit.");
+                    effects.After(() => Growth.ApplyBonemeal(level, target, block, level.GrowthRandom));
+                }
             }
 
             if (!used)
-                return ValueTask.FromResult(Dispensed.Failed(stack));
+                return Dispensed.Failed(stack);
 
             level.BroadcastLevelEvent(Growth.BoneMealEvent, target, Growth.BoneMealParticles);
-            return ValueTask.FromResult(Dispensed.Spent(stack));
+            return Dispensed.Spent(stack);
         }
     }
 
@@ -83,7 +87,7 @@ internal static partial class DispenseBehaviors
     /// </summary>
     private sealed class FlintAndSteel : IDispenseBehavior
     {
-        public ValueTask<Dispensed> DispenseAsync(DispenseSource source, ItemStack stack)
+        public Dispensed Dispense(DispenseSource source, ItemStack stack)
         {
             var level = source.Level;
             var updates = level.BlockUpdates;
@@ -111,7 +115,7 @@ internal static partial class DispenseBehaviors
             }
 
             var rest = success ? Wear(stack) : stack;
-            return ValueTask.FromResult(new Dispensed(rest, success ? Dispensed.DispenseEvent : Dispensed.FailEvent));
+            return new Dispensed(rest, success ? Dispensed.DispenseEvent : Dispensed.FailEvent);
         }
 
         // Vanilla's TntBlock.prime: the primed TNT with its sound and game event, then the block goes.
@@ -131,15 +135,15 @@ internal static partial class DispenseBehaviors
     /// </summary>
     private sealed class Tnt : IDispenseBehavior
     {
-        public ValueTask<Dispensed> DispenseAsync(DispenseSource source, ItemStack stack)
+        public Dispensed Dispense(DispenseSource source, ItemStack stack)
         {
             var level = source.Level;
             var target = source.Target;
             if (PrimedTnt.Prime(level, target, owner: null, random: level.GrowthRandom) is null)
-                return ValueTask.FromResult(Dispensed.Failed(stack));
+                return Dispensed.Failed(stack);
 
             level.EmitGameEvent(MobGameEvent.EntityPlace, Center(target));
-            return ValueTask.FromResult(Dispensed.Spent(stack));
+            return Dispensed.Spent(stack);
         }
     }
 
@@ -149,7 +153,7 @@ internal static partial class DispenseBehaviors
     /// </summary>
     private sealed class ShulkerBox : IDispenseBehavior
     {
-        public async ValueTask<Dispensed> DispenseAsync(DispenseSource source, ItemStack stack)
+        public Dispensed Dispense(DispenseSource source, ItemStack stack)
         {
             var level = source.Level;
             var target = source.Target;
@@ -161,13 +165,8 @@ internal static partial class DispenseBehaviors
             var state = box.WithProperty("facing", facing.ToString().ToLowerInvariant());
 
             // Vanilla's BlockItem.place: a block it can replace, set with UPDATE_ALL_IMMEDIATE.
-            var placement = BlockPlacement.ForDispenser(new ItemStack(stack, 1));
-            var placed = await level.TrySetBlockAsync(
-                target,
-                state,
-                BlockUpdateFlags.AllImmediate,
-                canReplace: existing => existing.IsAir || existing.CanBeReplaced(),
-                placement);
+            var placed = source.Placement is not null
+                && level.PlaceDispensedBlock(target, state, source.Placement);
             if (!placed)
                 return Dispensed.Failed(stack);
 
@@ -186,7 +185,7 @@ internal static partial class DispenseBehaviors
     /// </remarks>
     private sealed class CarvedPumpkin : IDispenseBehavior
     {
-        public async ValueTask<Dispensed> DispenseAsync(DispenseSource source, ItemStack stack)
+        public Dispensed Dispense(DispenseSource source, ItemStack stack)
         {
             var level = source.Level;
             var target = source.Target;
@@ -194,7 +193,7 @@ internal static partial class DispenseBehaviors
             {
                 var pumpkin = BlocksRegistry.CarvedPumpkin;
                 level.BlockUpdates.SetBlock(target, pumpkin);
-                await level.BuildSnowGolemAsync(target);
+                level.BuildDispensedSnowGolem(target);
                 level.EmitGameEvent(MobGameEvent.BlockPlace, Center(target), affectedBlock: pumpkin);
                 return Dispensed.Spent(stack);
             }
@@ -209,7 +208,7 @@ internal static partial class DispenseBehaviors
     /// </summary>
     private sealed class WitherSkull : IDispenseBehavior
     {
-        public async ValueTask<Dispensed> DispenseAsync(DispenseSource source, ItemStack stack)
+        public Dispensed Dispense(DispenseSource source, ItemStack stack)
         {
             var level = source.Level;
             var target = source.Target;
@@ -219,12 +218,11 @@ internal static partial class DispenseBehaviors
             var skull = BlocksRegistry.WitherSkeletonSkull.WithProperty("rotation", SkullRotation(source.Facing));
             level.BlockUpdates.SetBlock(target, skull);
             level.EmitGameEvent(MobGameEvent.BlockPlace, Center(target), affectedBlock: skull);
-            await level.BuildWitherAsync(target);
+            level.BuildDispensedWither(target);
             return Dispensed.Spent(stack);
         }
 
-        // Vanilla's RotationSegment.convertToSegment of the facing's yaw, in sixteenths of a turn; up and down have
-        // the yaw vanilla's Direction.toYRot gives them, east's.
+        // Vanilla's direction overload maps horizontal facing to sixteenths of a turn, and vertical facing to 0.
         private static int SkullRotation(BlockFace facing)
         {
             var yaw = facing switch
@@ -232,7 +230,8 @@ internal static partial class DispenseBehaviors
                 BlockFace.South => 0,
                 BlockFace.West => 90,
                 BlockFace.North => 180,
-                _ => 270
+                BlockFace.East => 270,
+                _ => 0
             };
 
             return (int)Math.Floor(yaw / 22.5 + 0.5) & 15;
@@ -248,7 +247,7 @@ internal static partial class DispenseBehaviors
         // Vanilla's RespawnAnchorBlock.MAX_CHARGES.
         private const int MaxCharges = 4;
 
-        public ValueTask<Dispensed> DispenseAsync(DispenseSource source, ItemStack stack)
+        public Dispensed Dispense(DispenseSource source, ItemStack stack)
         {
             var level = source.Level;
             var target = source.Target;
@@ -268,10 +267,10 @@ internal static partial class DispenseBehaviors
             }
 
             if (!anchor)
-                return Drop.DispenseAsync(source, stack);
+                return Drop.Dispense(source, stack);
 
             if (charged is null)
-                return ValueTask.FromResult(Dispensed.Failed(stack));
+                return Dispensed.Failed(stack);
 
             // Vanilla's RespawnAnchorBlock.charge: the change's game event, then the charge sound.
             var center = Center(target);
@@ -286,7 +285,7 @@ internal static partial class DispenseBehaviors
                 Seed = Globals.Random.NextInt64()
             });
 
-            return ValueTask.FromResult(Dispensed.Spent(stack));
+            return Dispensed.Spent(stack);
         }
     }
 }

@@ -15,15 +15,13 @@ internal interface IDispenseBehavior
     /// Fires one of <paramref name="stack"/>, the stack in the dispenser's chosen slot.
     /// </summary>
     /// <remarks>
-    /// Runs with the dispenser's inventory locked (see <see cref="DispenseSource"/>), outside the level's tick lock,
-    /// so that the item it spends and what it does happen together: the slot changes to what this returns only
-    /// after the effect, and nothing else can take the item meanwhile. It may change the level, which takes the tick
-    /// lock, but only tries to take any other inventory.
+    /// Commits synchronously under tick then try-inventory, with external block effects deferred until unlock.
+    /// Must not load chunks, roll container loot, await, or invoke plugin code.
     /// </remarks>
     /// <param name="source">The dispenser.</param>
     /// <param name="stack">A copy of the slot's stack, which the behaviour may keep.</param>
     /// <returns>What the slot holds afterwards, and the level event the dispenser plays.</returns>
-    ValueTask<Dispensed> DispenseAsync(DispenseSource source, ItemStack stack);
+    Dispensed Dispense(DispenseSource source, ItemStack stack);
 }
 
 /// <summary>
@@ -53,6 +51,8 @@ internal readonly record struct Dispensed(ItemStack? Rest, int Event)
 internal sealed record DispenseSource(AbstractLevel Level, Vector Position, IBlock State, BlockFace Facing,
     BaseContainer Inventory)
 {
+    internal BlockPlacement.Prepared? Placement { get; init; }
+
     /// <summary>The block in front of the dispenser.</summary>
     public Vector Target => this.Position + this.Facing.ToVector();
 
@@ -102,6 +102,19 @@ internal static partial class DispenseBehaviors
             return SpawnEgg;
 
         return Drop;
+    }
+
+    // Construct and populate an unpublished box before either commit lock; plugin factories/components may run here.
+    internal static BlockPlacement.Prepared? Prepare(DispenseSource source, ItemStack stack)
+    {
+        if (!stack.Holder.UnlocalizedName.EndsWith("shulker_box", StringComparison.Ordinal)
+            || !BlocksRegistry.TryGetBlock(stack.Holder, out var box))
+        {
+            return null;
+        }
+
+        return BlockPlacement.ForDispenser(new ItemStack(stack, 1))
+            .Prepare(box, source.Target, source.Level.Logger);
     }
 
     private static FrozenDictionary<int, IDispenseBehavior> Register()
@@ -155,10 +168,10 @@ internal static partial class DispenseBehaviors
     /// <summary>Vanilla's <c>DefaultDispenseItemBehavior</c>: drops one of the stack.</summary>
     private sealed class DropBehavior : IDispenseBehavior
     {
-        public ValueTask<Dispensed> DispenseAsync(DispenseSource source, ItemStack stack)
+        public Dispensed Dispense(DispenseSource source, ItemStack stack)
         {
             DropItem(source.Level, source.Position, source.Facing, new ItemStack(stack, 1));
-            return ValueTask.FromResult(Dispensed.Spent(stack));
+            return Dispensed.Spent(stack);
         }
     }
 }

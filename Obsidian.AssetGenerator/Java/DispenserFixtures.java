@@ -39,6 +39,10 @@ import net.minecraft.world.entity.Shearable;
 import net.minecraft.world.entity.animal.equine.AbstractHorse;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.item.PrimedTnt;
+import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.entity.projectile.ItemSupplier;
+import net.minecraft.world.entity.projectile.FireworkRocketEntity;
+import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -223,6 +227,15 @@ public final class DispenserFixtures {
                 var stack = new ItemStack(
                     BuiltInRegistries.ITEM.getValue(Identifier.parse(item.get("id").getAsString())),
                     item.get("count").getAsInt());
+                if (item.has("nbt")) {
+                    try {
+                        var tag = net.minecraft.nbt.TagParser.parseCompoundFully(item.get("nbt").getAsString());
+                        var ops = level.registryAccess().createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE);
+                        stack = ItemStack.CODEC.parse(ops, tag).getOrThrow();
+                    } catch (Exception exception) {
+                        throw new IllegalArgumentException("Invalid dispenser stack", exception);
+                    }
+                }
                 blockEntity.setItem(item.get("slot").getAsInt(), stack);
             }
         }
@@ -300,7 +313,130 @@ public final class DispenserFixtures {
         add(checkpoint, "levelEvents", levelEvents);
         add(checkpoint, "particles", particles);
         add(checkpoint, "gameEvents", new ArrayList<>(gameEvents));
+        if (input.has("details") && input.get("details").getAsBoolean()) {
+            add(checkpoint, "details", details(level, heard));
+            var motions = new ArrayList<String>();
+            for (var entity : level.getEntities((Entity) null, area(EntityReach), DispenserFixtures::notPlayer)) {
+                if (entity instanceof Projectile) {
+                    var type = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+                    var motion = entity.getDeltaMovement();
+                    motions.add(type + " " + motion.x + " " + motion.y + " " + motion.z);
+                }
+            }
+            motions.sort(String::compareTo);
+            add(checkpoint, "flightMotion", motions);
+        }
+
         return checkpoint;
+    }
+
+    // Opt-in payloads keep older captures unchanged. Only random flight coordinates, random sound pitch/seed,
+    // and the random horizontal TNT impulse are omitted; stationary and vertical TNT velocities are exact.
+    private static List<String> details(ServerLevel level, List<Packet<?>> heard) {
+        var result = new ArrayList<String>();
+        if (level.getBlockEntity(origin) instanceof DispenserBlockEntity dispenser) {
+            for (int slot = 0; slot < dispenser.getContainerSize(); slot++) {
+                var item = dispenser.getItem(slot);
+                if (!item.isEmpty())
+                    result.add("slot " + slot + " " + detailedStack(level, item));
+            }
+        }
+
+        var drops = new java.util.TreeMap<String, Integer>();
+        for (var entity : level.getEntities((Entity) null, area(EntityReach), DispenserFixtures::notPlayer)) {
+            var type = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString();
+            if (entity instanceof AbstractArrow arrow) {
+                result.add(type + " pickup=" + arrow.pickup.name().toLowerCase(Locale.ROOT)
+                    + " item=" + detailedStack(level, arrow.getPickupItemStackOrigin()));
+            } else if (entity instanceof ItemSupplier supplier) {
+                result.add(type + " item=" + detailedStack(level, supplier.getItem()));
+            } else if (entity instanceof ItemEntity item) {
+                var single = item.getItem().copyWithCount(1);
+                drops.merge(detailedStack(level, single), item.getItem().getCount(), Integer::sum);
+            }
+
+            if (entity instanceof FireworkRocketEntity rocket) {
+                result.add(type + " angled=" + rocket.isShotAtAngle());
+                var fireworks = rocket.getItem().get(net.minecraft.core.component.DataComponents.FIREWORKS);
+                result.add(type + " flight=" + (fireworks == null ? 0 : fireworks.flightDuration()));
+            }
+
+            var motion = entity.getDeltaMovement();
+            if (entity instanceof PrimedTnt) {
+                result.add(type + " velocityY=" + number(motion.y));
+            } else if (!(entity instanceof Projectile) && !(entity instanceof ItemEntity)) {
+                result.add(type + " velocity=" + vector(motion.x, motion.y, motion.z));
+            }
+
+            if (entity instanceof Mob mob) {
+                for (var slot : Slots) {
+                    if (!mob.getItemBySlot(slot).isEmpty())
+                        result.add(type + " " + slot.getName() + "=" + detailedStack(level, mob.getItemBySlot(slot)));
+                }
+            }
+        }
+
+        for (var entry : drops.entrySet())
+            result.add("drop " + entry.getKey() + " total=" + entry.getValue());
+
+        for (var pos : compared()) {
+            if (!(level.getBlockEntity(pos) instanceof net.minecraft.world.level.block.entity.ShulkerBoxBlockEntity box))
+                continue;
+
+            for (int slot = 0; slot < box.getContainerSize(); slot++) {
+                if (!box.getItem(slot).isEmpty())
+                    result.add("box " + offset(pos) + " slot " + slot + " " + detailedStack(level, box.getItem(slot)));
+            }
+        }
+
+        for (var packet : heard) {
+            if (packet instanceof ClientboundSoundPacket sound) {
+                var name = sound.getSound().value().location().toString();
+                if (name.endsWith(".ambient"))
+                    continue;
+
+                // Projectile hit positions and their pitch vary with spread; category and volume still compare.
+                var projectileHit = name.equals("minecraft:entity.arrow.hit");
+                var flight = projectileHit || name.equals("minecraft:entity.firework_rocket.launch");
+                var at = flight ? "flight" : vector(sound.getX() - origin.getX(),
+                    sound.getY() - origin.getY(), sound.getZ() - origin.getZ());
+                var pitch = projectileHit ? "random" : number(sound.getPitch());
+                result.add("sound " + name + " " + sound.getSource().getName() + " " + at
+                    + " volume=" + number(sound.getVolume()) + " pitch=" + pitch);
+            } else if (packet instanceof ClientboundSoundEntityPacket sound) {
+                var name = sound.getSound().value().location().toString();
+                if (!name.endsWith(".ambient"))
+                    result.add("entitySound " + name + " " + sound.getSource().getName()
+                        + " volume=" + number(sound.getVolume()) + " pitch=" + number(sound.getPitch()));
+            } else if (packet instanceof ClientboundLevelParticlesPacket particle) {
+                var type = BuiltInRegistries.PARTICLE_TYPE.getKey(particle.particle().getType());
+                result.add("particle " + type + " " + vector(particle.x() - origin.getX(),
+                    particle.y() - origin.getY(), particle.z() - origin.getZ())
+                    + " count=" + particle.count());
+            }
+        }
+
+        result.sort(String::compareTo);
+        return result;
+    }
+
+    private static String detailedStack(ServerLevel level, ItemStack item) {
+        var text = stack(item);
+        if (item.getComponentsPatch().isEmpty())
+            return text;
+
+        var ops = level.registryAccess().createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE);
+        var patch = net.minecraft.core.component.DataComponentPatch.CODEC
+            .encodeStart(ops, item.getComponentsPatch()).getOrThrow();
+        return text + " " + patch;
+    }
+
+    private static String number(double value) {
+        return String.format(Locale.ROOT, "%.6f", value == 0 ? 0.0 : value);
+    }
+
+    private static String vector(double x, double y, double z) {
+        return number(x) + "," + number(y) + "," + number(z);
     }
 
     // Sounds at a position and sounds following an entity alike, by name.

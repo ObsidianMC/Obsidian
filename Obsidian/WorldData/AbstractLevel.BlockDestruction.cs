@@ -1,3 +1,4 @@
+using Obsidian.WorldData.BlockNotifications;
 using Obsidian.API.Blocks;
 using Obsidian.API.Inventory;
 using Obsidian.Entities;
@@ -19,6 +20,45 @@ public abstract partial class AbstractLevel
     public bool DestroyBlock(Vector position, bool dropItems, IEntity? breaker = null) =>
         this.QueueBlockDestruction(
             position, dropItems, breaker, replacement: null, playEffect: true, removePartner: true);
+
+    /// <summary>
+    /// Vanilla's <c>Level.destroyBlock</c> with drops, done now rather than queued as <see cref="DestroyBlock"/>
+    /// does: for a caller in the level's tick whose break vanilla makes in that same moment, like a projectile
+    /// breaking a chorus flower. An unloaded or air block, or one already being destroyed, is left alone.
+    /// </summary>
+    /// <param name="position">The block to destroy.</param>
+    /// <param name="breaker">The entity the <c>block_destroy</c> game event and the loot credit, if any.</param>
+    internal async ValueTask DestroyBlockInTickAsync(Vector position, IEntity? breaker)
+    {
+        IBlock block;
+        IBlockEntity? entity;
+        lock (this.Fluids.TickLock)
+        {
+            if (((IBlockChangeWorld)this).GetLoadedBlock(position) is not IBlock loaded || loaded.IsAir)
+                return;
+
+            if (!this.pendingDestruction.Add(position))
+                return;
+
+            block = loaded;
+            entity = this.GetResidentBlockEntity(position);
+        }
+
+        try
+        {
+            await this.DestroyCapturedBlockAsync(position, block, entity, dropItems: true, breaker,
+                replacement: null, playEffect: true, removePartner: true, stillUnsupported: null);
+        }
+        catch (Exception exception)
+        {
+            BlockDestructionFailed(this.Logger, exception, block.UnlocalizedName, position);
+        }
+        finally
+        {
+            lock (this.Fluids.TickLock)
+                this.pendingDestruction.Remove(position);
+        }
+    }
 
     // Environmental removal evaluates the selected state's loot. Its partner reacts through shape updates,
     // rather than redirecting an upper half's empty loot table to the lower half as a player's break does.
@@ -84,6 +124,17 @@ public abstract partial class AbstractLevel
             var power = Globals.Random.NextSingle() * 0.1f;
             var direction = Globals.Random.NextSingle() * 6.2f;
             var motion = new VectorD(-Math.Sin(direction) * power, 0.2f, Math.Cos(direction) * power);
+            return this.SpawnItem(position, stack, motion);
+        }
+    }
+
+    /// <summary>
+    /// Drops <paramref name="stack"/> at <paramref name="position"/> moving as given, under the tick lock.
+    /// </summary>
+    internal bool DropItemAt(VectorD position, ItemStack stack, VectorD motion)
+    {
+        lock (this.Fluids.TickLock)
+        {
             return this.SpawnItem(position, stack, motion);
         }
     }

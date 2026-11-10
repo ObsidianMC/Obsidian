@@ -45,7 +45,11 @@ public abstract partial class AbstractLevel
     /// from the top down.
     /// </summary>
     /// <returns>Whether a snow golem was built.</returns>
-    internal async ValueTask<bool> BuildSnowGolemAsync(Vector head)
+    internal ValueTask<bool> BuildSnowGolemAsync(Vector head) =>
+        ValueTask.FromResult(this.BuildDispensedSnowGolem(head));
+
+    // Synchronous resident-only commit used while a dispenser owns its inventory.
+    internal bool BuildDispensedSnowGolem(Vector head)
     {
         var terrain = new MobTerrain(this);
         Vector[] column = [head, head - new Vector(0, 1, 0), head - new Vector(0, 2, 0)];
@@ -55,7 +59,7 @@ public abstract partial class AbstractLevel
             return false;
         }
 
-        await this.ClearPatternAsync(terrain, column);
+        this.ClearDispensedPattern(terrain, column);
 
         var bottom = column[^1];
         SpawnEntity(new SnowGolem
@@ -83,7 +87,11 @@ public abstract partial class AbstractLevel
     /// too) playing its breaking effect, column by column.
     /// </summary>
     /// <returns>Whether a wither was built.</returns>
-    internal async ValueTask<bool> BuildWitherAsync(Vector skull)
+    internal ValueTask<bool> BuildWitherAsync(Vector skull) =>
+        ValueTask.FromResult(this.BuildDispensedWither(skull));
+
+    // Synchronous resident-only commit used while a dispenser owns its inventory.
+    internal bool BuildDispensedWither(Vector skull)
     {
         if (skull.Y < this.MinY || LevelData.Difficulty == Difficulty.Peaceful)
             return false;
@@ -101,7 +109,7 @@ public abstract partial class AbstractLevel
             cells.Add(top - new Vector(0, 2, 0));
         }
 
-        await this.ClearPatternAsync(terrain, cells);
+        this.ClearDispensedPattern(terrain, cells);
 
         var foot = center - new Vector(0, 2, 0);
         var wither = new Wither
@@ -145,16 +153,16 @@ public abstract partial class AbstractLevel
         return null;
     }
 
-    // Vanilla's CarvedPumpkinBlock.clearPatternBlocks: each block of the pattern, in order, plays its breaking effect
-    // and turns to air.
-    private async ValueTask ClearPatternAsync(MobTerrain terrain, IEnumerable<Vector> cells)
+    // Each consumed pattern block plays its breaking event before its resident-only removal. The dispenser's
+    // state scope defers notifications; the ordinary construction path publishes normally.
+    private void ClearDispensedPattern(MobTerrain terrain, IEnumerable<Vector> cells)
     {
         foreach (var cell in cells)
         {
             var state = terrain.GetBlock(cell) ?? BlocksRegistry.Air;
             this.BroadcastLevelEvent(DestroyBlockEvent, cell, state.GetHashCode());
             if (!state.IsAir)
-                await SetBlockAsync(cell, BlocksRegistry.Air, true);
+                this.BlockUpdates.SetBlock(cell, BlocksRegistry.Air, API.Blocks.BlockUpdateFlags.All);
         }
     }
 }

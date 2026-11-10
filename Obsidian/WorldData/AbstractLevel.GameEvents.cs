@@ -10,7 +10,7 @@ internal enum MobGameEvent
     Step, Land, Swim, ProjectileShoot, ProjectileLand, BlockPlace, BlockDestroy, BlockChange,
     EntityDamage, EntityDie, EntityInteract, NoteBlockPlay, JukeboxPlay, JukeboxStop, SculkSensorClick,
     BlockActivate, BlockDeactivate, BlockOpen, BlockClose, ContainerOpen, ContainerClose, Eat, FluidPickup,
-    FluidPlace, PrimeFuse, EntityPlace, ItemInteractFinish, Shear, Equip
+    FluidPlace, PrimeFuse, EntityPlace, ItemInteractFinish, ItemInteractStart, Shear, Equip, Unequip, Explode
 }
 
 internal static class MobGameEvents
@@ -92,6 +92,12 @@ public abstract partial class AbstractLevel
         return taken;
     }
 
+    /// <summary>
+    /// Observes each game event as it's queued for dispatch, before the tick delivers it: for parity replays that tick
+    /// the level, which leaves nothing for <see cref="TakeGameEvents"/>.
+    /// </summary>
+    internal Action<MobVibration>? GameEventQueued { get; set; }
+
     internal void EmitGameEvent(
         MobGameEvent kind,
         VectorD position,
@@ -106,15 +112,9 @@ public abstract partial class AbstractLevel
         }
 
         var vibration = new MobVibration(kind, position, source, owner, affectedBlock);
-        this.GameEventEmitted?.Invoke(vibration);
+        this.GameEventQueued?.Invoke(vibration);
         mobGameEvents.Enqueue(vibration);
     }
-
-    /// <summary>
-    /// Sees each game event as it's emitted, before the level dispatches it later in the tick. Parity replays that run
-    /// whole ticks compare these with vanilla's.
-    /// </summary>
-    internal Action<MobVibration>? GameEventEmitted { get; set; }
 
     internal async ValueTask TickMobGameEventsAsync()
     {
@@ -497,9 +497,11 @@ public abstract partial class AbstractLevel
         MobGameEvent.EntityPlace => 14,
         MobGameEvent.EntityInteract or MobGameEvent.Shear => 6,
         MobGameEvent.Equip => 5,
+        MobGameEvent.Unequip => 4,
         MobGameEvent.EntityDamage => 7,
         MobGameEvent.ProjectileShoot => 3,
         MobGameEvent.SculkSensorClick => 4,
+        MobGameEvent.Explode => 15,
         _ => 0
     };
 

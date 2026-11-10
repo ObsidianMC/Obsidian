@@ -1,7 +1,6 @@
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Entities;
-using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.WorldData.Dispensing;
 
@@ -164,31 +163,16 @@ internal static partial class DispenseBehaviors
     private sealed class Shot(float power, float spread, int launchEvent,
         Func<DispenseSource, ItemStack, VectorD, Entity> create) : IDispenseBehavior
     {
-        public ValueTask<Dispensed> DispenseAsync(DispenseSource source, ItemStack stack)
+        public Dispensed Dispense(DispenseSource source, ItemStack stack)
         {
             var level = source.Level;
             var motion = Shoot(source.Facing, power, spread);
             var projectile = create(source, stack, motion);
             if (!level.TrySpawnEntity(projectile, hostOwned: true))
-                return ValueTask.FromResult(new Dispensed(stack, launchEvent));
+                return new Dispensed(stack, launchEvent);
 
-            if (projectile is FireworkRocket)
-                PlayLaunch(level, projectile.Position);
-
-            level.EmitGameEvent(MobGameEvent.ProjectileShoot, projectile.Position + motion);
-            return ValueTask.FromResult(new Dispensed(DispenseSource.Shrink(stack), launchEvent));
+            return new Dispensed(DispenseSource.Shrink(stack), launchEvent);
         }
 
-        // Vanilla's FireworkRocketEntity plays it on its first tick, for everyone around, from the rocket.
-        private static void PlayLaunch(AbstractLevel level, VectorD position) =>
-            level.PacketBroadcaster.BroadcastToLevelInRange(level, (Vector)position.Floor(), new SoundPacket
-            {
-                SoundLocation = "minecraft:entity.firework_rocket.launch",
-                SoundPosition = new SoundPosition(position.X, position.Y, position.Z),
-                Category = SoundCategory.Ambient,
-                Volume = 3,
-                Pitch = 1,
-                Seed = Globals.Random.NextInt64()
-            });
     }
 }

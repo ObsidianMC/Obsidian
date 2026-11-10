@@ -68,31 +68,81 @@ internal sealed class RedstoneDispenser(IRedstoneLevel level, RedstoneEngine eng
             return;
         }
 
-        // The item spent and what it does happen together: no click or hopper takes the item meanwhile, and it isn't
-        // spent unless the behaviour ran. The inventory comes before the level's locks, so it's waited for here.
-        using var held = await container.LockInventoryAsync();
-        if (held is null || updates.GetBlockEntity(position) != container)
-            return;
-
-        var inventory = container.Inventory;
-        var slot = RandomSlot(inventory, level);
-        if (slot < 0)
+        // Snapshot outside tick: pending loot and placement components may run arbitrary code. Never carry
+        // this inventory into a tick-lock wait. The commit below revalidates the exact stack and resident entity.
+        int slot;
+        long revision;
+        ItemStack? original;
+        ItemStack? snapshot;
+        using (var held = await container.LockInventoryAsync())
         {
-            level.BroadcastLevelEvent(Dispensed.FailEvent, position, 0);
-            level.EmitGameEvent(MobGameEvent.BlockActivate, (VectorD)position + new VectorD(0.5, 0.5, 0.5),
-                affectedBlock: state);
-            return;
+            if (held is null)
+                return;
+
+            revision = container.Inventory.Revision;
+            slot = RandomSlot(container.Inventory, level);
+            original = slot < 0 ? null : container.Inventory.GetItem(slot);
+            snapshot = original is null ? null : new ItemStack(original, original.Count);
         }
 
-        var stack = inventory.GetItem(slot)!;
         var facing = FeatureHelpers.ParseFace(state.GetProperty("facing"));
-        var source = new DispenseSource(level, position, state, facing, inventory);
-        var behavior = DispenseBehaviors.For(stack);
-        var dispensed = await behavior.DispenseAsync(source, new ItemStack(stack, stack.Count));
+        var source = new DispenseSource(level, position, state, facing, container.Inventory);
+        using var prepared = snapshot is null ? null : DispenseBehaviors.Prepare(source, snapshot);
+        source = source with { Placement = prepared };
 
-        inventory.SetItem(slot, dispensed.Rest);
-        level.BroadcastLevelEvent(dispensed.Event, position, 0);
-        level.BroadcastLevelEvent(SmokeEvent, position, (int)facing);
+        lock (level.Fluids.TickLock)
+        {
+            if (!updates.GetBlock(position).IsSameState(state)
+                || updates.GetBlockEntity(position) != container
+                || container.IsRemoved
+                || container.LootTable is not null
+                || !container.Inventory.TryLock(out var held))
+            {
+                return;
+            }
+
+            BlockUseEffects? effects = null;
+            try
+            {
+                using (held)
+                {
+                    var inventory = container.Inventory;
+                    if (inventory.IsRetired || inventory.Revision != revision || slot >= 0
+                        && (!ReferenceEquals(inventory.GetItem(slot), original)
+                            || original!.Count != snapshot!.Count || !original.Equals(snapshot)))
+                    {
+                        return;
+                    }
+
+                    using (effects = new BlockUseEffects(level))
+                    {
+                        if (slot < 0)
+                        {
+                            level.BroadcastLevelEvent(Dispensed.FailEvent, position, 0);
+                            level.EmitGameEvent(MobGameEvent.BlockActivate,
+                                (VectorD)position + new VectorD(0.5, 0.5, 0.5), affectedBlock: state);
+                        }
+                        else
+                        {
+                            var dispensed = DispenseBehaviors.For(snapshot!).Dispense(source, snapshot!);
+                            inventory.SetItem(slot, dispensed.Rest);
+                            level.BroadcastLevelEvent(dispensed.Event, position, 0);
+                            level.BroadcastLevelEvent(SmokeEvent, position, (int)facing);
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                // Notifications and factories never run while the inventory is held, including on failure.
+                if (effects is not null)
+                {
+                    container.SetChanged();
+                    container.QueueItemsChanged();
+                    effects.Publish();
+                }
+            }
+        }
     }
 
     // A dropper puts one of its items into the container it faces if it fits, and otherwise keeps it silently; facing

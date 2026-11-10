@@ -30,16 +30,14 @@ public partial class ContainerBlockEntity
     }
 
     /// <summary>
-    /// Locks this container's inventory against menu clicks and item access while a change to its items and the
-    /// change to the level it pays for happen together, like a dispenser spending the item it fires: neither happens
-    /// without the other. Waits for the lock, so call it only outside the level's tick, transfer and chunk locks.
+    /// Waits for this container's inventory outside tick, transfer and chunk locks, for a synchronous snapshot.
     /// Returns null when the container is unavailable, or the caller holds the level's tick lock.
     /// </summary>
     /// <remarks>
-    /// Read and change <see cref="Inventory"/> directly until the handle is disposed. Unlike
-    /// <see cref="LockInventory"/>, the holder may await and change the level meanwhile, since an inventory comes
-    /// before the level's locks; anything else it needs from another inventory it only tries to take. Changes notify
-    /// viewers and comparators on disposal.
+    /// Pending loot is prepared before acquisition. Read or copy the items directly, then release before awaiting,
+    /// acquiring world locks or invoking plugin code. A dispenser releases this snapshot before its tick-then-try
+    /// commit; carrying this inventory into a tick wait would deadlock a concurrent region save.
+    /// Changes notify viewers and comparators after releasing the inventory.
     /// </remarks>
     internal async ValueTask<IDisposable?> LockInventoryAsync()
     {

@@ -38,6 +38,10 @@ internal sealed class SulfurSpikeBehavior : IShapeUpdateBehavior, IScheduledTick
     private static readonly GrowthRules dripstoneGrowth =
         new(BlockIds.DripstoneBlock, 7, NeedsWaterAbove: true, DripsReach: true);
 
+    /// <summary>
+    /// Vanilla's <c>SpeleothemBlock.onProjectileHit</c> threshold: a trident hitting a sulfur spike or pointed
+    /// dripstone breaks it when it may (<paramref name="allowed"/>) and is faster than 0.6.
+    /// </summary>
     internal static bool BreaksFromTrident(double speed, bool allowed) => allowed && speed > 0.6;
 
     internal static BlockFace Direction(IBlock state) =>

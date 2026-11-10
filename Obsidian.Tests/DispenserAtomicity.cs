@@ -12,6 +12,9 @@ using Obsidian.WorldData;
 using Obsidian.WorldData.Redstone;
 using System;
 using System.Linq;
+using System.IO;
+using System.Diagnostics;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -29,6 +32,127 @@ public sealed class DispenserAtomicity
     private static readonly Vector dispenser = new(8, 65, 8);
 
     [Fact]
+    public async Task FiringAndRegionSaveCannotDeadlockEachOther()
+    {
+        const string probeFlag = "OBSIDIAN_DISPENSER_SAVE_PROBE";
+        if (Environment.GetEnvironmentVariable(probeFlag) is string probeWorld)
+        {
+            await SaveRendezvousAsync(probeWorld);
+            return;
+        }
+
+        // The original inversion cannot be cancelled: isolate it so a failed test can kill and join both blocked
+        // operations instead of leaving a testhost holding world files or hanging server disposal.
+        var worldName = $"dispenser-save-{Guid.NewGuid():N}";
+        var directory = Path.GetDirectoryName(typeof(DispenserAtomicity).Assembly.Location)!;
+        var start = new ProcessStartInfo("dotnet")
+        {
+            UseShellExecute = false,
+            WorkingDirectory = directory,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        start.ArgumentList.Add("vstest");
+        start.ArgumentList.Add(typeof(DispenserAtomicity).Assembly.Location);
+        start.ArgumentList.Add("/TestCaseFilter:FullyQualifiedName="
+            + typeof(DispenserAtomicity).FullName + "." + nameof(FiringAndRegionSaveCannotDeadlockEachOther));
+        start.Environment[probeFlag] = worldName;
+
+        using var process = Process.Start(start)!;
+        var stdout = process.StandardOutput.ReadToEndAsync();
+        var stderr = process.StandardError.ReadToEndAsync();
+        try
+        {
+            try
+            {
+                await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(35));
+            }
+            catch (TimeoutException)
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync();
+                Assert.Fail("Dispenser/save rendezvous deadlocked: " + await stdout + await stderr);
+            }
+
+            Assert.True(process.ExitCode == 0, await stdout + await stderr);
+        }
+        finally
+        {
+            // Even a regressed child must release file handles before its uniquely named world is removed.
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync();
+            }
+
+            var worldPath = Path.Combine(directory, "worlds", worldName);
+            if (Directory.Exists(worldPath))
+                Directory.Delete(worldPath, recursive: true);
+        }
+    }
+
+    private static async Task SaveRendezvousAsync(string worldName)
+    {
+        // Deliberately dispose only after success; the parent process contains and joins a deadlock on old code.
+        var context = TestServerFactory.CreateServer(worldName);
+        var world = context.World;
+        var (state, container) = await PlaceDispenserAsync(world, arrows: 1);
+        container.Inventory.SetItem(0, new ItemStack(ItemsRegistry.Glowstone, 1));
+        world.BlockUpdates.SetBlock(dispenser + Vector.East, BlocksRegistry.RespawnAnchor);
+        var region = (Region)world.LoadRegionByChunk(0, 0);
+        await region.InitAsync();
+
+        using var snapshotEntered = new ManualResetEventSlim();
+        using var continueSnapshot = new ManualResetEventSlim();
+        var flushCalls = 0;
+        var originalFlush = region.FlushLight;
+        typeof(Region).GetProperty(nameof(Region.FlushLight), BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(region, (Action)(() =>
+            {
+                originalFlush?.Invoke();
+                if (Interlocked.Increment(ref flushCalls) != 2)
+                    return;
+
+                // The second flush is inside SnapshotChunkAsync, with tick and the chunk lock held.
+                snapshotEntered.Set();
+                Assert.True(continueSnapshot.Wait(timeout));
+            }));
+
+        var click = await container.Inventory.LockAsync();
+        var firingWaiting = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        world.EnqueueEntityAction(() =>
+        {
+            var pending = RedstoneDispenser.FireAsync(world, dispenser, state, dropper: false);
+            firingWaiting.SetResult();
+            return pending;
+        });
+        var firing = Task.Run(() => world.DoWorldTickAsync());
+        await firingWaiting.Task.WaitAsync(timeout);
+        var save = Task.Run(() => region.FlushAsync());
+        Assert.True(snapshotEntered.Wait(timeout));
+
+        // Fire is already queued on the inventory semaphore. Releasing the click admits it while the save owns
+        // tick. Old code keeps this inventory and waits for tick; the save then waits for that same inventory.
+        click.Dispose();
+        continueSnapshot.Set();
+        try
+        {
+            await Task.WhenAll(firing, save).WaitAsync(timeout);
+        }
+        catch (TimeoutException)
+        {
+            Assert.Fail($"save completed={save.IsCompleted}, world tick completed={firing.IsCompleted}");
+        }
+
+        Assert.Null(container.Inventory.GetItem(0));
+        Assert.Equal("1", world.BlockUpdates.GetBlock(dispenser + Vector.East).GetProperty("charges"));
+        typeof(Region).GetProperty(nameof(Region.FlushLight), BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(region, originalFlush);
+        await context.DisposeAsync();
+    }
+
+    [Fact]
     public async Task FiringWaitsForAClickAndNeverFiresTheItemTheClickTook()
     {
         await using var context = TestServerFactory.CreateServer($"dispenser-click-{Guid.NewGuid():N}");
@@ -38,7 +162,6 @@ public sealed class DispenserAtomicity
         // A click holds the dispenser's inventory while the dispenser fires.
         var click = await container.Inventory.LockAsync();
         var firing = RedstoneDispenser.FireAsync(world, dispenser, state, dropper: false).AsTask();
-        await Task.Delay(100);
         Assert.False(firing.IsCompleted);
 
         // The dispenser waits outside the level's tick lock, which the rest of the level can still take.

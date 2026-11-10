@@ -47,6 +47,7 @@ internal static partial class DispenseBehaviors
         var level = source.Level;
         var min = (VectorD)source.Target;
         var mob = level.EntitiesIn(min, min + new VectorD(1, 1, 1))
+            .Where(entity => entity.GetType().Assembly == typeof(Mob).Assembly)
             .OfType<Mob>()
             .FirstOrDefault(candidate => CanEquip(candidate, wearable));
         if (mob is null)
@@ -102,10 +103,10 @@ internal static partial class DispenseBehaviors
 
     private sealed class EquipmentBehavior : IDispenseBehavior
     {
-        public ValueTask<Dispensed> DispenseAsync(DispenseSource source, ItemStack stack) =>
+        public Dispensed Dispense(DispenseSource source, ItemStack stack) =>
             TryEquip(source, stack)
-                ? ValueTask.FromResult(Dispensed.Spent(stack))
-                : Drop.DispenseAsync(source, stack);
+                ? Dispensed.Spent(stack)
+                : Drop.Dispense(source, stack);
     }
 
     /// <summary>
@@ -118,9 +119,9 @@ internal static partial class DispenseBehaviors
         private const int FullHoney = 5;
         private const int Honeycomb = 3;
 
-        public async ValueTask<Dispensed> DispenseAsync(DispenseSource source, ItemStack stack)
+        public Dispensed Dispense(DispenseSource source, ItemStack stack)
         {
-            var sheared = TryShearBeehive(source) || await TryShearMobAsync(source);
+            var sheared = TryShearBeehive(source) || TryShearMob(source);
             return sheared ? Dispensed.Kept(Wear(stack)) : Dispensed.Failed(stack);
         }
 
@@ -155,17 +156,26 @@ internal static partial class DispenseBehaviors
         }
 
         // Vanilla's tryShearEntity: the first mob in front that's ready.
-        private static async ValueTask<bool> TryShearMobAsync(DispenseSource source)
+        private static bool TryShearMob(DispenseSource source)
         {
             var level = source.Level;
             var min = (VectorD)source.Target;
             var shearable = level.EntitiesIn(min, min + new VectorD(1, 1, 1))
+                .Where(entity => entity.GetType().Assembly == typeof(Mob).Assembly)
                 .OfType<IShearable>()
                 .FirstOrDefault(mob => mob.ReadyForShearing);
             if (shearable is null)
                 return false;
 
-            await shearable.ShearAsync(SoundCategory.Blocks);
+            // Only built-in shearables have a synchronous state change; plugin implementations must not run here.
+            if (shearable.GetType().Assembly != typeof(Sheep).Assembly)
+                return false;
+
+            var shearing = shearable.ShearAsync(SoundCategory.Blocks);
+            if (!shearing.IsCompleted)
+                throw new InvalidOperationException("Built-in dispenser shearing must complete synchronously.");
+
+            shearing.GetAwaiter().GetResult();
             level.EmitGameEvent(MobGameEvent.Shear, Center(source.Target));
             return true;
         }
@@ -177,11 +187,11 @@ internal static partial class DispenseBehaviors
     /// </summary>
     private sealed class SpawnEggBehavior : IDispenseBehavior
     {
-        public ValueTask<Dispensed> DispenseAsync(DispenseSource source, ItemStack stack)
+        public Dispensed Dispense(DispenseSource source, ItemStack stack)
         {
             var level = source.Level;
             if (SpawnEggs.TypeOf(stack) is not EntityType type || EntitySpawner.CreateMob(level, type) is not Mob mob)
-                return ValueTask.FromResult(Dispensed.Kept(stack));
+                return Dispensed.Kept(stack);
 
             var target = source.Target;
             var height = source.Facing != BlockFace.Up ? SpawnEggs.SettledOffset(level, mob, target) : 0;
@@ -191,21 +201,21 @@ internal static partial class DispenseBehaviors
             // Vanilla's EntityType.create: a yaw drawn from the level's random.
             mob.Yaw = level.GrowthRandom.NextFloat() * 360;
             if (!level.TrySpawnEntity(mob))
-                return ValueTask.FromResult(Dispensed.Kept(stack));
+                return Dispensed.Kept(stack);
 
             level.EmitGameEvent(MobGameEvent.EntityPlace, Center(source.Position));
-            return ValueTask.FromResult(Dispensed.Spent(stack));
+            return Dispensed.Spent(stack);
         }
     }
 
     private sealed class VehicleBehavior : IDispenseBehavior
     {
-        public ValueTask<Dispensed> DispenseAsync(DispenseSource source, ItemStack stack)
+        public Dispensed Dispense(DispenseSource source, ItemStack stack)
         {
             if (!VehicleItems.Dispense(source.Level, source.Position, source.Facing, stack))
-                return Drop.DispenseAsync(source, stack);
+                return Drop.Dispense(source, stack);
 
-            return ValueTask.FromResult(Dispensed.Spent(stack));
+            return Dispensed.Spent(stack);
         }
     }
 }

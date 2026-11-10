@@ -1,0 +1,1825 @@
+{
+  "_notes": "Vanilla armor stand use, recorded by Obsidian.AssetGenerator/Java/ArmorStandFixtures.java (CaptureFixtures=armor_stand_use) on a headless dedicated server in a flat world of air. A stand stands on stone at `target` + (0.5, 0, 0.5), with the case's showArms, small, marker, noBasePlate and disabledSlots and what it is `wearing` (slot name to item), already sent to the players who see it. The user stands at `player` (x, y, z, yaw, pitch), holding `item` x`count` (named `itemName`) in `handUsed`, in `gameMode`, and uses the stand at `clicked` (relative to the stand's position) as ServerGamePacketListenerImpl.handleInteract does: Player.interactOn, then for a success the player_interacted_with_entity trigger (`criteria` registers it) and the swing. The stand then ticks once, which sends its changed equipment. Recorded: the result, the used hand's item, the stand's equipment (slot=item), its saved fields (equipment, DisabledSlots, ShowArms, Small, NoBasePlate, Marker, Pose, Invisible) as JSON, the sounds (id, source, offset from the target, volume, pitch), swings and equipment packets a bystander three blocks above received, the swings the user received, game events within 16 blocks, statistics and the criteria completed.",
+  "version": "26.3",
+  "target": [0, 64, 0],
+  "player": [0.5, 64.0, 2.0, 180.0, 0.0],
+  "cases": [
+    {
+      "name": "empty_hand_bare_stand",
+      "clicked": [0.0, 1.0, 0.2],
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "pass",
+      "hand": "empty",
+      "equipment": [],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [],
+      "equipmentPackets": [],
+      "gameEvents": [],
+      "stats": [],
+      "completedCriteria": []
+    },
+    {
+      "name": "helmet_clicked_at_feet_goes_on_head",
+      "clicked": [0.0, 0.2, 0.2],
+      "item": "minecraft:iron_helmet",
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "empty",
+      "equipment": [
+        "head=minecraft:iron_helmet x1"
+      ],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "equipment": {
+          "head": {
+            "count": 1,
+            "id": "minecraft:iron_helmet"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [
+        "minecraft:item.armor.equip_iron neutral 0.5,0.0,0.5 1.0 1.0"
+      ],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "head=minecraft:iron_helmet x1"
+      ],
+      "gameEvents": [
+        "minecraft:equip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "chestplate_onto_bare_stand",
+      "clicked": [0.0, 1.2, 0.2],
+      "item": "minecraft:diamond_chestplate",
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "empty",
+      "equipment": [
+        "chest=minecraft:diamond_chestplate x1"
+      ],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "equipment": {
+          "chest": {
+            "count": 1,
+            "id": "minecraft:diamond_chestplate"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [
+        "minecraft:item.armor.equip_diamond neutral 0.5,0.0,0.5 1.0 1.0"
+      ],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "chest=minecraft:diamond_chestplate x1"
+      ],
+      "gameEvents": [
+        "minecraft:equip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "boots_onto_bare_stand",
+      "clicked": [0.0, 0.2, 0.2],
+      "item": "minecraft:leather_boots",
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "empty",
+      "equipment": [
+        "feet=minecraft:leather_boots x1"
+      ],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "equipment": {
+          "feet": {
+            "count": 1,
+            "id": "minecraft:leather_boots"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [
+        "minecraft:item.armor.equip_leather neutral 0.5,0.0,0.5 1.0 1.0"
+      ],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "feet=minecraft:leather_boots x1"
+      ],
+      "gameEvents": [
+        "minecraft:equip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "carved_pumpkins_give_one",
+      "clicked": [0.0, 1.0, 0.2],
+      "item": "minecraft:carved_pumpkin",
+      "count": 3,
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "minecraft:carved_pumpkin x2",
+      "equipment": [
+        "head=minecraft:carved_pumpkin x1"
+      ],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "equipment": {
+          "head": {
+            "count": 1,
+            "id": "minecraft:carved_pumpkin"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [
+        "minecraft:item.armor.equip_generic neutral 0.5,0.0,0.5 1.0 1.0"
+      ],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "head=minecraft:carved_pumpkin x1"
+      ],
+      "gameEvents": [
+        "minecraft:equip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "sticks_need_arms",
+      "clicked": [0.0, 1.0, 0.2],
+      "item": "minecraft:stick",
+      "count": 5,
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "pass",
+      "hand": "minecraft:stick x5",
+      "equipment": [],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [],
+      "equipmentPackets": [],
+      "gameEvents": [],
+      "stats": [],
+      "completedCriteria": []
+    },
+    {
+      "name": "sticks_give_one_with_arms",
+      "clicked": [0.0, 1.0, 0.2],
+      "item": "minecraft:stick",
+      "count": 5,
+      "showArms": true,
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "minecraft:stick x4",
+      "equipment": [
+        "mainhand=minecraft:stick x1"
+      ],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "equipment": {
+          "mainhand": {
+            "count": 1,
+            "id": "minecraft:stick"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 1,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "mainhand=minecraft:stick x1"
+      ],
+      "gameEvents": [
+        "minecraft:unequip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "one_stick_with_arms",
+      "clicked": [0.0, 1.0, 0.2],
+      "item": "minecraft:stick",
+      "count": 1,
+      "showArms": true,
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "empty",
+      "equipment": [
+        "mainhand=minecraft:stick x1"
+      ],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "equipment": {
+          "mainhand": {
+            "count": 1,
+            "id": "minecraft:stick"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 1,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "mainhand=minecraft:stick x1"
+      ],
+      "gameEvents": [
+        "minecraft:unequip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "stack_onto_held_item_refused",
+      "clicked": [0.0, 1.0, 0.2],
+      "item": "minecraft:stick",
+      "count": 3,
+      "showArms": true,
+      "wearing": {
+        "mainhand": "minecraft:stick"
+      },
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "pass",
+      "hand": "minecraft:stick x3",
+      "equipment": [
+        "mainhand=minecraft:stick x1"
+      ],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "equipment": {
+          "mainhand": {
+            "count": 1,
+            "id": "minecraft:stick"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 1,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [],
+      "equipmentPackets": [],
+      "gameEvents": [],
+      "stats": [],
+      "completedCriteria": []
+    },
+    {
+      "name": "take_head",
+      "clicked": [0.0, 1.8, 0.2],
+      "wearing": {
+        "head": "minecraft:diamond_helmet"
+      },
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "minecraft:diamond_helmet x1",
+      "equipment": [],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "head=empty"
+      ],
+      "gameEvents": [
+        "minecraft:unequip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "take_feet",
+      "clicked": [0.0, 0.2, 0.2],
+      "wearing": {
+        "feet": "minecraft:golden_boots"
+      },
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "minecraft:golden_boots x1",
+      "equipment": [],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "feet=empty"
+      ],
+      "gameEvents": [
+        "minecraft:unequip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "take_legs",
+      "clicked": [0.0, 0.6, 0.2],
+      "wearing": {
+        "legs": "minecraft:chainmail_leggings"
+      },
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "minecraft:chainmail_leggings x1",
+      "equipment": [],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "legs=empty"
+      ],
+      "gameEvents": [
+        "minecraft:unequip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "chest_wins_over_legs",
+      "clicked": [0.0, 1.0, 0.2],
+      "wearing": {
+        "feet": "minecraft:iron_boots",
+        "legs": "minecraft:iron_leggings",
+        "chest": "minecraft:iron_chestplate",
+        "head": "minecraft:iron_helmet"
+      },
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "minecraft:iron_chestplate x1",
+      "equipment": [
+        "feet=minecraft:iron_boots x1",
+        "legs=minecraft:iron_leggings x1",
+        "head=minecraft:iron_helmet x1"
+      ],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "equipment": {
+          "head": {
+            "count": 1,
+            "id": "minecraft:iron_helmet"
+          },
+          "feet": {
+            "count": 1,
+            "id": "minecraft:iron_boots"
+          },
+          "legs": {
+            "count": 1,
+            "id": "minecraft:iron_leggings"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "chest=empty"
+      ],
+      "gameEvents": [
+        "minecraft:unequip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "legs_below_chest",
+      "clicked": [0.0, 0.85, 0.2],
+      "wearing": {
+        "feet": "minecraft:iron_boots",
+        "legs": "minecraft:iron_leggings",
+        "chest": "minecraft:iron_chestplate",
+        "head": "minecraft:iron_helmet"
+      },
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "minecraft:iron_leggings x1",
+      "equipment": [
+        "feet=minecraft:iron_boots x1",
+        "chest=minecraft:iron_chestplate x1",
+        "head=minecraft:iron_helmet x1"
+      ],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "equipment": {
+          "head": {
+            "count": 1,
+            "id": "minecraft:iron_helmet"
+          },
+          "feet": {
+            "count": 1,
+            "id": "minecraft:iron_boots"
+          },
+          "chest": {
+            "count": 1,
+            "id": "minecraft:iron_chestplate"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "legs=empty"
+      ],
+      "gameEvents": [
+        "minecraft:unequip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "feet_with_all_worn",
+      "clicked": [0.0, 0.3, 0.2],
+      "wearing": {
+        "feet": "minecraft:iron_boots",
+        "legs": "minecraft:iron_leggings",
+        "chest": "minecraft:iron_chestplate",
+        "head": "minecraft:iron_helmet"
+      },
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "minecraft:iron_boots x1",
+      "equipment": [
+        "legs=minecraft:iron_leggings x1",
+        "chest=minecraft:iron_chestplate x1",
+        "head=minecraft:iron_helmet x1"
+      ],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "equipment": {
+          "head": {
+            "count": 1,
+            "id": "minecraft:iron_helmet"
+          },
+          "chest": {
+            "count": 1,
+            "id": "minecraft:iron_chestplate"
+          },
+          "legs": {
+            "count": 1,
+            "id": "minecraft:iron_leggings"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "feet=empty"
+      ],
+      "gameEvents": [
+        "minecraft:unequip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "head_with_all_worn",
+      "clicked": [0.0, 1.7, 0.2],
+      "wearing": {
+        "feet": "minecraft:iron_boots",
+        "legs": "minecraft:iron_leggings",
+        "chest": "minecraft:iron_chestplate",
+        "head": "minecraft:iron_helmet"
+      },
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "minecraft:iron_helmet x1",
+      "equipment": [
+        "feet=minecraft:iron_boots x1",
+        "legs=minecraft:iron_leggings x1",
+        "chest=minecraft:iron_chestplate x1"
+      ],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "equipment": {
+          "feet": {
+            "count": 1,
+            "id": "minecraft:iron_boots"
+          },
+          "chest": {
+            "count": 1,
+            "id": "minecraft:iron_chestplate"
+          },
+          "legs": {
+            "count": 1,
+            "id": "minecraft:iron_leggings"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "head=empty"
+      ],
+      "gameEvents": [
+        "minecraft:unequip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "gap_clicks_main_hand",
+      "clicked": [0.0, 0.05, 0.2],
+      "wearing": {
+        "feet": "minecraft:iron_boots",
+        "legs": "minecraft:iron_leggings",
+        "chest": "minecraft:iron_chestplate",
+        "head": "minecraft:iron_helmet"
+      },
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "pass",
+      "hand": "empty",
+      "equipment": [
+        "feet=minecraft:iron_boots x1",
+        "legs=minecraft:iron_leggings x1",
+        "chest=minecraft:iron_chestplate x1",
+        "head=minecraft:iron_helmet x1"
+      ],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "equipment": {
+          "head": {
+            "count": 1,
+            "id": "minecraft:iron_helmet"
+          },
+          "feet": {
+            "count": 1,
+            "id": "minecraft:iron_boots"
+          },
+          "chest": {
+            "count": 1,
+            "id": "minecraft:iron_chestplate"
+          },
+          "legs": {
+            "count": 1,
+            "id": "minecraft:iron_leggings"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [],
+      "equipmentPackets": [],
+      "gameEvents": [],
+      "stats": [],
+      "completedCriteria": []
+    },
+    {
+      "name": "main_hand_taken_by_default",
+      "clicked": [0.0, 1.0, 0.2],
+      "showArms": true,
+      "wearing": {
+        "mainhand": "minecraft:iron_sword"
+      },
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "minecraft:iron_sword x1",
+      "equipment": [],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "NoBasePlate": 0,
+        "ShowArms": 1,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "mainhand=empty"
+      ],
+      "gameEvents": [
+        "minecraft:unequip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "off_hand_when_main_empty",
+      "clicked": [0.0, 1.0, 0.2],
+      "showArms": true,
+      "wearing": {
+        "offhand": "minecraft:shield"
+      },
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "minecraft:shield x1",
+      "equipment": [],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "NoBasePlate": 0,
+        "ShowArms": 1,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "offhand=empty"
+      ],
+      "gameEvents": [
+        "minecraft:unequip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "hand_item_without_arms_still_taken",
+      "clicked": [0.0, 1.0, 0.2],
+      "wearing": {
+        "mainhand": "minecraft:iron_sword"
+      },
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "minecraft:iron_sword x1",
+      "equipment": [],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "mainhand=empty"
+      ],
+      "gameEvents": [
+        "minecraft:unequip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "swap_helmets",
+      "clicked": [0.0, 1.8, 0.2],
+      "item": "minecraft:golden_helmet",
+      "wearing": {
+        "head": "minecraft:iron_helmet"
+      },
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "minecraft:iron_helmet x1",
+      "equipment": [
+        "head=minecraft:golden_helmet x1"
+      ],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "equipment": {
+          "head": {
+            "count": 1,
+            "id": "minecraft:golden_helmet"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [
+        "minecraft:item.armor.equip_gold neutral 0.5,0.0,0.5 1.0 1.0"
+      ],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "head=minecraft:golden_helmet x1"
+      ],
+      "gameEvents": [
+        "minecraft:equip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "small_stand_feet",
+      "clicked": [0.0, 0.3, 0.2],
+      "small": true,
+      "wearing": {
+        "feet": "minecraft:iron_boots",
+        "legs": "minecraft:iron_leggings",
+        "chest": "minecraft:iron_chestplate",
+        "head": "minecraft:iron_helmet"
+      },
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "minecraft:iron_boots x1",
+      "equipment": [
+        "legs=minecraft:iron_leggings x1",
+        "chest=minecraft:iron_chestplate x1",
+        "head=minecraft:iron_helmet x1"
+      ],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 1,
+        "Pose": {},
+        "equipment": {
+          "head": {
+            "count": 1,
+            "id": "minecraft:iron_helmet"
+          },
+          "chest": {
+            "count": 1,
+            "id": "minecraft:iron_chestplate"
+          },
+          "legs": {
+            "count": 1,
+            "id": "minecraft:iron_leggings"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "feet=empty"
+      ],
+      "gameEvents": [
+        "minecraft:unequip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "small_stand_head",
+      "clicked": [0.0, 0.85, 0.2],
+      "small": true,
+      "wearing": {
+        "feet": "minecraft:iron_boots",
+        "legs": "minecraft:iron_leggings",
+        "chest": "minecraft:iron_chestplate",
+        "head": "minecraft:iron_helmet"
+      },
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "minecraft:iron_chestplate x1",
+      "equipment": [
+        "feet=minecraft:iron_boots x1",
+        "legs=minecraft:iron_leggings x1",
+        "head=minecraft:iron_helmet x1"
+      ],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 1,
+        "Pose": {},
+        "equipment": {
+          "head": {
+            "count": 1,
+            "id": "minecraft:iron_helmet"
+          },
+          "feet": {
+            "count": 1,
+            "id": "minecraft:iron_boots"
+          },
+          "legs": {
+            "count": 1,
+            "id": "minecraft:iron_leggings"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "chest=empty"
+      ],
+      "gameEvents": [
+        "minecraft:unequip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "small_stand_chest",
+      "clicked": [0.0, 0.65, 0.2],
+      "small": true,
+      "wearing": {
+        "feet": "minecraft:iron_boots",
+        "legs": "minecraft:iron_leggings",
+        "chest": "minecraft:iron_chestplate",
+        "head": "minecraft:iron_helmet"
+      },
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "minecraft:iron_chestplate x1",
+      "equipment": [
+        "feet=minecraft:iron_boots x1",
+        "legs=minecraft:iron_leggings x1",
+        "head=minecraft:iron_helmet x1"
+      ],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 1,
+        "Pose": {},
+        "equipment": {
+          "head": {
+            "count": 1,
+            "id": "minecraft:iron_helmet"
+          },
+          "feet": {
+            "count": 1,
+            "id": "minecraft:iron_boots"
+          },
+          "legs": {
+            "count": 1,
+            "id": "minecraft:iron_leggings"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "chest=empty"
+      ],
+      "gameEvents": [
+        "minecraft:unequip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "disabled_head_refuses_helmet",
+      "clicked": [0.0, 1.8, 0.2],
+      "item": "minecraft:iron_helmet",
+      "disabledSlots": 16,
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "pass",
+      "hand": "minecraft:iron_helmet x1",
+      "equipment": [],
+      "saved": {
+        "DisabledSlots": 16,
+        "Small": 0,
+        "Pose": {},
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [],
+      "equipmentPackets": [],
+      "gameEvents": [],
+      "stats": [],
+      "completedCriteria": []
+    },
+    {
+      "name": "disabled_head_click_falls_back_to_hand",
+      "clicked": [0.0, 1.8, 0.2],
+      "showArms": true,
+      "disabledSlots": 16,
+      "wearing": {
+        "head": "minecraft:iron_helmet",
+        "mainhand": "minecraft:stick"
+      },
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "minecraft:stick x1",
+      "equipment": [
+        "head=minecraft:iron_helmet x1"
+      ],
+      "saved": {
+        "DisabledSlots": 16,
+        "Small": 0,
+        "Pose": {},
+        "equipment": {
+          "head": {
+            "count": 1,
+            "id": "minecraft:iron_helmet"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 1,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "mainhand=empty"
+      ],
+      "gameEvents": [
+        "minecraft:unequip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "head_removal_locked",
+      "clicked": [0.0, 1.8, 0.2],
+      "disabledSlots": 4096,
+      "wearing": {
+        "head": "minecraft:iron_helmet"
+      },
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "pass",
+      "hand": "empty",
+      "equipment": [
+        "head=minecraft:iron_helmet x1"
+      ],
+      "saved": {
+        "DisabledSlots": 4096,
+        "Small": 0,
+        "Pose": {},
+        "equipment": {
+          "head": {
+            "count": 1,
+            "id": "minecraft:iron_helmet"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [],
+      "equipmentPackets": [],
+      "gameEvents": [],
+      "stats": [],
+      "completedCriteria": []
+    },
+    {
+      "name": "head_placement_locked",
+      "clicked": [0.0, 1.8, 0.2],
+      "item": "minecraft:iron_helmet",
+      "disabledSlots": 1048576,
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "pass",
+      "hand": "minecraft:iron_helmet x1",
+      "equipment": [],
+      "saved": {
+        "DisabledSlots": 1048576,
+        "Small": 0,
+        "Pose": {},
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [],
+      "equipmentPackets": [],
+      "gameEvents": [],
+      "stats": [],
+      "completedCriteria": []
+    },
+    {
+      "name": "head_placement_locked_still_swaps",
+      "clicked": [0.0, 1.8, 0.2],
+      "item": "minecraft:golden_helmet",
+      "disabledSlots": 1048576,
+      "wearing": {
+        "head": "minecraft:iron_helmet"
+      },
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "minecraft:iron_helmet x1",
+      "equipment": [
+        "head=minecraft:golden_helmet x1"
+      ],
+      "saved": {
+        "DisabledSlots": 1048576,
+        "Small": 0,
+        "Pose": {},
+        "equipment": {
+          "head": {
+            "count": 1,
+            "id": "minecraft:golden_helmet"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [
+        "minecraft:item.armor.equip_gold neutral 0.5,0.0,0.5 1.0 1.0"
+      ],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "head=minecraft:golden_helmet x1"
+      ],
+      "gameEvents": [
+        "minecraft:equip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "marker_refuses",
+      "clicked": [0.0, 1.0, 0.2],
+      "item": "minecraft:iron_helmet",
+      "marker": true,
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "pass",
+      "hand": "minecraft:iron_helmet x1",
+      "equipment": [],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Marker": 1,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [],
+      "equipmentPackets": [],
+      "gameEvents": [],
+      "stats": [],
+      "completedCriteria": []
+    },
+    {
+      "name": "spectator_does_nothing",
+      "clicked": [0.0, 1.8, 0.2],
+      "item": "minecraft:iron_helmet",
+      "gameMode": "spectator",
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "pass",
+      "hand": "minecraft:iron_helmet x1",
+      "equipment": [],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [],
+      "equipmentPackets": [],
+      "gameEvents": [],
+      "stats": [],
+      "completedCriteria": []
+    },
+    {
+      "name": "creative_keeps_held_item",
+      "clicked": [0.0, 1.8, 0.2],
+      "item": "minecraft:iron_helmet",
+      "gameMode": "creative",
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "minecraft:iron_helmet x1",
+      "equipment": [
+        "head=minecraft:iron_helmet x1"
+      ],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "equipment": {
+          "head": {
+            "count": 1,
+            "id": "minecraft:iron_helmet"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [
+        "minecraft:item.armor.equip_iron neutral 0.5,0.0,0.5 1.0 1.0"
+      ],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "head=minecraft:iron_helmet x1"
+      ],
+      "gameEvents": [
+        "minecraft:equip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "creative_keeps_stack",
+      "clicked": [0.0, 1.0, 0.2],
+      "item": "minecraft:stick",
+      "count": 5,
+      "showArms": true,
+      "gameMode": "creative",
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "minecraft:stick x5",
+      "equipment": [
+        "mainhand=minecraft:stick x1"
+      ],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "equipment": {
+          "mainhand": {
+            "count": 1,
+            "id": "minecraft:stick"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 1,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "mainhand=minecraft:stick x1"
+      ],
+      "gameEvents": [
+        "minecraft:unequip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "creative_swaps",
+      "clicked": [0.0, 1.8, 0.2],
+      "item": "minecraft:golden_helmet",
+      "gameMode": "creative",
+      "wearing": {
+        "head": "minecraft:iron_helmet"
+      },
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "minecraft:iron_helmet x1",
+      "equipment": [
+        "head=minecraft:golden_helmet x1"
+      ],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "equipment": {
+          "head": {
+            "count": 1,
+            "id": "minecraft:golden_helmet"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [
+        "minecraft:item.armor.equip_gold neutral 0.5,0.0,0.5 1.0 1.0"
+      ],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "head=minecraft:golden_helmet x1"
+      ],
+      "gameEvents": [
+        "minecraft:equip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "creative_takes",
+      "clicked": [0.0, 1.8, 0.2],
+      "gameMode": "creative",
+      "wearing": {
+        "head": "minecraft:iron_helmet"
+      },
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "minecraft:iron_helmet x1",
+      "equipment": [],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "head=empty"
+      ],
+      "gameEvents": [
+        "minecraft:unequip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "adventure_equips",
+      "clicked": [0.0, 1.8, 0.2],
+      "item": "minecraft:iron_helmet",
+      "gameMode": "adventure",
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "empty",
+      "equipment": [
+        "head=minecraft:iron_helmet x1"
+      ],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "equipment": {
+          "head": {
+            "count": 1,
+            "id": "minecraft:iron_helmet"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [
+        "minecraft:item.armor.equip_iron neutral 0.5,0.0,0.5 1.0 1.0"
+      ],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "head=minecraft:iron_helmet x1"
+      ],
+      "gameEvents": [
+        "minecraft:equip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "off_hand_helmet",
+      "clicked": [0.0, 1.0, 0.2],
+      "item": "minecraft:iron_helmet",
+      "handUsed": "offhand",
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "empty",
+      "equipment": [
+        "head=minecraft:iron_helmet x1"
+      ],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "equipment": {
+          "head": {
+            "count": 1,
+            "id": "minecraft:iron_helmet"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [
+        "minecraft:item.armor.equip_iron neutral 0.5,0.0,0.5 1.0 1.0"
+      ],
+      "swings": [
+        "bystander off_hand",
+        "user off_hand"
+      ],
+      "equipmentPackets": [
+        "head=minecraft:iron_helmet x1"
+      ],
+      "gameEvents": [
+        "minecraft:equip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "named_helmet_keeps_its_name",
+      "clicked": [0.0, 1.8, 0.2],
+      "item": "minecraft:iron_helmet",
+      "itemName": "Cap",
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "empty",
+      "equipment": [
+        "head=minecraft:iron_helmet x1 named=Cap"
+      ],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "equipment": {
+          "head": {
+            "components": {
+              "minecraft:custom_name": "Cap"
+            },
+            "count": 1,
+            "id": "minecraft:iron_helmet"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [
+        "minecraft:item.armor.equip_iron neutral 0.5,0.0,0.5 1.0 1.0"
+      ],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "head=minecraft:iron_helmet x1 named=Cap"
+      ],
+      "gameEvents": [
+        "minecraft:equip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "name_tag_passes",
+      "clicked": [0.0, 1.0, 0.2],
+      "item": "minecraft:name_tag",
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "pass",
+      "hand": "minecraft:name_tag x1",
+      "equipment": [],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [],
+      "swings": [],
+      "equipmentPackets": [],
+      "gameEvents": [],
+      "stats": [],
+      "completedCriteria": []
+    },
+    {
+      "name": "elytra_goes_on_chest",
+      "clicked": [0.0, 0.2, 0.2],
+      "item": "minecraft:elytra",
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "empty",
+      "equipment": [
+        "chest=minecraft:elytra x1"
+      ],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "equipment": {
+          "chest": {
+            "count": 1,
+            "id": "minecraft:elytra"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [
+        "minecraft:item.armor.equip_elytra neutral 0.5,0.0,0.5 1.0 1.0"
+      ],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "chest=minecraft:elytra x1"
+      ],
+      "gameEvents": [
+        "minecraft:equip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    },
+    {
+      "name": "player_head_goes_on_head",
+      "clicked": [0.0, 0.2, 0.2],
+      "item": "minecraft:player_head",
+      "criteria": {
+        "interacted": {
+          "trigger": "minecraft:player_interacted_with_entity"
+        }
+      },
+      "result": "success_server",
+      "hand": "empty",
+      "equipment": [
+        "head=minecraft:player_head x1"
+      ],
+      "saved": {
+        "DisabledSlots": 0,
+        "Small": 0,
+        "Pose": {},
+        "equipment": {
+          "head": {
+            "count": 1,
+            "id": "minecraft:player_head"
+          }
+        },
+        "NoBasePlate": 0,
+        "ShowArms": 0,
+        "Invisible": 0
+      },
+      "sounds": [
+        "minecraft:item.armor.equip_generic neutral 0.5,0.0,0.5 1.0 1.0"
+      ],
+      "swings": [
+        "bystander main_hand",
+        "user main_hand"
+      ],
+      "equipmentPackets": [
+        "head=minecraft:player_head x1"
+      ],
+      "gameEvents": [
+        "minecraft:equip 0,0,0 minecraft:armor_stand"
+      ],
+      "stats": [],
+      "completedCriteria": [
+        "interacted"
+      ]
+    }
+  ]
+}

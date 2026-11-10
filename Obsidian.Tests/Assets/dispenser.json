@@ -1799,6 +1799,9 @@
           "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
           "items": [
             "0 minecraft:tnt x2"
+          ],
+          "details": [
+            "slot 0 minecraft:tnt x2"
           ]
         },
         {
@@ -1806,6 +1809,9 @@
           "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
           "items": [
             "0 minecraft:tnt x2"
+          ],
+          "details": [
+            "slot 0 minecraft:tnt x2"
           ]
         },
         {
@@ -1813,6 +1819,9 @@
           "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
           "items": [
             "0 minecraft:tnt x2"
+          ],
+          "details": [
+            "slot 0 minecraft:tnt x2"
           ]
         },
         {
@@ -1833,6 +1842,11 @@
           ],
           "gameEvents": [
             "minecraft:entity_place 1,0,0 none"
+          ],
+          "details": [
+            "minecraft:tnt velocityY=0.156800",
+            "slot 0 minecraft:tnt x1",
+            "sound minecraft:entity.tnt.primed block 1.500000,0.000000,0.500000 volume=1.000000 pitch=1.000000"
           ]
         },
         {
@@ -1843,6 +1857,10 @@
           ],
           "entities": [
             "minecraft:tnt fuse=78"
+          ],
+          "details": [
+            "minecraft:tnt velocityY=0.114464",
+            "slot 0 minecraft:tnt x1"
           ]
         },
         {
@@ -1853,9 +1871,14 @@
           ],
           "entities": [
             "minecraft:tnt fuse=77"
+          ],
+          "details": [
+            "minecraft:tnt velocityY=0.072975",
+            "slot 0 minecraft:tnt x1"
           ]
         }
-      ]
+      ],
+      "details": true
     },
     {
       "name": "shears_sheep",
@@ -2188,6 +2211,10 @@
           ],
           "entities": [
             "minecraft:mooshroom shearable=true"
+          ],
+          "details": [
+            "minecraft:mooshroom velocity=0.000000,0.000000,0.000000",
+            "slot 0 minecraft:shears x1"
           ]
         },
         {
@@ -2198,6 +2225,10 @@
           ],
           "entities": [
             "minecraft:mooshroom shearable=true"
+          ],
+          "details": [
+            "minecraft:mooshroom velocity=0.000000,0.000000,0.000000",
+            "slot 0 minecraft:shears x1"
           ]
         },
         {
@@ -2208,6 +2239,10 @@
           ],
           "entities": [
             "minecraft:mooshroom shearable=true"
+          ],
+          "details": [
+            "minecraft:mooshroom velocity=0.000000,0.000000,0.000000",
+            "slot 0 minecraft:shears x1"
           ]
         },
         {
@@ -2232,6 +2267,13 @@
           ],
           "gameEvents": [
             "minecraft:shear 1,0,0 none"
+          ],
+          "details": [
+            "drop minecraft:red_mushroom x1 total=5",
+            "entitySound minecraft:entity.mooshroom.shear block volume=1.000000 pitch=1.000000",
+            "minecraft:cow velocity=0.000000,0.000000,0.000000",
+            "particle minecraft:explosion 1.500000,0.700000,0.500000 count=1",
+            "slot 0 minecraft:shears x1 damage=1 {\"minecraft:damage\":1}"
           ]
         },
         {
@@ -2243,6 +2285,11 @@
           "entities": [
             "item minecraft:red_mushroom x5",
             "minecraft:cow"
+          ],
+          "details": [
+            "drop minecraft:red_mushroom x1 total=5",
+            "minecraft:cow velocity=0.000000,0.000000,0.000000",
+            "slot 0 minecraft:shears x1 damage=1 {\"minecraft:damage\":1}"
           ]
         },
         {
@@ -2254,9 +2301,15 @@
           "entities": [
             "item minecraft:red_mushroom x5",
             "minecraft:cow"
+          ],
+          "details": [
+            "drop minecraft:red_mushroom x1 total=5",
+            "minecraft:cow velocity=0.000000,0.000000,0.000000",
+            "slot 0 minecraft:shears x1 damage=1 {\"minecraft:damage\":1}"
           ]
         }
-      ]
+      ],
+      "details": true
     },
     {
       "name": "shears_nothing",
@@ -3700,6 +3753,9 @@
           "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
           "items": [
             "0 minecraft:pig_spawn_egg x2"
+          ],
+          "details": [
+            "slot 0 minecraft:pig_spawn_egg x2"
           ]
         },
         {
@@ -3707,6 +3763,9 @@
           "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
           "items": [
             "0 minecraft:pig_spawn_egg x2"
+          ],
+          "details": [
+            "slot 0 minecraft:pig_spawn_egg x2"
           ]
         },
         {
@@ -3714,6 +3773,9 @@
           "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
           "items": [
             "0 minecraft:pig_spawn_egg x2"
+          ],
+          "details": [
+            "slot 0 minecraft:pig_spawn_egg x2"
           ]
         },
         {
@@ -3731,6 +3793,10 @@
           ],
           "gameEvents": [
             "minecraft:entity_place 0,0,0 none"
+          ],
+          "details": [
+            "minecraft:pig velocity=0.000000,-0.078400,0.000000",
+            "slot 0 minecraft:pig_spawn_egg x1"
           ]
         },
         {
@@ -3741,6 +3807,10 @@
           ],
           "entities": [
             "minecraft:pig"
+          ],
+          "details": [
+            "minecraft:pig velocity=0.000000,-0.078400,0.000000",
+            "slot 0 minecraft:pig_spawn_egg x1"
           ]
         },
         {
@@ -3751,9 +3821,14 @@
           ],
           "entities": [
             "minecraft:pig"
+          ],
+          "details": [
+            "minecraft:pig velocity=0.000000,-0.078400,0.000000",
+            "slot 0 minecraft:pig_spawn_egg x1"
           ]
         }
-      ]
+      ],
+      "details": true
     },
     {
       "name": "glowstone_anchor",
@@ -3777,6 +3852,9 @@
           "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
           "items": [
             "0 minecraft:glowstone x2"
+          ],
+          "details": [
+            "slot 0 minecraft:glowstone x2"
           ]
         },
         {
@@ -3784,6 +3862,9 @@
           "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
           "items": [
             "0 minecraft:glowstone x2"
+          ],
+          "details": [
+            "slot 0 minecraft:glowstone x2"
           ]
         },
         {
@@ -3791,6 +3872,9 @@
           "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
           "items": [
             "0 minecraft:glowstone x2"
+          ],
+          "details": [
+            "slot 0 minecraft:glowstone x2"
           ]
         },
         {
@@ -3808,6 +3892,10 @@
           ],
           "gameEvents": [
             "minecraft:block_change 1,0,0 none"
+          ],
+          "details": [
+            "slot 0 minecraft:glowstone x1",
+            "sound minecraft:block.respawn_anchor.charge block 1.500000,0.500000,0.500000 volume=1.000000 pitch=1.000000"
           ]
         },
         {
@@ -3815,6 +3903,9 @@
           "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true];1,0,0=minecraft:respawn_anchor[charges=1]",
           "items": [
             "0 minecraft:glowstone x1"
+          ],
+          "details": [
+            "slot 0 minecraft:glowstone x1"
           ]
         },
         {
@@ -3822,9 +3913,13 @@
           "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true];1,0,0=minecraft:respawn_anchor[charges=1]",
           "items": [
             "0 minecraft:glowstone x1"
+          ],
+          "details": [
+            "slot 0 minecraft:glowstone x1"
           ]
         }
-      ]
+      ],
+      "details": true
     },
     {
       "name": "glowstone_full_anchor",
@@ -3955,6 +4050,640 @@
           ],
           "entities": [
             "item minecraft:glowstone x1"
+          ]
+        }
+      ]
+    },
+    {
+      "items": [
+        {
+          "id": "minecraft:arrow",
+          "count": 2,
+          "slot": 0
+        }
+      ],
+      "facing": "east",
+      "name": "review_arrow_hits_wall",
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:arrow x2"
+          ],
+          "details": [
+            "slot 0 minecraft:arrow x2"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:arrow x2"
+          ],
+          "details": [
+            "slot 0 minecraft:arrow x2"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:arrow x2"
+          ],
+          "details": [
+            "slot 0 minecraft:arrow x2"
+          ]
+        },
+        {
+          "tick": 4,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:arrow x1"
+          ],
+          "entities": [
+            "minecraft:arrow"
+          ],
+          "sounds": [
+            "minecraft:entity.arrow.hit"
+          ],
+          "levelEvents": [
+            "1002 0,0,0 0",
+            "2000 0,0,0 5"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 2,0,0 minecraft:arrow",
+            "minecraft:projectile_shoot 1,0,0 none"
+          ],
+          "details": [
+            "minecraft:arrow pickup=allowed item=minecraft:arrow x1",
+            "slot 0 minecraft:arrow x1",
+            "sound minecraft:entity.arrow.hit neutral flight volume=1.000000 pitch=random"
+          ],
+          "flightMotion": [
+            "minecraft:arrow 0.0 0.0 0.0"
+          ]
+        },
+        {
+          "tick": 5,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:arrow x1"
+          ],
+          "entities": [
+            "minecraft:arrow"
+          ],
+          "details": [
+            "minecraft:arrow pickup=allowed item=minecraft:arrow x1",
+            "slot 0 minecraft:arrow x1"
+          ],
+          "flightMotion": [
+            "minecraft:arrow 0.0 0.0 0.0"
+          ]
+        },
+        {
+          "tick": 6,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:arrow x1"
+          ],
+          "entities": [
+            "minecraft:arrow"
+          ],
+          "details": [
+            "minecraft:arrow pickup=allowed item=minecraft:arrow x1",
+            "slot 0 minecraft:arrow x1"
+          ],
+          "flightMotion": [
+            "minecraft:arrow 0.0 0.0 0.0"
+          ]
+        }
+      ],
+      "setup": [
+        {
+          "offset": [2, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, 0, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, 1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, 1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, 0, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, 1, 1],
+          "state": "minecraft:stone"
+        }
+      ],
+      "details": true
+    },
+    {
+      "name": "wither_skull_down",
+      "facing": "down",
+      "items": [
+        {
+          "slot": 0,
+          "id": "minecraft:wither_skeleton_skull",
+          "count": 2
+        }
+      ],
+      "setup": [
+        {
+          "offset": [-1, -2, 0],
+          "state": "minecraft:soul_sand"
+        },
+        {
+          "offset": [0, -2, 0],
+          "state": "minecraft:soul_sand"
+        },
+        {
+          "offset": [1, -2, 0],
+          "state": "minecraft:soul_sand"
+        },
+        {
+          "offset": [0, -3, 0],
+          "state": "minecraft:soul_sand"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:dispenser[facing=down,triggered=true];0,1,0=minecraft:redstone_block",
+          "items": [
+            "0 minecraft:wither_skeleton_skull x2"
+          ],
+          "details": [
+            "slot 0 minecraft:wither_skeleton_skull x2"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "0,0,0=minecraft:dispenser[facing=down,triggered=true];0,1,0=minecraft:redstone_block",
+          "items": [
+            "0 minecraft:wither_skeleton_skull x2"
+          ],
+          "details": [
+            "slot 0 minecraft:wither_skeleton_skull x2"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "0,0,0=minecraft:dispenser[facing=down,triggered=true];0,1,0=minecraft:redstone_block",
+          "items": [
+            "0 minecraft:wither_skeleton_skull x2"
+          ],
+          "details": [
+            "slot 0 minecraft:wither_skeleton_skull x2"
+          ]
+        },
+        {
+          "tick": 4,
+          "changes": "0,-1,0=minecraft:wither_skeleton_skull;0,0,0=minecraft:dispenser[facing=down,triggered=true];0,1,0=minecraft:redstone_block",
+          "items": [
+            "0 minecraft:wither_skeleton_skull x1"
+          ],
+          "levelEvents": [
+            "1000 0,0,0 0",
+            "2000 0,0,0 0"
+          ],
+          "gameEvents": [
+            "minecraft:block_place 0,-1,0 none"
+          ],
+          "details": [
+            "slot 0 minecraft:wither_skeleton_skull x1"
+          ]
+        },
+        {
+          "tick": 5,
+          "changes": "0,-1,0=minecraft:wither_skeleton_skull;0,0,0=minecraft:dispenser[facing=down,triggered=true];0,1,0=minecraft:redstone_block",
+          "items": [
+            "0 minecraft:wither_skeleton_skull x1"
+          ],
+          "details": [
+            "slot 0 minecraft:wither_skeleton_skull x1"
+          ]
+        },
+        {
+          "tick": 6,
+          "changes": "0,-1,0=minecraft:wither_skeleton_skull;0,0,0=minecraft:dispenser[facing=down,triggered=true];0,1,0=minecraft:redstone_block",
+          "items": [
+            "0 minecraft:wither_skeleton_skull x1"
+          ],
+          "details": [
+            "slot 0 minecraft:wither_skeleton_skull x1"
+          ]
+        }
+      ],
+      "details": true
+    },
+    {
+      "name": "shulker_box_contents",
+      "facing": "east",
+      "details": true,
+      "items": [
+        {
+          "slot": 0,
+          "id": "minecraft:shulker_box",
+          "count": 1,
+          "nbt": "{id:\"minecraft:shulker_box\",count:1,components:{\"minecraft:container\":[{slot:3,item:{id:\"minecraft:diamond\",count:7}}]}}"
+        }
+      ],
+      "setup": [
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:shulker_box x1"
+          ],
+          "details": [
+            "slot 0 minecraft:shulker_box x1 {\"minecraft:container\":[{item:{count:7,id:\"minecraft:diamond\"},slot:3}]}"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:shulker_box x1"
+          ],
+          "details": [
+            "slot 0 minecraft:shulker_box x1 {\"minecraft:container\":[{item:{count:7,id:\"minecraft:diamond\"},slot:3}]}"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:shulker_box x1"
+          ],
+          "details": [
+            "slot 0 minecraft:shulker_box x1 {\"minecraft:container\":[{item:{count:7,id:\"minecraft:diamond\"},slot:3}]}"
+          ]
+        },
+        {
+          "tick": 4,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true];1,0,0=minecraft:shulker_box",
+          "sounds": [
+            "minecraft:block.stone.place"
+          ],
+          "levelEvents": [
+            "1000 0,0,0 0",
+            "2000 0,0,0 5"
+          ],
+          "gameEvents": [
+            "minecraft:block_place 1,0,0 none"
+          ],
+          "details": [
+            "box 1,0,0 slot 3 minecraft:diamond x7",
+            "sound minecraft:block.stone.place block 1.500000,0.500000,0.500000 volume=1.000000 pitch=0.800000"
+          ]
+        },
+        {
+          "tick": 5,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true];1,0,0=minecraft:shulker_box",
+          "details": [
+            "box 1,0,0 slot 3 minecraft:diamond x7"
+          ]
+        },
+        {
+          "tick": 6,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true];1,0,0=minecraft:shulker_box",
+          "details": [
+            "box 1,0,0 slot 3 minecraft:diamond x7"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "splash_potion_payload",
+      "facing": "east",
+      "details": true,
+      "items": [
+        {
+          "slot": 0,
+          "id": "minecraft:splash_potion",
+          "count": 1,
+          "nbt": "{id:\"minecraft:splash_potion\",count:1,components:{\"minecraft:potion_contents\":{potion:\"minecraft:healing\"}}}"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:splash_potion x1"
+          ],
+          "details": [
+            "slot 0 minecraft:splash_potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:healing\"}}"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:splash_potion x1"
+          ],
+          "details": [
+            "slot 0 minecraft:splash_potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:healing\"}}"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:splash_potion x1"
+          ],
+          "details": [
+            "slot 0 minecraft:splash_potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:healing\"}}"
+          ]
+        },
+        {
+          "tick": 4,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "entities": [
+            "minecraft:splash_potion"
+          ],
+          "levelEvents": [
+            "1002 0,0,0 0",
+            "2000 0,0,0 5"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 2,0,0 none"
+          ],
+          "details": [
+            "minecraft:splash_potion item=minecraft:splash_potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:healing\"}}"
+          ],
+          "flightMotion": [
+            "minecraft:splash_potion 1.4221030231269567 -0.06475591750603331 -0.002244628413228538"
+          ]
+        },
+        {
+          "tick": 5,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "entities": [
+            "minecraft:splash_potion"
+          ],
+          "details": [
+            "minecraft:splash_potion item=minecraft:splash_potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:healing\"}}"
+          ],
+          "flightMotion": [
+            "minecraft:splash_potion 1.4078820064579185 -0.11360835942537069 -0.002222182150502697"
+          ]
+        },
+        {
+          "tick": 6,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "entities": [
+            "minecraft:splash_potion"
+          ],
+          "details": [
+            "minecraft:splash_potion item=minecraft:splash_potion x1 {\"minecraft:potion_contents\":{potion:\"minecraft:healing\"}}"
+          ],
+          "flightMotion": [
+            "minecraft:splash_potion 1.3938031998199485 -0.16197227739140788 -0.0021999603501900505"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "firework_payload",
+      "facing": "east",
+      "details": true,
+      "items": [
+        {
+          "slot": 0,
+          "id": "minecraft:firework_rocket",
+          "count": 2,
+          "nbt": "{id:\"minecraft:firework_rocket\",count:2,components:{\"minecraft:fireworks\":{flight_duration:2b}}}"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:firework_rocket x2"
+          ],
+          "details": [
+            "slot 0 minecraft:firework_rocket x2 {\"minecraft:fireworks\":{flight_duration:2b}}"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:firework_rocket x2"
+          ],
+          "details": [
+            "slot 0 minecraft:firework_rocket x2 {\"minecraft:fireworks\":{flight_duration:2b}}"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:firework_rocket x2"
+          ],
+          "details": [
+            "slot 0 minecraft:firework_rocket x2 {\"minecraft:fireworks\":{flight_duration:2b}}"
+          ]
+        },
+        {
+          "tick": 4,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:firework_rocket x1"
+          ],
+          "entities": [
+            "minecraft:firework_rocket"
+          ],
+          "sounds": [
+            "minecraft:entity.firework_rocket.launch"
+          ],
+          "levelEvents": [
+            "1004 0,0,0 0",
+            "2000 0,0,0 5"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 1,0,0 none"
+          ],
+          "details": [
+            "minecraft:firework_rocket angled=true",
+            "minecraft:firework_rocket flight=2",
+            "minecraft:firework_rocket item=minecraft:firework_rocket x1 {\"minecraft:fireworks\":{flight_duration:2b}}",
+            "slot 0 minecraft:firework_rocket x1 {\"minecraft:fireworks\":{flight_duration:2b}}",
+            "sound minecraft:entity.firework_rocket.launch ambient flight volume=3.000000 pitch=1.000000"
+          ],
+          "flightMotion": [
+            "minecraft:firework_rocket 0.5037375682441739 1.5061639682743594E-4 -0.0027192803700548797"
+          ]
+        },
+        {
+          "tick": 5,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:firework_rocket x1"
+          ],
+          "entities": [
+            "minecraft:firework_rocket"
+          ],
+          "details": [
+            "minecraft:firework_rocket angled=true",
+            "minecraft:firework_rocket flight=2",
+            "minecraft:firework_rocket item=minecraft:firework_rocket x1 {\"minecraft:fireworks\":{flight_duration:2b}}",
+            "slot 0 minecraft:firework_rocket x1 {\"minecraft:fireworks\":{flight_duration:2b}}"
+          ],
+          "flightMotion": [
+            "minecraft:firework_rocket 0.5037375682441739 1.5061639682743594E-4 -0.0027192803700548797"
+          ]
+        },
+        {
+          "tick": 6,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:firework_rocket x1"
+          ],
+          "entities": [
+            "minecraft:firework_rocket"
+          ],
+          "details": [
+            "minecraft:firework_rocket angled=true",
+            "minecraft:firework_rocket flight=2",
+            "minecraft:firework_rocket item=minecraft:firework_rocket x1 {\"minecraft:fireworks\":{flight_duration:2b}}",
+            "slot 0 minecraft:firework_rocket x1 {\"minecraft:fireworks\":{flight_duration:2b}}"
+          ],
+          "flightMotion": [
+            "minecraft:firework_rocket 0.5037375682441739 1.5061639682743594E-4 -0.0027192803700548797"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "tipped_arrow_payload",
+      "facing": "east",
+      "details": true,
+      "items": [
+        {
+          "slot": 0,
+          "id": "minecraft:tipped_arrow",
+          "count": 2,
+          "nbt": "{id:\"minecraft:tipped_arrow\",count:2,components:{\"minecraft:potion_contents\":{potion:\"minecraft:healing\"}}}"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:tipped_arrow x2"
+          ],
+          "details": [
+            "slot 0 minecraft:tipped_arrow x2 {\"minecraft:potion_contents\":{potion:\"minecraft:healing\"}}"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:tipped_arrow x2"
+          ],
+          "details": [
+            "slot 0 minecraft:tipped_arrow x2 {\"minecraft:potion_contents\":{potion:\"minecraft:healing\"}}"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:tipped_arrow x2"
+          ],
+          "details": [
+            "slot 0 minecraft:tipped_arrow x2 {\"minecraft:potion_contents\":{potion:\"minecraft:healing\"}}"
+          ]
+        },
+        {
+          "tick": 4,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:tipped_arrow x1"
+          ],
+          "entities": [
+            "minecraft:arrow"
+          ],
+          "levelEvents": [
+            "1002 0,0,0 0",
+            "2000 0,0,0 5"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 2,0,0 none"
+          ],
+          "details": [
+            "minecraft:arrow pickup=allowed item=minecraft:tipped_arrow x1 {\"minecraft:potion_contents\":{potion:\"minecraft:healing\"}}",
+            "slot 0 minecraft:tipped_arrow x1 {\"minecraft:potion_contents\":{potion:\"minecraft:healing\"}}"
+          ],
+          "flightMotion": [
+            "minecraft:arrow 1.1468275106214532 -0.0827608833105736 -0.008993620394021672"
+          ]
+        },
+        {
+          "tick": 5,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:tipped_arrow x1"
+          ],
+          "entities": [
+            "minecraft:arrow"
+          ],
+          "details": [
+            "minecraft:arrow pickup=allowed item=minecraft:tipped_arrow x1 {\"minecraft:potion_contents\":{potion:\"minecraft:healing\"}}",
+            "slot 0 minecraft:tipped_arrow x1 {\"minecraft:potion_contents\":{potion:\"minecraft:healing\"}}"
+          ],
+          "flightMotion": [
+            "minecraft:arrow 1.135359246452238 -0.13193327526673715 -0.008903684275851304"
+          ]
+        },
+        {
+          "tick": 6,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:tipped_arrow x1"
+          ],
+          "entities": [
+            "minecraft:arrow"
+          ],
+          "details": [
+            "minecraft:arrow pickup=allowed item=minecraft:tipped_arrow x1 {\"minecraft:potion_contents\":{potion:\"minecraft:healing\"}}",
+            "slot 0 minecraft:tipped_arrow x1 {\"minecraft:potion_contents\":{potion:\"minecraft:healing\"}}"
+          ],
+          "flightMotion": [
+            "minecraft:arrow 1.1240056648153451 -0.18061394377228351 -0.008814647518004941"
           ]
         }
       ]

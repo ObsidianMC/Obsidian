@@ -7,6 +7,8 @@ using Obsidian.API.Utilities;
 using Obsidian.Entities;
 using Obsidian.Entities.Factories;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Nbt;
+using System.Globalization;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.Tests.Utilities;
@@ -52,34 +54,58 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
         (EquipmentSlot.Saddle, "saddle")
     ];
 
-    /// <summary>
-    /// Where Obsidian still differs from vanilla, by case, as the ticks and fields that differ: exactly these are
-    /// expected, so a case fails when one goes away as well as when another appears (see
-    /// <c>docs/known-gaps/dispenser-behaviours.md</c>).
-    /// </summary>
-    private static readonly Dictionary<string, string[]> knownDifferences = new()
+    private static Checkpoint ExpectedOutput(string name, Checkpoint reference)
     {
-        // Obsidian has no flight for wind charges, so its dispensers drop them.
-        ["wind_charge"] =
-        [
-            "tick 4 entities", "tick 4 level events", "tick 4 game events", "tick 5 entities", "tick 6 entities"
-        ],
+        // The landing gap also leaves the grounded mob's gravity accumulator at -0.0784, while the no-AI
+        // vanilla mooshroom/cow zeroes it. Pin that exact value in this case; compare every other detail unchanged.
+        if (name == "shears_mooshroom")
+        {
+            reference = reference with
+            {
+                Details = reference.Details.Select(value => value switch
+                {
+                    "minecraft:mooshroom velocity=0.000000,0.000000,0.000000" =>
+                        "minecraft:mooshroom velocity=0.000000,-0.078400,0.000000",
+                    "minecraft:cow velocity=0.000000,0.000000,0.000000" =>
+                        "minecraft:cow velocity=0.000000,-0.078400,0.000000",
+                    _ => value
+                }).ToArray()
+            };
+        }
 
-        // Obsidian's bone meal doesn't grow cocoa, so the dispenser fails and keeps it.
-        ["bone_meal_cocoa"] =
-        [
-            "tick 4 changes", "tick 4 items", "tick 4 level events",
-            "tick 5 changes", "tick 5 items", "tick 6 changes", "tick 6 items"
-        ],
+        if (reference.Tick < 4)
+            return reference;
 
-        // A mob that appears on the floor is heard landing (hit_ground) in Obsidian; vanilla's hasn't fallen.
-        ["shears_mooshroom"] = ["tick 4 game events"],
-        ["pig_spawn_egg"] = ["tick 4 game events"]
-    };
+        return name switch
+        {
+            "wind_charge" => reference with
+            {
+                Entities = ["item minecraft:wind_charge x1"],
+                LevelEvents = reference.Tick == 4 ? ["1000 0,0,0 0", "2000 0,0,0 5"] : [],
+                GameEvents = []
+            },
+            "bone_meal_cocoa" => reference with
+            {
+                Changes = "-1,0,0=minecraft:redstone_block;"
+                    + "0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+                Items = ["0 minecraft:bone_meal x2"],
+                LevelEvents = reference.Tick == 4 ? ["1001 0,0,0 0", "2000 0,0,0 5"] : []
+            },
+            "shears_mooshroom" when reference.Tick == 4 => reference with
+            {
+                GameEvents = ["minecraft:shear 1,0,0 none", "minecraft:hit_ground 1,0,0 minecraft:cow"]
+            },
+            "pig_spawn_egg" when reference.Tick == 4 => reference with
+            {
+                GameEvents = ["minecraft:entity_place 0,0,0 none", "minecraft:hit_ground 1,0,0 minecraft:pig"]
+            },
+            _ => reference
+        };
+    }
 
     private sealed record Setup(Vector Offset, IBlock State);
 
-    private sealed record ScenarioItem(int Slot, string Id, int Count);
+    private sealed record ScenarioItem(int Slot, string Id, int Count, string? Nbt);
 
     private sealed record ScenarioMob(string Type, Vector Offset, bool? Tamed, bool? CanPickUpLoot);
 
@@ -91,7 +117,9 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
         string[] Sounds,
         string[] LevelEvents,
         string[] Particles,
-        string[] GameEvents);
+        string[] GameEvents,
+        string[] Details,
+        string[] FlightMotion);
 
     private sealed record Case(
         string Name,
@@ -101,7 +129,8 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
         ScenarioMob[] Mobs,
         string Drops,
         int Ticks,
-        Checkpoint[] Expected);
+        Checkpoint[] Expected,
+        bool Details);
 
     private sealed record Harness(
         RealServerContext Context,
@@ -126,10 +155,7 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
         await FixtureCases.AssertAllAsync(cases, dispense => dispense.Name, async dispense =>
         {
             var differences = await ReplayAsync(harness, dispense);
-            var differing = differences.Select(difference => difference[..difference.IndexOf(':')]);
-            var expected = knownDifferences.GetValueOrDefault(dispense.Name, []);
-            Assert.True(differing.SequenceEqual(expected),
-                $"expected differences in [{string.Join(", ", expected)}], got [{string.Join("; ", differences)}]");
+            Assert.True(differences.Count == 0, string.Join("; ", differences));
         });
 
         output.WriteLine($"Replayed {cases.Length} dispensers.");
@@ -169,7 +195,7 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
 
         // The level dispatches game events later in its tick, so they're seen as they're emitted.
         var harness = new Harness(context, dispenser, bystander, []);
-        world.GameEventEmitted = gameEvent => harness.GameEvents.Add(GameEvent(harness, gameEvent));
+        world.GameEventQueued = gameEvent => harness.GameEvents.Add(GameEvent(harness, gameEvent));
         return harness;
     }
 
@@ -187,7 +213,12 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
         world.BlockUpdates.SetBlock(dispenser, state, Quiet);
         var container = Assert.IsAssignableFrom<ContainerBlockEntity>(world.GetResidentBlockEntity(dispenser));
         foreach (var item in dispense.Items)
-            container.Inventory.SetItem(item.Slot, new ItemStack(ItemsRegistry.Get(item.Id), item.Count));
+        {
+            var stack = item.Nbt is null
+                ? new ItemStack(ItemsRegistry.Get(item.Id), item.Count)
+                : SnbtReader.ReadCompound(item.Nbt).ItemFromNbt();
+            container.Inventory.SetItem(item.Slot, stack);
+        }
 
         foreach (var mob in dispense.Mobs)
             Spawn(harness, mob);
@@ -200,11 +231,16 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
         await world.SetBlockAsync(behind, BlocksRegistry.RedstoneBlock, doBlockUpdate: true);
 
         var differences = new List<string>();
+        Checkpoint? previousExpected = null;
+        Checkpoint? previousActual = null;
         foreach (var expected in dispense.Expected)
         {
             await world.DoWorldTickAsync();
             var actual = Record(harness, dispense, expected.Tick, before);
-            differences.AddRange(Compare(expected, actual));
+            differences.AddRange(Compare(ExpectedOutput(dispense.Name, expected), actual));
+            CompareFlight(expected, actual, previousExpected, previousActual, differences);
+            previousExpected = expected;
+            previousActual = actual;
         }
 
         return differences;
@@ -273,7 +309,235 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
             [.. sounds],
             levelEvents,
             particles,
-            gameEvents);
+            gameEvents,
+            dispense.Details ? Details(harness, heard) : [],
+            dispense.Details ? FlightMotion(harness) : []);
+    }
+
+    private static string[] FlightMotion(Harness harness)
+    {
+        var center = (VectorD)harness.Dispenser + new VectorD(0.5);
+        return harness.Context.World.GetEntitiesInRange(center, EntityReach * 2)
+            .OfType<Entity>()
+            .Where(entity => entity is Arrow or Egg or ThrownExperienceBottle or MobProjectile or FireworkRocket)
+            .Where(entity => InArea(harness, entity.CurrentBox))
+            .Select(entity => FormattableString.Invariant(
+                $"{EntityNbt.TypeId(entity)} {entity.Motion.X:R} {entity.Motion.Y:R} {entity.Motion.Z:R}"))
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+    }
+
+    // Initial flight velocity varies with each projectile's private spread random. Later ticks must follow the
+    // same transform as the capture: horizontal scaling (drag), then vertical acceleration. This compares velocity
+    // without requiring Obsidian to draw the same shot. A stopped projectile must have the captured zero velocity.
+    private static void CompareFlight(Checkpoint expected, Checkpoint actual, Checkpoint? previousExpected,
+        Checkpoint? previousActual, List<string> differences)
+    {
+        var reference = expected.FlightMotion.Select(ParseMotion).ToArray();
+        var observed = actual.FlightMotion.Select(ParseMotion).ToArray();
+        if (!reference.Select(value => value.Type).SequenceEqual(observed.Select(value => value.Type)))
+        {
+            differences.Add($"tick {expected.Tick} flight motion: projectile types differ");
+            return;
+        }
+
+        var oldReference = previousExpected?.FlightMotion.Select(ParseMotion).ToArray() ?? [];
+        var oldObserved = previousActual?.FlightMotion.Select(ParseMotion).ToArray() ?? [];
+        for (var index = 0; index < reference.Length; index++)
+        {
+            var (type, motion) = reference[index];
+            var actualMotion = observed[index].Motion;
+            if (!double.IsFinite(actualMotion.MagnitudeSquared()))
+            {
+                differences.Add($"tick {expected.Tick} {type} has non-finite velocity");
+                continue;
+            }
+
+            VectorD? predicted = motion == VectorD.Zero ? VectorD.Zero : null;
+            if (predicted is null && index < oldReference.Length && index < oldObserved.Length
+                && oldReference[index].Type == type && oldObserved[index].Type == type
+                && Math.Abs(oldReference[index].Motion.X) > 1e-12)
+            {
+                var before = oldReference[index].Motion;
+                var scale = motion.X / before.X;
+                var gravity = before.Y * scale - motion.Y;
+                predicted = oldObserved[index].Motion * scale - new VectorD(0, gravity, 0);
+            }
+
+            if (predicted is null)
+            {
+                // Two independent triangular spreads can differ by twice their configured radius per axis.
+                var tolerance = type switch
+                {
+                    "minecraft:firework_rocket" => 0.018,
+                    "minecraft:splash_potion" => 0.143,
+                    _ => 0.228
+                };
+                var delta = actualMotion - motion;
+                if (Math.Abs(delta.X) > tolerance || Math.Abs(delta.Y) > tolerance || Math.Abs(delta.Z) > tolerance)
+                    differences.Add($"tick {expected.Tick} {type} launch velocity exceeds vanilla spread");
+            }
+
+            if (predicted is VectorD target && (actualMotion - target).Magnitude > 1e-6)
+            {
+                differences.Add($"tick {expected.Tick} {type} velocity: "
+                    + $"expected {VectorText(target)}, got {VectorText(actualMotion)}");
+            }
+        }
+    }
+
+    private static (string Type, VectorD Motion) ParseMotion(string value)
+    {
+        var parts = value.Split(' ');
+        var motion = new VectorD(
+            double.Parse(parts[1], CultureInfo.InvariantCulture),
+            double.Parse(parts[2], CultureInfo.InvariantCulture),
+            double.Parse(parts[3], CultureInfo.InvariantCulture));
+        return (parts[0], motion);
+    }
+
+    private static string[] Details(Harness harness, IClientboundPacket[] heard)
+    {
+        var world = harness.Context.World;
+        var result = new List<string>();
+        if (world.GetResidentBlockEntity(harness.Dispenser) is ContainerBlockEntity dispenser)
+        {
+            for (var slot = 0; slot < dispenser.Inventory.Size; slot++)
+            {
+                if (dispenser.Inventory.GetItem(slot) is { IsAir: false, Count: > 0 } stack)
+                    result.Add($"slot {slot} {DetailedStack(stack)}");
+            }
+        }
+
+        var drops = new SortedDictionary<string, int>(StringComparer.Ordinal);
+        var center = (VectorD)harness.Dispenser + new VectorD(0.5);
+        foreach (var entity in world.GetEntitiesInRange(center, EntityReach * 2).OfType<Entity>())
+        {
+            if (entity is ServerPlayer || !InArea(harness, entity.CurrentBox))
+                continue;
+
+            var type = EntityNbt.TypeId(entity);
+            var item = entity switch
+            {
+                Arrow arrow => arrow.PickupItem,
+                Egg egg => egg.Item,
+                ThrownExperienceBottle bottle => bottle.Item,
+                MobProjectile potion when potion.Type == EntityType.SplashPotion => potion.SplashItem,
+                FireworkRocket rocket => rocket.Item,
+
+                _ => null
+            };
+            if (item is not null)
+            {
+                var pickup = entity is Arrow arrow ? $" pickup={arrow.Pickup.ToString().ToLowerInvariant()}" : "";
+                result.Add($"{type}{pickup} item={DetailedStack(item)}");
+            }
+
+            if (entity is ItemEntity dropped)
+            {
+                var single = DetailedStack(new ItemStack(dropped.Item, 1));
+                drops[single] = drops.GetValueOrDefault(single) + dropped.Item.Count;
+            }
+
+            if (entity is FireworkRocket firework)
+            {
+                result.Add($"{type} angled={firework.ShotAtAngle.ToString().ToLowerInvariant()}");
+                var fireworks = firework.Item?.GetComponent<API.Inventory.DataComponents.FireworksDataComponent>(
+                    DataComponentType.Fireworks);
+                result.Add($"{type} flight={fireworks?.FlightDuration ?? 0}");
+            }
+
+            if (entity is PrimedTnt)
+                result.Add($"{type} velocityY={Number(entity.Motion.Y)}");
+            else if (entity is Mob)
+                result.Add($"{type} velocity={VectorText(entity.Motion)}");
+
+            if (entity is Mob mob)
+            {
+                foreach (var (slot, name) in slots)
+                {
+                    var equipment = mob.GetEquipment(slot);
+                    if (!equipment.IsAir && equipment.Count > 0)
+                        result.Add($"{type} {name}={DetailedStack(equipment)}");
+                }
+            }
+        }
+
+        foreach (var (item, count) in drops)
+            result.Add($"drop {item} total={count}");
+
+        foreach (var position in Area(harness))
+        {
+            var block = world.BlockUpdates.GetBlock(position);
+            if (!block.UnlocalizedName.EndsWith("shulker_box", StringComparison.Ordinal)
+                || world.GetResidentBlockEntity(position) is not ContainerBlockEntity box)
+            {
+                continue;
+            }
+
+            for (var slot = 0; slot < box.Inventory.Size; slot++)
+            {
+                if (box.Inventory.GetItem(slot) is { IsAir: false, Count: > 0 } item)
+                    result.Add($"box {Offset(harness, position)} slot {slot} {DetailedStack(item)}");
+            }
+        }
+
+        foreach (var packet in heard)
+        {
+            if (packet is SoundPacket sound)
+            {
+                if (sound.SoundLocation.EndsWith(".ambient", StringComparison.Ordinal))
+                    continue;
+
+                var projectileHit = sound.SoundLocation == "minecraft:entity.arrow.hit";
+                var flight = projectileHit || sound.SoundLocation == "minecraft:entity.firework_rocket.launch";
+                var relative = new VectorD(sound.SoundPosition.X / 8.0, sound.SoundPosition.Y / 8.0,
+                    sound.SoundPosition.Z / 8.0) - (VectorD)harness.Dispenser;
+                var position = flight ? "flight" : VectorText(relative);
+                var pitch = projectileHit ? "random" : Number(sound.Pitch);
+                result.Add($"sound {sound.SoundLocation} {SoundCategoryName(sound.Category)} {position}"
+                    + $" volume={Number(sound.Volume)} pitch={pitch}");
+            }
+            else if (packet is SoundEntityPacket following)
+            {
+                if (!following.SoundLocation.EndsWith(".ambient", StringComparison.Ordinal))
+                {
+                    result.Add($"entitySound {following.SoundLocation} {SoundCategoryName(following.Category)}"
+                        + $" volume={Number(following.Volume)} pitch={Number(following.Pitch)}");
+                }
+            }
+            else if (packet is LevelParticlesPacket particle)
+            {
+                var position = VectorText(particle.Position - (VectorD)harness.Dispenser);
+                result.Add($"particle minecraft:{particle.Data.ParticleType.ToString().ToSnakeCase()} {position}"
+                    + $" count={particle.ParticleCount}");
+            }
+        }
+
+        return [.. result.Order(StringComparer.Ordinal)];
+    }
+
+    private static string SoundCategoryName(SoundCategory category) =>
+        category == SoundCategory.Blocks ? "block" : category.ToString().ToSnakeCase();
+
+    private static string Number(double value) => (value == 0 ? 0 : value).ToString("F6", CultureInfo.InvariantCulture);
+
+    private static string VectorText(VectorD value) => $"{Number(value.X)},{Number(value.Y)},{Number(value.Z)}";
+
+    private static string DetailedStack(ItemStack stack)
+    {
+        var text = Text(stack);
+        if (stack.ToNbt().TryGetTag<NbtCompound>("components", out var components) && components.Count > 0)
+            return $"{text} {Obsidian.Commands.Snbt.Write(components)}";
+
+        return text;
+    }
+
+    private static string CanonicalDetail(string value)
+    {
+        var components = value.IndexOf(" {", StringComparison.Ordinal);
+        return components < 0 ? value : value[..(components + 1)]
+            + Obsidian.Commands.Snbt.Write(SnbtReader.ReadCompound(value[(components + 1)..]));
     }
 
     private static IEnumerable<string> Compare(Checkpoint expected, Checkpoint actual)
@@ -289,7 +553,8 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
             ("sounds", expected.Sounds, actual.Sounds),
             ("level events", expected.LevelEvents, actual.LevelEvents),
             ("particles", expected.Particles, actual.Particles),
-            ("game events", expected.GameEvents, actual.GameEvents)
+            ("game events", expected.GameEvents, actual.GameEvents),
+            ("details", expected.Details, actual.Details)
         };
 
         foreach (var (name, expectedValues, actualValues) in lists)
@@ -510,7 +775,8 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
                 .Select(item => new ScenarioItem(
                     item.GetProperty("slot").GetInt32(),
                     item.GetProperty("id").GetString()!,
-                    item.GetProperty("count").GetInt32()))
+                    item.GetProperty("count").GetInt32(),
+                    item.TryGetProperty("nbt", out var nbt) ? nbt.GetString() : null))
                 .ToArray()
             : [];
         var setup = input.TryGetProperty("setup", out var setupElement)
@@ -536,7 +802,8 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
             mobs,
             drops,
             ticks,
-            checkpoints);
+            checkpoints,
+            input.TryGetProperty("details", out var details) && details.GetBoolean());
     }
 
     private static ScenarioMob ReadMob(JsonElement mob) => new(
@@ -553,7 +820,9 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
         Strings(checkpoint, "sounds"),
         Strings(checkpoint, "levelEvents"),
         Strings(checkpoint, "particles"),
-        Strings(checkpoint, "gameEvents"));
+        Strings(checkpoint, "gameEvents"),
+        Strings(checkpoint, "details").Select(CanonicalDetail).Order(StringComparer.Ordinal).ToArray(),
+        Strings(checkpoint, "flightMotion"));
 
     private static string[] Strings(JsonElement element, string name) =>
         element.TryGetProperty(name, out var values)

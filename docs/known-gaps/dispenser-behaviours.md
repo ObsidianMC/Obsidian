@@ -28,11 +28,11 @@ Droppers are unchanged: they still put an item into the container they face or d
 - **Projectiles.** The spread of each shot is drawn from Obsidian's random, where vanilla draws it from the new
   projectile's own, so positions aren't compared, only which projectiles fly and when. A tipped arrow flies as a plain
   arrow carrying the tipped arrow to pick up: its potion's effects aren't applied, as with a bow. The
-  `projectile_shoot` game event is emitted by the dispenser where the projectile will be after its first move, with
-  no source; vanilla's projectile emits it on its first tick. Projectiles nothing shot (a dispenser's, or ones loaded
-  from a save) no longer emit one when they spawn.
+  `projectile_shoot` game event is emitted on the projectile's first tick, through the shared projectile path,
+  with no source for a dispenser's shot. An arrow hitting the wall on that tick emits `projectile_land` at the hit
+  block before `projectile_shoot` at its retreated position (`review_arrow_hits_wall`).
 - **Bone meal** grows what a player's bone meal grows here (see [plant growth](plant-growth-beyond-saplings.md)); cocoa
-  isn't one of them (`bone_meal_cocoa`, pinned), and water plants (vanilla's `growWaterPlant`: seagrass and coral
+  isn't one of them (`bone_meal_cocoa`, pinned to keeping both bone meal), and water plants (vanilla's `growWaterPlant`: seagrass and coral
   spreading on water) aren't grown either, so the dispenser fails on those and keeps the bone meal.
 - **Flint and steel and TNT** don't prime sulfur cubes or feed TNT to one, and fire is placed only where it survives,
   without vanilla's exception for the inside of a nether portal frame.
@@ -52,11 +52,35 @@ Droppers are unchanged: they still put an item into the container they face or d
 
 ## Atomicity and locks
 
-A dispenser holds its inventory while it fires (`ContainerBlockEntity.LockInventoryAsync`), waiting for it on the
-level's entity path, outside the tick, transfer and chunk locks. The item it spends and what it does happen together:
-a click or a hopper can't take the item meanwhile, and it isn't spent unless the behaviour ran. Under the lock it
-changes the level, which takes the tick lock after the inventory, as the lock order allows; any other inventory it
-needs it only tries. `DispenserAtomicity` checks both.
+A dispenser snapshots its selected stack under its inventory lock outside the tick, transfer and chunk locks,
+then releases it before preparing a shulker box's components or waiting for tick. The commit takes tick first and
+only **tries** the inventory. It revalidates the resident dispenser, inventory revision and exact selected stack,
+then commits the slot and synchronous world/entity state together. A busy or changed inventory refuses the attempt
+without spending or firing. There is no inventory-to-tick wait edge. Block notifications and spawn effects use the
+same deferred effects scope as `BlockUse.TryCommit`, publishing after the inventory unwinds; loot, chunk loading,
+placement factories and asynchronous preparation stay outside the commit. Growth features also run in the
+post-inventory effects phase, and plugin shearables/equipment callbacks are not invoked inside the commit.
+
+`DispenserAtomicity.FiringAndRegionSaveCannotDeadlockEachOther` starts `DoWorldTickAsync` with firing waiting behind
+a held click, pauses a real `Region.FlushAsync` inside its tick-locked snapshot, then releases the click. The old
+firing path times out with both operations unfinished; the fixed path saves and spends exactly one glowstone to
+charge the anchor. The uninterruptible regression runs in an isolated testhost, which is killed and joined if it
+hangs. This does not depend on the save-side repair in #719. The other `DispenserAtomicity` tests guard clicks and
+concurrent hopper-like takes against item duplication/loss.
+
+## Replay comparisons
+
+The four known-gap cases pin exact values for the affected fields and still compare every other captured value.
+They cannot pass merely because the same field names differ. The mooshroom/cow grounding gap also pins its exact
+vertical gravity accumulator (`-0.0784` instead of vanilla's zero).
+
+Cases with `details: true` additionally compare complete item component patches in slots, projectile pickup/items,
+equipment and dropped stacks, shulker contents, rocket angled state, deterministic sound category/volume/pitch and
+position, particle positions, mob velocities and vertical TNT velocity. Dropped component payloads are summed by
+identical stack rather than entity count. Projectile motion is recorded: the initial velocity comparison allows
+only the two shots' spread radius; following ticks must have the captured drag and vertical acceleration. Exact
+random flight coordinates, TNT's random horizontal impulse, sound seeds and the arrow hit's random pitch are not
+compared. Only selected added/changed cases are re-recorded with `CaptureCases`.
 
 **Where to start:** a new behaviour is an `IDispenseBehavior` registered in one of `DispenseBehaviors`'s partial
 files (`Projectiles`, `Blocks`, `Entities`), with a case added to `dispenser.json` and captured on its own.
