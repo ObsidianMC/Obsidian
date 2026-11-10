@@ -93,8 +93,10 @@ public class Animal : AgeableMob
 
             var lookAt = closestPosition - Position;
 
-            var yaw = (byte)((Math.Atan2(lookAt.Z, lookAt.X) * (256 / (2 * Math.PI)) - 64) % 256);
-            var pitch = (byte)(256 - (Math.Asin(lookAt.Y / lookAt.Magnitude) * (256 / (2 * Math.PI))));
+            // Both narrow through int so they wrap into a byte: since .NET 11 a double cast straight to a byte
+            // saturates, which would clamp a negative yaw to 0 and a level pitch (256) to 255.
+            var yaw = (byte)(int)((Math.Atan2(lookAt.Z, lookAt.X) * (256 / (2 * Math.PI)) - 64) % 256);
+            var pitch = (byte)(int)(256 - (Math.Asin(lookAt.Y / lookAt.Magnitude) * (256 / (2 * Math.PI))));
 
             SetRotation(new Angle(yaw), new Angle(pitch), MovementFlags.OnGround);
             SetHeadRotation(new Angle(yaw));
