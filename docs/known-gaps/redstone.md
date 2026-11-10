@@ -16,7 +16,8 @@ What follows is what still differs.
   shelves, command blocks, sculk sensors, creaking hearts, copper bulbs and copper golem statues.
 - **Timing.** Comparators hear of a container's items changing at the end of the level's block entity tick (through
   item access) or on its next one (players' clicks), and only near players, where vanilla's `setChanged` tells them
-  at once; and entities press plates and arrows press buttons after they tick, where vanilla's do as they move.
+  at once. Entities press plates, trip wires and press wooden buttons (arrows) straight after their own tick, as
+  vanilla's do, but only from where they end up: vanilla also finds the blocks an entity passed through in that tick.
   Cats sitting on a chest don't stop comparators reading it.
   Solid-block obstruction above a single chest or either double-chest half leaves the comparator's output stale
   until another notification, as captured in vanilla; removing it alone does too. Observers use the shape owner,

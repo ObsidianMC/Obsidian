@@ -356,6 +356,24 @@ replaces only what vanilla produced.
   draws differently (see [workstation details](known-gaps/workstation-details.md)), the replay asserts the
   difference by name, pinned to what Obsidian draws, so that it fails once the difference goes.
 
+- `block_contact_scenarios.json` (`VanillaBlockContact.ScenariosMatchVanilla`) records entities touching pressure
+  plates and tripwires, from `ScenarioContactCaptures.cs` over RCON like the redstone scenarios
+  (`CaptureFixtures=block_contact`). It is its own fixture, not more redstone scenarios, because its entities are
+  inputs the redstone fixture can't state (a type, NoAI and NoGravity, an item's stack, a teleport each tick, removal
+  and death) and its checkpoints record where each entity is as well as the blocks. A scenario lists its box, its setup
+  and its entity events: `summon` (with `type`, `pos`, and `item`, `noAi`, `noGravity` or `motion`), `move` (a
+  teleport), `remove` (moved below the world and killed, so it leaves at once) and `kill` (a mob dies as usual,
+  keeping its place for its death animation). The cases cover every kind of plate (wooden, stone, light and heavy
+  weighted) with items, armor stands, pigs and husks put on, lowered onto, slid onto and walked across them, two
+  entities arriving on consecutive ticks and leaving apart, a dying pig, one entity on two plates, entities that never
+  touch blocks (a marker, a display, an interaction and an area effect cloud, which a plate still counts), and
+  tripwires with and without hooks, entered from the side and from above, with an entity present at the recheck.
+  Entities that move do so by teleports with gravity off, so the replay tests contact and not movement physics, which
+  differs today: Obsidian's items fall a tick late and slide too far, its armor stands don't move, and its NoAI mobs
+  fall, where vanilla's float.
+  The replay runs every scenario in one test server's world, each in its own box with a player high above it, spawns
+  the same entities, runs each event before its tick and compares the blocks and the entities' positions every tick.
+
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.
 
@@ -398,6 +416,8 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=furnace_results
 
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=block_contact
+
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=sulfur -p:CaptureCases=spike_shatters_after_falling+review_spike_pending_fall_keeps_frustum
 ```
 
@@ -408,6 +428,10 @@ scenario has checkpoints) and capture again; the tests pick it up.
 
 For redstone, `CaptureCases` accepts exact `+`-separated scenario names and records only those; the other
 scenarios keep what they hold.
+
+`block_contact` is captured only when named, and takes about 15 seconds for every scenario. A scenario gives its
+number of `ticks` and starts with empty `checkpoints`; `CaptureCases` records only the scenarios it names, the others
+keep what they hold.
 
 For sulfur, `CaptureCases` accepts exact scenario names separated by `+`. It replaces only those cases' checkpoints
 and skips the Java probes. Other scenarios retain their stored absolute times and are replayed independently.
