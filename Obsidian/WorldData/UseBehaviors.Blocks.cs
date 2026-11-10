@@ -201,7 +201,33 @@ internal static partial class UseBehaviors
     {
         public async ValueTask<UseResult> UseItemOnAsync(BlockUse use)
         {
-            if (use.BlockEntity is not CampfireBlockEntity campfire || !use.TryCommit(() =>
+            if (use.BlockEntity is not CampfireBlockEntity campfire)
+                return UseResult.TryWithEmptyHand;
+
+            if (use.HasItem && TagsRegistry.Item.DousesCampfires.Entries.Contains(use.Item!.Holder.Id)
+                && use.Block.GetProperty("lit") == "true")
+            {
+                if (!use.TryCommit(() =>
+                {
+                    if (!use.Level.BlockUpdates.SetBlock(use.Position, use.Block.WithProperty("lit", false)))
+                        return false;
+
+                    if (use.Player.GameMode != GameMode.Creative)
+                        CombatItems.HurtItem(use.Item!, 1, false);
+                    if (use.Item.Count == 0)
+                        use.Player.Inventory.RemoveItem(use.HandSlot);
+
+                    return true;
+                }))
+                    return UseResult.Fail;
+
+                use.Level.BroadcastLevelEvent(1009, use.Position, 0);
+                use.Level.EmitGameEvent(MobGameEvent.BlockChange, use.Center, use.Player);
+                await use.Player.SyncInventorySlotAsync(use.HandSlot);
+                return UseResult.Success;
+            }
+
+            if (!use.TryCommit(() =>
             {
                 var recipe = use.Item is null ? null : use.Level.CookingRecipes.FindCooking(
                     CraftingType.CampfireCooking, use.Item);

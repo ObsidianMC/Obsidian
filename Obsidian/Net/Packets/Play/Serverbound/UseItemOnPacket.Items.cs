@@ -208,13 +208,31 @@ public partial class UseItemOnPacket
             return UseResult.Success;
         }
 
+        var fireItem = item.Holder.Id is ItemIds.FlintAndSteel or ItemIds.FireCharge;
+        if (fireItem && BlockLighting.CanLight(use.Block))
+        {
+            if (!use.TryCommit(() =>
+            {
+                if (!level.BlockUpdates.SetBlock(use.Position, use.Block.WithProperty("lit", true)))
+                    return false;
+
+                ItemDamage.ApplyIgniterCost(use, item);
+                return true;
+            }))
+                return UseResult.Fail;
+
+            PlayIgniterSound(level, item, use.Position, use.Player.EntityId);
+            level.EmitGameEvent(MobGameEvent.BlockChange, use.Center, use.Player);
+            await use.Player.SyncInventorySlotAsync(use.HandSlot);
+            return UseResult.Success;
+        }
+
         var firePosition = use.Position + use.Face.ToVector();
         var existing = await level.GetBlockAsync(firePosition);
         if (existing is not { IsAir: true } || level.IsOutsideBuildHeight(firePosition.Y))
-            return UseResult.Pass;
+            return fireItem ? UseResult.Fail : UseResult.Pass;
 
         var used = await level.Portals.TryIgniteAsync(firePosition, igniter: item, use: use);
-        var fireItem = item.Holder.Id is ItemIds.FlintAndSteel or ItemIds.FireCharge;
 
         // Vanilla's BaseFireBlock.canBePlacedAt: an empty space that fire would survive in.
         if (!used && fireItem)
@@ -235,11 +253,11 @@ public partial class UseItemOnPacket
         }
 
         if (!used)
-            return UseResult.Pass;
+            return fireItem ? UseResult.Fail : UseResult.Pass;
 
         if (fireItem)
         {
-            PlayIgniterSound(level, item, firePosition);
+            PlayIgniterSound(level, item, firePosition, use.Player.EntityId);
             level.EmitGameEvent(MobGameEvent.BlockPlace, use.Center, use.Player);
         }
 
@@ -247,12 +265,12 @@ public partial class UseItemOnPacket
         return UseResult.Success;
     }
 
-    private static void PlayIgniterSound(AbstractLevel level, ItemStack item, Vector position)
+    private static void PlayIgniterSound(AbstractLevel level, ItemStack item, Vector position, int actor)
     {
         var flint = item.Is(ItemsRegistry.FlintAndSteel);
         var pitch = flint
             ? 0.8f + Random.Shared.NextSingle() * 0.4f
-            : 0.8f + (Random.Shared.NextSingle() - Random.Shared.NextSingle()) * 0.2f;
+            : 1.0f + (Random.Shared.NextSingle() - Random.Shared.NextSingle()) * 0.2f;
 
         level.PacketBroadcaster.BroadcastToLevelInRange(level, position, new SoundPacket
         {
@@ -262,7 +280,7 @@ public partial class UseItemOnPacket
             Volume = 1,
             Pitch = pitch,
             Seed = Random.Shared.NextInt64()
-        });
+        }, flint ? actor : -1);
     }
 }
 
