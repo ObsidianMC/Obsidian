@@ -102,10 +102,11 @@ public abstract partial class AbstractLevel
     /// Call under the tick lock, after the fluid level ran the change's own updates.
     /// </summary>
     /// <remarks>
-    /// The change's shape updates aren't queued: every change that reaches here has already had them from the fluid
-    /// level's vanilla-ordered updater (<see cref="FluidLevel.OnBlockChanged"/>, or <see cref="FluidLevel"/>'s own writes),
-    /// with vanilla's flags on what they write. Asking the shape rules again here converted blocks ahead of that order,
-    /// stored them with every flag, and scheduled ticks vanilla doesn't.
+    /// The change's shape updates aren't queued: the fluid level's vanilla-ordered updater runs them, with vanilla's
+    /// flags on what they write (<see cref="FluidLevel.OnBlockChanged"/>, or <see cref="FluidLevel"/>'s own writes). For
+    /// a change at the top of a chain they've run when this is called; for a write nested in the chain they're queued
+    /// in the updater, and run in vanilla's order after the step that wrote it. Asking the shape rules here as well
+    /// converted blocks ahead of that order, stored them with every flag, and scheduled ticks vanilla doesn't.
     /// </remarks>
     internal void NotifyBlockChange(Vector position, IBlock old, IBlock block, BlockUpdateFlags flags)
     {
@@ -120,7 +121,7 @@ public abstract partial class AbstractLevel
         if (old.GetHashCode() == block.GetHashCode() || (!neighbors && !shapes))
             return;
 
-        this.BlockNotifications.Enqueue(new BlockChange(position, old, block), flags | BlockUpdateFlags.KnownShape);
+        this.BlockNotifications.Enqueue(new BlockChange(position, old, block), flags, shapes: false);
 
         // The redstone engine's reactions for the change, drained now: its writes go to loaded chunks only, so they
         // complete synchronously under the tick lock. A drain already running picks this work up.
