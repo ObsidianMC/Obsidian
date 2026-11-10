@@ -45,16 +45,17 @@ internal interface IShapeLevel
 internal enum ShapeReach
 {
     /// <summary>
-    /// Ahead of everything else in both live update engines (<see cref="LevelBlockUpdates.UpdateShape"/>). The shared
-    /// pass (<see cref="Features.Tree.ShapeUpdater"/>) runs the owner's
+    /// Ahead of everything else in a live level's shape updates (<see cref="LevelBlockUpdates.UpdateShape"/>), which
+    /// only the fluid level's vanilla-ordered updater runs: the notification pipeline runs shape steps only where it's
+    /// the only engine (a test world). The shared pass (<see cref="Features.Tree.ShapeUpdater"/>) runs the owner's
     /// <see cref="IShapeUpdateBehavior.SharedPassRule"/> instead, if it names one.
     /// </summary>
     LiveOwner,
 
     /// <summary>
-    /// Only in the shared pass: generation, placement's derivation, and the live engines' fallback once no live owner
-    /// or plugin answered. The fluid engine runs that fallback only for changes it handles itself (fluid ticks), and
-    /// leaves the shape updates of players' and plugins' changes to the notification pipeline.
+    /// Only in the shared pass: generation, placement's derivation, and a live level's fallback once no live owner or
+    /// plugin answered. On a live level the fluid level's updater runs that fallback for every change, players' and
+    /// plugins' as well as fluid ticks'.
     /// </summary>
     SharedPass
 }

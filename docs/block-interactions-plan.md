@@ -307,9 +307,10 @@ Done. Every arm of the switch is now a member of `ShapeUpdateBehaviors` named af
 `WorldData/ShapeRules`, and the rules take one read-only view (`IShapeLevel`) that the live level, the notification
 pipeline, the fluid engine and generation all supply. Step 2's "return a state and schedule ticks" turned out too
 narrow: the view also checks for a pending tick and hands out the live level's random, which coral's rule (#708)
-draws its death delay from; it still has no way to write. Each member's `Reach` keeps the split between the two
-update engines as it was: live owners (coral, dirt paths and chorus plants among them) run first in both, and the
-former arms run only in the shared pass (`ShapeUpdater`). A live owner names what the shared pass runs for its blocks
+draws its death delay from; it still has no way to write. Each member's `Reach` keeps the split as it was: live
+owners (coral, dirt paths and chorus plants among them) run first in a live level's shape update, and the former arms
+run only in the shared pass (`ShapeUpdater`). Since performance item 6's step 2, a live level runs shape updates only
+in the fluid level's updater; the notification pipeline runs them only where it's the only engine. A live owner names what the shared pass runs for its blocks
 (`SharedPassRule`): fences and bars name their own reshape-only rule; bubble columns keep their scheduling rule
 so completion's fluid view saves the check in the chunk's ticks, as before. Speleothems and kelp name a rule that reshapes
 without scheduling their fall, break or support check, as their old shared copies did; other owners name none.

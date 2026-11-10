@@ -38,8 +38,9 @@ internal static class ShapeDispatch
     }
 
     /// <summary>
-    /// The rule the live engines run ahead of plugin behaviours and the shared pass, or null (plugin blocks, and
-    /// vanilla blocks whose rule is only in the shared pass).
+    /// The rule a live level's shape update (the fluid level's updater, or the notification pipeline where it's the
+    /// only engine) runs ahead of plugin behaviours and the shared pass, or null (plugin blocks, and vanilla blocks
+    /// whose rule is only in the shared pass).
     /// </summary>
     public static IShapeUpdateBehavior? LiveOwner(int registryId) =>
         (uint)registryId < (uint)liveOwners.Length ? liveOwners[registryId] : null;
