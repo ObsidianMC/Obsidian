@@ -327,6 +327,25 @@ replaces only what vanilla produced.
   the off hand, a named item and a name tag. The replay sends the interact packet and compares everything but the
   result itself, which decides the swing and trigger it compares.
 
+- `waxing_bells_redstone_ore.json` (`VanillaWaxingBellsOre.ReplayWaxingBellsAndRedstoneOreReference`) records
+  honeycomb waxing, bell ringing and redstone ore lighting by a use, from `Java/WaxingBellsOreFixtures.java`
+  (`CaptureFixtures=waxing_bells_ore`). Its cases take `block_use.json`'s inputs, and the probe runs on
+  `BlockUseFixtures.java`'s server, players, recorders and write observer, which it calls by reflection, so that probe
+  is unchanged; the source launcher compiles it from the same directory. Every case records what a `block_use` case
+  records with `checkWrites` and `checkEffects`, plus `userEffects`: the sounds, level events and block events sent to
+  the acting player's own client, in order. Vanilla leaves the user out of the waxing sound and particles its client
+  predicts, and sends it the bell's sound and block event. The 114 cases wax each of the 60 waxable blocks with
+  non-default properties, both halves of a door and of a double copper chest (the other half takes the wax through its
+  shape update), sneaking past and opening a door and trapdoor, creative, adventure, the last honeycomb, the off hand,
+  blocks that can't be waxed, and `item_used_on_block`, which vanilla fires before the write and again after it (a
+  location check sees the unwaxed block the first time and the waxed one the second). Bells
+  are rung on each face of each attachment, above and below the rim, powered, with an item (which isn't placed),
+  sneaking, in adventure and spectator, and from the off hand. Redstone ore is used lit and unlit, with nothing, a
+  stick, or a block item that can and can't be placed beside it, sneaking, in each game mode and from the off hand.
+  The replay drives `UseItemOnPacket` in one world and compares every recorded field from the start, ordered writes
+  with every flag bit and swings included; two cases pin the door and trapdoor opening flags (see
+  [waxing, bells and redstone ore](known-gaps/waxing-bells-and-redstone-ore.md)).
+
 - `turtle_eggs.json` (`VanillaTurtleEggs.ReplayTurtleEggReference`) records vanilla's turtle eggs, from
   `Java/HatchingFixtures.java` (`CaptureFixtures=turtle_eggs`). Each case is its input: the blocks of a small block
   view (air elsewhere), the origin, a seed, the overworld clock's time and the dimension, and either a random tick or
@@ -452,6 +471,8 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=block_use
 
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=waxing_bells_ore
+
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=eyeblossom_ghast_portal
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=brushing
@@ -567,6 +588,9 @@ Select only added or deliberately changed cases, preserve existing line endings,
 text is unchanged. Drops are checked with deterministic sapling and torch cases; grass's random seed loot is
 not used as a fixed drop reference.
 
+For `waxing_bells_ore`, `CaptureCases` likewise takes exact `+`-separated names in
+`waxing_bells_redstone_ore.json` and records only those cases; the others keep what they hold.
+
 The `turtle_eggs` and `frogspawn` captures run no server and re-record every case. To add one, add a case with its
 `name`, `seed`, `origin` and `setup` (and `time`, `dimension`, `place` or `tick`) and capture again; pick a seed whose
 first draw takes the branch the case is about. The `furnace_results` capture also runs no server and re-records every
@@ -593,8 +617,8 @@ other dumpers, so editing it regenerates the assets once.
 The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft version> <cache directory>
 <scratch directory> <test assets directory>
 [redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+heightmaps+saved_heightmaps+mining+placement+
-copper_weathering+fire+ticking_blocks+block_use+turtle_eggs+frogspawn+growing_plant_ticks+melting_weather+
-furnace_results+brushing+armor_stand_use]
+copper_weathering+fire+ticking_blocks+block_use+waxing_bells_ore+turtle_eggs+frogspawn+growing_plant_ticks+
+melting_weather+furnace_results+brushing+armor_stand_use]
 [case names]`.
 
 ## How it captures

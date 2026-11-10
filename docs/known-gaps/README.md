@@ -31,6 +31,7 @@ and where to start.
 - [Sign interactions](sign-interactions.md)
 - [Tilling and other block transformers](tilling-and-other-block-transformers.md)
 - [Vanilla blocks' reactions to block updates](vanilla-blocks-reactions-to-block-updates.md)
+- [Waxing, bells and redstone ore](waxing-bells-and-redstone-ore.md)
 
 ## Items, crafting and trading
 
