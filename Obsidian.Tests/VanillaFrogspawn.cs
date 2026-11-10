@@ -9,6 +9,7 @@ using Obsidian.API;
 using Obsidian.ChunkData;
 using Obsidian.Entities;
 using Obsidian.Nbt;
+using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.Tests.Utilities;
 using Obsidian.WorldData;
@@ -49,44 +50,53 @@ public sealed class VanillaFrogspawn(ITestOutputHelper output)
 
     /// <summary>
     /// Frogspawn a frog laid used to hatch on a countdown Obsidian saved as <c>ObsidianFrogspawnTicks</c>. A chunk saved
-    /// with those countdowns comes back with each as the frogspawn's scheduled tick, so it still hatches.
+    /// with one comes back with it as the frogspawn's scheduled tick; saved again by this version and reloaded, the
+    /// tick is still pending, and the old list isn't written back. In a level, the frogspawn then hatches once: its
+    /// tadpoles appear, and further ticks neither hatch it again nor leave a hatch pending.
     /// </summary>
-    [Fact]
-    public async Task OlderSavesCountdownsBecomeHatchTicks()
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task OlderSavesCountdownsHatchOnceAfterAReload()
     {
         var folder = Path.Join(Path.GetTempPath(), $"obsidian-frogspawn-{Guid.NewGuid():N}");
         try
         {
-            // Chunk (35, 40) lies in region (1, 1), so the stored coordinates are absolute.
-            var position = new Vector(35 * 16 + 2, 64, 40 * 16 + 3);
-            var chunk = new Chunk(35, 40);
-            chunk.SetChunkStatus(ChunkGenStage.full);
-            chunk.UnmodeledTags.Add(new NbtList(NbtTagType.Compound, "ObsidianFrogspawnTicks")
-            {
-                new NbtCompound
-                {
-                    new NbtTag<int>("x", position.X),
-                    new NbtTag<int>("y", position.Y),
-                    new NbtTag<int>("z", position.Z),
-                    new NbtTag<int>("delay", 1234)
-                }
-            });
+            // An old save: frogspawn on water, its countdown due next tick in Obsidian's own list.
+            var frogspawn = new Vector(2, 64, 3);
+            var old = CompleteChunk(0, 0);
+            old.SetBlock(frogspawn.X, frogspawn.Y - 1, frogspawn.Z, BlocksRegistry.Water);
+            old.SetBlock(frogspawn.X, frogspawn.Y, frogspawn.Z, BlocksRegistry.Frogspawn);
+            old.UnmodeledTags.Add(OldCountdowns(frogspawn, delay: 1));
 
-            await using (var region = new Region(1, 1, folder))
-            {
-                await region.InitAsync();
-                region.SetChunk(chunk);
-                await region.FlushAsync();
-            }
+            // Loaded, then saved by this version and loaded again.
+            var migrated = await SaveAndReloadAsync(folder, old);
+            var resaved = await SaveAndReloadAsync(folder, migrated);
 
-            await using var reopened = new Region(1, 1, folder);
-            await reopened.InitAsync();
-            var localX = 35 - (1 << Region.CubicRegionSizeShift);
-            var localZ = 40 - (1 << Region.CubicRegionSizeShift);
-            var loaded = Assert.IsType<Chunk>(await reopened.GetChunkAsync(localX, localZ));
+            var pending = new SavedBlockTick(frogspawn, "minecraft:frogspawn", 1);
+            Assert.Equal([pending], migrated.BlockTicks.Pack());
+            Assert.Equal([pending], resaved.BlockTicks.Pack());
+            Assert.DoesNotContain(resaved.UnmodeledTags, tag => tag.Name == "ObsidianFrogspawnTicks");
 
-            var tick = Assert.Single(loaded.BlockTicks.Pack());
-            Assert.Equal(new SavedBlockTick(position, "minecraft:frogspawn", 1234), tick);
+            // In a level with a player near, so it ticks.
+            await using var context = TestServerFactory.CreateServer($"frogspawn-save-{Guid.NewGuid():N}");
+            var world = context.World;
+            world.LevelData.GameRules["spawn_mobs"] = "false";
+            world.LevelData.GameRules["random_tick_speed"] = "0";
+            LoadChunks(world, resaved);
+            var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Keeper",
+                (VectorD)frogspawn + new VectorD(0.5, 1, 0.5));
+            Assert.True(world.TryAddPlayer(player));
+
+            await world.DoWorldTickAsync();
+            var tadpoles = Tadpoles(world, frogspawn);
+
+            Assert.True(world.BlockUpdates.GetBlock(frogspawn).IsAir);
+            Assert.InRange(tadpoles, 2, 5);
+
+            for (var tick = 0; tick < 5; tick++)
+                await world.DoWorldTickAsync();
+
+            Assert.Equal(tadpoles, Tadpoles(world, frogspawn));
+            Assert.DoesNotContain(resaved.BlockTicks.Pack(), tick => tick.Block == "minecraft:frogspawn");
         }
         finally
         {
@@ -94,6 +104,61 @@ public sealed class VanillaFrogspawn(ITestOutputHelper output)
                 Directory.Delete(folder, recursive: true);
         }
     }
+
+    // Obsidian's frogspawn countdowns as versions before this one saved them.
+    private static NbtList OldCountdowns(Vector position, int delay)
+    {
+        var countdown = new NbtCompound
+        {
+            new NbtTag<int>("x", position.X),
+            new NbtTag<int>("y", position.Y),
+            new NbtTag<int>("z", position.Z),
+            new NbtTag<int>("delay", delay)
+        };
+
+        return new NbtList(NbtTagType.Compound, "ObsidianFrogspawnTicks") { countdown };
+    }
+
+    // Saves the chunk to region (0, 0) in the folder and loads it back.
+    private static async Task<Chunk> SaveAndReloadAsync(string folder, Chunk chunk)
+    {
+        await using (var region = new Region(0, 0, folder))
+        {
+            await region.InitAsync();
+            region.SetChunk(chunk);
+            await region.FlushAsync();
+        }
+
+        await using var reopened = new Region(0, 0, folder);
+        await reopened.InitAsync();
+
+        return Assert.IsType<Chunk>(await reopened.GetChunkAsync(chunk.X, chunk.Z));
+    }
+
+    // The chunk and its eight neighbours, empty, complete and ticking in the world.
+    private static void LoadChunks(WorldData.World world, Chunk center)
+    {
+        for (var chunkX = -1; chunkX <= 1; chunkX++)
+        {
+            for (var chunkZ = -1; chunkZ <= 1; chunkZ++)
+            {
+                var chunk = chunkX == center.X && chunkZ == center.Z ? center : CompleteChunk(chunkX, chunkZ);
+                world.LoadRegionByChunk(chunkX, chunkZ).SetChunk(chunk);
+                world.Fluids.Track(chunk);
+            }
+        }
+    }
+
+    private static Chunk CompleteChunk(int x, int z)
+    {
+        var chunk = new Chunk(x, z);
+        chunk.SetChunkStatus(ChunkGenStage.full);
+
+        return chunk;
+    }
+
+    private static int Tadpoles(WorldData.World world, Vector position) =>
+        world.GetNonPlayerEntitiesInRange((VectorD)position, 8).OfType<Tadpole>().Count();
 
     private static string Name(JsonElement probe) => probe.GetProperty("name").GetString()!;
 
