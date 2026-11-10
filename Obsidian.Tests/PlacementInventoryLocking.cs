@@ -224,6 +224,11 @@ public sealed class PlacementInventoryLocking
             if (click is not null)
                 await click.WaitAsync(timeout);
         }
+
+        // Expiry must cancel the pending acquisition, not leave a waiter that steals this next lock.
+        using (await player.Inventory.LockAsync().AsTask().WaitAsync(timeout))
+        {
+        }
     }
 
     [Fact]
@@ -341,6 +346,84 @@ public sealed class PlacementInventoryLocking
     }
 
     private static TaskCompletionSource Signal() => new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    [Fact]
+    public async Task PlacementRetriesAfterContentionAndRevalidatesHandWorldActorAndChunk()
+    {
+        foreach (var interference in new[] { "none", "block", "hand", "leave", "chunk" })
+        {
+            await using var context = TestServerFactory.CreateServer($"retry-placement-{Guid.NewGuid():N}");
+            var world = context.World;
+            WorldBlockEntities.AddEmptyChunk(world);
+            await world.GetBlockAsync(target);
+            var player = Player(context, "User");
+            var hand = player.GetHeldItem()!;
+            var held = await player.Inventory.LockAsync();
+            var marker = target + Vector.North;
+            var placement = new BlockPlacement(player, player.CurrentHeldItemSlot, hand)
+            {
+                BeforeHandWait = () =>
+                {
+                    // Another thread must be able to write the world before the retry waits for the hand.
+                    Task.Run(() => world.SetBlockAsync(marker, BlocksRegistry.Dirt).AsTask())
+                        .WaitAsync(timeout).GetAwaiter().GetResult();
+                    switch (interference)
+                    {
+                        case "block":
+                            world.BlockUpdates.SetBlock(target, BlocksRegistry.Dirt);
+                            break;
+                        case "hand":
+                            player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.Diamond, 3));
+                            break;
+                        case "leave":
+                            world.TryRemovePlayer(player);
+                            break;
+                        case "chunk":
+                            WorldBlockEntities.AddEmptyChunk(world);
+                            break;
+                    }
+
+                    held.Dispose();
+                }
+            };
+
+            bool placed;
+            try
+            {
+                placed = await Task.Run(() => world.TrySetBlockAsync(
+                    target,
+                    BlocksRegistry.Stone,
+                    BlockUpdateFlags.All,
+                    block => block.IsAir && world.Players.ContainsKey(player.Uuid),
+                    placement).AsTask()).WaitAsync(timeout);
+            }
+            finally
+            {
+                held.Dispose();
+            }
+
+            Assert.Equal(interference == "none", placed);
+            Assert.Equal(placed ? 1 : 2, hand.Count);
+            if (interference == "hand")
+            {
+                Assert.True(player.GetHeldItem()?.Is(ItemsRegistry.Diamond));
+                Assert.Equal(3, player.GetHeldItem()?.Count);
+            }
+
+            var stored = world.BlockUpdates.GetBlock(target);
+            if (placed)
+                Assert.True(stored.Is(BlockIds.Stone));
+            else if (interference == "block")
+                Assert.True(stored.Is(BlockIds.Dirt));
+            else
+                Assert.True(stored.IsAir);
+
+            // The availability handle must be released before any later inventory operation.
+            using (await player.Inventory.LockAsync().AsTask().WaitAsync(timeout))
+            {
+            }
+        }
+    }
 
     private static ServerPlayer Player(RealServerContext context, string name)
     {

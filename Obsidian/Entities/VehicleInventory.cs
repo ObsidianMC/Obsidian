@@ -80,7 +80,7 @@ internal sealed class VehicleInventory
         foreach (var name in new[] { "Items", "LootTable", "LootTableSeed" })
             tag.Remove(name);
 
-        using var held = this.Items.Lock();
+        using var held = InventorySnapshot.Lock(this.Items);
         lock (this.LootLock)
         {
             if (this.LootTable is not null)
@@ -318,6 +318,9 @@ internal sealed class VehicleItemAccess(VehicleInventory inventory, VehicleEntit
 /// </summary>
 internal interface IVehicleContainer
 {
+    /// <summary>The inventory admitted before a host snapshot serializes this vehicle.</summary>
+    BaseContainer Inventory { get; }
+
     /// <summary>The way into its slots.</summary>
     IItemAccess ItemAccess { get; }
 

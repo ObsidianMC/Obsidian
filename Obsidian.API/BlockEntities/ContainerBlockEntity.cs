@@ -160,7 +160,7 @@ public partial class ContainerBlockEntity : BlockEntity, IItemAccessProvider
     /// </remarks>
     protected internal override void Save(NbtCompound tag)
     {
-        using (this.Inventory.Lock())
+        using (InventorySnapshot.Lock(this.Inventory))
         {
             lock (this.LootLock)
             this.SaveContents(tag);
@@ -170,7 +170,7 @@ public partial class ContainerBlockEntity : BlockEntity, IItemAccessProvider
     /// <summary>Overlays current container fields without invoking a plugin's Save override.</summary>
     internal void SnapshotContents(NbtCompound tag)
     {
-        using (this.Inventory.Lock())
+        using (InventorySnapshot.Lock(this.Inventory))
         {
             lock (this.LootLock)
         {

@@ -301,7 +301,8 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         LockAllAsync(window.LockParts.Append(inventory));
 
     // Takes the containers' locks in order; the returned handle releases them in reverse.
-    internal static async ValueTask<IDisposable> LockAllAsync(IEnumerable<BaseContainer> parts)
+    internal static async ValueTask<IDisposable> LockAllAsync(
+        IEnumerable<BaseContainer> parts, CancellationToken cancellationToken = default)
     {
         var ordered = Ordered(parts);
         var taken = new List<IDisposable>(ordered.Length);
@@ -312,7 +313,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
             foreach (var part in ordered)
             {
                 var handle = new PartRelease(part);
-                await part.TransactionLock.WaitAsync();
+                await part.TransactionLock.WaitAsync(cancellationToken);
                 taken.Add(handle);
                 handle.CaptureRevision();
             }

@@ -755,40 +755,53 @@ public abstract partial class AbstractLevel : ILevel
         // Under the lock fluid ticks and growth hold, so that neither reads a block, has it changed here, and then
         // writes what it worked out from the old block over the change; and with the change's updates, so that
         // another change's can't run between the block and its own.
-        API.BlockEntities.BlockEntity? removed;
-        lock (this.Fluids.TickLock)
-        {
-            if (!this.Fluids.IsResident(c) || c is Chunk { EntitiesUnloaded: true })
-                return false;
+        // A caller already holding tick/transfer cannot unwind that outer lock here: it must refuse contention.
+        var canWait = !this.Fluids.TickLock.IsHeldByCurrentThread
+            && !EntityTransferLock.IsAnyHeldByCurrentThread;
+        var committed = TryCommit(out var removed);
+        if (committed is null && canWait && placement is not null && await placement.WaitForHandAsync())
+            committed = TryCommit(out removed);
 
-            // One attempt: a busy hand refuses placement, and the packet path repairs the client's prediction.
-            // Waiting or retrying under tick would deadlock an inventory hook that writes to this level.
-            IDisposable? held = null;
-            if (placement is not null && !placement.TryLockHand(out held))
-                return false;
-
-            using var handLock = held;
-            var old = c.GetBlock(x, y, z);
-            if (canReplace is not null && !canReplace(old))
-                return false;
-
-            using var prepared = placement?.Prepare(block, new Vector(x, y, z), this.Logger);
-            if (placement is not null && prepared is null)
-                return false;
-
-            // Publish the initialized entity first: lock-free readers must never see a filled box as empty.
-            removed = this.UpdateBlockEntity(c, new Vector(x, y, z), block, prepared?.Entity);
-            c.SetBlock(x, y, z, block);
-            placement?.Consume();
-            this.CompleteBlockEntityPlacement(c, prepared?.Entity);
-            this.AfterBlockSet(new Vector(x, y, z), old, block, flags);
-            placement?.Placed?.Invoke();
-        }
+        if (committed != true)
+            return false;
 
         if (removed is not null)
             await this.RunBlockEntityRemovalAsync(removed);
 
         return true;
+
+        // Null means contention, false means a validation refusal. Only contention gets one more attempt.
+        bool? TryCommit(out API.BlockEntities.BlockEntity? removedEntity)
+        {
+            removedEntity = null;
+            lock (this.Fluids.TickLock)
+            {
+                if (!this.Fluids.IsResident(c) || c is Chunk { EntitiesUnloaded: true })
+                    return false;
+
+                IDisposable? held = null;
+                if (placement is not null && !placement.TryLockHand(out held))
+                    return null;
+
+                using var handLock = held;
+                var old = c.GetBlock(x, y, z);
+                if (canReplace is not null && !canReplace(old))
+                    return false;
+
+                using var prepared = placement?.Prepare(block, new Vector(x, y, z), this.Logger);
+                if (placement is not null && prepared is null)
+                    return false;
+
+                // Publish the initialized entity first: lock-free readers must never see a filled box as empty.
+                removedEntity = this.UpdateBlockEntity(c, new Vector(x, y, z), block, prepared?.Entity);
+                c.SetBlock(x, y, z, block);
+                placement?.Consume();
+                this.CompleteBlockEntityPlacement(c, prepared?.Entity);
+                this.AfterBlockSet(new Vector(x, y, z), old, block, flags);
+                placement?.Placed?.Invoke();
+                return true;
+            }
+        }
     }
 
     /// <summary>

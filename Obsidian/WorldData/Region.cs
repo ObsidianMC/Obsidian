@@ -131,6 +131,12 @@ public partial class Region : IRegion
     /// </summary>
     internal Action? UnloadMarksTaken { get; set; }
 
+    // Test rendezvous at snapshot inventory admission, while the level transfer lock is held.
+    internal Action? BeforeInventorySnapshot { get; set; }
+
+    // Test observation after an admission failed and all snapshot locks were released.
+    internal Action? InventorySnapshotDeferred { get; set; }
+
     /// <summary>
     /// Locks a chunk against generation while it's serialized (the level's generator), or <c>null</c> for no locking.
     /// </summary>
@@ -1574,6 +1580,32 @@ public partial class Region : IRegion
     private async Task<bool> SnapshotChunkAsync(ChunkSave save, bool unloading, bool saveEntities,
         bool waitForLock = true)
     {
+        var canWait = !this.FluidTickLock.IsHeldByCurrentThread
+            && !EntityTransferLock.IsAnyHeldByCurrentThread;
+        while (true)
+        {
+            var (taken, busy) = await this.TrySnapshotChunkAsync(save, unloading, saveEntities, waitForLock);
+            if (taken || busy is null || !waitForLock)
+                return taken;
+
+            if (!canWait)
+            {
+                throw new InvalidOperationException(
+                    "A busy snapshot cannot wait while its caller holds tick or transfer.");
+            }
+
+            // No dirty marks, retirement or writes were taken. Wait without generator, tick, transfer or entity
+            // locks, then retry against current membership. Eager saves leave the whole chunk for a later save.
+            this.InventorySnapshotDeferred?.Invoke();
+            using (await busy.LockAsync())
+            {
+            }
+        }
+    }
+
+    private async Task<(bool Taken, BaseContainer? Busy)> TrySnapshotChunkAsync(
+        ChunkSave save, bool unloading, bool saveEntities, bool waitForLock)
+    {
         var (chunk, x, z) = (save.Chunk!, save.X, save.Z);
         NbtWriterStream? writer = null;
         try
@@ -1581,7 +1613,7 @@ public partial class Region : IRegion
             // Snapshot blocks, fluid ticks and entities together; take the generator's lock before the fluid lock.
             var (locked, chunkLock) = await this.LockChunkAsync(chunk, waitForLock);
             if (!locked)
-                return false;
+                return (false, null);
 
             using (chunkLock)
             {
@@ -1594,6 +1626,37 @@ public partial class Region : IRegion
                     // was.
                     var current = this.loadedChunks[x, z] ?? chunk;
                     save.Snapshotted = current;
+
+                    // Structure state may call plugin serializers. Preserve its existing tick-lock scope, but
+                    // finish it before the host-only inventory admission adds transfer and inventory locks.
+                    var loadedStarts = (current as Chunk)?.StructureStarts;
+                    var mayWrite = current is not Chunk trackedStarts || trackedStarts.IsUnsaved
+                        || unloading && this.regionFile.HasWriteInFlight(x, z);
+                    var structureStarts = loadedStarts;
+                    ExceptionDispatchInfo? structureFailure = null;
+                    if (this.SaveStructureStarts is not null && mayWrite)
+                    {
+                        try
+                        {
+                            structureStarts = this.SaveStructureStarts(current.X, current.Z, loadedStarts);
+                        }
+                        catch (Exception failure)
+                        {
+                            // Preserve the original failure/retirement cleanup point without running the
+                            // serializer while the host admission owns extra locks.
+                            structureFailure = ExceptionDispatchInfo.Capture(failure);
+                        }
+                    }
+
+                    using var transfers = this.EntityTransfers.Enter();
+                    this.BeforeInventorySnapshot?.Invoke();
+                    var inventories = this.SnapshotInventories(current, unloading || saveEntities);
+                    if (!InventorySnapshot.TryEnter(inventories, out var admitted, out var busy))
+                        return (false, busy);
+
+                    // Only host serializers run here. All inventory acquisition, including hashing dirty state
+                    // and retirement, reuses this admission. No partial unload can precede a busy inventory.
+                    using var snapshot = admitted;
 
                     // No block hooks or async setters may change this instance after its final snapshot.
                     if (unloading && ReferenceEquals(current, chunk))
@@ -1620,11 +1683,7 @@ public partial class Region : IRegion
                     if (write)
                     {
                         save.Taken = current as Chunk;
-
-                        var loadedStarts = (current as Chunk)?.StructureStarts;
-                        var structureStarts = this.SaveStructureStarts is null
-                            ? loadedStarts
-                            : this.SaveStructureStarts(current.X, current.Z, loadedStarts);
+                        structureFailure?.Throw();
 
                         // Only serialized here, into memory; compressing waits until the lock is released.
                         save.Nbt = new PooledBufferStream(UncompressedChunkCapacity);
@@ -1662,7 +1721,7 @@ public partial class Region : IRegion
                 save.Entities = null;
             }
 
-            return true;
+            return (true, null);
         }
         catch
         {
@@ -1677,6 +1736,22 @@ public partial class Region : IRegion
         finally
         {
             writer?.Dispose();
+        }
+    }
+
+    // Called with tick and transfer held: vehicle membership cannot change before the snapshot consumes it.
+    private IEnumerable<BaseContainer> SnapshotInventories(IChunk chunk, bool saveEntities)
+    {
+        foreach (var container in chunk.GetBlockEntities().OfType<ContainerBlockEntity>())
+            yield return container.Inventory;
+
+        if (!saveEntities || !chunk.IsGenerated)
+            yield break;
+
+        foreach (var (_, entity) in this.entities)
+        {
+            if (entity is IVehicleContainer vehicle && ChunkOf(entity.Position) == (chunk.X, chunk.Z))
+                yield return vehicle.Inventory;
         }
     }
 

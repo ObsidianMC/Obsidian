@@ -28,7 +28,7 @@ internal static class BlockEntityLifecycle
 
             if (entity is ContainerBlockEntity container)
             {
-                using (container.Inventory.Lock())
+                using (InventorySnapshot.Lock(container.Inventory))
                 {
                     container.Inventory.TryRetire();
                     entity.IsRemoved = true;

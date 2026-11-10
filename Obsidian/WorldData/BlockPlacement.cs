@@ -17,6 +17,29 @@ internal sealed class BlockPlacement(IPlayer player, int slot, ItemStack item)
     // Inventory hooks can await world writes while owning this inventory. Never wait for it under tick.
     internal bool TryLockHand(out IDisposable? held) => player.Inventory.TryLock(out held);
 
+    // Test rendezvous after a busy attempt has unwound its tick lock, before the bounded wait.
+    internal Action? BeforeHandWait { get; init; }
+
+    // One game tick is enough to bridge a short item hook without leaving a click pending indefinitely.
+    // Release before returning: the caller must try again under tick, never carry this hand lock into tick.
+    internal async ValueTask<bool> WaitForHandAsync()
+    {
+        this.BeforeHandWait?.Invoke();
+        using var timeout = new System.Threading.CancellationTokenSource(TimeSpan.FromMilliseconds(50));
+        try
+        {
+            using (await BaseContainer.LockAllAsync(player.Inventory.LockParts, timeout.Token))
+            {
+            }
+
+            return true;
+        }
+        catch (OperationCanceledException) when (timeout.IsCancellationRequested)
+        {
+            return false;
+        }
+    }
+
     internal Prepared? Prepare(IBlock block, Vector position, ILogger logger)
     {
         if (!ReferenceEquals(player.Inventory.GetItem(slot), item) || item.Count <= 0)
