@@ -649,8 +649,7 @@ public sealed partial class Server : IServer, IPluginScopedServer
         {
             // What the ticks left to run in the background (a command block's /save, a trigger's grants) finishes
             // before the players leave and the worlds' final save. The loop does it too, before its leaves.
-            await this.BackgroundWork.CloseAndDrainAsync();
-            await this.PendingLeavesAsync();
+            await this.DrainBackgroundWorkAsync();
 
             // Server-side players leave too, the server's and plugins' alike, now that the ticks are over: what other
             // players' ticks asked of them (advancement triggers and their rewards) is done before the worlds' final
@@ -946,6 +945,18 @@ public sealed partial class Server : IServer, IPluginScopedServer
 
     // Leaves log their own failures, so waiting for them never throws.
     private Task PendingLeavesAsync() => Task.WhenAll(this.pendingLeaves.Keys);
+
+    /// <summary>
+    /// Closes <see cref="BackgroundWork"/> and waits for what the ticks left to run apart from them: that work (a
+    /// level change's save, say), then the leaves under way (see <see cref="TrackLeave"/>). Both write into the worlds'
+    /// folders, so the stop waits for them before the worlds' final save and disposal. Failures are logged, so this
+    /// never throws.
+    /// </summary>
+    internal async Task DrainBackgroundWorkAsync()
+    {
+        await this.BackgroundWork.CloseAndDrainAsync();
+        await this.PendingLeavesAsync();
+    }
 
     /// <summary>
     /// Waits until a player's earlier connection has left and saved them, so that joining again loads what it saved.
