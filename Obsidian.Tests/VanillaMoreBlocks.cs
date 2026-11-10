@@ -55,6 +55,7 @@ public sealed class VanillaMoreBlocks(ITestOutputHelper output)
         {
             var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "ObserverPlacer",
                 Location(probe.GetProperty("player")));
+            world.TryAddPlayer(player);
             player.GameMode = GameMode.Survival;
             player.Yaw = probe.GetProperty("yaw").GetSingle();
             player.Pitch = probe.GetProperty("pitch").GetSingle();
