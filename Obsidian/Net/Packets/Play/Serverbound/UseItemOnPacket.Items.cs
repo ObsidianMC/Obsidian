@@ -25,6 +25,7 @@ public partial class UseItemOnPacket
         ["BoneMealItem"] = (_, use) => UseBoneMealAsync(use),
         ["HoneycombItem"] = (_, use) => CopperWaxing.UseHoneycombAsync(use),
         ["HangingEntityItem"] = (packet, use) => packet.HangAsync(use),
+        ["BrushItem"] = (_, use) => UseBrush(use),
         ["CompassItem"] = (_, use) => UseCompassAsync(use)
     };
 
@@ -97,6 +98,13 @@ public partial class UseItemOnPacket
 
         player.StartEating(use.Hand);
         return await this.PlaceAsync(use);
+    }
+
+    // Vanilla's BrushItem.useOn: brushing starts if the player looks at a block, and the click is consumed either way.
+    private static ValueTask<UseResult> UseBrush(BlockUse use)
+    {
+        use.Player.StartBrushing(use.Hand);
+        return ValueTask.FromResult(UseResult.Consume);
     }
 
     private ValueTask<bool> UsePluginItemAsync(BlockUse use) =>

@@ -1,0 +1,2853 @@
+{
+  "_notes": "Vanilla brushing, recorded by Obsidian.AssetGenerator/Java/BrushingFixtures.java (CaptureFixtures=brushing) on a headless dedicated server in a flat world of air. The target is suspicious sand or gravel (or another block) at `target`, set without updates with its `lootTable` and `seed` or a `storedItem`. The user stands at `player` (x, y, z, yaw, pitch; the case's own `player` if it has one), with its head and last rotation the same, holding a brush (`damage`, `handUsed`, `gameMode`). Tick 0 clicks the target's `face` through ServerPlayerGameMode.useItemOn. Each later tick advances the game time, runs the due block ticks, ticks the area's entities, then ticks the user's use of the item (LivingEntity.updatingUsingItem), as a server tick does. `actions` run before their tick's work: look (yaw, pitch), move, release (releaseUsingItem), set (a state at an offset with UPDATE_ALL), select (hotbar slot) and click. The timeline keeps each tick that did something: the click's result, the ordered writes with their flags (from a neighbour updater wrapping the level's: UPDATE_NEIGHBORS from the neighbour update, the rest from the shape updates' flags; null for a change neither saw), the sounds (id, source, offset, volume, pitch), level events and particles a bystander three blocks above received, the entity events of the user's tracked entity (to the bystander and the user), game events within 16 blocks, statistics, advancement criteria completed (`criteria` registers player_generates_container_loot), the used hand's item, whether the user is still using it, the target block entity's saved data when it changed (null once gone), its update tag (`clientData`) when the target's state was written, and the entities that appeared (items with position and motion, falling blocks with their state) or went. Positions are relative to the target. Vanilla aims the brush each tick with ProjectileUtil.getHitResultOnViewVector over collision shapes, from the eyes along the view of the last tick's head rotation.",
+  "version": "26.3",
+  "target": [0, 64, 0],
+  "player": [0.5, 65.0, 2.0, 180.0, 45.0],
+  "cases": [
+    {
+      "name": "sand_top_completes_with_loot",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:suspicious_sand"
+        }
+      ],
+      "face": "up",
+      "ticks": 120,
+      "lootTable": "minecraft:archaeology/desert_pyramid",
+      "seed": 12345,
+      "criteria": {
+        "loot": {
+          "trigger": "minecraft:player_generates_container_loot",
+          "conditions": {
+            "loot_tables": "minecraft:archaeology/desert_pyramid"
+          }
+        }
+      },
+      "timeline": [
+        {
+          "tick": 0,
+          "result": "consume",
+          "writes": [],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [
+            "minecraft:item_interact_start 0,1,2 player"
+          ],
+          "stats": [
+            "minecraft:used minecraft:brush 1"
+          ],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 5,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand[dusted=1]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [
+            "loot"
+          ],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "blockEntity": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:prize_pottery_sherd"
+            },
+            "components": {}
+          },
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:prize_pottery_sherd"
+            },
+            "hit_direction": 1
+          },
+          "entities": []
+        },
+        {
+          "tick": 15,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 25,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand[dusted=2]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:prize_pottery_sherd"
+            },
+            "hit_direction": 1
+          },
+          "entities": []
+        },
+        {
+          "tick": 35,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 45,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 55,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand[dusted=3]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:prize_pottery_sherd"
+            },
+            "hit_direction": 1
+          },
+          "entities": []
+        },
+        {
+          "tick": 65,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 75,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 85,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 95,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:sand",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [
+            "3008 0,0,0 125"
+          ],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=1",
+          "using": true,
+          "blockEntity": null,
+          "entities": [
+            "item minecraft:prize_pottery_sherd x1 at 0.5,1.625,0.5 motion 0.0,0.0,0.0"
+          ]
+        },
+        {
+          "tick": 101,
+          "writes": [],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [
+            "minecraft:hit_ground 0,1,0 minecraft:item"
+          ],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 105,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.generic block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 115,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.generic block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=1",
+          "using": true,
+          "entities": []
+        }
+      ]
+    },
+    {
+      "name": "gravel_north_face_completes",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:suspicious_gravel"
+        }
+      ],
+      "face": "north",
+      "player": [0.5, 64.0, -1.5, 0.0, 30.0],
+      "ticks": 100,
+      "lootTable": "minecraft:archaeology/trail_ruins_common",
+      "seed": 777,
+      "criteria": {
+        "loot": {
+          "trigger": "minecraft:player_generates_container_loot",
+          "conditions": {
+            "loot_tables": "minecraft:archaeology/trail_ruins_common"
+          }
+        }
+      },
+      "timeline": [
+        {
+          "tick": 0,
+          "result": "consume",
+          "writes": [],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [
+            "minecraft:item_interact_start 0,0,-2 player"
+          ],
+          "stats": [
+            "minecraft:used minecraft:brush 1"
+          ],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 5,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_gravel[dusted=1]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.gravel block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [
+            "loot"
+          ],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "blockEntity": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:purple_candle"
+            },
+            "components": {}
+          },
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:purple_candle"
+            },
+            "hit_direction": 2
+          },
+          "entities": []
+        },
+        {
+          "tick": 15,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.gravel block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 25,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_gravel[dusted=2]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.gravel block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:purple_candle"
+            },
+            "hit_direction": 2
+          },
+          "entities": []
+        },
+        {
+          "tick": 35,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.gravel block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 45,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.gravel block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 55,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_gravel[dusted=3]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.gravel block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:purple_candle"
+            },
+            "hit_direction": 2
+          },
+          "entities": []
+        },
+        {
+          "tick": 65,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.gravel block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 75,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.gravel block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 85,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.gravel block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 95,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:gravel",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.gravel block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [
+            "3008 0,0,0 131"
+          ],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=1",
+          "using": true,
+          "blockEntity": null,
+          "entities": [
+            "item minecraft:purple_candle x1 at 0.5,0.625,-0.5 motion 0.0,0.0,0.0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "stored_item_without_loot_table",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:suspicious_sand"
+        }
+      ],
+      "face": "up",
+      "ticks": 100,
+      "storedItem": "minecraft:diamond",
+      "timeline": [
+        {
+          "tick": 0,
+          "result": "consume",
+          "writes": [],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [
+            "minecraft:item_interact_start 0,1,2 player"
+          ],
+          "stats": [
+            "minecraft:used minecraft:brush 1"
+          ],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 5,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand[dusted=1]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:diamond"
+            },
+            "hit_direction": 1
+          },
+          "entities": []
+        },
+        {
+          "tick": 15,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 25,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand[dusted=2]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:diamond"
+            },
+            "hit_direction": 1
+          },
+          "entities": []
+        },
+        {
+          "tick": 35,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 45,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 55,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand[dusted=3]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:diamond"
+            },
+            "hit_direction": 1
+          },
+          "entities": []
+        },
+        {
+          "tick": 65,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 75,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 85,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 95,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:sand",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [
+            "3008 0,0,0 125"
+          ],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=1",
+          "using": true,
+          "blockEntity": null,
+          "entities": [
+            "item minecraft:diamond x1 at 0.5,1.625,0.5 motion 0.0,0.0,0.0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "nothing_inside",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:suspicious_sand"
+        }
+      ],
+      "face": "up",
+      "ticks": 100,
+      "timeline": [
+        {
+          "tick": 0,
+          "result": "consume",
+          "writes": [],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [
+            "minecraft:item_interact_start 0,1,2 player"
+          ],
+          "stats": [
+            "minecraft:used minecraft:brush 1"
+          ],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 5,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand[dusted=1]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "clientData": {
+            "hit_direction": 1
+          },
+          "entities": []
+        },
+        {
+          "tick": 15,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 25,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand[dusted=2]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "clientData": {
+            "hit_direction": 1
+          },
+          "entities": []
+        },
+        {
+          "tick": 35,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 45,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 55,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand[dusted=3]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "clientData": {
+            "hit_direction": 1
+          },
+          "entities": []
+        },
+        {
+          "tick": 65,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 75,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 85,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 95,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:sand",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [
+            "3008 0,0,0 125"
+          ],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=1",
+          "using": true,
+          "blockEntity": null,
+          "entities": []
+        }
+      ]
+    },
+    {
+      "name": "offhand_brush",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:suspicious_sand"
+        }
+      ],
+      "face": "up",
+      "ticks": 20,
+      "handUsed": "offhand",
+      "lootTable": "minecraft:archaeology/desert_pyramid",
+      "seed": 1,
+      "criteria": {
+        "loot": {
+          "trigger": "minecraft:player_generates_container_loot",
+          "conditions": {
+            "loot_tables": "minecraft:archaeology/desert_pyramid"
+          }
+        }
+      },
+      "timeline": [
+        {
+          "tick": 0,
+          "result": "consume",
+          "writes": [],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [
+            "minecraft:item_interact_start 0,1,2 player"
+          ],
+          "stats": [
+            "minecraft:used minecraft:brush 1"
+          ],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 5,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand[dusted=1]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [
+            "loot"
+          ],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "blockEntity": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "components": {}
+          },
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "hit_direction": 1
+          },
+          "entities": []
+        },
+        {
+          "tick": 15,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        }
+      ]
+    },
+    {
+      "name": "release_then_decay",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:suspicious_sand"
+        }
+      ],
+      "face": "up",
+      "ticks": 100,
+      "actions": [
+        {
+          "tick": 32,
+          "kind": "release"
+        }
+      ],
+      "lootTable": "minecraft:archaeology/desert_pyramid",
+      "seed": 5,
+      "criteria": {
+        "loot": {
+          "trigger": "minecraft:player_generates_container_loot",
+          "conditions": {
+            "loot_tables": "minecraft:archaeology/desert_pyramid"
+          }
+        }
+      },
+      "timeline": [
+        {
+          "tick": 0,
+          "result": "consume",
+          "writes": [],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [
+            "minecraft:item_interact_start 0,1,2 player"
+          ],
+          "stats": [
+            "minecraft:used minecraft:brush 1"
+          ],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 5,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand[dusted=1]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [
+            "loot"
+          ],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "blockEntity": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "components": {}
+          },
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "hit_direction": 1
+          },
+          "entities": []
+        },
+        {
+          "tick": 15,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 25,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand[dusted=2]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "hit_direction": 1
+          },
+          "entities": []
+        },
+        {
+          "tick": 32,
+          "writes": [],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [
+            "minecraft:item_interact_finish 0,1,2 player"
+          ],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": false,
+          "entities": []
+        },
+        {
+          "tick": 65,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand[dusted=1]",
+              "flags": 3
+            }
+          ],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": false,
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "hit_direction": 1
+          },
+          "entities": []
+        },
+        {
+          "tick": 69,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand",
+              "flags": 3
+            }
+          ],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": false,
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            }
+          },
+          "entities": []
+        }
+      ]
+    },
+    {
+      "name": "look_away_mid_brush",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:suspicious_sand"
+        }
+      ],
+      "face": "up",
+      "ticks": 70,
+      "actions": [
+        {
+          "tick": 22,
+          "kind": "look",
+          "rotation": [180.0, -60.0]
+        }
+      ],
+      "lootTable": "minecraft:archaeology/desert_pyramid",
+      "seed": 6,
+      "criteria": {
+        "loot": {
+          "trigger": "minecraft:player_generates_container_loot",
+          "conditions": {
+            "loot_tables": "minecraft:archaeology/desert_pyramid"
+          }
+        }
+      },
+      "timeline": [
+        {
+          "tick": 0,
+          "result": "consume",
+          "writes": [],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [
+            "minecraft:item_interact_start 0,1,2 player"
+          ],
+          "stats": [
+            "minecraft:used minecraft:brush 1"
+          ],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 5,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand[dusted=1]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [
+            "loot"
+          ],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "blockEntity": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "components": {}
+          },
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "hit_direction": 1
+          },
+          "entities": []
+        },
+        {
+          "tick": 15,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 22,
+          "writes": [],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [
+            "minecraft:item_interact_finish 0,1,2 player"
+          ],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": false,
+          "entities": []
+        },
+        {
+          "tick": 55,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand",
+              "flags": 3
+            }
+          ],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": false,
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            }
+          },
+          "entities": []
+        }
+      ]
+    },
+    {
+      "name": "move_out_of_reach",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:suspicious_sand"
+        }
+      ],
+      "face": "up",
+      "ticks": 30,
+      "actions": [
+        {
+          "tick": 22,
+          "kind": "move",
+          "position": [0.5, 67.5, 4.5]
+        }
+      ],
+      "lootTable": "minecraft:archaeology/desert_pyramid",
+      "seed": 7,
+      "criteria": {
+        "loot": {
+          "trigger": "minecraft:player_generates_container_loot",
+          "conditions": {
+            "loot_tables": "minecraft:archaeology/desert_pyramid"
+          }
+        }
+      },
+      "timeline": [
+        {
+          "tick": 0,
+          "result": "consume",
+          "writes": [],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [
+            "minecraft:item_interact_start 0,1,2 player"
+          ],
+          "stats": [
+            "minecraft:used minecraft:brush 1"
+          ],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 5,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand[dusted=1]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [
+            "loot"
+          ],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "blockEntity": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "components": {}
+          },
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "hit_direction": 1
+          },
+          "entities": []
+        },
+        {
+          "tick": 15,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 22,
+          "writes": [],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [
+            "minecraft:item_interact_finish 0,3,4 player"
+          ],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": false,
+          "entities": []
+        }
+      ]
+    },
+    {
+      "name": "replaced_mid_brush",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:suspicious_sand"
+        }
+      ],
+      "face": "up",
+      "ticks": 40,
+      "actions": [
+        {
+          "tick": 22,
+          "kind": "set",
+          "offset": [0, 0, 0],
+          "state": "minecraft:stone"
+        }
+      ],
+      "lootTable": "minecraft:archaeology/desert_pyramid",
+      "seed": 8,
+      "criteria": {
+        "loot": {
+          "trigger": "minecraft:player_generates_container_loot",
+          "conditions": {
+            "loot_tables": "minecraft:archaeology/desert_pyramid"
+          }
+        }
+      },
+      "timeline": [
+        {
+          "tick": 0,
+          "result": "consume",
+          "writes": [],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [
+            "minecraft:item_interact_start 0,1,2 player"
+          ],
+          "stats": [
+            "minecraft:used minecraft:brush 1"
+          ],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 5,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand[dusted=1]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [
+            "loot"
+          ],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "blockEntity": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "components": {}
+          },
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "hit_direction": 1
+          },
+          "entities": []
+        },
+        {
+          "tick": 15,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 22,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:stone",
+              "flags": 3
+            }
+          ],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "blockEntity": null,
+          "entities": []
+        },
+        {
+          "tick": 25,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.generic block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 35,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.generic block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        }
+      ]
+    },
+    {
+      "name": "not_brushable_stone",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:stone"
+        }
+      ],
+      "face": "up",
+      "ticks": 30,
+      "timeline": [
+        {
+          "tick": 0,
+          "result": "consume",
+          "writes": [],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [
+            "minecraft:item_interact_start 0,1,2 player"
+          ],
+          "stats": [
+            "minecraft:used minecraft:brush 1"
+          ],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 5,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.generic block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 15,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.generic block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 25,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.generic block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        }
+      ]
+    },
+    {
+      "name": "brush_breaks_on_completion",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:suspicious_sand"
+        }
+      ],
+      "face": "up",
+      "ticks": 100,
+      "damage": 63,
+      "lootTable": "minecraft:archaeology/desert_pyramid",
+      "seed": 9,
+      "criteria": {
+        "loot": {
+          "trigger": "minecraft:player_generates_container_loot",
+          "conditions": {
+            "loot_tables": "minecraft:archaeology/desert_pyramid"
+          }
+        }
+      },
+      "timeline": [
+        {
+          "tick": 0,
+          "result": "consume",
+          "writes": [],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [
+            "minecraft:item_interact_start 0,1,2 player"
+          ],
+          "stats": [
+            "minecraft:used minecraft:brush 1"
+          ],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=63",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 5,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand[dusted=1]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [
+            "loot"
+          ],
+          "hand": "minecraft:brush x1 damage=63",
+          "using": true,
+          "blockEntity": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "components": {}
+          },
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "hit_direction": 1
+          },
+          "entities": []
+        },
+        {
+          "tick": 15,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=63",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 25,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand[dusted=2]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=63",
+          "using": true,
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "hit_direction": 1
+          },
+          "entities": []
+        },
+        {
+          "tick": 35,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=63",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 45,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=63",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 55,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand[dusted=3]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=63",
+          "using": true,
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "hit_direction": 1
+          },
+          "entities": []
+        },
+        {
+          "tick": 65,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=63",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 75,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=63",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 85,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=63",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 95,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:sand",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [
+            "3008 0,0,0 125"
+          ],
+          "particles": [],
+          "entityEvents": [
+            "bystander 47",
+            "user 47"
+          ],
+          "gameEvents": [],
+          "stats": [
+            "minecraft:broken minecraft:brush 1"
+          ],
+          "criteria": [],
+          "hand": "empty",
+          "using": true,
+          "blockEntity": null,
+          "entities": [
+            "item minecraft:tnt x1 at 0.5,1.625,0.5 motion 0.0,0.0,0.0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "creative_keeps_brush",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:suspicious_sand"
+        }
+      ],
+      "face": "up",
+      "ticks": 100,
+      "damage": 63,
+      "gameMode": "creative",
+      "lootTable": "minecraft:archaeology/desert_pyramid",
+      "seed": 10,
+      "criteria": {
+        "loot": {
+          "trigger": "minecraft:player_generates_container_loot",
+          "conditions": {
+            "loot_tables": "minecraft:archaeology/desert_pyramid"
+          }
+        }
+      },
+      "timeline": [
+        {
+          "tick": 0,
+          "result": "consume",
+          "writes": [],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [
+            "minecraft:item_interact_start 0,1,2 player"
+          ],
+          "stats": [
+            "minecraft:used minecraft:brush 1"
+          ],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=63",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 5,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand[dusted=1]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [
+            "loot"
+          ],
+          "hand": "minecraft:brush x1 damage=63",
+          "using": true,
+          "blockEntity": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "components": {}
+          },
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "hit_direction": 1
+          },
+          "entities": []
+        },
+        {
+          "tick": 15,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=63",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 25,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand[dusted=2]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=63",
+          "using": true,
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "hit_direction": 1
+          },
+          "entities": []
+        },
+        {
+          "tick": 35,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=63",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 45,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=63",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 55,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand[dusted=3]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=63",
+          "using": true,
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "hit_direction": 1
+          },
+          "entities": []
+        },
+        {
+          "tick": 65,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=63",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 75,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=63",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 85,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=63",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 95,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:sand",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [
+            "3008 0,0,0 125"
+          ],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1 damage=63",
+          "using": true,
+          "blockEntity": null,
+          "entities": [
+            "item minecraft:tnt x1 at 0.5,1.625,0.5 motion 0.0,0.0,0.0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "adventure_cannot_start",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:suspicious_sand"
+        }
+      ],
+      "face": "up",
+      "ticks": 10,
+      "gameMode": "adventure",
+      "lootTable": "minecraft:archaeology/desert_pyramid",
+      "seed": 11,
+      "criteria": {
+        "loot": {
+          "trigger": "minecraft:player_generates_container_loot",
+          "conditions": {
+            "loot_tables": "minecraft:archaeology/desert_pyramid"
+          }
+        }
+      },
+      "timeline": [
+        {
+          "tick": 0,
+          "result": "pass",
+          "writes": [],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": false,
+          "entities": []
+        }
+      ]
+    },
+    {
+      "name": "click_again_inside_cooldown",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:suspicious_sand"
+        }
+      ],
+      "face": "up",
+      "ticks": 30,
+      "actions": [
+        {
+          "tick": 7,
+          "kind": "release"
+        },
+        {
+          "tick": 7,
+          "kind": "click",
+          "face": "up"
+        }
+      ],
+      "lootTable": "minecraft:archaeology/desert_pyramid",
+      "seed": 12,
+      "criteria": {
+        "loot": {
+          "trigger": "minecraft:player_generates_container_loot",
+          "conditions": {
+            "loot_tables": "minecraft:archaeology/desert_pyramid"
+          }
+        }
+      },
+      "timeline": [
+        {
+          "tick": 0,
+          "result": "consume",
+          "writes": [],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [
+            "minecraft:item_interact_start 0,1,2 player"
+          ],
+          "stats": [
+            "minecraft:used minecraft:brush 1"
+          ],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 5,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand[dusted=1]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [
+            "loot"
+          ],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "blockEntity": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "components": {}
+          },
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "hit_direction": 1
+          },
+          "entities": []
+        },
+        {
+          "tick": 7,
+          "result": "consume",
+          "writes": [],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [
+            "minecraft:item_interact_finish 0,1,2 player",
+            "minecraft:item_interact_start 0,1,2 player"
+          ],
+          "stats": [
+            "minecraft:used minecraft:brush 1"
+          ],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 11,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 21,
+          "writes": [],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        }
+      ]
+    },
+    {
+      "name": "other_slot_selected",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:suspicious_sand"
+        }
+      ],
+      "face": "up",
+      "ticks": 20,
+      "actions": [
+        {
+          "tick": 12,
+          "kind": "select",
+          "slot": 1
+        }
+      ],
+      "lootTable": "minecraft:archaeology/desert_pyramid",
+      "seed": 13,
+      "criteria": {
+        "loot": {
+          "trigger": "minecraft:player_generates_container_loot",
+          "conditions": {
+            "loot_tables": "minecraft:archaeology/desert_pyramid"
+          }
+        }
+      },
+      "timeline": [
+        {
+          "tick": 0,
+          "result": "consume",
+          "writes": [],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [
+            "minecraft:item_interact_start 0,1,2 player"
+          ],
+          "stats": [
+            "minecraft:used minecraft:brush 1"
+          ],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 5,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand[dusted=1]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [
+            "loot"
+          ],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "blockEntity": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "components": {}
+          },
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "hit_direction": 1
+          },
+          "entities": []
+        },
+        {
+          "tick": 12,
+          "writes": [],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [
+            "minecraft:item_interact_finish 0,1,2 player"
+          ],
+          "stats": [],
+          "criteria": [],
+          "hand": "empty",
+          "using": false,
+          "entities": []
+        }
+      ]
+    },
+    {
+      "name": "falls_after_a_stroke",
+      "setup": [
+        {
+          "offset": [0, -4, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:suspicious_sand"
+        }
+      ],
+      "face": "up",
+      "ticks": 40,
+      "lootTable": "minecraft:archaeology/desert_pyramid",
+      "seed": 14,
+      "criteria": {
+        "loot": {
+          "trigger": "minecraft:player_generates_container_loot",
+          "conditions": {
+            "loot_tables": "minecraft:archaeology/desert_pyramid"
+          }
+        }
+      },
+      "timeline": [
+        {
+          "tick": 0,
+          "result": "consume",
+          "writes": [],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [
+            "minecraft:item_interact_start 0,1,2 player"
+          ],
+          "stats": [
+            "minecraft:used minecraft:brush 1"
+          ],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "entities": []
+        },
+        {
+          "tick": 5,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:suspicious_sand[dusted=1]",
+              "flags": 3
+            }
+          ],
+          "sounds": [
+            "minecraft:item.brush.brushing.sand block 0.5,0.5,0.5 1.0 1.0"
+          ],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "criteria": [
+            "loot"
+          ],
+          "hand": "minecraft:brush x1",
+          "using": true,
+          "blockEntity": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "components": {}
+          },
+          "clientData": {
+            "item": {
+              "count": 1,
+              "id": "minecraft:tnt"
+            },
+            "hit_direction": 1
+          },
+          "entities": []
+        },
+        {
+          "tick": 7,
+          "writes": [
+            {
+              "pos": [0, 0, 0],
+              "state": "minecraft:air",
+              "flags": 3
+            }
+          ],
+          "sounds": [],
+          "levelEvents": [],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [
+            "minecraft:item_interact_finish 0,1,2 player"
+          ],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": false,
+          "blockEntity": null,
+          "entities": [
+            "falling_block minecraft:suspicious_sand[dusted=1] at 0.5,-0.03999999999999915,0.5 motion 0.0,-0.03920000076293945,0.0"
+          ]
+        },
+        {
+          "tick": 19,
+          "writes": [],
+          "sounds": [],
+          "levelEvents": [
+            "2001 0,-3,0 123"
+          ],
+          "particles": [],
+          "entityEvents": [],
+          "gameEvents": [
+            "minecraft:hit_ground 0,-3,0 minecraft:falling_block",
+            "minecraft:block_destroy 0,-3,0 minecraft:falling_block"
+          ],
+          "stats": [],
+          "criteria": [],
+          "hand": "minecraft:brush x1",
+          "using": false,
+          "entities": [
+            "removed minecraft:falling_block"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -58,6 +58,10 @@ public partial class Player
                 await mob.SendEquipmentToAsync(this);
                 await mob.SendLeashToAsync(this);
             }
+            else if (entity is ArmorStand stand)
+            {
+                await stand.SendEquipmentToAsync(this);
+            }
 
             // Like vanilla's pairing data: who rides the entity, and the seats of the vehicle it rides.
             await entity.SendPassengersToAsync(this);

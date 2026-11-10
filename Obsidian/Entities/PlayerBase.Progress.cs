@@ -151,9 +151,10 @@ public partial class PlayerBase
 
     internal ValueTask FireProgressAsync(string trigger, ItemStack? item = null, IEntity? entity = null,
         IBlock? block = null, Vector? position = null, string? recipe = null, string? from = null,
-        string? to = null, int? levels = null)
+        string? to = null, int? levels = null, string? lootTable = null)
     {
-        ValueTask Fire() => this.FireProgressNowAsync(trigger, item, entity, block, position, recipe, from, to, levels);
+        ValueTask Fire() =>
+            this.FireProgressNowAsync(trigger, item, entity, block, position, recipe, from, to, levels, lootTable);
 
         // Gameplay firing a trigger for this player from another's tick (a hit landing in it, say) can't wait for this
         // player's gate. The event is matched now, as it is (the killer's position and dimension, say), and what it
@@ -165,7 +166,7 @@ public partial class PlayerBase
             var matched = this.ProgressAdvancements.Match(
                 $"minecraft:{trigger}",
                 conditions => ProgressConditions.Match(
-                    this, trigger, conditions, item, entity, block, position, recipe, from, to, levels));
+                    this, trigger, conditions, item, entity, block, position, recipe, from, to, levels, lootTable: lootTable));
             if (matched.Count > 0 && this.Server is Server server)
                 server.BackgroundWork.TryStart(() => this.GrantMatchedAsync(matched));
 
@@ -238,11 +239,11 @@ public partial class PlayerBase
     // Fires the trigger at once, for a flow that holds no inventory lock: one under the player's own tick gate, say.
     private ValueTask FireProgressNowAsync(string trigger, ItemStack? item = null, IEntity? entity = null,
         IBlock? block = null, Vector? position = null, string? recipe = null, string? from = null,
-        string? to = null, int? levels = null) =>
+        string? to = null, int? levels = null, string? lootTable = null) =>
         this.ProgressAdvancements.FireAsync(
             $"minecraft:{trigger}",
             conditions => ProgressConditions.Match(
-                this, trigger, conditions, item, entity, block, position, recipe, from, to, levels));
+                this, trigger, conditions, item, entity, block, position, recipe, from, to, levels, lootTable: lootTable));
 
     private async Task GrantMatchedAsync(List<(string Advancement, string Criterion)> matched)
     {

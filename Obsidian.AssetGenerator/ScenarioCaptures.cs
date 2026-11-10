@@ -39,6 +39,8 @@ internal static class ScenarioCaptures
     public const string EyeblossomGhastPortal = "eyeblossom_ghast_portal";
     public const string GrowingPlantTicks = "growing_plant_ticks";
     public const string FurnaceResults = "furnace_results";
+    public const string Brushing = "brushing";
+    public const string ArmorStandUse = "armor_stand_use";
 
     public const string MeltingWeather = "melting_weather";
 
@@ -70,12 +72,13 @@ internal static class ScenarioCaptures
     // The fixtures whose probes record only the cases asked for.
     private static readonly string[] SelectableCases =
         [Redstone, Sulfur, MoreBlocks, StructurePieces, Fire, TickingBlocks, BlockUse, MeltingWeather,
-            EyeblossomGhastPortal, WaxingBellsOre, ProjectileHits];
+            EyeblossomGhastPortal, Brushing, ArmorStandUse, WaxingBellsOre, ProjectileHits];
 
     public static readonly string[] All =
         [Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps, SavedHeightmaps, Mining,
             Placement, CopperWeathering, Fire, TickingBlocks, BlockUse, TurtleEggs, Frogspawn,
-            GrowingPlantTicks, MeltingWeather, FurnaceResults, EyeblossomGhastPortal, WaxingBellsOre, ProjectileHits];
+            GrowingPlantTicks, MeltingWeather, FurnaceResults, EyeblossomGhastPortal, Brushing, ArmorStandUse,
+            WaxingBellsOre, ProjectileHits];
 
     private const string RedstoneNotes = """
         Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a
@@ -131,8 +134,8 @@ internal static class ScenarioCaptures
         {
             throw new ArgumentException(
                 "Case selection requires CaptureFixtures=redstone, sulfur, more_blocks, structure_pieces, "
-                + "fire, ticking_blocks, block_use, melting_weather, eyeblossom_ghast_portal, waxing_bells_ore or "
-                + "projectile_hits.");
+                + "fire, ticking_blocks, block_use, melting_weather, eyeblossom_ghast_portal, brushing, "
+                + "armor_stand_use, waxing_bells_ore or projectile_hits.");
         }
 
         if (fixtures.Contains(CopperWeathering))
@@ -162,6 +165,21 @@ internal static class ScenarioCaptures
         {
             await FixtureDumper.DumpBlockUseAsync(server, Path.Combine(assetsDirectory, "block_use.json"), cases);
 
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(Brushing))
+        {
+            await FixtureDumper.DumpBrushingAsync(server, Path.Combine(assetsDirectory, "brushing.json"), cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(ArmorStandUse))
+        {
+            await FixtureDumper.DumpArmorStandUseAsync(server, Path.Combine(assetsDirectory, "armor_stand_use.json"),
+                cases);
             if (fixtures.Count == 1)
                 return;
         }
