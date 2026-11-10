@@ -95,7 +95,7 @@ internal sealed class VehicleInventory
             var items = new NbtList(NbtTagType.Compound, "Items");
             for (var slot = 0; slot < this.Items.Size; slot++)
             {
-                if (this.Items[slot] is not { IsAir: false, Count: > 0 } item)
+                if (InventorySnapshot.GetItem(this.Items, slot) is not { IsAir: false, Count: > 0 } item)
                     continue;
 
                 var itemTag = item.ToNbt();

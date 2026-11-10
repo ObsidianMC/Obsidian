@@ -1584,8 +1584,8 @@ public partial class Region : IRegion
             && !EntityTransferLock.IsAnyHeldByCurrentThread;
         while (true)
         {
-            var (taken, busy) = await this.TrySnapshotChunkAsync(save, unloading, saveEntities, waitForLock);
-            if (taken || busy is null || !waitForLock)
+            var (taken, busy, retry) = await this.TrySnapshotChunkAsync(save, unloading, saveEntities, waitForLock);
+            if (taken || (!retry && busy is null) || !waitForLock)
                 return taken;
 
             if (!canWait)
@@ -1597,13 +1597,19 @@ public partial class Region : IRegion
             // No dirty marks, retirement or writes were taken. Wait without generator, tick, transfer or entity
             // locks, then retry against current membership. Eager saves leave the whole chunk for a later save.
             this.InventorySnapshotDeferred?.Invoke();
-            using (await busy.LockAsync())
+            if (busy is not null)
             {
+                using (await busy.LockAsync())
+                {
+                }
             }
+
+            // A virtual read or public membership edit can invalidate an otherwise available capture.
+            await Task.Yield();
         }
     }
 
-    private async Task<(bool Taken, BaseContainer? Busy)> TrySnapshotChunkAsync(
+    private async Task<(bool Taken, BaseContainer? Busy, bool Retry)> TrySnapshotChunkAsync(
         ChunkSave save, bool unloading, bool saveEntities, bool waitForLock)
     {
         var (chunk, x, z) = (save.Chunk!, save.X, save.Z);
@@ -1613,7 +1619,7 @@ public partial class Region : IRegion
             // Snapshot blocks, fluid ticks and entities together; take the generator's lock before the fluid lock.
             var (locked, chunkLock) = await this.LockChunkAsync(chunk, waitForLock);
             if (!locked)
-                return (false, null);
+                return (false, null, false);
 
             using (chunkLock)
             {
@@ -1630,11 +1636,9 @@ public partial class Region : IRegion
                     // Structure state may call plugin serializers. Preserve its existing tick-lock scope, but
                     // finish it before the host-only inventory admission adds transfer and inventory locks.
                     var loadedStarts = (current as Chunk)?.StructureStarts;
-                    var mayWrite = current is not Chunk trackedStarts || trackedStarts.IsUnsaved
-                        || unloading && this.regionFile.HasWriteInFlight(x, z);
                     var structureStarts = loadedStarts;
                     ExceptionDispatchInfo? structureFailure = null;
-                    if (this.SaveStructureStarts is not null && mayWrite)
+                    if (this.SaveStructureStarts is not null)
                     {
                         try
                         {
@@ -1648,22 +1652,42 @@ public partial class Region : IRegion
                         }
                     }
 
+                    var blockEntries = (current as Chunk)?.BlockEntities.ToArray();
+                    var blockEntities = blockEntries is null
+                        ? current.GetBlockEntities().ToArray()
+                        : blockEntries.Select(entry => entry.Value).ToArray();
+                    var levelEntities = this.SnapshotEntities(current, unloading || saveEntities);
+                    var inventories = SnapshotInventories(blockEntities, levelEntities);
+                    if (!InventorySnapshot.TryCapture(inventories, out var captured, out var busy))
+                        return (false, busy, false);
+
+                    using var snapshot = captured;
                     using var transfers = this.EntityTransfers.Enter();
                     this.BeforeInventorySnapshot?.Invoke();
-                    var inventories = this.SnapshotInventories(current, unloading || saveEntities);
-                    if (!InventorySnapshot.TryEnter(inventories, out var admitted, out var busy))
-                        return (false, busy);
+                    // Public position/dictionary setters do not participate in transfer. In particular, virtual
+                    // getters above may publish a container or move a vehicle. Retry before any retirement/marks.
+                    var sameBlocks = blockEntries is null
+                        ? blockEntities.ToHashSet().SetEquals(current.GetBlockEntities())
+                        : current is Chunk resident && blockEntries.Length == resident.BlockEntities.Count
+                            && blockEntries.All(entry => resident.BlockEntities.TryGetValue(entry.Key, out var value)
+                                && ReferenceEquals(entry.Value, value));
+                    var sameEntities = levelEntities.ToHashSet()
+                        .SetEquals(this.SnapshotEntities(current, unloading || saveEntities));
+                    if (!sameBlocks || !sameEntities)
+                        return (false, null, true);
 
-                    // Only host serializers run here. All inventory acquisition, including hashing dirty state
-                    // and retirement, reuses this admission. No partial unload can precede a busy inventory.
-                    using var snapshot = admitted;
+                    if (!captured!.TryEnter(out busy))
+                        return (false, busy, false);
+
+                    // Hashing, retirement and serialization use exactly the members and virtual slot values
+                    // captured above. No plugin getter, callback or await runs under this host admission.
 
                     // No block hooks or async setters may change this instance after its final snapshot.
                     if (unloading && ReferenceEquals(current, chunk))
                         this.RetireBlockAccess(current);
 
-                    if (unloading && current is Chunk retiring)
-                        BlockEntityLifecycle.Retire(retiring, save.Retired, save.Unloaded);
+                    if (unloading && current is Chunk)
+                        BlockEntityLifecycle.Retire(blockEntities, save.Retired, save.Unloaded);
 
                     // Taken after the light flush, which may write into the chunk, and the containers' retirement, which
                     // freezes their items. A chunk unchanged since its last save is on disk as it is, so only its
@@ -1674,7 +1698,7 @@ public partial class Region : IRegion
                     // and a failed one put the chunk's marks back before it did (see RegionFile.ChunkWrite.Failed), so
                     // the marks have it. No write of the chunk is reserved meanwhile: that takes this lock.
                     var earlierInFlight = unloading && this.regionFile.HasWriteInFlight(x, z);
-                    var write = current is not Chunk tracked || tracked.TakeUnsaved();
+                    var write = current is not Chunk tracked || tracked.TakeUnsaved(blockEntries);
                     if (unloading)
                         this.UnloadMarksTaken?.Invoke();
 
@@ -1688,7 +1712,7 @@ public partial class Region : IRegion
                         // Only serialized here, into memory; compressing waits until the lock is released.
                         save.Nbt = new PooledBufferStream(UncompressedChunkCapacity);
                         writer = new NbtWriterStream(save.Nbt, NbtCompression.None, "");
-                        SerializeChunk(writer.Value, current, structureStarts);
+                        SerializeChunk(writer.Value, current, structureStarts, blockEntities);
                     }
 
                     if (write)
@@ -1699,7 +1723,7 @@ public partial class Region : IRegion
                     }
 
                     if ((unloading || saveEntities) && current.IsGenerated && current is Chunk complete)
-                        save.Entities = this.CollectEntities(complete, unloading);
+                        save.Entities = this.CollectEntities(complete, unloading, levelEntities);
 
                     if (save.Entities is not null || unloading)
                         save.EntityWrite = this.entityRegionFile.ReserveWrite(x, z);
@@ -1721,7 +1745,7 @@ public partial class Region : IRegion
                 save.Entities = null;
             }
 
-            return (true, null);
+            return (true, null, false);
         }
         catch
         {
@@ -1739,21 +1763,18 @@ public partial class Region : IRegion
         }
     }
 
-    // Called with tick and transfer held: vehicle membership cannot change before the snapshot consumes it.
-    private IEnumerable<BaseContainer> SnapshotInventories(IChunk chunk, bool saveEntities)
-    {
-        foreach (var container in chunk.GetBlockEntities().OfType<ContainerBlockEntity>())
-            yield return container.Inventory;
+    // Freeze membership before virtual inventory reads; validate it again before admission. The captured arrays
+    // also drive retirement, hashing and serialization, since public plugin setters do not obey transfer locking.
+    private static BaseContainer[] SnapshotInventories(IBlockEntity[] blockEntities, Entity[] entities) =>
+    [
+        .. blockEntities.OfType<ContainerBlockEntity>().Select(container => container.Inventory),
+        .. entities.OfType<IVehicleContainer>().Select(vehicle => vehicle.Inventory)
+    ];
 
-        if (!saveEntities || !chunk.IsGenerated)
-            yield break;
-
-        foreach (var (_, entity) in this.entities)
-        {
-            if (entity is IVehicleContainer vehicle && ChunkOf(entity.Position) == (chunk.X, chunk.Z))
-                yield return vehicle.Inventory;
-        }
-    }
+    private Entity[] SnapshotEntities(IChunk chunk, bool saveEntities) => saveEntities && chunk.IsGenerated
+        ? this.entities.Values.OfType<Entity>()
+            .Where(entity => ChunkOf(entity.Position) == (chunk.X, chunk.Z)).ToArray()
+        : [];
 
     /// <summary>
     /// Takes the generator's lock of the chunk (see <see cref="LockChunk"/>), or, when <paramref name="wait"/> is false
@@ -1985,7 +2006,7 @@ public partial class Region : IRegion
     /// unloading, the level's are taken out of it too, and the chunk's pending ones won't spawn anymore.
     /// </summary>
     /// <returns><c>null</c> once an unloading save took the entities, which a later save of the chunk mustn't overwrite.</returns>
-    private NbtList? CollectEntities(Chunk chunk, bool unloading)
+    private NbtList? CollectEntities(Chunk chunk, bool unloading, Entity[] members)
     {
         var entities = new NbtList(NbtTagType.Compound, "Entities");
 
@@ -2002,7 +2023,7 @@ public partial class Region : IRegion
             foreach (var unsupported in chunk.UnspawnableEntities)
                 entities.Add(unsupported);
 
-            var leaving = this.SaveLevelEntities(chunk, entities, unloading);
+            var leaving = this.SaveLevelEntities(members, entities, unloading);
 
             // Taken out only once every one is saved: a save that throws leaves them all in the level.
             foreach (var levelEntity in leaving)
@@ -2024,17 +2045,14 @@ public partial class Region : IRegion
     /// attachments retire first, so no write to them is missed, and those to take out of the level are returned. A save
     /// that throws gives back the attachments it retired, so the entities stay in the level as they were.
     /// </summary>
-    private List<Entity> SaveLevelEntities(Chunk chunk, NbtList entities, bool unloading)
+    private List<Entity> SaveLevelEntities(Entity[] members, NbtList entities, bool unloading)
     {
         var leaving = new List<Entity>();
         var retired = new List<API.Data.AttachmentStorage>();
         try
         {
-            foreach (var (_, entity) in this.entities)
+            foreach (var levelEntity in members)
             {
-                if (entity is not Entity levelEntity || ChunkOf(levelEntity.Position) != (chunk.X, chunk.Z))
-                    continue;
-
                 if (unloading && levelEntity is not IPlayer)
                 {
                     var attachments = API.Data.AttachmentStorage.For(levelEntity);
@@ -2465,7 +2483,8 @@ public partial class Region : IRegion
     /// <summary>
     /// Writes a chunk's compound as region files store it, without its end tag.
     /// </summary>
-    internal static void SerializeChunk(NbtWriterStream writer, IChunk chunk, NbtCompound? structureStarts)
+    internal static void SerializeChunk(
+        NbtWriterStream writer, IChunk chunk, NbtCompound? structureStarts, IBlockEntity[]? members = null)
     {
         writer.WriteTag(API.Data.AttachmentStorage.For(chunk).Snapshot());
         writer.WriteLong("InhabitedTime", chunk is Chunk concrete ? concrete.InhabitedTime : 0);
@@ -2493,7 +2512,7 @@ public partial class Region : IRegion
         }
         writer.EndList();
 
-        var blockEntities = chunk.GetBlockEntities()
+        var blockEntities = (members ?? chunk.GetBlockEntities())
             .Select(BlockEntityNbt.Save)
             .OfType<NbtCompound>()
             .ToList();

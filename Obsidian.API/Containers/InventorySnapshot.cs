@@ -1,55 +1,117 @@
+using Obsidian.API.Inventory;
 using System.Threading;
 
 namespace Obsidian.API;
 
 /// <summary>
-/// Admits all inventories of a synchronous host snapshot without waiting. Host serializers reuse these locks;
-/// no plugin callbacks or awaits may run in this scope. Ordinary inventory locks remain non-reentrant.
+/// Captures virtual inventory reads before host admission, then tries every captured inventory together.
+/// Only host serializers run in the admitted scope; ordinary inventory locks remain non-reentrant.
 /// </summary>
 internal sealed class InventorySnapshot : IDisposable
 {
     [ThreadStatic] private static InventorySnapshot? current;
 
-    private readonly InventorySnapshot? previous = current;
-    private readonly HashSet<BaseContainer> parts = [];
+    private InventorySnapshot? previous;
+    private readonly Dictionary<BaseContainer, Revision> revisions = [];
+    private readonly Dictionary<BaseContainer, ItemStack?[]> items = [];
     private readonly List<IDisposable> held = [];
+
+    private readonly record struct Revision(long Items, long Transactions);
+
+    // Call without transfer/chunk entity locks or an ambient snapshot. A virtual getter retains only its own
+    // inventory lock and the caller's existing tick/generator scope, never another container's admission.
+    internal static bool TryCapture(
+        IEnumerable<BaseContainer> inventories,
+        out InventorySnapshot? snapshot,
+        out BaseContainer? busy)
+    {
+        var capture = new InventorySnapshot();
+        snapshot = null;
+        busy = null;
+        foreach (var inventory in inventories.Distinct())
+        {
+            if (!inventory.TryLock(out var handle))
+            {
+                busy = inventory;
+                return false;
+            }
+
+            using var captured = handle;
+            var parts = inventory.LockParts.Distinct().ToArray();
+            var before = parts.Select(part => new Revision(part.EngineRevision, part.TransactionVersion)).ToArray();
+            var contents = new ItemStack?[inventory.Size];
+            for (var slot = 0; slot < contents.Length; slot++)
+            {
+                var item = inventory.GetItem(slot);
+                contents[slot] = item is null ? null : new ItemStack(item, item.Count);
+            }
+
+            for (var index = 0; index < parts.Length; index++)
+            {
+                var part = parts[index];
+                var revision = before[index];
+                var overlaps = capture.revisions.TryGetValue(part, out var earlier);
+                // Shared parts may have only our own new capture transaction since their previous read.
+                if (part.EngineRevision != revision.Items || part.TransactionVersion != revision.Transactions
+                    || overlaps && (earlier.Items != revision.Items
+                        || earlier.Transactions + 1 != revision.Transactions))
+                {
+                    busy = inventory;
+                    return false;
+                }
+
+                capture.revisions[part] = revision;
+            }
+
+            capture.items.Add(inventory, contents);
+        }
+
+        snapshot = capture;
+        return true;
+    }
 
     internal static bool TryEnter(
         IEnumerable<BaseContainer> inventories,
         out InventorySnapshot? snapshot,
         out BaseContainer? busy)
     {
-        var scope = new InventorySnapshot();
+        if (!TryCapture(inventories, out snapshot, out busy))
+            return false;
+
+        return snapshot!.TryEnter(out busy);
+    }
+
+    internal bool TryEnter(out BaseContainer? busy)
+    {
+        busy = null;
         try
         {
-            foreach (var inventory in inventories)
+            foreach (var (part, revision) in this.revisions)
             {
-                foreach (var part in inventory.LockParts)
+                if (!part.TransactionLock.Wait(0))
                 {
-                    if (!scope.parts.Add(part))
-                        continue;
+                    this.Release();
+                    busy = part;
+                    return false;
+                }
 
-                    if (!part.TransactionLock.Wait(0))
-                    {
-                        scope.Release();
-                        snapshot = null;
-                        busy = part;
-                        return false;
-                    }
-
-                    scope.held.Add(new LockRelease(part.TransactionLock));
+                this.held.Add(new LockRelease(part.TransactionLock));
+                if (part.EngineRevision != revision.Items || part.TransactionVersion != revision.Transactions)
+                {
+                    this.Release();
+                    busy = part;
+                    return false;
                 }
             }
         }
         catch
         {
-            scope.Release();
+            this.Release();
             throw;
         }
 
-        current = scope;
-        snapshot = scope;
-        busy = null;
+        this.previous = current;
+        current = this;
         return true;
     }
 
@@ -59,15 +121,21 @@ internal sealed class InventorySnapshot : IDisposable
         if (current is null)
             return inventory.Lock();
 
-        if (!inventory.LockParts.All(current.parts.Contains))
+        if (!inventory.LockParts.All(current.revisions.ContainsKey))
             throw new InvalidOperationException("A snapshot reached an inventory it did not admit.");
 
         return Reused.Instance;
     }
 
+    internal static ItemStack? GetItem(BaseContainer inventory, int slot) => current is null
+        ? inventory.GetItem(slot)
+        : current.items[inventory][slot];
+
     public void Dispose()
     {
-        current = this.previous;
+        if (ReferenceEquals(current, this))
+            current = this.previous;
+
         this.Release();
     }
 
@@ -75,6 +143,8 @@ internal sealed class InventorySnapshot : IDisposable
     {
         for (var index = this.held.Count - 1; index >= 0; index--)
             this.held[index].Dispose();
+
+        this.held.Clear();
     }
 
     private sealed class Reused : IDisposable

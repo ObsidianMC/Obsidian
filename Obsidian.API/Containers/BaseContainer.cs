@@ -43,6 +43,12 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     // The stamp of the last time a slot was set (see MarkChanged); the stacks keep their own (see Revision).
     private long slotsChanged;
 
+    // Snapshot preparation cannot call a plugin's virtual Revision under transfer. Count intervening transactions
+    // as well as host slot changes, including transactions on plugin-defined storage.
+    private long transactionVersion;
+
+    internal long TransactionVersion => Volatile.Read(ref this.transactionVersion);
+
     // 1 once the container is retired (see IsRetired).
     private int retired;
 
@@ -66,7 +72,7 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     public virtual long Revision => this.EngineRevision;
 
     // Lock bookkeeping must never dispatch to a plugin's virtual Revision getter.
-    private long EngineRevision
+    internal long EngineRevision
     {
         get
         {
@@ -359,7 +365,11 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
                 this.owner = owner;
         }
 
-        public void CaptureRevision() => this.revision = this.owner is not null ? this.part.EngineRevision : 0;
+        public void CaptureRevision()
+        {
+            Interlocked.Increment(ref this.part.transactionVersion);
+            this.revision = this.owner is not null ? this.part.EngineRevision : 0;
+        }
 
         public void Dispose()
         {

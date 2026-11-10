@@ -171,6 +171,7 @@ public abstract partial class AbstractLevel : ILevel
     private readonly IDisposable optionsMonitor;
     private readonly Lock regionLock = new();
     private readonly ConcurrentQueue<Func<ValueTask>> entityActions = new();
+    private readonly ConcurrentDictionary<OwnedEntityAction, byte> ownedEntityActions = new();
     // Due block ticks run before ordinary deferred mutations in the same level tick.
     private readonly ConcurrentQueue<Func<ValueTask>> simulationActions = new();
     private MobSpawner? mobSpawner;
@@ -184,6 +185,54 @@ public abstract partial class AbstractLevel : ILevel
     private readonly SemaphoreSlim simulationGate = new(1, 1);
 
     internal void EnqueueEntityAction(Func<ValueTask> action) => entityActions.Enqueue(action);
+
+    // An undrained action must release its plugin lease when the level closes, including enqueue/dispose races.
+    internal void EnqueueEntityAction(Func<ValueTask> action, IDisposable lifetime)
+    {
+        var owned = new OwnedEntityAction(action, lifetime);
+        this.ownedEntityActions.TryAdd(owned, 0);
+        if (this.IsDisposed)
+        {
+            this.ownedEntityActions.TryRemove(owned, out _);
+            owned.Dispose();
+            return;
+        }
+
+        this.entityActions.Enqueue(async () =>
+        {
+            if (this.ownedEntityActions.TryRemove(owned, out _))
+                await owned.RunAsync();
+        });
+    }
+
+    private sealed class OwnedEntityAction(Func<ValueTask> action, IDisposable lifetime) : IDisposable
+    {
+        private (Func<ValueTask> Action, IDisposable Lifetime)? work = (action, lifetime);
+        private readonly Lock sync = new();
+
+        internal async ValueTask RunAsync()
+        {
+            var pending = this.Take();
+            if (pending is null)
+                return;
+
+            var running = pending.Value;
+            using (running.Lifetime)
+                await running.Action();
+        }
+
+        private (Func<ValueTask> Action, IDisposable Lifetime)? Take()
+        {
+            lock (this.sync)
+            {
+                var pending = this.work;
+                this.work = null;
+                return pending;
+            }
+        }
+
+        public void Dispose() => this.Take()?.Lifetime.Dispose();
+    }
 
     internal void EnqueueSimulationAction(Func<ValueTask> action) => simulationActions.Enqueue(action);
 
@@ -2591,6 +2640,23 @@ public abstract partial class AbstractLevel : ILevel
         if (Interlocked.Exchange(ref this.disposed, 1) != 0)
             return;
 
+        try
+        {
+            await this.DisposeCoreAsync();
+        }
+        finally
+        {
+            // Keep queued plugin code alive through the final save, then release even if no tick drains it.
+            foreach (var owned in this.ownedEntityActions.Keys)
+            {
+                if (this.ownedEntityActions.TryRemove(owned, out _))
+                    owned.Dispose();
+            }
+        }
+    }
+
+    private async Task DisposeCoreAsync()
+    {
         GC.SuppressFinalize(this);
 
         this.ClearChunkTickets();

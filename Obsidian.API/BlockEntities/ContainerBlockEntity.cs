@@ -204,7 +204,7 @@ public partial class ContainerBlockEntity : BlockEntity, IItemAccessProvider
         var items = new NbtList(NbtTagType.Compound, "Items");
         for (var slot = 0; slot < this.Inventory.Size; slot++)
         {
-            var item = this.Inventory[slot];
+            var item = InventorySnapshot.GetItem(this.Inventory, slot);
             if (item is null || item.IsAir || item.Count <= 0)
                 continue;
 

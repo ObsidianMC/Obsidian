@@ -98,13 +98,10 @@ internal static class PluginBlockEntities
         var hold = plugin.HoldUnloading();
         level.EnqueueEntityAction(async () =>
         {
-            using (hold)
-            {
-                var retired = Keep(level, chunk, entity, plugin);
-                if (retired is not null)
-                    await AbstractLevel.CloseWindowsAsync(retired, plugin);
-            }
-        });
+            var retired = Keep(level, chunk, entity, plugin);
+            if (retired is not null)
+                await AbstractLevel.CloseWindowsAsync(retired, plugin);
+        }, hold);
     }
 
     private static BaseContainer? KeepCore(
@@ -193,7 +190,10 @@ internal static class PluginBlockEntities
 
         try
         {
-            return BlockEntityNbt.SaveData(blockEntity);
+            // TakeChange consumed the signal even if inventory admission must defer.
+            // Retain the last successful plugin fields before attempting host preservation.
+            blockEntity.SavedData = BlockEntityNbt.SaveData(blockEntity);
+            return blockEntity.SavedData;
         }
         catch (Exception)
         {

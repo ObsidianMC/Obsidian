@@ -93,20 +93,21 @@ public sealed class ChunkSaves
         var folder = Path.Join(Path.GetTempPath(), $"obsidian-chunk-saves-{Guid.NewGuid():N}");
         try
         {
-            // The region asks for the starts of each chunk it writes, and only those.
+            // Observe persisted payloads rather than preparatory structure serialization.
             var written = new List<(int X, int Z)>();
-            var region = new Region(0, 0, folder)
-            {
-                SaveStructureStarts = (x, z, loaded) =>
-                {
-                    written.Add((x, z));
-                    return loaded;
-                },
-            };
+            var region = new Region(0, 0, folder);
 
             await using (region)
             {
                 await region.InitAsync();
+                region.ChunkFile.Observe = change =>
+                {
+                    if (change.Step == RegionFile.Step.PayloadWritten)
+                        written.Add((change.ChunkX, change.ChunkZ));
+
+                    return default;
+                };
+
                 var changed = Complete(0, 0);
                 region.SetChunk(changed);
                 region.SetChunk(Complete(1, 0));
@@ -149,12 +150,6 @@ public sealed class ChunkSaves
             var scheduler = new BlockTickScheduler();
             var region = new Region(0, 0, folder)
             {
-                SaveStructureStarts = (x, z, loaded) =>
-                {
-                    written.Add((x, z));
-                    return loaded;
-                },
-
                 // Like the level's, which stops an unloading chunk's ticks as its final save starts.
                 BlockAccessUnloaded = chunk => ((Chunk)chunk).BlockTicks.StopTicking(),
             };
@@ -162,6 +157,14 @@ public sealed class ChunkSaves
             await using (region)
             {
                 await region.InitAsync();
+                region.ChunkFile.Observe = change =>
+                {
+                    if (change.Step == RegionFile.Step.PayloadWritten)
+                        written.Add((change.ChunkX, change.ChunkZ));
+
+                    return default;
+                };
+
                 var chunks = Enumerable.Range(0, 3).Select(x => Ticking(x, scheduler)).ToArray();
                 foreach (var chunk in chunks)
                     region.SetChunk(chunk);

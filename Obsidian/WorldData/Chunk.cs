@@ -153,7 +153,7 @@ public sealed class Chunk : IChunk
     /// fails afterwards marks the chunk again (<see cref="MarkUnsaved"/>).
     /// </summary>
     /// <returns>Whether the chunk was unsaved (see <see cref="IsUnsaved"/>).</returns>
-    internal bool TakeUnsaved()
+    internal bool TakeUnsaved(KeyValuePair<int, IBlockEntity>[]? members = null)
     {
         // Every mark is cleared, so none of these short-circuit.
         var unsaved = Interlocked.Exchange(ref this.unsaved, 0) != 0;
@@ -169,19 +169,19 @@ public sealed class Chunk : IChunk
         var heightmaps = this.HeightmapSet();
         unsaved |= Interlocked.Exchange(ref this.savedHeightmaps, heightmaps) != heightmaps;
 
-        var blockEntities = this.BlockEntitySet();
+        var blockEntities = this.BlockEntitySet(members);
         unsaved |= Interlocked.Exchange(ref this.savedBlockEntities, blockEntities) != blockEntities;
 
         var attachments = API.Data.AttachmentStorage.For(this).Revision;
         unsaved |= Interlocked.Exchange(ref this.savedAttachmentRevision, attachments) != attachments;
 
-        if (!this.HoldsLiveSavedBlockEntities())
+        if (!this.HoldsLiveSavedBlockEntities(members))
         {
             this.savedLiveBlockEntities = 0;
             return unsaved;
         }
 
-        var liveBlockEntities = this.HashLiveSavedBlockEntities();
+        var liveBlockEntities = this.HashLiveSavedBlockEntities(members);
         unsaved |= liveBlockEntities != this.savedLiveBlockEntities;
         this.savedLiveBlockEntities = liveBlockEntities;
         return unsaved;
@@ -200,20 +200,20 @@ public sealed class Chunk : IChunk
 
     // The block entities the chunk holds, by position and instance: an order-independent combination, like
     // HeightmapSet's.
-    private int BlockEntitySet()
+    private int BlockEntitySet(IEnumerable<KeyValuePair<int, IBlockEntity>>? members = null)
     {
         var set = 0;
-        foreach (var (key, blockEntity) in this.BlockEntities)
+        foreach (var (key, blockEntity) in members ?? this.BlockEntities)
             set += HashCode.Combine(key, System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(blockEntity));
 
         return set;
     }
 
     // The saved data of the block entities saved as they are, hashed in position order.
-    private ulong HashLiveSavedBlockEntities()
+    private ulong HashLiveSavedBlockEntities(IEnumerable<KeyValuePair<int, IBlockEntity>>? members = null)
     {
         var hash = new System.IO.Hashing.XxHash64();
-        foreach (var (_, blockEntity) in this.BlockEntities.OrderBy(entry => entry.Key))
+        foreach (var (_, blockEntity) in (members ?? this.BlockEntities).OrderBy(entry => entry.Key))
         {
             if (!SavesAsItIs(blockEntity) || BlockEntityNbt.Save(blockEntity) is not NbtCompound saved)
                 continue;
@@ -232,9 +232,9 @@ public sealed class Chunk : IChunk
         return hash.GetCurrentHashAsUInt64();
     }
 
-    private bool HoldsLiveSavedBlockEntities()
+    private bool HoldsLiveSavedBlockEntities(IEnumerable<KeyValuePair<int, IBlockEntity>>? members = null)
     {
-        foreach (var blockEntity in this.BlockEntities.Values)
+        foreach (var (_, blockEntity) in members ?? this.BlockEntities)
         {
             if (SavesAsItIs(blockEntity))
                 return true;

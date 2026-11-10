@@ -267,7 +267,7 @@ public sealed class SnapshotInventoryLocking
         AssertStack(loaded, position, ItemsRegistry.Apple, 1);
     }
 
-    private static void AssertStack(Chunk chunk, Vector at, Item item, int count)
+    internal static void AssertStack(Chunk chunk, Vector at, Item item, int count)
     {
         var entity = chunk.GetBlockEntity(at.X, at.Y, at.Z);
         var container = entity is DataBlockEntity data
@@ -280,7 +280,7 @@ public sealed class SnapshotInventoryLocking
 
     // Inspect exactly what the completed operation wrote, before server disposal can save it again.
     // Read committed bytes through the owning file handle, then reload those exact NBT bytes in an isolated region.
-    private static async Task<Chunk> ReloadDiskAsync(Region source)
+    internal static async Task<Chunk> ReloadDiskAsync(Region source)
     {
         var folder = Path.Join(Path.GetTempPath(), $"obsidian-snapshot-copy-{Guid.NewGuid():N}");
         try
