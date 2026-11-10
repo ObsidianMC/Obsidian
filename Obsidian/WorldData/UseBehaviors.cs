@@ -2,6 +2,7 @@ using Obsidian.API.Containers;
 using Obsidian.API.BlockEntities;
 using Obsidian.API.Inventory;
 using Obsidian.Entities;
+using System.Runtime.ExceptionServices;
 
 namespace Obsidian.WorldData;
 
@@ -159,50 +160,73 @@ internal sealed class BlockUse
             }
 
             BlockUseEffects? effects = null;
-            using (handLock)
+            ExceptionDispatchInfo? failure = null;
+            var committed = false;
+            try
             {
-                var held = this.Player.Inventory.GetItem(this.HandSlot);
-                if (!ReferenceEquals(held, this.Item)
-                    || held is not null && (held.Count <= 0 || held.Count != this.UsedItem?.Count
-                        || !held.Equals(this.UsedItem))
-                    || consumeItem && held is null
-                    || replacement is not null && (!consumeItem || held?.Count != 1))
+                using (handLock)
                 {
-                    this.ResyncHand = true;
-                    return false;
-                }
-
-                IDisposable? destinationLock = null;
-                if (destination is not null && !destination.TryLock(out destinationLock))
-                {
-                    this.ResyncHand = true;
-                    return false;
-                }
-
-                using (destinationLock)
-                using (effects = new BlockUseEffects(this.Level))
-                {
-                    if (destination?.ShowsRetired == true || !change())
+                    var held = this.Player.Inventory.GetItem(this.HandSlot);
+                    if (!ReferenceEquals(held, this.Item)
+                        || held is not null && (held.Count <= 0 || held.Count != this.UsedItem?.Count
+                            || !held.Equals(this.UsedItem))
+                        || consumeItem && held is null
+                        || replacement is not null && (!consumeItem || held?.Count != 1))
                     {
                         this.ResyncHand = true;
                         return false;
                     }
 
-                    if (consumeItem && this.Player.GameMode != GameMode.Creative)
+                    IDisposable? destinationLock = null;
+                    if (destination is not null && !destination.TryLock(out destinationLock))
                     {
-                        if (replacement is null)
-                            this.Player.Inventory.RemoveItem(this.HandSlot, 1);
-                        else
-                            this.Player.Inventory.SetItem(this.HandSlot, replacement);
-
                         this.ResyncHand = true;
+                        return false;
                     }
 
+                    using (destinationLock)
+                    using (effects = new BlockUseEffects(this.Level))
+                    {
+                        if (destination?.ShowsRetired == true || !change())
+                        {
+                            this.ResyncHand = true;
+                        }
+                        else
+                        {
+                            // Only a completed change consumes. A throwing change keeps its writes and effects,
+                            // but the hand stays untouched; this helper deliberately does not roll back the world.
+                            if (consumeItem && this.Player.GameMode != GameMode.Creative)
+                            {
+                                if (replacement is null)
+                                    this.Player.Inventory.RemoveItem(this.HandSlot, 1);
+                                else
+                                    this.Player.Inventory.SetItem(this.HandSlot, replacement);
+
+                                this.ResyncHand = true;
+                            }
+
+                            committed = true;
+                        }
+                    }
                 }
             }
+            catch (Exception exception)
+            {
+                failure = ExceptionDispatchInfo.Capture(exception);
+            }
 
-            effects!.Publish();
-            return true;
+            // Both inventories and the state scope have unwound before publishing, even after a partial change.
+            try
+            {
+                effects?.Publish();
+            }
+            catch (Exception exception)
+            {
+                failure ??= ExceptionDispatchInfo.Capture(exception);
+            }
+
+            failure?.Throw();
+            return committed;
         }
     }
 

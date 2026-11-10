@@ -1,4 +1,5 @@
 using Obsidian.API.Blocks;
+using System.Runtime.ExceptionServices;
 
 namespace Obsidian.WorldData;
 
@@ -42,8 +43,20 @@ internal sealed class BlockUseEffects : IDisposable
         if (this.level.ActiveBlockUse is not null)
             throw new InvalidOperationException("Block-use effects cannot run during a state commit.");
 
+        ExceptionDispatchInfo? failure = null;
         foreach (var effect in this.effects)
-            effect();
+        {
+            try
+            {
+                effect();
+            }
+            catch (Exception exception)
+            {
+                failure ??= ExceptionDispatchInfo.Capture(exception);
+            }
+        }
+
+        failure?.Throw();
     }
 }
 

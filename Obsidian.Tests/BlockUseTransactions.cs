@@ -10,6 +10,8 @@ using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
 using System;
 using System.Linq;
+using System.Collections.Generic;
+using Obsidian.Net.Packets.Play.Clientbound;
 using System.IO;
 using System.Threading.Tasks;
 using Xunit;
@@ -69,6 +71,72 @@ public sealed class BlockUseTransactions
             Assert.Equal(ItemsRegistry.Diamond.Id, player.GetHeldItem()?.Holder.Id);
             Assert.Equal(3, player.GetHeldItem()?.Count);
             Assert.Equal(1, Stored(context).Count);
+        }
+        finally
+        {
+            AppContext.SetData(ProbeRelay.NeighborHookKey, null);
+        }
+    }
+
+    [Fact]
+    public async Task PartialChangesAndFailingEffectsStillPublishEveryStoredWrite()
+    {
+        await using var context = TestServerFactory.CreateServer($"exchange-faults-{Guid.NewGuid():N}");
+        var world = context.World;
+        WorldBlockEntities.AddEmptyChunk(world);
+        await world.GetBlockAsync(target);
+        await using var manager = BlockUpdates.CreatePluginManager(context);
+        var archive = Path.Join(Path.GetDirectoryName(world.PlayerDataPath)!, "fault-neighbor.obby");
+        await File.WriteAllBytesAsync(archive, PluginLoading.ProbeArchive("1.0.0"));
+        Assert.NotNull(await manager.LoadPluginAsync(archive));
+        Assert.True(BlocksRegistry.TryGetPluginBlock("probe:relay", out var relay));
+        var other = target + Vector.East + Vector.North;
+        world.BlockUpdates.SetBlock(target + Vector.East, relay.DefaultState, Quiet);
+        var player = Player(context, "User");
+        var client = (TestClient)player.Client;
+        Assert.True(context.Server.AddPlayer(player));
+        player.LoadedChunks.Add(0);
+        var notified = new HashSet<Vector>();
+        AppContext.SetData(ProbeRelay.NeighborHookKey,
+            (Action<NeighborChangedContext>)(neighbor => notified.Add(neighbor.SourcePosition)));
+        try
+        {
+            foreach (var fault in new[] { "change", "effect", "both" })
+            {
+                world.BlockUpdates.SetBlock(target, BlocksRegistry.Stone, Quiet);
+                world.BlockUpdates.SetBlock(other, BlocksRegistry.Stone, Quiet);
+                var stack = new ItemStack(ItemsRegistry.BoneMeal, 2);
+                player.Inventory.SetItem(player.CurrentHeldItemSlot, stack);
+                var use = Read(context, player);
+                var changeFailure = new InvalidOperationException("Injected change failure");
+                var effectFailure = new InvalidOperationException("Injected publication failure");
+                notified.Clear();
+                client.ClearPackets();
+
+                var failure = Assert.Throws<InvalidOperationException>(() => use.TryCommit(() =>
+                {
+                    if (fault is "effect" or "both")
+                        world.ActiveBlockUse!.After(() => throw effectFailure);
+
+                    world.BlockUpdates.SetBlock(target, BlocksRegistry.Dirt);
+                    world.BlockUpdates.SetBlock(other, BlocksRegistry.Cobblestone);
+                    if (fault is "change" or "both")
+                        throw changeFailure;
+
+                    return true;
+                }, consumeItem: true));
+
+                Assert.Same(fault == "effect" ? effectFailure : changeFailure, failure);
+                Assert.Same(stack, player.GetHeldItem());
+                Assert.Equal(fault == "effect" ? 1 : 2, stack.Count);
+                Assert.Contains(target, notified);
+                Assert.Contains(other, notified);
+                Assert.Contains(client.SentPackets.OfType<BlockUpdatePacket>(),
+                    packet => packet.Position == target && packet.BlockId == BlocksRegistry.Dirt.GetHashCode());
+                Assert.Contains(client.SentPackets.OfType<BlockUpdatePacket>(),
+                    packet => packet.Position == other && packet.BlockId == BlocksRegistry.Cobblestone.GetHashCode());
+                Assert.Null(world.ActiveBlockUse);
+            }
         }
         finally
         {
