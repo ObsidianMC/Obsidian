@@ -1,6 +1,6 @@
 using Obsidian.API.Blocks;
 using Obsidian.API.World.Features.Trees;
-using Obsidian.WorldData.Features.Tree;
+using Obsidian.WorldData.ShapeRules;
 
 namespace Obsidian.WorldData;
 
@@ -20,7 +20,7 @@ internal sealed class IronBarsPlacementBehavior : IBlockBehavior
         {
             var neighbor = level.GetBlock(position + face.ToVector());
             state = state.WithProperty(face.PropertyName(),
-                ShapeUpdater.BarsAttachTo(neighbor, neighbor.IsFaceSturdy(face.Opposite())));
+                ShapeConnections.BarsAttachTo(neighbor, neighbor.IsFaceSturdy(face.Opposite())));
         }
 
         return state;
@@ -33,12 +33,15 @@ internal sealed class IronBarsPlacementBehavior : IBlockBehavior
 /// </summary>
 internal sealed class IronBarsShapeUpdateBehavior : IShapeUpdateBehavior
 {
-    public IBlock? UpdateShape(IBlockLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
+    /// <summary>Generation and placement connect bars and panes too.</summary>
+    public ShapeReach Reach => ShapeReach.LiveOwnerAndSharedPass;
+
+    public IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
     {
         if (direction is not (BlockFace.North or BlockFace.East or BlockFace.South or BlockFace.West))
             return state;
 
         return state.WithProperty(direction.PropertyName(),
-            ShapeUpdater.BarsAttachTo(neighbor, neighbor.IsFaceSturdy(direction.Opposite())));
+            ShapeConnections.BarsAttachTo(neighbor, neighbor.IsFaceSturdy(direction.Opposite())));
     }
 }

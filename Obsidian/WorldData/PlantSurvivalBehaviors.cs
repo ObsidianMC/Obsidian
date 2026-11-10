@@ -11,7 +11,7 @@ namespace Obsidian.WorldData;
 internal sealed class SugarCaneBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior
 {
     /// <summary>Vanilla's <c>updateShape</c>: schedules a tick at delay 1 when the block can't survive, and keeps its state.</summary>
-    public IBlock? UpdateShape(IBlockLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
+    public IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
     {
         if (!BlockSurvival.SugarCaneMayStay(level.GetBlock, position))
             level.ScheduleTick(position, state, 1);
@@ -31,7 +31,7 @@ internal sealed class SugarCaneBlockBehavior : IScheduledTickBehavior, IShapeUpd
 internal sealed class CactusBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior
 {
     /// <summary>Vanilla's <c>updateShape</c>: schedules a tick at delay 1 when the block can't survive, and keeps its state.</summary>
-    public IBlock? UpdateShape(IBlockLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
+    public IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
     {
         if (!BlockSurvival.CactusMayStay(level.GetBlock, position))
             level.ScheduleTick(position, state, 1);
@@ -53,7 +53,7 @@ internal sealed class CactusBlockBehavior : IScheduledTickBehavior, IShapeUpdate
 /// </summary>
 internal sealed class BambooSaplingBlockBehavior : IShapeUpdateBehavior
 {
-    public IBlock? UpdateShape(IBlockLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
+    public IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
     {
         if (!BlockSurvival.BambooMayStay(level.GetBlock, position))
             return BlocksRegistry.Air;
@@ -71,7 +71,7 @@ internal sealed class BambooSaplingBlockBehavior : IShapeUpdateBehavior
 internal sealed class BambooStalkBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior
 {
     /// <summary>Vanilla's <c>updateShape</c>: schedules a tick at delay 1 when the stalk can't survive, and keeps its state.</summary>
-    public IBlock? UpdateShape(IBlockLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
+    public IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
     {
         if (!BlockSurvival.BambooMayStay(level.GetBlock, position))
             level.ScheduleTick(position, state, 1);
@@ -93,12 +93,15 @@ internal sealed class BambooStalkBlockBehavior : IScheduledTickBehavior, IShapeU
 /// </summary>
 internal sealed class KelpBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior
 {
+    /// <summary>Generation turns a kelp head with kelp above into a stem too.</summary>
+    public ShapeReach Reach => ShapeReach.LiveOwnerAndSharedPass;
+
     /// <summary>
     /// Vanilla's <c>updateShape</c> (see <see cref="GrowingPlantShapes"/>): an update from the support side schedules
     /// the support check a tick later when the plant can't stay, and a head or body turns into the plant's other part
     /// when its plant ahead appears or goes. Other states are kept.
     /// </summary>
-    public IBlock? UpdateShape(IBlockLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
+    public IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
     {
         if (GrowingPlantShapes.NeedsSupportCheck(state, direction, neighbor))
             level.ScheduleTick(position, state, 1);

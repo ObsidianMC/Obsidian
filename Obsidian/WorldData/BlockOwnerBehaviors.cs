@@ -62,8 +62,17 @@ internal interface IPostProcessBehavior
 
 internal interface IShapeUpdateBehavior
 {
+    /// <summary>Where the rule runs; see <see cref="ShapeDispatch"/>.</summary>
+    ShapeReach Reach => ShapeReach.LiveOwner;
+
     /// <returns>The state the block becomes, or null to keep <paramref name="state"/>.</returns>
-    IBlock? UpdateShape(IBlockLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor);
+    IBlock? UpdateShape(
+        IShapeLevel level,
+        Vector position,
+        IBlock state,
+        BlockFace direction,
+        Vector neighborPosition,
+        IBlock neighbor);
 }
 
 /// <summary>
@@ -169,6 +178,75 @@ internal static class ShapeUpdateBehaviors
     internal static IShapeUpdateBehavior CoralWallFanBlock { get; } = new CoralPlantBehavior(onWall: true);
 
     internal static IShapeUpdateBehavior ChorusPlantBlock { get; } = new ChorusPlantBehavior();
+
+    // Rules only the shared pass runs (ShapeReach.SharedPass), in WorldData/ShapeRules.
+    internal static IShapeUpdateBehavior BaseTorchBlock { get; } = new ShapeRules.StandingTorchShapeRule();
+
+    internal static IShapeUpdateBehavior WallTorchBlock { get; } = new ShapeRules.WallAttachedShapeRule();
+
+    internal static IShapeUpdateBehavior RedstoneWallTorchBlock { get; } = new ShapeRules.WallAttachedShapeRule();
+
+    internal static IShapeUpdateBehavior LadderBlock { get; } = new ShapeRules.WallAttachedShapeRule();
+
+    internal static IShapeUpdateBehavior FaceAttachedHorizontalDirectionalBlock { get; } =
+        new ShapeRules.FaceAttachedShapeRule();
+
+    internal static IShapeUpdateBehavior LanternBlock { get; } = new ShapeRules.LanternShapeRule();
+
+    internal static IShapeUpdateBehavior WallBannerBlock { get; } = new ShapeRules.WallMountedShapeRule();
+
+    internal static IShapeUpdateBehavior WallSignBlock { get; } = new ShapeRules.WallMountedShapeRule();
+
+    internal static IShapeUpdateBehavior BannerBlock { get; } = new ShapeRules.StandingMountedShapeRule();
+
+    internal static IShapeUpdateBehavior StandingSignBlock { get; } = new ShapeRules.StandingMountedShapeRule();
+
+    internal static IShapeUpdateBehavior CeilingHangingSignBlock { get; } =
+        new ShapeRules.CeilingHangingSignShapeRule();
+
+    internal static IShapeUpdateBehavior WallHangingSignBlock { get; } = new ShapeRules.WallHangingSignShapeRule();
+
+    internal static IShapeUpdateBehavior AttachedStemBlock { get; } = new ShapeRules.AttachedStemShapeRule();
+
+    internal static IShapeUpdateBehavior VegetationBlock { get; } = new ShapeRules.SurvivalShapeRule();
+
+    internal static IShapeUpdateBehavior CarpetBlock { get; } = new ShapeRules.SurvivalShapeRule();
+
+    internal static IShapeUpdateBehavior SeagrassBlock { get; } = new ShapeRules.SurvivalShapeRule();
+
+    internal static IShapeUpdateBehavior SnowLayerBlock { get; } = new ShapeRules.SurvivalShapeRule();
+
+    internal static IShapeUpdateBehavior HangingRootsBlock { get; } = new ShapeRules.SurvivalShapeRule();
+
+    internal static IShapeUpdateBehavior SporeBlossomBlock { get; } = new ShapeRules.SurvivalShapeRule();
+
+    internal static IShapeUpdateBehavior CocoaBlock { get; } = new ShapeRules.SurvivalShapeRule();
+
+    internal static IShapeUpdateBehavior HangingMossBlock { get; } = new ShapeRules.HangingMossShapeRule();
+
+    internal static IShapeUpdateBehavior MossyCarpetBlock { get; } = new ShapeRules.MossyCarpetShapeRule();
+
+    internal static IShapeUpdateBehavior DoorBlock { get; } = new ShapeRules.DoorShapeRule();
+
+    internal static IShapeUpdateBehavior AbstractBedBlock { get; } = new ShapeRules.BedShapeRule();
+
+    internal static IShapeUpdateBehavior ChestBlock { get; } = new ShapeRules.ChestShapeRule();
+
+    internal static IShapeUpdateBehavior DoublePlantBlock { get; } = new ShapeRules.DoublePlantShapeRule();
+
+    internal static IShapeUpdateBehavior SmallDripleafBlock { get; } = new ShapeRules.DoublePlantShapeRule();
+
+    internal static IShapeUpdateBehavior WallBlock { get; } = new ShapeRules.WallShapeRule();
+
+    internal static IShapeUpdateBehavior FenceGateBlock { get; } = new ShapeRules.FenceGateShapeRule();
+
+    internal static IShapeUpdateBehavior StairBlock { get; } = new ShapeRules.StairShapeRule();
+
+    internal static IShapeUpdateBehavior VineBlock { get; } = new ShapeRules.VineShapeRule();
+
+    internal static IShapeUpdateBehavior RedstoneWireBlock { get; } = new ShapeRules.RedstoneWireShapeRule();
+
+    internal static IShapeUpdateBehavior SnowyBlock { get; } = new ShapeRules.SnowyShapeRule();
 }
 
 /// <summary>

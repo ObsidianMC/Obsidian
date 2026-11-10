@@ -14,6 +14,12 @@ namespace Obsidian.WorldData;
 internal sealed class SulfurSpikeBehavior : IShapeUpdateBehavior, IScheduledTickBehavior,
     IRandomTickBehavior, IBlockBehavior
 {
+    /// <summary>
+    /// The live level runs the shape rule first, and generation's shared pass runs it too, for the speleothem columns
+    /// templates place. Generation has no block ticks, so there it only reshapes.
+    /// </summary>
+    public ShapeReach Reach => ShapeReach.LiveOwnerAndSharedPass;
+
     // Vanilla's GROWTH_PROBABILITY_PER_RANDOM_TICK: the draw is part of the chunk's shared random sequence.
     private const float GrowthChance = 0.011377778f;
 
@@ -38,7 +44,7 @@ internal sealed class SulfurSpikeBehavior : IShapeUpdateBehavior, IScheduledTick
     internal static bool Points(IBlock state, BlockFace direction) =>
         TagsRegistry.Block.Speleothems.Entries.Contains(state.RegistryId) && Direction(state) == direction;
 
-    internal static bool Survives(IBlockLevel level, Vector position, IBlock state) =>
+    internal static bool Survives(IShapeLevel level, Vector position, IBlock state) =>
         IsValidPlacement(level, position, Direction(state), state.RegistryId);
 
     /// <summary>
@@ -91,7 +97,7 @@ internal sealed class SulfurSpikeBehavior : IShapeUpdateBehavior, IScheduledTick
 
     // Vanilla's isValidSpeleothemPlacement: the block behind holds the face up, or is the same block pointing the same
     // way.
-    private static bool IsValidPlacement(IBlockLevel level, Vector position, BlockFace direction, int block)
+    private static bool IsValidPlacement(IShapeLevel level, Vector position, BlockFace direction, int block)
     {
         var supportPosition = position.Offset(direction.Opposite());
         var support = level.GetBlock(supportPosition);
@@ -99,7 +105,7 @@ internal sealed class SulfurSpikeBehavior : IShapeUpdateBehavior, IScheduledTick
             || support.RegistryId == block && Points(support, direction);
     }
 
-    private static IBlock Shape(IBlockLevel level, Vector position, IBlock state, bool merge)
+    private static IBlock Shape(IShapeLevel level, Vector position, IBlock state, bool merge)
     {
         var direction = Direction(state);
         var front = level.GetBlock(position.Offset(direction));
@@ -131,20 +137,21 @@ internal sealed class SulfurSpikeBehavior : IShapeUpdateBehavior, IScheduledTick
     {
         var direction = MathF.Sin(context.Player.Pitch.Degrees * (MathF.PI / 180)) >= 0
             ? BlockFace.Up : BlockFace.Down;
+        var level = context.Level.AsShapeLevel();
         var state = context.Block.WithProperty("vertical_direction", direction == BlockFace.Up ? "up" : "down");
-        if (!Survives(context.Level, context.Position, state))
+        if (!Survives(level, context.Position, state))
         {
             state = state.WithProperty("vertical_direction", direction == BlockFace.Up ? "down" : "up");
-            if (!Survives(context.Level, context.Position, state))
+            if (!Survives(level, context.Position, state))
                 return null;
         }
 
-        state = state.WithProperty("waterlogged", FluidState.Of(context.Level.GetBlock(context.Position)).IsWater);
-        return Shape(context.Level, context.Position, state, !context.Player.Sneaking);
+        state = state.WithProperty("waterlogged", FluidState.Of(level.GetBlock(context.Position)).IsWater);
+        return Shape(level, context.Position, state, !context.Player.Sneaking);
     }
 
     public IBlock? UpdateShape(
-        IBlockLevel level,
+        IShapeLevel level,
         Vector position,
         IBlock state,
         BlockFace direction,
@@ -176,7 +183,7 @@ internal sealed class SulfurSpikeBehavior : IShapeUpdateBehavior, IScheduledTick
     {
         if (Direction(block) == BlockFace.Up)
         {
-            if (!Survives(level, position, block))
+            if (!Survives(level.AsShapeLevel(), position, block))
             {
                 level.DestroyBlock(position, dropItems: true);
             }
@@ -265,6 +272,7 @@ internal sealed class SulfurSpikeBehavior : IShapeUpdateBehavior, IScheduledTick
     // pass ends the search.
     private static void GrowStalagmiteBelow(IBlockLevel level, Vector tip, IBlock block, GrowthRules rules)
     {
+        var view = level.AsShapeLevel();
         var cursor = tip;
         for (var distance = 0; distance < StalagmiteSearch; distance++)
         {
@@ -280,7 +288,7 @@ internal sealed class SulfurSpikeBehavior : IShapeUpdateBehavior, IScheduledTick
             }
 
             var floor = cursor + Vector.Down;
-            if (IsValidPlacement(level, cursor, BlockFace.Up, block.RegistryId)
+            if (IsValidPlacement(view, cursor, BlockFace.Up, block.RegistryId)
                 && !FluidState.Of(level.GetBlock(floor)).IsWater)
             {
                 Grow(level, floor, BlockFace.Up, block);

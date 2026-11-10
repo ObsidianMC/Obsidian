@@ -25,7 +25,7 @@ internal sealed partial class FarmlandBlockBehavior : IRandomTickBehavior, ISche
     /// Vanilla's <c>FarmlandBlock.updateShape</c>: a block that can't stay (a solid one above it) is scheduled to turn to
     /// dirt a tick later. The state is kept.
     /// </summary>
-    public IBlock? UpdateShape(IBlockLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
+    public IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
     {
         if (direction == BlockFace.Up && !CanSurvive(level, position))
             level.ScheduleTick(position, state, 1);
@@ -36,7 +36,7 @@ internal sealed partial class FarmlandBlockBehavior : IRandomTickBehavior, ISche
     /// <summary>Vanilla's <c>FarmlandBlock.tick</c>.</summary>
     public void Tick(IBlockLevel level, Vector position, IBlock block, IRandomSource random)
     {
-        if (!CanSurvive(level, position))
+        if (!CanSurvive(level.AsShapeLevel(), position))
             TurnToDirt(level, position, block);
     }
 
@@ -68,7 +68,7 @@ internal sealed partial class FarmlandBlockBehavior : IRandomTickBehavior, ISche
     private static int Moisture(IBlock block) => int.TryParse(block.GetProperty("moisture"), out var moisture) ? moisture : 0;
 
     // Vanilla's FarmlandBlock.canSurvive: anything above that isn't solid, or is a fence gate or moving piston.
-    private static bool CanSurvive(IBlockLevel level, Vector position)
+    private static bool CanSurvive(IShapeLevel level, Vector position)
     {
         var above = level.GetBlock(position + Vector.Up);
         return !above.IsSolid() || above.BlockClass() is "MovingPistonBlock" or "FenceGateBlock";

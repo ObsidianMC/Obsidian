@@ -8,6 +8,9 @@ namespace Obsidian.WorldData;
 
 internal sealed class FenceBlockBehavior : IBlockBehavior, IShapeUpdateBehavior
 {
+    /// <summary>Generation and placement connect fences too.</summary>
+    public ShapeReach Reach => ShapeReach.LiveOwnerAndSharedPass;
+
     private static readonly BlockFace[] sides =
         [BlockFace.North, BlockFace.East, BlockFace.South, BlockFace.West];
 
@@ -25,7 +28,7 @@ internal sealed class FenceBlockBehavior : IBlockBehavior, IShapeUpdateBehavior
     }
 
     public IBlock? UpdateShape(
-        IBlockLevel level,
+        IShapeLevel level,
         Vector position,
         IBlock state,
         BlockFace direction,

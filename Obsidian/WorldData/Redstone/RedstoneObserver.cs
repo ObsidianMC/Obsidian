@@ -49,7 +49,7 @@ internal sealed class RedstoneObserver(IRedstoneLevel level)
         var facing = Facing(state);
         var neighborPosition = position.Offset(facing);
         ShapeUpdateBehaviors.ObserverBlock.UpdateShape(
-            level, position, state, facing, neighborPosition, level.GetBlock(neighborPosition));
+            level.AsShapeLevel(), position, state, facing, neighborPosition, level.GetBlock(neighborPosition));
     }
 
     // Vanilla ObserverBlock.tick: an on output goes off; an off output goes on and schedules its own turn-off.
@@ -76,7 +76,7 @@ internal sealed class RedstoneObserver(IRedstoneLevel level)
 /// <summary>The observer's shape hook, shared by the fluid and block notification engines.</summary>
 internal sealed class ObserverShapeBehavior : IShapeUpdateBehavior
 {
-    public IBlock UpdateShape(IBlockLevel level, Vector position, IBlock state, BlockFace direction,
+    public IBlock UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction,
         Vector neighborPosition, IBlock neighbor)
     {
         if (state.GetProperty("powered") != "true"

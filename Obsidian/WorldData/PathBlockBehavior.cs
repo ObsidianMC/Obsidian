@@ -11,7 +11,7 @@ namespace Obsidian.WorldData;
 internal sealed class PathBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior
 {
     public IBlock? UpdateShape(
-        IBlockLevel level,
+        IShapeLevel level,
         Vector position,
         IBlock state,
         BlockFace direction,
@@ -34,7 +34,7 @@ internal sealed class PathBlockBehavior : IScheduledTickBehavior, IShapeUpdateBe
     }
 
     // Vanilla's PathBlock.canSurvive: the block above isn't solid, or is a fence gate.
-    private static bool CanSurvive(IBlockLevel level, Vector position)
+    private static bool CanSurvive(IShapeLevel level, Vector position)
     {
         var above = level.GetBlock(position + Vector.Up);
         return !above.IsSolid() || above.ClassId() == BlockClassId.FenceGateBlock;

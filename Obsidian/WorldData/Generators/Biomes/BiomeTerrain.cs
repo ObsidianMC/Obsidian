@@ -208,7 +208,6 @@ internal sealed class BiomeTerrain
         // Made once rather than for every mark.
         Func<Vector, IBlock, bool> storeWater = (point, state) =>
             fluids.SetBlock(point, state, Obsidian.API.Blocks.BlockUpdateFlags.Clients);
-        Action<Vector, IBlock, int> scheduleTick = region.ScheduleBlockTick;
 
         foreach (var position in marks.Positions)
         {
@@ -223,9 +222,8 @@ internal sealed class BiomeTerrain
                 continue;
             }
 
-            var updated = ShapeUpdater.UpdateFromNeighbourShapes(fluids.ShapeView, block, position,
-                block.BlockClass() == "MushroomBlock" ? light.MushroomBrightness(position) : region.UnlitBrightness,
-                scheduleTick);
+            // The fluid level's view gives the rules the chunk's light and schedules their ticks in the region.
+            var updated = ShapeUpdater.UpdateFromNeighbourShapes(fluids.ShapeView, block, position);
             if (!updated.IsSameState(block))
                 region.SetBlock(position, updated);
 

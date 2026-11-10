@@ -24,6 +24,7 @@ internal static class BlockSurvival
     private static readonly WorldgenTags.BlockGroup snowLayerCannotSurviveOn = WorldgenTags.Blocks("snow_layer_cannot_survive_on");
     private static readonly WorldgenTags.BlockGroup snowLayerCanSurviveOn = WorldgenTags.Blocks("snow_layer_can_survive_on");
     private static readonly WorldgenTags.BlockGroup nylium = WorldgenTags.Blocks("nylium");
+    private static readonly WorldgenTags.BlockGroup netherWartSupport = WorldgenTags.Blocks("supports_nether_wart");
 
     /// <summary>
     /// Whether <paramref name="block"/> could stay at <paramref name="position"/>, like vanilla <c>BlockState.canSurvive</c>.
@@ -38,6 +39,7 @@ internal static class BlockSurvival
         "MangrovePropaguleBlock" => MangrovePropaguleCanSurvive(block, level, position),
         "NetherFungusBlock" => FungusMayPlaceOn(Below(level, position)),
         "NetherRootsBlock" or "NetherSproutsBlock" => NetherPlantMayPlaceOn(Below(level, position)),
+        "NetherWartBlock" => netherWartSupport.Contains(Below(level, position)),
         "DoublePlantBlock" or "TallFlowerBlock" => DoublePlantCanSurvive(block, level, position, MayPlaceOnVegetation),
         "TallSeagrassBlock" => TallSeagrassCanSurvive(block, level, position),
         "SeagrassBlock" => SeagrassMayPlaceOn(Below(level, position)),

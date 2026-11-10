@@ -61,7 +61,7 @@ internal sealed partial class FireBlockBehavior : IScheduledTickBehavior, IShape
 
         // Vanilla goes on with the tick after putting out a fire that can't survive: it may still age it, which
         // places the fire again, and that placement puts it out again.
-        if (!CanSurvive(level, position))
+        if (!CanSurvive(level.AsShapeLevel(), position))
             level.RemoveBlock(position);
 
         var below = level.GetBlock(position + BlockFace.Down.ToVector());
@@ -83,10 +83,10 @@ internal sealed partial class FireBlockBehavior : IScheduledTickBehavior, IShape
 
         if (!infiniburn)
         {
-            if (!HasBurnableNeighbor(level, position))
+            if (!HasBurnableNeighbor(level.AsShapeLevel(), position))
             {
                 // Vanilla: with nothing burnable beside it, fire on a sturdy floor goes out past age 3.
-                if (!IsSturdy(level, position + BlockFace.Down.ToVector()) || age > 3)
+                if (!IsSturdy(level.AsShapeLevel(), position + BlockFace.Down.ToVector()) || age > 3)
                     level.RemoveBlock(position);
 
                 return;
@@ -116,7 +116,7 @@ internal sealed partial class FireBlockBehavior : IScheduledTickBehavior, IShape
     public void OnPlace(IBlockLevel level, Vector position, IBlock state, IBlock oldState)
     {
         var newFire = oldState.RegistryId != state.RegistryId;
-        if (newFire && !LightsPortal(level, position) && !CanSurvive(level, position))
+        if (newFire && !LightsPortal(level, position) && !CanSurvive(level.AsShapeLevel(), position))
             level.RemoveBlock(position);
 
         level.ScheduleTick(position, state, TickDelay(level.Random));
@@ -131,7 +131,7 @@ internal sealed partial class FireBlockBehavior : IScheduledTickBehavior, IShape
     /// Vanilla's <c>FireBlock.updateShape</c>: fire that can no longer survive goes out; otherwise its faces are
     /// recomputed for its neighbours.
     /// </summary>
-    public IBlock? UpdateShape(IBlockLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
+    public IBlock? UpdateShape(IShapeLevel level, Vector position, IBlock state, BlockFace direction, Vector neighborPosition, IBlock neighbor)
     {
         if (!CanSurvive(level, position))
             return BlocksRegistry.Air;
@@ -144,13 +144,13 @@ internal sealed partial class FireBlockBehavior : IScheduledTickBehavior, IShape
     /// is empty and the fire would survive there.
     /// </summary>
     internal static bool CanBePlaced(IBlockLevel level, Vector position) =>
-        level.GetBlock(position).IsAir && CanSurvive(level, position);
+        level.GetBlock(position).IsAir && CanSurvive(level.AsShapeLevel(), position);
 
     /// <summary>
     /// The state fire takes at <paramref name="position"/> (vanilla's <c>BaseFireBlock.getState</c>): soul fire on a soul
     /// fire base, otherwise fire whose faces are the neighbours it can burn.
     /// </summary>
-    internal static IBlock StateFor(IBlockLevel level, Vector position)
+    internal static IBlock StateFor(IShapeLevel level, Vector position)
     {
         var below = level.GetBlock(position + BlockFace.Down.ToVector());
         if (SoulFireBase.Contains(below))
@@ -168,20 +168,20 @@ internal sealed partial class FireBlockBehavior : IScheduledTickBehavior, IShape
     }
 
     /// <summary>The state of fire with <paramref name="age"/> at <paramref name="position"/>.</summary>
-    internal static IBlock StateFor(IBlockLevel level, Vector position, int age)
+    internal static IBlock StateFor(IShapeLevel level, Vector position, int age)
     {
         var state = StateFor(level, position);
         return state.RegistryId == BlockIds.Fire ? state.WithProperty("age", age.ToString()) : state;
     }
 
     // Vanilla's BaseFireBlock.canSurvive: a sturdy floor, or a burnable neighbour.
-    private static bool CanSurvive(IBlockLevel level, Vector position) =>
+    private static bool CanSurvive(IShapeLevel level, Vector position) =>
         IsSturdy(level, position + BlockFace.Down.ToVector()) || HasBurnableNeighbor(level, position);
 
     // Vanilla's FireBlock.getIgniteOdds(state) > 0, not counting waterlogged blocks (their odds are 0).
     private static bool IsBurnable(IBlock block) => IgniteOdds(block) > 0;
 
-    private static bool HasBurnableNeighbor(IBlockLevel level, Vector position)
+    private static bool HasBurnableNeighbor(IShapeLevel level, Vector position)
     {
         foreach (var face in Faces)
         {
@@ -192,7 +192,7 @@ internal sealed partial class FireBlockBehavior : IScheduledTickBehavior, IShape
         return false;
     }
 
-    private static bool IsSturdy(IBlockLevel level, Vector position) => level.IsFaceSturdy(position, BlockFace.Up);
+    private static bool IsSturdy(IShapeLevel level, Vector position) => level.IsFaceSturdy(position, BlockFace.Up);
 
     // Vanilla's FireBlock.getIgniteOdds(state) and getBurnOdds(state): zero for waterlogged blocks.
     private static int IgniteOdds(IBlock block) =>
@@ -228,7 +228,7 @@ internal sealed partial class FireBlockBehavior : IScheduledTickBehavior, IShape
         if (random.NextInt(age + 10) < 5 && !new MobTerrain(level.Level).IsRainingAt(position))
         {
             var newAge = Math.Min(MaxAge, age + random.NextInt(5) / 4);
-            level.SetBlock(position, StateFor(level, position, newAge), BlockUpdateFlags.All);
+            level.SetBlock(position, StateFor(level.AsShapeLevel(), position, newAge), BlockUpdateFlags.All);
         }
         else
         {
@@ -276,7 +276,7 @@ internal sealed partial class FireBlockBehavior : IScheduledTickBehavior, IShape
 
                     // The fire placed schedules its own tick (OnPlace).
                     var newAge = Math.Min(MaxAge, age + random.NextInt(5) / 4);
-                    level.SetBlock(target, StateFor(level, target, newAge), BlockUpdateFlags.All);
+                    level.SetBlock(target, StateFor(level.AsShapeLevel(), target, newAge), BlockUpdateFlags.All);
                 }
             }
         }

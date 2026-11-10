@@ -133,6 +133,12 @@ public sealed class VanillaMoreBlocks(ITestOutputHelper output)
             world.BlockNotifications.Enqueue(new BlockChange(neighbor, BlocksRegistry.Air,
                 world.BlockUpdates.GetBlock(neighbor)), BlockUpdateFlags.SkipOnPlace);
             await world.BlockNotifications.DrainAsync();
+            if (probe.GetProperty("updated").GetString() == "minecraft:air")
+            {
+                // The pipeline queues a block a shape update breaks for the level's tick, which removes it.
+                await world.DoWorldTickAsync();
+            }
+
             AssertState(probe.GetProperty("updated"), world.BlockUpdates.GetBlock(origin));
             var chunk = Assert.IsType<Chunk>(await world.GetChunkAsync(origin.X >> 4, origin.Z >> 4));
             var ticks = chunk.BlockTicks.Pack().Where(tick => tick.Position == origin)

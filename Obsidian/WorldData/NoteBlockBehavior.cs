@@ -23,7 +23,7 @@ internal sealed class NoteBlockBehavior : IBlockBehavior, IShapeUpdateBehavior
         Derive(context.Level.GetBlock, context.Position, context.Block);
 
     public IBlock? UpdateShape(
-        IBlockLevel level,
+        IShapeLevel level,
         Vector position,
         IBlock state,
         BlockFace direction,

@@ -50,7 +50,7 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IPressurePlateW
 
     IBlock? IBlockChangeWorld.UpdateShape(
         Vector position, IBlock state, BlockFace face, Vector neighborPosition, IBlock neighbor) =>
-        BlocksRegistry.GetShapeUpdateBehavior(state.RegistryId) is not null
+        ShapeDispatch.LiveOwner(state.RegistryId) is not null
             ? this.BlockUpdates.UpdateShape(position, state, face, neighborPosition, neighbor)
             : null;
 
