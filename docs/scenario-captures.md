@@ -506,12 +506,17 @@ scenarios keep what they hold.
 gives its number of `ticks` and starts with empty `checkpoints`; `CaptureCases` records only the exact names supplied,
 and the other cases keep their recordings.
 
-The 68 `contactMoves` scenarios use `Java/BlockContactFixtures.java` on a real dedicated server, with the same
+The 81 `contactMoves` scenarios use `Java/BlockContactFixtures.java` on a real dedicated server, with the same
 scratch-only block-write instrumentation as block uses. They drive native `Entity.move` and
 `applyEffectsFromBlocks` with controlled velocities: falls, stationary contacts, walking and external pushes.
 This boundary exercises native collision, fall accounting, restitution and block hooks without AI or travel forces.
 Each case has a seeded level random and each living entity an `entitySeed`; `noGravity` also controls native
 restitution's gravity compensation. Inputs may set initial `fallDistance`, equipment, effects, age and health.
+`jumpBoost` supplies an amplifier (zero for Jump Boost I), and a tick event's `removeJumpBoost` names the entity
+whose effect is removed before movement. `recordSafeFallDistance: true` also records the living entity's effective
+safe-fall-distance attribute at every checkpoint, including checkpoint zero. The review cases cover water at impact,
+water crossed before a dry landing, fluid touching only the body's edge, slime and bed support outside the centre,
+and Jump Boost I, II, a control fall and effect removal.
 
 From checkpoint zero onwards, the replay compares every recorded block, position, velocity, fall distance,
 grounded flag, health and last accepted damage type; ordered block writes with their exact flags; unexpected

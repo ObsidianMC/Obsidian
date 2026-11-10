@@ -163,6 +163,14 @@ public final class BlockContactFixtures {
                 }
             }
             var checkpoint = checkpoint(level, min, max, tick, entities);
+            if (input.has("recordSafeFallDistance")) {
+                for (var entry : entities.entrySet()) {
+                    var living = (net.minecraft.world.entity.LivingEntity)entry.getValue();
+                    checkpoint.getAsJsonObject("observations").getAsJsonObject(entry.getKey()).addProperty(
+                        "safeFallDistance", living.getAttributeValue(
+                            net.minecraft.world.entity.ai.attributes.Attributes.SAFE_FALL_DISTANCE));
+                }
+            }
             checkpoint.add("writes", writes.deepCopy());
             record(checkpoint, packets, gameEvents);
             checkpoints.add(checkpoint);
@@ -201,6 +209,10 @@ public final class BlockContactFixtures {
                 if (event.has("baby") && entity instanceof net.minecraft.world.entity.AgeableMob ageable) {
                     ageable.setAge(-24000);
                 }
+                if (event.has("jumpBoost")) {
+                    living.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                        net.minecraft.world.effect.MobEffects.JUMP_BOOST, 1000, event.get("jumpBoost").getAsInt()));
+                }
                 if (event.has("fireResistance")) {
                     living.addEffect(new net.minecraft.world.effect.MobEffectInstance(
                         net.minecraft.world.effect.MobEffects.FIRE_RESISTANCE, 1000));
@@ -223,6 +235,10 @@ public final class BlockContactFixtures {
             }
             level.addFreshEntity(entity);
             entities.put(event.get("summon").getAsString(), entity);
+        } else if (event.has("removeJumpBoost")) {
+            var living = (net.minecraft.world.entity.LivingEntity)entities.get(
+                event.get("removeJumpBoost").getAsString());
+            living.removeEffect(net.minecraft.world.effect.MobEffects.JUMP_BOOST);
         } else if (event.has("velocity")) {
             entities.get(event.get("velocity").getAsString()).setDeltaMovement(vec(event.getAsJsonArray("motion")));
         } else {

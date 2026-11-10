@@ -300,7 +300,8 @@ internal interface IFallOnBehavior
     /// <paramref name="fallDistance"/> blocks.
     /// </summary>
     ValueTask FallenOnAsync(
-        IContactLevel level, Vector position, IBlock block, Entities.Entity entity, double fallDistance);
+        IContactLevel level, Vector position, IBlock block, Entities.Entity entity,
+        double fallDistance, VectorD impactPosition);
 }
 
 /// <summary>

@@ -39191,6 +39191,2999 @@
     }
    ],
    "nextRandom": -1155484576
+  },
+  {
+   "name": "review_water_landing",
+   "contactMoves": true,
+   "seed": 1,
+   "min": [
+    0,
+    64,
+    0
+   ],
+   "max": [
+    0,
+    67,
+    0
+   ],
+   "setup": [
+    {
+     "pos": [
+      0,
+      64,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      65,
+      0
+     ],
+     "state": "minecraft:water"
+    }
+   ],
+   "entities": [
+    {
+     "tick": 0,
+     "summon": "pig",
+     "type": "minecraft:pig",
+     "pos": [
+      0.5,
+      67,
+      0.5
+     ],
+     "motion": [
+      0,
+      -3,
+      0
+     ],
+     "noGravity": false,
+     "fallDistance": 10,
+     "entitySeed": 1
+    }
+   ],
+   "ticks": 1,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:water[level=0]"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        0.5,
+        67.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        -3.0,
+        0.0
+       ],
+       "fallDistance": 10.0,
+       "onGround": false,
+       "health": 10.0,
+       "damageType": null
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": []
+    },
+    {
+     "tick": 1,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:water[level=0]"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        0.5,
+        65.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": true,
+       "health": 10.0,
+       "damageType": null
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": []
+    }
+   ],
+   "nextRandom": -1155869325
+  },
+  {
+   "name": "review_slime_edge",
+   "contactMoves": true,
+   "seed": 1,
+   "min": [
+    0,
+    64,
+    0
+   ],
+   "max": [
+    1,
+    67,
+    0
+   ],
+   "setup": [
+    {
+     "pos": [
+      0,
+      64,
+      0
+     ],
+     "state": "minecraft:slime_block"
+    }
+   ],
+   "entities": [
+    {
+     "tick": 0,
+     "summon": "pig",
+     "type": "minecraft:pig",
+     "pos": [
+      1.1,
+      67,
+      0.5
+     ],
+     "motion": [
+      0,
+      -3,
+      0
+     ],
+     "noGravity": false,
+     "fallDistance": 10,
+     "entitySeed": 1
+    }
+   ],
+   "ticks": 1,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:slime_block"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        1.1,
+        67.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        -3.0,
+        0.0
+       ],
+       "fallDistance": 10.0,
+       "onGround": false,
+       "health": 10.0,
+       "damageType": null
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": []
+    },
+    {
+     "tick": 1,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:slime_block"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        1.1,
+        65.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        3.012622261047363,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": true,
+       "health": 10.0,
+       "damageType": null
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [
+      "minecraft:hit_ground 1,1,0 minecraft:pig",
+      "minecraft:bounce 1,1,0 minecraft:pig"
+     ]
+    }
+   ],
+   "nextRandom": -1155869325
+  },
+  {
+   "name": "review_flowing_water_landing",
+   "contactMoves": true,
+   "seed": 1,
+   "min": [
+    0,
+    64,
+    0
+   ],
+   "max": [
+    0,
+    67,
+    0
+   ],
+   "setup": [
+    {
+     "pos": [
+      0,
+      64,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      65,
+      0
+     ],
+     "state": "minecraft:water[level=4]"
+    }
+   ],
+   "entities": [
+    {
+     "tick": 0,
+     "summon": "pig",
+     "type": "minecraft:pig",
+     "pos": [
+      0.5,
+      67,
+      0.5
+     ],
+     "motion": [
+      0,
+      -3,
+      0
+     ],
+     "noGravity": false,
+     "fallDistance": 10,
+     "entitySeed": 1
+    }
+   ],
+   "ticks": 1,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:water[level=4]"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        0.5,
+        67.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        -3.0,
+        0.0
+       ],
+       "fallDistance": 10.0,
+       "onGround": false,
+       "health": 10.0,
+       "damageType": null
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": []
+    },
+    {
+     "tick": 1,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:water[level=4]"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        0.5,
+        65.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": true,
+       "health": 10.0,
+       "damageType": null
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": []
+    }
+   ],
+   "nextRandom": -1155869325
+  },
+  {
+   "name": "review_water_beside_landing",
+   "contactMoves": true,
+   "seed": 1,
+   "min": [
+    0,
+    64,
+    0
+   ],
+   "max": [
+    1,
+    67,
+    0
+   ],
+   "setup": [
+    {
+     "pos": [
+      0,
+      64,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      65,
+      0
+     ],
+     "state": "minecraft:water"
+    }
+   ],
+   "entities": [
+    {
+     "tick": 0,
+     "summon": "pig",
+     "type": "minecraft:pig",
+     "pos": [
+      0.5,
+      67,
+      0.5
+     ],
+     "motion": [
+      0,
+      -3,
+      0
+     ],
+     "noGravity": false,
+     "fallDistance": 10,
+     "entitySeed": 1
+    }
+   ],
+   "ticks": 1,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:water[level=0]"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        0.5,
+        67.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        -3.0,
+        0.0
+       ],
+       "fallDistance": 10.0,
+       "onGround": false,
+       "health": 10.0,
+       "damageType": null
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": []
+    },
+    {
+     "tick": 1,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:water[level=0]"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        0.5,
+        65.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": true,
+       "health": 1.0,
+       "damageType": "minecraft:fall"
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [
+      "minecraft:entity.generic.big_fall",
+      "minecraft:block.stone.fall",
+      "minecraft:entity.pig.hurt"
+     ],
+     "soundDetails": [
+      {
+       "id": "minecraft:entity.generic.big_fall",
+       "category": "neutral",
+       "volume": 1.0,
+       "pitch": 1.0,
+       "position": [
+        0.5,
+        65.0,
+        0.5
+       ]
+      },
+      {
+       "id": "minecraft:block.stone.fall",
+       "category": "neutral",
+       "volume": 0.5,
+       "pitch": 0.75,
+       "position": [
+        0.5,
+        65.0,
+        0.5
+       ]
+      },
+      {
+       "id": "minecraft:entity.pig.hurt",
+       "category": "neutral",
+       "volume": 1.0,
+       "pitch": 1.126081,
+       "position": [
+        0.5,
+        65.0,
+        0.5
+       ]
+      }
+     ],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [
+      "minecraft:entity_damage 0,1,0 minecraft:pig",
+      "minecraft:hit_ground 0,1,0 minecraft:pig"
+     ]
+    }
+   ],
+   "nextRandom": -1155869325
+  },
+  {
+   "name": "review_water_body_edge_only",
+   "contactMoves": true,
+   "seed": 1,
+   "min": [
+    0,
+    64,
+    0
+   ],
+   "max": [
+    1,
+    67,
+    0
+   ],
+   "setup": [
+    {
+     "pos": [
+      0,
+      64,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      65,
+      0
+     ],
+     "state": "minecraft:water"
+    }
+   ],
+   "entities": [
+    {
+     "tick": 0,
+     "summon": "pig",
+     "type": "minecraft:pig",
+     "pos": [
+      0.9,
+      67,
+      0.5
+     ],
+     "motion": [
+      0,
+      -3,
+      0
+     ],
+     "noGravity": false,
+     "fallDistance": 10,
+     "entitySeed": 1
+    }
+   ],
+   "ticks": 1,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:water[level=0]"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        0.9,
+        67.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        -3.0,
+        0.0
+       ],
+       "fallDistance": 10.0,
+       "onGround": false,
+       "health": 10.0,
+       "damageType": null
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": []
+    },
+    {
+     "tick": 1,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:water[level=0]"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        0.9,
+        65.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": true,
+       "health": 10.0,
+       "damageType": null
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": []
+    }
+   ],
+   "nextRandom": -1155869325
+  },
+  {
+   "name": "review_water_short_move",
+   "contactMoves": true,
+   "seed": 1,
+   "min": [
+    0,
+    64,
+    0
+   ],
+   "max": [
+    0,
+    67,
+    0
+   ],
+   "setup": [
+    {
+     "pos": [
+      0,
+      64,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      65,
+      0
+     ],
+     "state": "minecraft:water"
+    }
+   ],
+   "entities": [
+    {
+     "tick": 0,
+     "summon": "pig",
+     "type": "minecraft:pig",
+     "pos": [
+      0.5,
+      65.5,
+      0.5
+     ],
+     "motion": [
+      0,
+      -0.75,
+      0
+     ],
+     "noGravity": false,
+     "fallDistance": 10,
+     "entitySeed": 1
+    }
+   ],
+   "ticks": 1,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:water[level=0]"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        0.5,
+        65.5,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        -0.75,
+        0.0
+       ],
+       "fallDistance": 10.0,
+       "onGround": false,
+       "health": 10.0,
+       "damageType": null
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": []
+    },
+    {
+     "tick": 1,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:water[level=0]"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        0.5,
+        65.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": true,
+       "health": 10.0,
+       "damageType": null
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": []
+    }
+   ],
+   "nextRandom": -1155869325
+  },
+  {
+   "name": "review_slime_negative_edge",
+   "contactMoves": true,
+   "seed": 1,
+   "min": [
+    -1,
+    64,
+    0
+   ],
+   "max": [
+    0,
+    67,
+    0
+   ],
+   "setup": [
+    {
+     "pos": [
+      0,
+      64,
+      0
+     ],
+     "state": "minecraft:slime_block"
+    }
+   ],
+   "entities": [
+    {
+     "tick": 0,
+     "summon": "pig",
+     "type": "minecraft:pig",
+     "pos": [
+      -0.1,
+      67,
+      0.5
+     ],
+     "motion": [
+      0,
+      -3,
+      0
+     ],
+     "noGravity": false,
+     "fallDistance": 10,
+     "entitySeed": 1
+    }
+   ],
+   "ticks": 1,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "blocks": [
+      {
+       "pos": [
+        -1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:slime_block"
+      },
+      {
+       "pos": [
+        -1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        -1,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        -1,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        -0.1,
+        67.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        -3.0,
+        0.0
+       ],
+       "fallDistance": 10.0,
+       "onGround": false,
+       "health": 10.0,
+       "damageType": null
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": []
+    },
+    {
+     "tick": 1,
+     "blocks": [
+      {
+       "pos": [
+        -1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:slime_block"
+      },
+      {
+       "pos": [
+        -1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        -1,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        -1,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        -0.1,
+        65.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        3.012622261047363,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": true,
+       "health": 10.0,
+       "damageType": null
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [
+      "minecraft:hit_ground -1,1,0 minecraft:pig",
+      "minecraft:bounce -1,1,0 minecraft:pig"
+     ]
+    }
+   ],
+   "nextRandom": -1155869325
+  },
+  {
+   "name": "review_bed_edge",
+   "contactMoves": true,
+   "seed": 1,
+   "min": [
+    0,
+    64,
+    0
+   ],
+   "max": [
+    1,
+    67,
+    0
+   ],
+   "setup": [
+    {
+     "pos": [
+      0,
+      64,
+      0
+     ],
+     "state": "minecraft:red_bed[facing=north,occupied=false,part=foot]"
+    }
+   ],
+   "entities": [
+    {
+     "tick": 0,
+     "summon": "pig",
+     "type": "minecraft:pig",
+     "pos": [
+      1.1,
+      67,
+      0.5
+     ],
+     "motion": [
+      0,
+      -3,
+      0
+     ],
+     "noGravity": false,
+     "fallDistance": 10,
+     "entitySeed": 1
+    }
+   ],
+   "ticks": 1,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:red_bed[facing=north,occupied=false,part=foot]"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        1.1,
+        67.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        -3.0,
+        0.0
+       ],
+       "fallDistance": 10.0,
+       "onGround": false,
+       "health": 10.0,
+       "damageType": null
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": []
+    },
+    {
+     "tick": 1,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:red_bed[facing=north,occupied=false,part=foot]"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        1.1,
+        64.5625,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        2.261395348124206,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": true,
+       "health": 7.0,
+       "damageType": "minecraft:fall"
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [
+      "minecraft:entity.generic.small_fall",
+      "minecraft:entity.pig.hurt"
+     ],
+     "soundDetails": [
+      {
+       "id": "minecraft:entity.generic.small_fall",
+       "category": "neutral",
+       "volume": 1.0,
+       "pitch": 1.0,
+       "position": [
+        1.0,
+        64.5,
+        0.5
+       ]
+      },
+      {
+       "id": "minecraft:entity.pig.hurt",
+       "category": "neutral",
+       "volume": 1.0,
+       "pitch": 1.126081,
+       "position": [
+        1.0,
+        64.5,
+        0.5
+       ]
+      }
+     ],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [
+      "minecraft:entity_damage 1,0,0 minecraft:pig",
+      "minecraft:hit_ground 1,0,0 minecraft:pig",
+      "minecraft:bounce 1,0,0 minecraft:pig"
+     ]
+    }
+   ],
+   "nextRandom": -1155869325
+  },
+  {
+   "name": "review_jump_boost_control",
+   "contactMoves": true,
+   "seed": 1,
+   "min": [
+    0,
+    64,
+    0
+   ],
+   "max": [
+    0,
+    70,
+    0
+   ],
+   "setup": [
+    {
+     "pos": [
+      0,
+      64,
+      0
+     ],
+     "state": "minecraft:stone"
+    }
+   ],
+   "entities": [
+    {
+     "tick": 0,
+     "summon": "pig",
+     "type": "minecraft:pig",
+     "pos": [
+      0.5,
+      69,
+      0.5
+     ],
+     "motion": [
+      0,
+      -5,
+      0
+     ],
+     "noGravity": true,
+     "fallDistance": 0,
+     "entitySeed": 1
+    }
+   ],
+   "ticks": 1,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        68,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        69,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        70,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        0.5,
+        69.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        -5.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": false,
+       "health": 10.0,
+       "damageType": null,
+       "safeFallDistance": 3.0
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": []
+    },
+    {
+     "tick": 1,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        68,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        69,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        70,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        0.5,
+        65.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": true,
+       "health": 9.0,
+       "damageType": "minecraft:fall",
+       "safeFallDistance": 3.0
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [
+      "minecraft:entity.generic.small_fall",
+      "minecraft:block.stone.fall",
+      "minecraft:entity.pig.hurt"
+     ],
+     "soundDetails": [
+      {
+       "id": "minecraft:entity.generic.small_fall",
+       "category": "neutral",
+       "volume": 1.0,
+       "pitch": 1.0,
+       "position": [
+        0.5,
+        65.0,
+        0.5
+       ]
+      },
+      {
+       "id": "minecraft:block.stone.fall",
+       "category": "neutral",
+       "volume": 0.5,
+       "pitch": 0.75,
+       "position": [
+        0.5,
+        65.0,
+        0.5
+       ]
+      },
+      {
+       "id": "minecraft:entity.pig.hurt",
+       "category": "neutral",
+       "volume": 1.0,
+       "pitch": 1.126081,
+       "position": [
+        0.5,
+        65.0,
+        0.5
+       ]
+      }
+     ],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [
+      "minecraft:entity_damage 0,1,0 minecraft:pig",
+      "minecraft:hit_ground 0,1,0 minecraft:pig"
+     ]
+    }
+   ],
+   "nextRandom": -1155869325,
+   "recordSafeFallDistance": true
+  },
+  {
+   "name": "review_jump_boost_i",
+   "contactMoves": true,
+   "seed": 1,
+   "min": [
+    0,
+    64,
+    0
+   ],
+   "max": [
+    0,
+    70,
+    0
+   ],
+   "setup": [
+    {
+     "pos": [
+      0,
+      64,
+      0
+     ],
+     "state": "minecraft:stone"
+    }
+   ],
+   "entities": [
+    {
+     "tick": 0,
+     "summon": "pig",
+     "type": "minecraft:pig",
+     "pos": [
+      0.5,
+      69,
+      0.5
+     ],
+     "motion": [
+      0,
+      -5,
+      0
+     ],
+     "noGravity": true,
+     "fallDistance": 0,
+     "entitySeed": 1,
+     "jumpBoost": 0
+    }
+   ],
+   "ticks": 1,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        68,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        69,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        70,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        0.5,
+        69.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        -5.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": false,
+       "health": 10.0,
+       "damageType": null,
+       "safeFallDistance": 4.0
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": []
+    },
+    {
+     "tick": 1,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        68,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        69,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        70,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        0.5,
+        65.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": true,
+       "health": 10.0,
+       "damageType": null,
+       "safeFallDistance": 4.0
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [
+      "minecraft:hit_ground 0,1,0 minecraft:pig"
+     ]
+    }
+   ],
+   "nextRandom": -1155869325,
+   "recordSafeFallDistance": true
+  },
+  {
+   "name": "review_jump_boost_ii",
+   "contactMoves": true,
+   "seed": 1,
+   "min": [
+    0,
+    64,
+    0
+   ],
+   "max": [
+    0,
+    70,
+    0
+   ],
+   "setup": [
+    {
+     "pos": [
+      0,
+      64,
+      0
+     ],
+     "state": "minecraft:stone"
+    }
+   ],
+   "entities": [
+    {
+     "tick": 0,
+     "summon": "pig",
+     "type": "minecraft:pig",
+     "pos": [
+      0.5,
+      70,
+      0.5
+     ],
+     "motion": [
+      0,
+      -6,
+      0
+     ],
+     "noGravity": true,
+     "fallDistance": 0,
+     "entitySeed": 1,
+     "jumpBoost": 1
+    }
+   ],
+   "ticks": 1,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        68,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        69,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        70,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        0.5,
+        70.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        -6.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": false,
+       "health": 10.0,
+       "damageType": null,
+       "safeFallDistance": 5.0
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": []
+    },
+    {
+     "tick": 1,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        68,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        69,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        70,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        0.5,
+        65.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": true,
+       "health": 10.0,
+       "damageType": null,
+       "safeFallDistance": 5.0
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [
+      "minecraft:hit_ground 0,1,0 minecraft:pig"
+     ]
+    }
+   ],
+   "nextRandom": -1155869325,
+   "recordSafeFallDistance": true
+  },
+  {
+   "name": "review_jump_boost_removed",
+   "contactMoves": true,
+   "seed": 1,
+   "min": [
+    0,
+    64,
+    0
+   ],
+   "max": [
+    0,
+    70,
+    0
+   ],
+   "setup": [
+    {
+     "pos": [
+      0,
+      64,
+      0
+     ],
+     "state": "minecraft:stone"
+    }
+   ],
+   "entities": [
+    {
+     "tick": 0,
+     "summon": "pig",
+     "type": "minecraft:pig",
+     "pos": [
+      0.5,
+      69,
+      0.5
+     ],
+     "motion": [
+      0,
+      -5,
+      0
+     ],
+     "noGravity": true,
+     "fallDistance": 0,
+     "entitySeed": 1,
+     "jumpBoost": 0
+    },
+    {
+     "tick": 1,
+     "removeJumpBoost": "pig"
+    }
+   ],
+   "ticks": 1,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        68,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        69,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        70,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        0.5,
+        69.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        -5.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": false,
+       "health": 10.0,
+       "damageType": null,
+       "safeFallDistance": 4.0
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": []
+    },
+    {
+     "tick": 1,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        68,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        69,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        70,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        0.5,
+        65.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": true,
+       "health": 9.0,
+       "damageType": "minecraft:fall",
+       "safeFallDistance": 3.0
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [
+      "minecraft:entity.generic.small_fall",
+      "minecraft:block.stone.fall",
+      "minecraft:entity.pig.hurt"
+     ],
+     "soundDetails": [
+      {
+       "id": "minecraft:entity.generic.small_fall",
+       "category": "neutral",
+       "volume": 1.0,
+       "pitch": 1.0,
+       "position": [
+        0.5,
+        65.0,
+        0.5
+       ]
+      },
+      {
+       "id": "minecraft:block.stone.fall",
+       "category": "neutral",
+       "volume": 0.5,
+       "pitch": 0.75,
+       "position": [
+        0.5,
+        65.0,
+        0.5
+       ]
+      },
+      {
+       "id": "minecraft:entity.pig.hurt",
+       "category": "neutral",
+       "volume": 1.0,
+       "pitch": 1.126081,
+       "position": [
+        0.5,
+        65.0,
+        0.5
+       ]
+      }
+     ],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [
+      "minecraft:entity_damage 0,1,0 minecraft:pig",
+      "minecraft:hit_ground 0,1,0 minecraft:pig"
+     ]
+    }
+   ],
+   "nextRandom": -1155869325,
+   "recordSafeFallDistance": true
+  },
+  {
+   "name": "review_water_crossed_before_landing",
+   "contactMoves": true,
+   "seed": 1,
+   "min": [
+    0,
+    64,
+    0
+   ],
+   "max": [
+    0,
+    67,
+    0
+   ],
+   "setup": [
+    {
+     "pos": [
+      0,
+      64,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      66,
+      0
+     ],
+     "state": "minecraft:water"
+    }
+   ],
+   "entities": [
+    {
+     "tick": 0,
+     "summon": "pig",
+     "type": "minecraft:pig",
+     "pos": [
+      0.5,
+      67,
+      0.5
+     ],
+     "motion": [
+      0,
+      -3,
+      0
+     ],
+     "noGravity": false,
+     "fallDistance": 10,
+     "entitySeed": 1
+    }
+   ],
+   "ticks": 1,
+   "checkpoints": [
+    {
+     "tick": 0,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:water[level=0]"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        0.5,
+        67.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        -3.0,
+        0.0
+       ],
+       "fallDistance": 10.0,
+       "onGround": false,
+       "health": 10.0,
+       "damageType": null
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": []
+    },
+    {
+     "tick": 1,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:water[level=0]"
+      },
+      {
+       "pos": [
+        0,
+        67,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "pig": {
+       "position": [
+        0.5,
+        65.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": true,
+       "health": 10.0,
+       "damageType": null
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [
+      "minecraft:hit_ground 0,1,0 minecraft:pig"
+     ]
+    }
+   ],
+   "nextRandom": -1155869325
   }
  ]
 }

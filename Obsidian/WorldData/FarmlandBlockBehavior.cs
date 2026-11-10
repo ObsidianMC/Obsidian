@@ -102,12 +102,18 @@ internal sealed partial class FarmlandBlockBehavior : IRandomTickBehavior, ISche
         if (level.Level is not AbstractLevel world)
             return;
 
-        world.LiftEntitiesForSurfaceRise(position, 0.9375, 1);
+        // A contact can be delayed or run outside the tick. Check, lift and store as one short mutation.
+        lock (world.Fluids.TickLock)
+        {
+            if (!level.GetBlock(position).IsSameState(block))
+                return;
 
-        level.SetBlock(position, BlocksRegistry.Dirt, BlockUpdateFlags.All);
-        world.EmitGameEvent(MobGameEvent.BlockChange, (VectorD)position + 0.5, source,
-            affectedBlock: BlocksRegistry.Dirt);
-        Log.ToDirt(world.Logger, position, Moisture(block));
+            world.LiftEntitiesForSurfaceRise(position, 0.9375, 1);
+            level.SetBlock(position, BlocksRegistry.Dirt, BlockUpdateFlags.All);
+            world.EmitGameEvent(MobGameEvent.BlockChange, (VectorD)position + 0.5, source,
+                affectedBlock: BlocksRegistry.Dirt);
+            Log.ToDirt(world.Logger, position, Moisture(block));
+        }
     }
 
     private static partial class Log

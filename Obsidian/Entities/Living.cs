@@ -82,6 +82,9 @@ public partial class Living : Entity, ILiving
 
     private readonly ConcurrentDictionary<int, EffectWithCurrentDuration> activePotionEffects;
 
+    // Serialize refreshes so a concurrent effect removal cannot leave a stale attribute modifier.
+    private readonly System.Threading.Lock potionAttributeLock = new();
+
     // A live read-only view made once: mobs read their effects several times a tick, and each AsReadOnly allocated.
     private readonly IReadOnlyDictionary<int, EffectWithCurrentDuration> activePotionEffectsView;
     private int fireTicks;
@@ -164,6 +167,8 @@ public partial class Living : Entity, ILiving
                 else
                 {
                     activePotionEffects[potion] = new() { EffectData = hidden, CurrentDuration = hidden.Duration };
+                    if (potion == (int)PotionEffect.JumpBoost - 1)
+                        this.RefreshJumpBoostFallProtection();
                     if (this is Mob && potion == (int)PotionEffect.Absorption - 1)
                         AbsorptionHealth = Math.Min(AbsorptionHealth, 4 * (hidden.Amplifier + 1));
                     SendPotionEffect(hidden);
@@ -198,6 +203,25 @@ public partial class Living : Entity, ILiving
         }
     }
 
+    private void RefreshJumpBoostFallProtection()
+    {
+        const string attribute = "minecraft:safe_fall_distance";
+        const string modifierId = "minecraft:effect.jump_boost";
+        lock (this.potionAttributeLock)
+        {
+            if (this.activePotionEffects.TryGetValue((int)PotionEffect.JumpBoost - 1, out var jump))
+            {
+                var modifier = new EntityAttributeModifier(
+                    modifierId, jump.EffectData.Amplifier + 1, AttributeOperation.Add);
+                this.SetModifier(attribute, modifier);
+            }
+            else
+            {
+                this.RemoveModifier(attribute, modifierId);
+            }
+        }
+    }
+
     public bool HasPotionEffect(int effectId) => activePotionEffects.ContainsKey(effectId);
 
     internal void RestorePotionEffect(int id, int duration, int amplifier)
@@ -209,6 +233,8 @@ public partial class Living : Entity, ILiving
                 CurrentDuration = duration,
                 EffectData = new() { Id = id, Duration = duration, Amplifier = amplifier }
             };
+            if (id == (int)PotionEffect.JumpBoost - 1)
+                this.RefreshJumpBoostFallProtection();
         }
     }
 
@@ -250,6 +276,9 @@ public partial class Living : Entity, ILiving
             var merged = MergeEffect(current.EffectData with { Duration = current.CurrentDuration }, data.EffectData);
             return new() { EffectData = merged, CurrentDuration = merged.Duration };
         });
+        if (effectId == (int)PotionEffect.JumpBoost - 1)
+            this.RefreshJumpBoostFallProtection();
+
         if (this is Mob && effectId == (int)PotionEffect.Absorption - 1)
             AbsorptionHealth = Math.Min(4 * (updated.EffectData.Amplifier + 1), Math.Max(AbsorptionHealth, 4 * (amplifier + 1)));
         SendPotionEffect(updated.EffectData with { Duration = updated.CurrentDuration });
@@ -283,6 +312,8 @@ public partial class Living : Entity, ILiving
     {
         this.PacketBroadcaster.QueuePacketToLevel(this.Level, new RemoveMobEffectPacket(EntityId, effectId));
         activePotionEffects.TryRemove(effectId, out _);
+        if (effectId == (int)PotionEffect.JumpBoost - 1)
+            this.RefreshJumpBoostFallProtection();
         if (this is Mob && effectId == (int)PotionEffect.Absorption - 1)
             AbsorptionHealth = 0;
     }

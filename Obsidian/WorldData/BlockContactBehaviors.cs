@@ -27,7 +27,8 @@ internal sealed class MagmaContactBehavior : IStepOnBehavior
 internal sealed class FarmlandContactBehavior : IFallOnBehavior
 {
     public ValueTask FallenOnAsync(
-        IContactLevel level, Vector position, IBlock block, Entity entity, double fallDistance)
+        IContactLevel level, Vector position, IBlock block, Entity entity,
+        double fallDistance, VectorD impactPosition)
     {
         // Vanilla draws before checking the entity's kind, griefing permission or volume.
         var chance = level.Blocks.Random.NextFloat();
@@ -39,20 +40,21 @@ internal sealed class FarmlandContactBehavior : IFallOnBehavior
             FarmlandBlockBehavior.TurnToDirt(level.Blocks, position, block, entity);
         }
 
-        return entity.CauseContactFallAsync(fallDistance);
+        return entity.CauseContactFallAsync(fallDistance, impact: impactPosition);
     }
 }
 
 internal sealed class TurtleEggContactBehavior : IFallOnBehavior, IStepOnBehavior
 {
     public ValueTask FallenOnAsync(
-        IContactLevel level, Vector position, IBlock block, Entity entity, double fallDistance)
+        IContactLevel level, Vector position, IBlock block, Entity entity,
+        double fallDistance, VectorD impactPosition)
     {
         // All Zombie subclasses, including zombie villagers and zombified piglins, skip the fall draw.
         if (entity is not Zombie)
             TryBreak(level, position, block, entity, 3);
 
-        return entity.CauseContactFallAsync(fallDistance);
+        return entity.CauseContactFallAsync(fallDistance, impact: impactPosition);
     }
 
     public ValueTask SteppedOnAsync(IContactLevel level, Vector position, IBlock block, Entity entity)
@@ -98,11 +100,12 @@ internal sealed class SoftLandingBehavior(float multiplier, bool honey = false, 
     : IFallOnBehavior
 {
     public async ValueTask FallenOnAsync(
-        IContactLevel level, Vector position, IBlock block, Entity entity, double fallDistance)
+        IContactLevel level, Vector position, IBlock block, Entity entity,
+        double fallDistance, VectorD impactPosition)
     {
         if (honey && level.Level is AbstractLevel world)
         {
-            LevelSounds.Play(world, entity.Position, "minecraft:block.honey_block.slide", SoundCategory.Neutral);
+            LevelSounds.Play(world, impactPosition, "minecraft:block.honey_block.slide", SoundCategory.Neutral);
             entity.PacketBroadcaster.QueuePacketToLevelInRange(world, entity.Position,
                 new Net.Packets.Play.Clientbound.EntityEventPacket { EntityId = entity.EntityId, Event = 54 });
         }
@@ -112,13 +115,13 @@ internal sealed class SoftLandingBehavior(float multiplier, bool honey = false, 
             return;
 
         var distance = fallDistance * distanceScale;
-        await entity.CauseContactFallAsync(distance, multiplier);
+        await entity.CauseContactFallAsync(distance, multiplier, impactPosition);
         if (honey && entity is Living living && living.ContactFallDamageAmount(distance, multiplier) > 0
             && level.Level is AbstractLevel honeyLevel)
         {
             var sounds = BlockSoundsRegistry.Get(block.GetHashCode());
             var category = entity is Mob mob ? mob.ContactSoundCategory : SoundCategory.Neutral;
-            LevelSounds.Play(honeyLevel, entity.Position, sounds.Fall.ResourceLocation, category,
+            LevelSounds.Play(honeyLevel, impactPosition, sounds.Fall.ResourceLocation, category,
                 sounds.Volume * 0.5f, sounds.Pitch * 0.75f);
         }
     }

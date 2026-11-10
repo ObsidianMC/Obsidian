@@ -31,7 +31,13 @@ public partial class VanillaBlockContact
             var max = ReadVector(scenario.GetProperty("max"));
             const BlockUpdateFlags quiet = BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace;
             for (var y = min.Y; y <= max.Y; y++)
-                world.BlockUpdates.SetBlock(new Vector(min.X, y, min.Z), BlocksRegistry.Air, quiet);
+            {
+                for (var z = min.Z; z <= max.Z; z++)
+                {
+                    for (var x = min.X; x <= max.X; x++)
+                        world.BlockUpdates.SetBlock(new Vector(x, y, z), BlocksRegistry.Air, quiet);
+                }
+            }
 
             foreach (var placement in scenario.GetProperty("setup").EnumerateArray())
             {
@@ -63,6 +69,13 @@ public partial class VanillaBlockContact
                     {
                         if (entry.GetProperty("tick").GetInt32() != tick)
                             continue;
+
+                        if (entry.TryGetProperty("removeJumpBoost", out var effectTarget))
+                        {
+                            ((Living)entities[effectTarget.GetString()!])
+                                .RemovePotionEffect((int)PotionEffect.JumpBoost - 1);
+                            continue;
+                        }
 
                         if (entry.TryGetProperty("velocity", out var tag))
                         {
@@ -124,6 +137,9 @@ public partial class VanillaBlockContact
                 if (entry.TryGetProperty("baby", out _) && mob is Animal animal)
                     animal.Age = -24000;
 
+                if (entry.TryGetProperty("jumpBoost", out var jumpBoost))
+                    mob.AddPotionEffect((int)PotionEffect.JumpBoost - 1, 1000, jumpBoost.GetInt32());
+
                 if (entry.TryGetProperty("fireResistance", out _))
                     mob.AddPotionEffect((int)PotionEffect.FireResistance - 1, 1000);
 
@@ -171,6 +187,11 @@ public partial class VanillaBlockContact
                 if (entity is Living living)
                 {
                     CompareNumber("health", expected.GetProperty("health").GetDouble(), living.Health);
+                    if (expected.TryGetProperty("safeFallDistance", out var safe))
+                    {
+                        CompareNumber("safe fall distance", safe.GetDouble(),
+                            living.GetAttributeValue("minecraft:safe_fall_distance"));
+                    }
                     var damageType = living.LastDamageKind switch
                     {
                         null => null,

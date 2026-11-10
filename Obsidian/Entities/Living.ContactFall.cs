@@ -4,7 +4,8 @@ namespace Obsidian.Entities;
 
 public partial class Living
 {
-    internal override async ValueTask CauseContactFallAsync(double distance, float multiplier = 1)
+    internal override async ValueTask CauseContactFallAsync(
+        double distance, float multiplier = 1, VectorD? impact = null)
     {
         if (this is Mob mob && !mob.ContactFallDamage)
             return;
@@ -19,15 +20,16 @@ public partial class Living
 
         if (this.Level is AbstractLevel world)
         {
+            var at = impact ?? this.Position;
             var category = this is Mob withSound ? withSound.ContactSoundCategory : SoundCategory.Players;
             var sound = damage > 4 ? "big_fall" : "small_fall";
-            LevelSounds.Play(world, this.Position, $"minecraft:entity.generic.{sound}", category);
-            var below = (Vector)(this.Position - new VectorD(0, 0.2, 0)).Floor();
+            LevelSounds.Play(world, at, $"minecraft:entity.generic.{sound}", category);
+            var below = (Vector)(at - new VectorD(0, 0.2, 0)).Floor();
             var block = world.BlockUpdates.GetBlock(below);
             if (!block.IsAir)
             {
                 var sounds = BlockSoundsRegistry.Get(block.GetHashCode());
-                LevelSounds.Play(world, this.Position, sounds.Fall.ResourceLocation, category,
+                LevelSounds.Play(world, at, sounds.Fall.ResourceLocation, category,
                     sounds.Volume * 0.5f, sounds.Pitch * 0.75f);
             }
         }
@@ -55,7 +57,8 @@ public partial class Mob
 
     internal float ContactSafeFallDistance => this.SafeFallDistance;
 
-    internal override ValueTask CauseContactFallAsync(double distance, float multiplier = 1)
+    internal override ValueTask CauseContactFallAsync(
+        double distance, float multiplier = 1, VectorD? impact = null)
     {
         if (this is Creeper creeper && distance > 0)
         {
@@ -63,7 +66,7 @@ public partial class Mob
             creeper.FuseTicks = Math.Max(0, Math.Min(creeper.Fuse - 5, creeper.FuseTicks + increase));
         }
 
-        return base.CauseContactFallAsync(distance, multiplier);
+        return base.CauseContactFallAsync(distance, multiplier, impact);
     }
 
     internal override double ContactFallDistance

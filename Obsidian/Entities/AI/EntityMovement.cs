@@ -80,17 +80,37 @@ internal static class EntityMovement
         var onGround = hitY && velocity.Y < 0;
         entity.MovementFlags = (onGround ? MovementFlags.OnGround : MovementFlags.None)
             | (hitX || hitZ ? MovementFlags.HorizontalCollision : MovementFlags.None);
-        entity.TrackContactFall(displacement.Y, onGround);
-
         var next = entity.Position + displacement;
+        var effectiveGravity = entity.NoGravity ? 0 : gravity;
+        (Vector, IBlock)? support = null;
+        var needsSupport = onGround && (entity.ContactFallDistance > 0 || displacement.Y < 0
+            || !entity.Sneaking && -velocity.Y > effectiveGravity);
+        if (needsSupport && entity.Level is WorldData.IContactLevel contactLevel)
+            support = WorldData.EntityContactPass.SupportAt(contactLevel, entity, next);
+
+        if (entity.ContactFallDistance > 0 && displacement.MagnitudeSquared() >= 1
+            && CrossesFallResetSurface(terrain, entity.Position, displacement))
+        {
+            entity.ResetFallDistance();
+        }
+
+        // LivingEntity refreshes fluid interaction at the resolved position before checking its fall.
+        if (entity is Living && terrain.ContainsFluid(bounds.OffsetBy(displacement), water: true))
+        {
+            entity.ResetFallDistance();
+        }
+        else
+        {
+            entity.TrackContactFall(displacement.Y, onGround, next, support);
+        }
         var motionY = velocity.Y;
         if (hitY)
         {
             motionY = 0;
-            var effectiveGravity = entity.NoGravity ? 0 : gravity;
             if (onGround && !entity.Sneaking && -velocity.Y > effectiveGravity)
             {
-                var floor = terrain.GetBlock((Vector)(next - new VectorD(0, 0.2, 0)).Floor());
+                var floor = support?.Item2
+                    ?? terrain.GetBlock((Vector)(next - new VectorD(0, 0.2, 0)).Floor());
                 var restitution = floor?.RegistryId == BlockIds.SlimeBlock ? 1f : 0f;
                 if (floor is not null && TagsRegistry.Block.Beds.Entries.Contains(floor.RegistryId))
                     restitution = 0.75f;
@@ -111,6 +131,37 @@ internal static class EntityMovement
 
         entity.Motion = new VectorD(hitX ? 0 : velocity.X, motionY, hitZ ? 0 : velocity.Z);
         return next;
+    }
+
+    // Vanilla clips the feet's segment, capped at eight blocks, against resetting blocks and water.
+    private static bool CrossesFallResetSurface(MobTerrain terrain, VectorD start, VectorD displacement)
+    {
+        var length = displacement.Magnitude;
+        var end = start + displacement * (Math.Min(length, 8) / length);
+        var direction = end - start;
+        foreach (var cell in MobTerrain.CellsAlong(start, end))
+        {
+            if (terrain.GetBlock(cell) is not IBlock state)
+                continue;
+
+            var height = 1d;
+            if (!TagsRegistry.Block.FallDamageResetting.Entries.Contains(state.RegistryId))
+            {
+                var fluid = WorldData.Fluids.FluidState.Of(state);
+                if (!fluid.IsWater)
+                    continue;
+
+                var above = terrain.GetBlock(cell + Vector.Up);
+                height = above is not null && WorldData.Fluids.FluidState.Of(above).IsWater
+                    ? 1 : fluid.OwnHeight;
+            }
+
+            var surface = new BoundingBox((VectorD)cell, (VectorD)cell + new VectorD(1, height, 1));
+            if (MobTerrain.RayIntersection(surface, start, direction) is not null)
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>
