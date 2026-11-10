@@ -172,6 +172,21 @@ public partial class Entity
                 continue;
 
             var position = this.Position + this.PassengerOffset(index);
+            var generation = this switch
+            {
+                Boat boat when passenger is IPlayer rider => boat.ClientControl.AcceptedGeneration(rider),
+                PluginMob mob when passenger is IPlayer rider => mob.ClientControl.AcceptedGeneration(rider),
+                _ => null
+            };
+            if (passenger is PlayerBase player && generation is long clientMove)
+            {
+                if (!player.PositionFromClientVehicle(this, position, clientMove))
+                    passenger.LeaveVehicle();
+
+                passenger.PositionPassengers();
+                continue;
+            }
+
             if (this.Level is AbstractLevel level && !level.TryMoveEntity(passenger, passenger.Position, position))
             {
                 passenger.LeaveVehicle();

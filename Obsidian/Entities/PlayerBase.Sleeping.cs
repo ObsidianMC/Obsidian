@@ -110,6 +110,7 @@ public partial class PlayerBase
         this.BedBlockPosition = null;
         this.Pose = Pose.Standing;
 
+        var position = this.Position;
         if (head is Vector bed && this.Level is AbstractLevel level)
         {
             var block = await level.GetBlockAsync(bed);
@@ -117,14 +118,12 @@ public partial class PlayerBase
             {
                 var towardsHead = BedFacing(block.GetProperty("facing"));
                 await SetBedOccupiedAsync(level, bed, towardsHead, false);
-                this.Position = await StandUpPositionAsync(level, bed, towardsHead) ?? (VectorD)bed + new VectorD(0.5, 0.5625, 0.5);
+                position = await StandUpPositionAsync(level, bed, towardsHead) ?? (VectorD)bed + new VectorD(0.5, 0.5625, 0.5);
             }
             else
             {
-                this.Position = (VectorD)bed + new VectorD(0.5, 0.1, 0.5);
+                position = (VectorD)bed + new VectorD(0.5, 0.1, 0.5);
             }
-
-            this.BoundingBox = this.Dimension.CreateBBFromPosition(this.Position);
         }
 
         this.PacketBroadcaster.QueuePacketToLevel(this.Level, new AnimatePacket
@@ -133,16 +132,7 @@ public partial class PlayerBase
             Animation = EntityAnimationType.WakeUp
         });
         this.SyncFoodMetadata();
-
-        await this.QueuePacketAsync(new PlayerPositionPacket
-        {
-            Position = this.Position,
-            Yaw = this.Yaw,
-            Pitch = this.Pitch,
-            Delta = VectorD.Zero,
-            Flags = 0,
-            TeleportId = this.TeleportId = Globals.Random.Next(0, 999)
-        });
+        await this.SendPositionAsync(VectorD.Zero, position: position);
     }
 
     /// <summary>

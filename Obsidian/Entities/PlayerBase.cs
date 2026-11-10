@@ -55,7 +55,6 @@ public abstract partial class PlayerBase : Avatar, IPlayer
     public bool IsDragging { get; set; }
     public DraggingState DragStart { get; set; }
     public List<short> DraggedSlots { get; set; } = [];
-    public int TeleportId { get; set; }
 
     // <summary>
     /// Which chunks the player should have loaded around them.
@@ -578,10 +577,12 @@ public abstract partial class PlayerBase : Avatar, IPlayer
             from = this.Position;
             fromYaw = this.Yaw;
             fromPitch = this.Pitch;
+            this.HoldClientMovement();
             riders = this.MoveWithinLevel(level, pos, yaw, pitch);
         }
         catch
         {
+            this.ReleaseClientMovement();
             this.chunkUpdates.Release();
             throw;
         }
@@ -592,19 +593,11 @@ public abstract partial class PlayerBase : Avatar, IPlayer
             {
                 await this.UpdateChunksUnderLockAsync(unloadAll: false);
 
-                var tid = Globals.Random.Next(0, 999);
-                await this.QueuePacketAsync(new PlayerPositionPacket
-                {
-                    Position = pos,
-                    Delta = Motion,
-                    Yaw = Yaw,
-                    Pitch = Pitch,
-                    TeleportId = tid
-                });
-                TeleportId = tid;
+                await this.SendPositionAsync(this.Motion);
             }
             finally
             {
+                this.ReleaseClientMovement();
                 this.chunkUpdates.Release();
             }
         }
@@ -944,6 +937,8 @@ public abstract partial class PlayerBase : Avatar, IPlayer
             this.respawnFinished = new(TaskCreationOptions.RunContinuationsAsynchronously);
         }
 
+        this.HoldClientMovement();
+
         // A dead player is held from ticking (see Entity.TryClaimTick) from just before it leaves where it died until
         // the respawn is over, as a level change's player is.
         var holding = false;
@@ -1019,19 +1014,10 @@ public abstract partial class PlayerBase : Avatar, IPlayer
             if (levelChange)
                 await this.QueuePacketAsync(ChangeDifficultyPacket.Of(Level.LevelData));
 
-            TeleportId = 0;
-
             await this.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
-            await this.QueuePacketAsync(new PlayerPositionPacket
-            {
-                Position = Position,
-                Yaw = Yaw,
-                Pitch = Pitch,
-                Delta = this.preservePortalMotion ? VectorD.Zero : Motion,
-                Flags = 0,
-                RelativeFlags = this.preservePortalMotion ? NetherPortalRelativeFlags : 0,
-                TeleportId = 0
-            });
+            await this.SendPositionAsync(
+                this.preservePortalMotion ? VectorD.Zero : this.Motion,
+                this.preservePortalMotion ? NetherPortalRelativeFlags : 0);
 
             pendingRespawnChunks = !await this.UpdateChunksUnderLockAsync(true);
             respawnChunkRetryTicks = 20;
@@ -1056,6 +1042,8 @@ public abstract partial class PlayerBase : Avatar, IPlayer
             // Last, so that no level ticks the player before its respawn is over.
             if (holding)
                 this.EndTravelHold();
+
+            this.ReleaseClientMovement();
         }
 
         return true;
@@ -1269,48 +1257,6 @@ public abstract partial class PlayerBase : Avatar, IPlayer
     }
 
     public override string ToString() => Username;
-
-    public async override ValueTask UpdateAsync(VectorD position, MovementFlags movementFlags)
-    {
-        if (!Alive || Respawning) return;
-        if (!double.IsFinite(position.X) || !double.IsFinite(position.Y) || !double.IsFinite(position.Z)) return;
-        if (Vehicle != null)
-            position = Position;
-        var oldPosition = Position;
-        var oldMovementFlags = MovementFlags;
-        await base.UpdateAsync(position, movementFlags);
-        this.PositionPassengers();
-        this.RecordProgressMovement(oldPosition, oldMovementFlags);
-        await UpdateFallAsync(oldPosition, movementFlags);
-        if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);
-
-        await TrySpawnPlayerAsync(position);
-    }
-
-    public async override ValueTask UpdateAsync(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags)
-    {
-        if (!Alive || Respawning) return;
-        if (!double.IsFinite(position.X) || !double.IsFinite(position.Y) || !double.IsFinite(position.Z)) return;
-        if (Vehicle != null)
-            position = Position;
-        var oldPosition = Position;
-        var oldMovementFlags = MovementFlags;
-        await base.UpdateAsync(position, yaw, pitch, movementFlags);
-        this.PositionPassengers();
-        this.RecordProgressMovement(oldPosition, oldMovementFlags);
-        await UpdateFallAsync(oldPosition, movementFlags);
-        if (Level is AbstractLevel events) await events.EmitMovementGameEventsAsync(this, oldPosition, oldMovementFlags);
-
-        await TrySpawnPlayerAsync(position);
-    }
-
-    public async override ValueTask UpdateAsync(Angle yaw, Angle pitch, MovementFlags movementFlags)
-    {
-        if (!Alive || Respawning) return;
-        await base.UpdateAsync(yaw, pitch, movementFlags);
-        MovementFlags = movementFlags;
-        await UpdateFallAsync(Position, movementFlags);
-    }
 
     /// <summary>
     /// Updates the chunks the player's client has around them (see <see cref="Player"/>). A player without a client has

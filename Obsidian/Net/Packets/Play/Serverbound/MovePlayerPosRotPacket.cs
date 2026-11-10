@@ -1,5 +1,4 @@
-﻿using Obsidian.Entities;
-using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
@@ -26,15 +25,6 @@ public partial class MovePlayerPosRotPacket
         this.MovementFlags = reader.ReadSignedByte<MovementFlags>();
     }
 
-    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
-    {
-        // The first time we get this packet, it doesn't make sense so we should ignore it.
-        if (player.LastPosition == Vector.Zero) { return; }
-
-        await player.UpdateAsync(Position, Yaw, Pitch, this.MovementFlags);
-        if (player.Position.ToChunkCoord() != player.LastPosition.ToChunkCoord())
-            await player.UpdateChunksAsync();
-
-        player.LastPosition = player.Position;
-    }
+    public override ValueTask HandleAsync(IServer server, IClientPlayer player) =>
+        ((PlayerBase)player).HandleClientMovementAsync(this.Position, this.Yaw, this.Pitch, this.MovementFlags);
 }

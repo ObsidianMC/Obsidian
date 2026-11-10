@@ -36,13 +36,19 @@ internal sealed class ClientVehicleControl
     private const double WronglySquared = 0.0625;
     private const int FloatingTicks = 80;
 
-    private readonly ConcurrentQueue<(IPlayer Sender, VehicleMove Move)> moves = new();
+    private sealed record QueuedMove(IPlayer Sender, VehicleMove Move, long? Generation)
+    {
+        internal bool CanApply => this.Sender is not PlayerBase player
+            || this.Generation is long generation && player.CanApplyVehicleMovement(generation);
+    }
+
+    private readonly ConcurrentQueue<QueuedMove> moves = new();
 
     // The rider whose client moves the mob, from its first move.
     private IPlayer? controller;
 
     // Where the last move the server took put the mob this tick, which the mob travels to.
-    private VehicleMove? accepted;
+    private QueuedMove? accepted;
 
     // Server collision support, kept separately from the client's on-ground flag.
     private bool collisionBelow;
@@ -64,7 +70,11 @@ internal sealed class ClientVehicleControl
     /// <summary>
     /// Queues a move a client sent, from any thread.
     /// </summary>
-    public void Enqueue(IPlayer sender, VehicleMove move) => this.moves.Enqueue((sender, move));
+    public void Enqueue(IPlayer sender, VehicleMove move)
+    {
+        var generation = sender is PlayerBase player ? player.CaptureMovementGeneration() : (long?)null;
+        this.moves.Enqueue(new(sender, move, generation));
+    }
 
     /// <summary>
     /// Checks the moves <paramref name="rider"/>'s client sent since the last tick, on the mob's tick before it
@@ -90,7 +100,7 @@ internal sealed class ClientVehicleControl
 
         while (this.moves.TryDequeue(out var queued))
         {
-            if (rider is null || !ReferenceEquals(queued.Sender, rider))
+            if (rider is null || !ReferenceEquals(queued.Sender, rider) || !queued.CanApply)
                 continue;
 
             this.controller = rider;
@@ -109,7 +119,7 @@ internal sealed class ClientVehicleControl
 
             position = queued.Move.Position;
             onGround = queued.Move.OnGround;
-            this.accepted = queued.Move;
+            this.accepted = queued;
         }
 
         if (this.controller is null)
@@ -123,7 +133,12 @@ internal sealed class ClientVehicleControl
     /// Where the moves taken this tick put the mob, if any were: the mob goes there instead of travelling, takes the
     /// move's rotation, and stands on the ground if the client says so.
     /// </summary>
-    public VehicleMove? Accepted => this.accepted;
+    public VehicleMove? Accepted => this.accepted is { CanApply: true } accepted ? accepted.Move : null;
+
+    // Retain the generation even after it becomes invalid: the end of a vehicle tick must not carry a rider back
+    // after a teleport that overtook the move, including one that has already been confirmed.
+    internal long? AcceptedGeneration(IPlayer rider) => this.accepted is QueuedMove move
+        && ReferenceEquals(move.Sender, rider) ? move.Generation : null;
 
     private void Reset(IPlayer? rider)
     {

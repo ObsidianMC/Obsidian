@@ -8,7 +8,7 @@ namespace Obsidian.Net.Packets.Play.Serverbound;
 /// </summary>
 public partial class AcceptTeleportationPacket
 {
-    // Kept in the player's TeleportId once a teleport is confirmed. Obsidian's ids are never negative.
+    // Compatibility value exposed by IPlayer.TeleportId when no destination is pending.
     internal const int NoTeleportAwaited = -1;
 
     public int TeleportId { get; private set; }
@@ -27,29 +27,6 @@ public partial class AcceptTeleportationPacket
         this.Pitch = reader.ReadSingle();
     }
 
-    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
-    {
-        // Like vanilla's handleAcceptTeleportPacket, a confirmation of an older teleport is ignored.
-        if (this.TeleportId != player.TeleportId)
-            return;
-
-        // A confirmation when no teleport is awaited, or with a position that isn't a number, disconnects.
-        if (this.TeleportId == NoTeleportAwaited || double.IsNaN(this.Position.X) || double.IsNaN(this.Position.Y) ||
-            double.IsNaN(this.Position.Z) || !float.IsFinite(this.Yaw) || !float.IsFinite(this.Pitch))
-        {
-            await player.KickAsync(new ChatMessage { Translate = "multiplayer.disconnect.invalid_player_movement" });
-            return;
-        }
-
-        player.TeleportId = NoTeleportAwaited;
-
-        // The server already put the player at the teleport's destination; the client's report then goes through
-        // like any move, as vanilla does with handlePlayerPositionChange, neither on the ground nor against a wall.
-        var flags = player.MovementFlags & ~(MovementFlags.OnGround | MovementFlags.HorizontalCollision);
-        await player.UpdateAsync(this.Position, this.Yaw, this.Pitch, flags);
-        if (player.Position.ToChunkCoord() != player.LastPosition.ToChunkCoord())
-            await player.UpdateChunksAsync();
-
-        player.LastPosition = player.Position;
-    }
+    public override ValueTask HandleAsync(IServer server, IClientPlayer player) =>
+        ((PlayerBase)player).ConfirmTeleportAsync(this.TeleportId, this.Position, this.Yaw, this.Pitch);
 }

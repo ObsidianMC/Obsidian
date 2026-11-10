@@ -1,4 +1,4 @@
-﻿using Obsidian.Entities;
+using Obsidian.Entities;
 using Obsidian.Serialization.Attributes;
 
 namespace Obsidian.Net.Packets.Play.Serverbound;
@@ -21,8 +21,6 @@ public partial class MovePlayerRotPacket
         this.MovementFlags = reader.ReadSignedByte<MovementFlags>();
     }
 
-    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
-    {
-        await player.UpdateAsync(Yaw, Pitch, this.MovementFlags);
-    }
+    public override ValueTask HandleAsync(IServer server, IClientPlayer player) =>
+        ((PlayerBase)player).HandleClientMovementAsync(null, this.Yaw, this.Pitch, this.MovementFlags);
 }

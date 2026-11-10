@@ -81,18 +81,7 @@ public sealed partial class FinishConfigurationPacket
         await player.UpdatePlayerInfoAsync();
         await player.SendPlayerInfoAsync();
 
-        // Like a teleport (Player.TeleportAsync), the join position is where the player was last, so the movement
-        // handlers don't take the player's first movement for a meaningless one and drop every later one.
-        player.LastPosition = player.Position;
-        player.TeleportId = Globals.Random.Next(0, 999);
-        await client.QueuePacketAsync(new PlayerPositionPacket
-        {
-            Position = player.Position,
-            Yaw = player.Yaw,
-            Pitch = player.Pitch,
-            Flags = 0,
-            TeleportId = player.TeleportId
-        });
+        await joined.SendPositionAsync(VectorD.Zero);
 
         await client.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
         // Obsidian has no post effects of its own; like vanilla, a joining player starts with none.

@@ -12,6 +12,9 @@ using Obsidian.Commands.Framework;
 using Obsidian.Entities;
 using Obsidian.Events;
 using Obsidian.Hosting;
+using Obsidian.Net;
+using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Services;
 using Obsidian.Utilities.Mojang;
 using Obsidian.WorldData;
@@ -79,6 +82,23 @@ internal sealed class TestClient(IServer server, bool connected = true) : IClien
         ValueTask.FromResult(false);
 
     public void ClearPackets() => this.packets.Clear();
+
+    // A 26.3 client confirms with its resolved position and rotation, not just the id. Tests can hold an older
+    // packet to simulate a delayed confirmation, or omit it to confirm the latest one received.
+    public ValueTask ConfirmTeleportAsync(PlayerPositionPacket? teleport = null, VectorD? position = null)
+    {
+        teleport ??= this.packets.OfType<PlayerPositionPacket>().Last();
+        using var buffer = new NetworkBuffer();
+        buffer.WriteVarInt(teleport.TeleportId);
+        VectorD.Write(position ?? teleport.Position, buffer);
+        buffer.WriteSingle(teleport.Yaw);
+        buffer.WriteSingle(teleport.Pitch);
+        buffer.Offset = 0;
+
+        var confirmation = new AcceptTeleportationPacket();
+        confirmation.Populate(buffer);
+        return confirmation.HandleAsync(this.Server, (IClientPlayer)this.Player!);
+    }
 
     public void Dispose() => this.Connected = false;
 }
@@ -308,6 +328,8 @@ internal static class TestServerFactory
         };
 
         typeof(Server).GetProperty(nameof(Server.Connections))!.SetValue(server, new ConcurrentDictionary<int, IClient>());
+        typeof(Server).GetProperty(nameof(Server.ScoreboardManager))!
+            .SetValue(server, new ScoreboardManager(server, loggerFactory));
 
         broadcaster.Server = server;
         eventDispatcher.RegisterEvents();
@@ -349,6 +371,9 @@ internal static class TestServerFactory
         await player.UpdatePlayerInfoAsync();
         await player.SendPlayerInfoAsync();
         await server.EventDispatcher.ExecuteEventAsync(new Obsidian.API.Events.PlayerJoinEventArgs(player, server, DateTimeOffset.UtcNow));
+
+        if (player.HasPendingTeleport)
+            await ((TestClient)player.Client).ConfirmTeleportAsync();
 
         // A real client reports its position right after joining, which is when it starts seeing the players around it.
         await player.UpdateAsync(player.Position, MovementFlags.OnGround);

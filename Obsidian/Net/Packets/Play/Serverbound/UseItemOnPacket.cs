@@ -71,7 +71,7 @@ public partial class UseItemOnPacket
         // Acknowledgements belong to received sequences, not to completions that may be deferred.
         user.QueueBlockAcknowledgement(this.Sequence);
 
-        if (!user.Alive || user.Respawning)
+        if (!user.Alive || user.Respawning || user.HasPendingTeleport)
         {
             await this.RefuseAsync(user, level);
             return null;
@@ -82,7 +82,7 @@ public partial class UseItemOnPacket
         var block = this.InReach(user) && !level.IsOutsideBuildHeight(this.Position.Y)
             ? await level.GetBlockAsync(this.Position)
             : null;
-        if (block is null || !user.Alive || user.Respawning)
+        if (block is null || !user.Alive || user.Respawning || user.HasPendingTeleport)
         {
             await this.RefuseAsync(user, level);
             return null;
