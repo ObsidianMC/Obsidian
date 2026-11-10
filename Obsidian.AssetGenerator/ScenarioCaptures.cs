@@ -41,6 +41,9 @@ internal static class ScenarioCaptures
     public const string FurnaceResults = "furnace_results";
     public const string Brushing = "brushing";
     public const string ArmorStandUse = "armor_stand_use";
+    public const string Shelves = "shelves";
+    public const string StrawBeds = "straw_beds";
+    public const string GoldenDandelions = "golden_dandelions";
 
     public const string MeltingWeather = "melting_weather";
 
@@ -72,13 +75,14 @@ internal static class ScenarioCaptures
     // The fixtures whose probes record only the cases asked for.
     private static readonly string[] SelectableCases =
         [Redstone, Sulfur, MoreBlocks, StructurePieces, Fire, TickingBlocks, BlockUse, MeltingWeather,
-            EyeblossomGhastPortal, Brushing, ArmorStandUse, WaxingBellsOre, ProjectileHits];
+            EyeblossomGhastPortal, Brushing, ArmorStandUse, WaxingBellsOre, ProjectileHits, Shelves, StrawBeds,
+            GoldenDandelions];
 
     public static readonly string[] All =
         [Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps, SavedHeightmaps, Mining,
             Placement, CopperWeathering, Fire, TickingBlocks, BlockUse, TurtleEggs, Frogspawn,
             GrowingPlantTicks, MeltingWeather, FurnaceResults, EyeblossomGhastPortal, Brushing, ArmorStandUse,
-            WaxingBellsOre, ProjectileHits];
+            WaxingBellsOre, ProjectileHits, Shelves, StrawBeds, GoldenDandelions];
 
     private const string RedstoneNotes = """
         Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a
@@ -135,7 +139,7 @@ internal static class ScenarioCaptures
             throw new ArgumentException(
                 "Case selection requires CaptureFixtures=redstone, sulfur, more_blocks, structure_pieces, "
                 + "fire, ticking_blocks, block_use, melting_weather, eyeblossom_ghast_portal, brushing, "
-                + "armor_stand_use, waxing_bells_ore or projectile_hits.");
+                + "armor_stand_use, waxing_bells_ore, projectile_hits, shelves, straw_beds or golden_dandelions.");
         }
 
         if (fixtures.Contains(CopperWeathering))
@@ -188,6 +192,29 @@ internal static class ScenarioCaptures
         {
             var path = Path.Combine(assetsDirectory, "waxing_bells_redstone_ore.json");
             await FixtureDumper.DumpWaxingBellsOreAsync(server, path, cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(Shelves))
+        {
+            await FixtureDumper.DumpShelvesAsync(server, Path.Combine(assetsDirectory, "shelves.json"), cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(StrawBeds))
+        {
+            var path = Path.Combine(assetsDirectory, "straw_bed_sleep.json");
+            await FixtureDumper.DumpStrawBedsAsync(server, path, cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(GoldenDandelions))
+        {
+            var path = Path.Combine(assetsDirectory, "golden_dandelions.json");
+            await FixtureDumper.DumpGoldenDandelionsAsync(server, path, cases);
             if (fixtures.Count == 1)
                 return;
         }

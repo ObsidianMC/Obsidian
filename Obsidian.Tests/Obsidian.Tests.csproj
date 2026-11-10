@@ -36,6 +36,9 @@
 		<EmbeddedResource Include="Assets\armor_stand_use.json" />
 		<EmbeddedResource Include="Assets\projectile_block_hits.json" />
 		<EmbeddedResource Include="Assets\waxing_bells_redstone_ore.json" />
+		<EmbeddedResource Include="Assets\shelves.json" />
+		<EmbeddedResource Include="Assets\straw_bed_sleep.json" />
+		<EmbeddedResource Include="Assets\golden_dandelions.json" />
 		<EmbeddedResource Include="Assets\turtle_eggs.json" />
 		<EmbeddedResource Include="Assets\frogspawn.json" />
 		<EmbeddedResource Include="Assets\eyeblossom_ghast_portal_ticks.json" />
