@@ -176,7 +176,7 @@ internal sealed partial class MobSpawner
             return false;
         if (type is EntityType.Ghast or EntityType.Bat)
             return true;
-        if (floor is null || floor.IsLiquid || BlockCollisionShapes.Get(floor).Count == 0)
+        if (floor is null || !IsSpawnableFloor(floor))
             return false;
         return SpawnCategory(type) != "creature" || !RejectsCreatureFloor(type, floor, biome);
     }

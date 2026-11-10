@@ -79,6 +79,12 @@ internal static class LevelEnvironment
     public const string WaterEvaporates = "minecraft:gameplay/water_evaporates";
 
     /// <summary>
+    /// Vanilla's <c>minecraft:gameplay/nether_portal_spawns_piglin</c>: whether nether portals' random ticks spawn
+    /// zombified piglins. Only the overworld's types set it.
+    /// </summary>
+    public const string NetherPortalSpawnsPiglin = "minecraft:gameplay/nether_portal_spawns_piglin";
+
+    /// <summary>
     /// Vanilla's <c>minecraft:gameplay/eyeblossom_open</c>: a tri-state, where its default leaves an eyeblossom as it
     /// is. Only the overworld's day timeline sets it.
     /// </summary>
@@ -105,14 +111,17 @@ internal static class LevelEnvironment
         [PiglinsZombify] = true,
         [SnowGolemMelts] = false,
         [RespawnAnchorWorks] = false,
-        [WaterEvaporates] = false
+        [WaterEvaporates] = false,
+        [NetherPortalSpawnsPiglin] = false
     }.ToFrozenDictionary();
 
-    // Vanilla's types' own values of those attributes, where they aren't the defaults (the nether's
-    // data/minecraft/dimension_type/the_nether.json): the server's copy of vanilla's types doesn't hold attributes.
+    // Vanilla's types' own values of those attributes, where they aren't the defaults (the overworld's and the nether's
+    // data/minecraft/dimension_type/*.json): the server's copy of vanilla's types doesn't hold attributes.
     private static readonly FrozenDictionary<string, FrozenDictionary<string, bool>> vanillaGameplay =
         new Dictionary<string, FrozenDictionary<string, bool>>
         {
+            ["minecraft:overworld"] = SpawnsPiglins(),
+            ["minecraft:overworld_caves"] = SpawnsPiglins(),
             ["minecraft:the_nether"] = new Dictionary<string, bool>
             {
                 [CanStartRaid] = false,
@@ -268,6 +277,9 @@ internal static class LevelEnvironment
 
         return concrete.GetLoadedChunk(position.X >> 4, position.Z >> 4)?.GetBiome(position);
     }
+
+    private static FrozenDictionary<string, bool> SpawnsPiglins() =>
+        new Dictionary<string, bool> { [NetherPortalSpawnsPiglin] = true }.ToFrozenDictionary();
 
     private static FrozenDictionary<string, bool> Melts() =>
         new Dictionary<string, bool> { [SnowGolemMelts] = true }.ToFrozenDictionary();
