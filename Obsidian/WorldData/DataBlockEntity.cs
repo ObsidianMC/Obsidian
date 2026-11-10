@@ -18,7 +18,7 @@ public sealed class DataBlockEntity : BlockEntity
     // Block entity types whose getUpdateTag sends data to clients; the others send nothing.
     private static readonly HashSet<string> clientDataTypes =
     [
-        "minecraft:banner", "minecraft:beacon", "minecraft:brushable_block", "minecraft:campfire",
+        "minecraft:banner", "minecraft:beacon", "minecraft:campfire",
         "minecraft:conduit", "minecraft:creaking_heart", "minecraft:end_gateway",
         "minecraft:hanging_sign", "minecraft:jigsaw", "minecraft:mob_spawner", "minecraft:shelf", "minecraft:sign",
         "minecraft:skull", "minecraft:structure_block", "minecraft:test_block", "minecraft:test_instance_block",

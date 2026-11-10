@@ -1,6 +1,7 @@
 using Obsidian.Entities.AI;
 using Obsidian.API.Inventory;
 using Obsidian.Nbt;
+using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
 
@@ -115,6 +116,14 @@ public sealed partial class FallingBlock : Entity
                     new Net.Packets.Play.Clientbound.LevelEventPacket(LandingEvent(this.Block), loc, 0));
             }
             await this.Level.DestroyEntityAsync(this);
+            return;
+        }
+
+        // Suspicious sand and gravel break where they land (Brushing.BrokenAfterFall).
+        if (this.CancelDrop && Brushing.IsBrushable(this.Block) && this.Level is AbstractLevel level)
+        {
+            Brushing.BrokenAfterFall(level, this);
+            await Level.DestroyEntityAsync(this);
             return;
         }
 

@@ -291,6 +291,42 @@ replaces only what vanilla produced.
   sound starts working (see [mob ambient sounds](known-gaps/mob-ambient-sounds.md)). The expected differences of
   the newer cases are named, each pinned to its exact cases, and fail when they disappear (see below).
 
+- `brushing.json` (`VanillaBrushing.ReplayBrushingReference`) records a player brushing, from
+  `Java/BrushingFixtures.java` (`CaptureFixtures=brushing`). The probe runs a dedicated server of its own in a flat
+  world of air, in a temporary folder it deletes. A case sets up suspicious sand or gravel (or another block) with its
+  `lootTable` and `seed` or a `storedItem`, stands the user at `player` (head and last rotation the same) holding a
+  brush (`damage`, `handUsed`, `gameMode`), clicks a `face` through `ServerPlayerGameMode.useItemOn` at tick 0, then
+  steps `ticks` ticks as a server tick reaches the area: the game time, the due block ticks, the area's entities, then
+  the user's held use (`LivingEntity.updatingUsingItem`). `actions` between ticks look or move elsewhere, release the
+  use, set a block, choose another hotbar slot or click again. The probe wraps the level's neighbour updater to record
+  each write with its flags (`UPDATE_NEIGHBORS` from its neighbour update, the rest from its shape updates; a change
+  neither saw has null flags), tracks the user's entity so a bystander three blocks above sees it, and keeps each tick
+  that did something: the click's result, the writes, the bystander's sounds (with source, volume and pitch), level
+  events and particles, the user's entity events, game events, statistics, advancement criteria
+  (`player_generates_container_loot`), the used hand, whether the use goes on, the block entity's saved data when it
+  changed, its client update tag when its state was written, and the entities that appeared (items with position and
+  motion, falling blocks with their state) or went. The 16 cases cover a full brush of sand from the top and of gravel
+  from the north, a stored item, nothing inside, the off hand, releasing then decaying, looking away, moving out of
+  reach, the block replaced, a block that isn't brushable, the brush breaking, creative, adventure, a second click
+  inside the cooldown, another hotbar slot, and a block that falls after a stroke and breaks where it lands. The
+  replay drives the use-item-on packet and the same tick order in a world of nine chunks, and compares every field of
+  every kept tick. Two `hit_ground` events Obsidian doesn't send are pinned by case and tick (see [brushing and armor
+  stands](known-gaps/brushing-and-armor-stands.md)). Item entities' yaw and sound seeds aren't recorded; dust
+  particles are spawned by clients, so the server sends none, which the replay checks.
+
+- `armor_stand_use.json` (`VanillaArmorStandUse.ReplayArmorStandUseReference`) records a player using an armor stand,
+  from `Java/ArmorStandFixtures.java` (`CaptureFixtures=armor_stand_use`), on a dedicated server of its own in a
+  temporary folder. A case gives the stand's flags (`showArms`, `small`, `marker`, `noBasePlate`, `disabledSlots`) and
+  what it is `wearing`, the point `clicked` relative to the stand, and the user's `item`, `count`, `itemName`,
+  `handUsed` and `gameMode`; the probe runs what `handleInteract` does once the target is in reach
+  (`Player.interactOn`, then the trigger and the swing for a success) and ticks the stand once, which sends its
+  equipment. It records the result, the hand, the stand's equipment and saved fields, the bystander's sounds, swings
+  and equipment packets, the user's swings, game events, statistics and `completedCriteria`. The 41 cases cover each
+  slot picked by height on a normal and a small stand, items going to their own slot, stacks giving one, swaps,
+  disabled, removal-locked and placement-locked slots, hands without arms, markers, spectators, creative, adventure,
+  the off hand, a named item and a name tag. The replay sends the interact packet and compares everything but the
+  result itself, which decides the swing and trigger it compares.
+
 - `waxing_bells_redstone_ore.json` (`VanillaWaxingBellsOre.ReplayWaxingBellsAndRedstoneOreReference`) records
   honeycomb waxing, bell ringing and redstone ore lighting by a use, from `Java/WaxingBellsOreFixtures.java`
   (`CaptureFixtures=waxing_bells_ore`). Its cases take `block_use.json`'s inputs, and the probe runs on
@@ -439,6 +475,10 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=eyeblossom_ghast_portal
 
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=brushing
+
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=armor_stand_use
+
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=turtle_eggs
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=frogspawn
@@ -484,6 +524,10 @@ attempts use another delay. The pending-coral case records delays 85 and 88, but
 For `eyeblossom_ghast_portal`, `CaptureCases` accepts exact `+`-separated names in
 `eyeblossom_ghast_portal_ticks.json` and records only those cases; the others keep theirs. The capture takes about ten
 seconds.
+
+For `brushing` and `armor_stand_use`, `CaptureCases` accepts exact `+`-separated case names and records only those;
+the others keep theirs. Each capture takes about ten seconds after its server starts. Their probes write their worlds
+to a temporary folder outside the checkout and delete it.
 
 For `more_blocks`, `CaptureCases` accepts exact `+`-separated names in `more_blocks.json` and re-records only those
 Java probes. No RCON server is started and no other fixture is changed. Its source and the reusable runtime
@@ -574,7 +618,7 @@ The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft 
 <scratch directory> <test assets directory>
 [redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+heightmaps+saved_heightmaps+mining+placement+
 copper_weathering+fire+ticking_blocks+block_use+waxing_bells_ore+turtle_eggs+frogspawn+growing_plant_ticks+
-melting_weather+furnace_results]
+melting_weather+furnace_results+brushing+armor_stand_use]
 [case names]`.
 
 ## How it captures
