@@ -311,7 +311,7 @@ other dumpers, so editing it regenerates the assets once.
 
 The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft version> <cache directory>
 <scratch directory> <test assets directory>
-[redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+placement+block_use]
+[redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+placement+fire+block_use]
 [case names]`.
 
 ## How it captures

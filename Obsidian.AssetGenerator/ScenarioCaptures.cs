@@ -34,7 +34,6 @@ internal static class ScenarioCaptures
     public const string BlockUse = "block_use";
 
 
-
     private const string Symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     // Scenario entities and arrows carry this tag, so they can be removed again.

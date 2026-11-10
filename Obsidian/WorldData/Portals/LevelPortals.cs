@@ -1,7 +1,6 @@
 using Obsidian.API.Blocks;
 using Obsidian.API.World;
 using Obsidian.API.Inventory;
-using Obsidian.API.Blocks;
 using Obsidian.Net.Packets.Play.Serverbound;
 using System.Threading;
 
