@@ -48,9 +48,8 @@ public partial class UseItemPacket
             return UseResult.Fail;
         }
 
-        // Vanilla handleUseItem applies the packet's aim before an item's own POV ray trace.
-        user.Yaw = this.Yaw;
-        user.Pitch = Math.Clamp(this.Pitch, -90, 90);
+        // Vanilla handleUseItem applies the packet's aim, exactly, before an item's own POV ray trace.
+        (user.Yaw, user.Pitch) = PlayerBase.ClientRotation(this.Yaw, this.Pitch);
         var stack = this.Hand == InteractionHand.OffHand ? user.GetOffHandItem() : user.GetHeldItem();
         if (BucketItems.Handles(stack))
             return await BucketItems.UseAsync(server, user, this.Hand, this.Sequence);

@@ -113,8 +113,8 @@ internal sealed class ClientVehicleControl
                 rider.SendPacket(new MoveVehiclePacket
                 {
                     Position = position,
-                    Yaw = vehicle.Yaw.Degrees,
-                    Pitch = vehicle.Pitch.Degrees
+                    Yaw = vehicle.Yaw,
+                    Pitch = vehicle.Pitch
                 });
 
                 continue;

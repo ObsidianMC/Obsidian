@@ -118,7 +118,7 @@ public sealed partial class Pig : Animal, IItemSteerable
         }
 
         Yaw = Rider.Yaw;
-        Pitch = Rider.Pitch.Degrees * 0.5f;
+        Pitch = Rider.Pitch * 0.5f;
         var boost = 1f;
         if (TotalTimeBoost > 0)
         {

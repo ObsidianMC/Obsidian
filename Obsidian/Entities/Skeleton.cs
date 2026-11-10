@@ -191,7 +191,7 @@ internal sealed class BowAttackGoal(Skeleton skeleton) : NavigationGoal(skeleton
         {
             if (distance > 225 * 0.75f) backwards = false;
             else if (distance < 225 * 0.25f) backwards = true;
-            skeleton.Yaw = LookControl.RotateTowards(skeleton.Yaw.Degrees,
+            skeleton.Yaw = LookControl.RotateTowards(skeleton.Yaw,
                 (float)(Math.Atan2(target.Position.Z - skeleton.Position.Z, target.Position.X - skeleton.Position.X) * 180 / Math.PI - 90), 30);
             skeleton.MoveControl.Strafe(backwards ? -0.5f : 0.5f, clockwise ? 0.5f : -0.5f);
         }

@@ -1,8 +1,13 @@
 ﻿namespace Obsidian.API;
 
 /// <summary>
-/// A class that represents an angle from 0° to 360° degrees.
+/// An angle packed into one byte, in 256ths of a turn, as the protocol sends entity rotations in spawn, move, look and
+/// head rotation packets.
 /// </summary>
+/// <remarks>
+/// Packing loses up to 1.4 degrees, so entities keep their rotation as float degrees (<see cref="IEntity.Yaw"/>,
+/// <see cref="IEntity.Pitch"/>) and pack it only to send it.
+/// </remarks>
 public struct Angle(byte value) : INetworkSerializable<Angle>, IEquatable<Angle>
 {
     public byte Value { get; set; } = value;
@@ -12,7 +17,10 @@ public struct Angle(byte value) : INetworkSerializable<Angle>, IEquatable<Angle>
         set => Value = NormalizeToByte(value);
     }
 
-    public static implicit operator Angle(float degree) => new(NormalizeToByte(ClampDegrees(degree)));
+    /// <summary>
+    /// Packs <paramref name="degree"/> as <see cref="NormalizeToByte"/> does.
+    /// </summary>
+    public static implicit operator Angle(float degree) => new(NormalizeToByte(degree));
 
     public static implicit operator float(Angle angle) => angle.Degrees;
 
@@ -35,12 +43,6 @@ public struct Angle(byte value) : INetworkSerializable<Angle>, IEquatable<Angle>
     /// saturates instead, which would turn every negative angle into 0.
     /// </remarks>
     public static byte NormalizeToByte(float value) => (byte)(int)MathF.Floor(value * 256f / 360f);
-
-    private static float ClampDegrees(float degrees)
-    {
-        float clamped = degrees % 360f;
-        return clamped < 0f ? clamped + 360f : clamped;
-    }
 
     public static void Write(Angle value, INetStreamWriter writer) => writer.WriteSingle(value);
     public static Angle Read(INetStreamReader reader) => reader.ReadSingle();

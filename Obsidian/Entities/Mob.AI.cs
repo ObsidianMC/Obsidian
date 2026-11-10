@@ -447,7 +447,8 @@ public partial class Mob
 
         var delta = MoveDelta(lastSentPosition, Position);
         var moved = delta.X != 0 || delta.Y != 0 || delta.Z != 0;
-        var rotated = Yaw != lastSentYaw || Pitch != lastSentPitch;
+        // Like vanilla's ServerEntity, compared as sent: in 256ths of a turn.
+        var rotated = (Angle)Yaw != lastSentYaw || (Angle)Pitch != lastSentPitch;
         if (moved)
         {
             if (delta.X is < short.MinValue or > short.MaxValue || delta.Y is < short.MinValue or > short.MaxValue || delta.Z is < short.MinValue or > short.MaxValue)
@@ -480,7 +481,7 @@ public partial class Mob
 
         lastSentYaw = Yaw;
         lastSentPitch = Pitch;
-        if (LookControl.HeadYaw != lastSentHeadYaw)
+        if ((Angle)LookControl.HeadYaw != lastSentHeadYaw)
         {
             SetHeadRotation(LookControl.HeadYaw);
             lastSentHeadYaw = LookControl.HeadYaw;

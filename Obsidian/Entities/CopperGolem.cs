@@ -107,7 +107,7 @@ public sealed partial class CopperGolem : PathfinderMob
         if (!GetEquipment(EquipmentSlot.MainHand).IsAir)
             DropItem(GetEquipment(EquipmentSlot.MainHand));
 
-        var quarter = ((int)Math.Floor(Yaw.Degrees / 90 + 0.5) % 4 + 4) % 4;
+        var quarter = ((int)Math.Floor(Yaw / 90 + 0.5) % 4 + 4) % 4;
         var facing = StatueFacings[quarter];
         var statue = BlocksRegistry.OxidizedCopperGolemStatue.WithProperty("facing", facing);
         await Level.SetBlockAsync((Vector)Position.Floor(), statue, true);

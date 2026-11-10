@@ -213,9 +213,9 @@ public sealed class VanillaFrogspawn(ITestOutputHelper output)
         }
     }
 
-    // Yaws as entities hold them, in 256ths of a turn.
-    private static string Tadpole(VectorD position, Angle yaw, bool persistent) =>
-        $"({position.X:0.######}, {position.Y:0.######}, {position.Z:0.######}) yaw {yaw.Value} persistent {persistent}";
+    // Yaws exactly, as vanilla and Obsidian both keep them as floats.
+    private static string Tadpole(VectorD position, float yaw, bool persistent) =>
+        $"({position.X:0.######}, {position.Y:0.######}, {position.Z:0.######}) yaw {yaw:R} persistent {persistent}";
 
     private static JsonElement LoadFixture()
     {

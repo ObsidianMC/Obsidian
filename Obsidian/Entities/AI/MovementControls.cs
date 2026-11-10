@@ -28,7 +28,7 @@ public class MoveControl(Mob mob)
     internal void Ride(float speed, float forward = 1, float sideways = 0)
     {
         wantedPosition = null;
-        var yaw = mob.Yaw.Degrees * MathF.PI / 180;
+        var yaw = mob.Yaw * MathF.PI / 180;
         var input = new VectorD(sideways * MathF.Cos(yaw) - forward * MathF.Sin(yaw), 0,
             forward * MathF.Cos(yaw) + sideways * MathF.Sin(yaw));
         if (input.MagnitudeSquared() > 1)
@@ -43,7 +43,7 @@ public class MoveControl(Mob mob)
         if (strafe is VectorD input)
         {
             strafe = null;
-            var strafeYaw = mob.Yaw.Degrees * MathF.PI / 180;
+            var strafeYaw = mob.Yaw * MathF.PI / 180;
             var movement = new VectorD(input.X * MathF.Cos(strafeYaw) - input.Z * MathF.Sin(strafeYaw), 0,
                 input.Z * MathF.Cos(strafeYaw) + input.X * MathF.Sin(strafeYaw));
             var next = mob.Position + movement;
@@ -66,12 +66,12 @@ public class MoveControl(Mob mob)
             return;
 
         var wantedYaw = (float)(Math.Atan2(delta.Z, delta.X) * 180 / Math.PI - 90);
-        mob.Yaw = LookControl.RotateTowards(mob.Yaw.Degrees, wantedYaw, 90);
+        mob.Yaw = LookControl.RotateTowards(mob.Yaw, wantedYaw, 90);
         var speed = mob.MovementSpeed * speedModifier;
         var friction = mob.Terrain.GetFriction(mob.Position);
         // Vanilla's Mob.setSpeed also sets zza to the speed, and travel scales that input by the speed again.
         var acceleration = mob.InWater || mob.InLava ? 0.02f : mob.MovementFlags.HasFlag(MovementFlags.OnGround) ? speed * 0.21600002f / (friction * friction * friction) : 0.02f;
-        var yaw = mob.Yaw.Degrees * MathF.PI / 180;
+        var yaw = mob.Yaw * MathF.PI / 180;
         Acceleration = new VectorD(-MathF.Sin(yaw), 0, MathF.Cos(yaw)) * (acceleration * speed * 0.98f);
         if (delta.Y > mob.GetAttributeValue("minecraft:generic.step_height") && horizontalDistance < MathF.Max(1, mob.Dimension.Width))
             mob.JumpControl.Jump();
@@ -96,10 +96,10 @@ public sealed class LookControl(Mob mob)
     private VectorD? wantedPosition;
     private float yawSpeed = 10;
     private float pitchSpeed = 40;
-    internal Angle HeadYaw { get; private set; }
+    internal float HeadYaw { get; private set; }
 
     /// <summary>Turns the head to <paramref name="yaw"/> at once, as vanilla does for a mob it creates.</summary>
-    internal void SnapHeadYaw(Angle yaw) => HeadYaw = yaw;
+    internal void SnapHeadYaw(float yaw) => HeadYaw = yaw;
 
     public void LookAt(VectorD position, float maxYawChange = 10, float maxPitchChange = 40)
     {
@@ -120,25 +120,25 @@ public sealed class LookControl(Mob mob)
             {
                 var yaw = (float)(Math.Atan2(difference.Z, difference.X) * 180 / Math.PI - 90);
                 var pitch = (float)(-Math.Atan2(difference.Y, Math.Sqrt(difference.X * difference.X + difference.Z * difference.Z)) * 180 / Math.PI);
-                HeadYaw = RotateTowards(HeadYaw.Degrees, yaw, yawSpeed);
-                mob.Pitch = RotateTowards(WrapDegrees(mob.Pitch.Degrees), Math.Clamp(pitch, -40, 40), pitchSpeed);
+                HeadYaw = RotateTowards(HeadYaw, yaw, yawSpeed);
+                mob.Pitch = RotateTowards(WrapDegrees(mob.Pitch), Math.Clamp(pitch, -40, 40), pitchSpeed);
             }
             wantedPosition = null;
         }
         else
         {
-            HeadYaw = RotateTowards(HeadYaw.Degrees, mob.Yaw.Degrees, 10);
-            mob.Pitch = RotateTowards(mob.Pitch.Degrees, 0, 10);
+            HeadYaw = RotateTowards(HeadYaw, mob.Yaw, 10);
+            mob.Pitch = RotateTowards(mob.Pitch, 0, 10);
         }
 
         // Keep the head within the body's range while allowing idle head movement.
-        var offset = WrapDegrees(HeadYaw.Degrees - mob.Yaw.Degrees);
+        var offset = WrapDegrees(HeadYaw - mob.Yaw);
         if (MathF.Abs(offset) > 75)
         {
             if (mob.Navigator is Navigator { IsNavigating: true })
-                HeadYaw = mob.Yaw.Degrees + MathF.CopySign(75, offset);
+                HeadYaw = mob.Yaw + MathF.CopySign(75, offset);
             else
-                mob.Yaw = RotateTowards(mob.Yaw.Degrees, HeadYaw.Degrees - MathF.CopySign(75, offset), 10);
+                mob.Yaw = RotateTowards(mob.Yaw, HeadYaw - MathF.CopySign(75, offset), 10);
         }
         if (mob.FlyingNavigation)
             mob.Pitch = 0;

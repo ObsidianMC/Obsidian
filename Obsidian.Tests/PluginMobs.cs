@@ -207,7 +207,7 @@ public sealed class PluginMobs
         drake.ClientControl.Enqueue(player, new VehicleMove(moved, 90, 0, false));
         await drake.TickAsync();
         Assert.Equal(moved, drake.Position);
-        Assert.Equal(90, drake.Yaw.Degrees, 1);
+        Assert.Equal(90, drake.Yaw, 1);
 
         await drake.TickAsync();
         Assert.Equal(moved, drake.Position);

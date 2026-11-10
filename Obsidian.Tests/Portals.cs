@@ -84,8 +84,8 @@ public partial class Portals
 
         Assert.Same(target.World, player.Level);
         Assert.Equal(arrival, player.Position);
-        Assert.Equal(45f, player.Yaw.Degrees);
-        Assert.Equal(((Angle)(-10f)).Degrees, player.Pitch.Degrees);
+        Assert.Equal(45f, player.Yaw);
+        Assert.Equal(-10f, player.Pitch);
         Assert.Equal(13, player.Health);
         Assert.Equal(7, player.FoodLevel);
         Assert.Equal(3, player.Inventory[36]!.Count);
@@ -110,7 +110,7 @@ public partial class Portals
         var localArrival = new VectorD(-16.5, 70, 8.5);
         await ((IEntity)player).TeleportAsync(target.World, localArrival, 135f);
         Assert.Equal(localArrival, player.Position);
-        Assert.Equal(135f, player.Yaw.Degrees);
+        Assert.Equal(135f, player.Yaw);
         Assert.Equal(arrival, player.LastPosition);
         Assert.False(target.World.GetRegionForLocation(arrival)!.Entities.ContainsKey(player.EntityId));
         Assert.Same(player, target.World.GetRegionForLocation(localArrival)!.Entities[player.EntityId]);
@@ -172,7 +172,7 @@ public partial class Portals
             item => item.Item!.Is(ItemsRegistry.Lead));
         Assert.Equal(6, mob.Health);
         Assert.Equal(arrival, mob.Position);
-        Assert.Equal(90f, mob.Yaw.Degrees);
+        Assert.Equal(90f, mob.Yaw);
         Assert.Equal(new VectorD(0.1, 0, 0.2), mob.Motion);
 
         await mob.TeleportAsync(new VectorD(4.5, 72, 5.5));
@@ -497,7 +497,7 @@ public partial class Portals
 
         Assert.Same(end, item.Level);
         Assert.Equal(new VectorD(100.5, 50, 0.5), item.Position);
-        Assert.Equal(90f, item.Yaw.Degrees);
+        Assert.Equal(90f, item.Yaw);
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]

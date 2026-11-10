@@ -86,7 +86,7 @@ public abstract class AbstractMinecart : VehicleEntity
         var oldPosition = this.Position;
         var oldYaw = this.yaw;
         if (!this.hasTicked)
-            this.yaw = this.Yaw.Degrees;
+            this.yaw = this.Yaw;
 
         await this.TickBehaviorAsync(oldPosition, oldYaw);
         if (this.IsRemoved)
@@ -572,7 +572,7 @@ public abstract class AbstractMinecart : VehicleEntity
             z /= root;
         }
 
-        var radians = player.Yaw.Degrees * Math.PI / 180;
+        var radians = player.Yaw * Math.PI / 180;
         var sin = Math.Sin(radians);
         var cos = Math.Cos(radians);
         return new VectorD(x * cos - z * sin, 0, z * cos + x * sin);
@@ -625,7 +625,7 @@ public abstract class AbstractMinecart : VehicleEntity
         this.displayOffset = tag.TryGetNumber<int>("DisplayOffset", out var offset) ? offset : null;
         this.flipped = tag.TryGetBool("FlippedRotation", out var flipped) && flipped;
         this.hasTicked = tag.TryGetBool("HasTicked", out var ticked) && ticked;
-        this.yaw = this.Yaw.Degrees;
+        this.yaw = this.Yaw;
         this.BoundingBox = this.Dimension.CreateBBFromPosition(this.Position);
     }
 

@@ -142,7 +142,7 @@ internal sealed class SulfurSpikeBehavior : IShapeUpdateBehavior, IScheduledTick
 
     public IBlock? GetStateForPlacement(BlockPlaceContext context)
     {
-        var direction = MathF.Sin(context.Player.Pitch.Degrees * (MathF.PI / 180)) >= 0
+        var direction = MathF.Sin(context.Player.Pitch * (MathF.PI / 180)) >= 0
             ? BlockFace.Up : BlockFace.Down;
         var level = context.Level.AsShapeLevel();
         var state = context.Block.WithProperty("vertical_direction", direction == BlockFace.Up ? "up" : "down");

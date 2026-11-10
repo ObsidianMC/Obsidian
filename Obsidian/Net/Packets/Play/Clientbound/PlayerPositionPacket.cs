@@ -15,10 +15,10 @@ public partial class PlayerPositionPacket
     public VectorD Delta { get; init; }
 
     [Field(2), DataFormat(typeof(float))]
-    public Angle Yaw { get; init; }
+    public float Yaw { get; init; }
 
     [Field(3), DataFormat(typeof(float))]
-    public Angle Pitch { get; init; }
+    public float Pitch { get; init; }
 
     [Field(4)]
     public PositionFlags Flags { get; init; }

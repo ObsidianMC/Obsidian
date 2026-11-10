@@ -74,12 +74,12 @@ public class MovementPayloads
         ["move_player_pos_rot"] = Reads<MovePlayerPosRotPacket>(packet =>
         {
             Assert.Equal(new VectorD(0.5, 65, -0.5), packet.Position);
-            Assert.Equal(((Angle)359.5f, (Angle)(-90f)), (packet.Yaw, packet.Pitch));
+            Assert.Equal((359.5f, -90f), (packet.Yaw, packet.Pitch));
             Assert.Equal(MovementFlags.OnGround | MovementFlags.HorizontalCollision, packet.MovementFlags);
         }),
         ["move_player_rot"] = Reads<MovePlayerRotPacket>(packet =>
         {
-            Assert.Equal(((Angle)(-45f), (Angle)12.5f), (packet.Yaw, packet.Pitch));
+            Assert.Equal((-45f, 12.5f), (packet.Yaw, packet.Pitch));
             Assert.Equal(MovementFlags.HorizontalCollision, packet.MovementFlags);
         }),
         ["use_item_on"] = Reads<UseItemOnPacket>(packet =>
