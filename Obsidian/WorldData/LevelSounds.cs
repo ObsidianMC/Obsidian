@@ -32,9 +32,16 @@ internal static class LevelSounds
         level.PacketBroadcaster.BroadcastToLevelInRange(level, position, packet);
     }
 
-    /// <summary>Plays a block's <paramref name="sound"/> at the centre of <paramref name="position"/>.</summary>
-    public static void PlayAtBlock(AbstractLevel level, Vector position, string sound) =>
-        Play(level, (VectorD)position + 0.5, sound, SoundCategory.Blocks);
+    /// <summary>
+    /// Plays a block's <paramref name="sound"/> in the blocks category at the centre of <paramref name="position"/>.
+    /// </summary>
+    public static void PlayAtBlock(
+        AbstractLevel level,
+        Vector position,
+        string sound,
+        float volume = 1,
+        float pitch = 1) =>
+        Play(level, (VectorD)position + 0.5, sound, SoundCategory.Blocks, volume, pitch);
 
     /// <summary>Plays <paramref name="sound"/> following <paramref name="entity"/>, as vanilla's entity sounds do.</summary>
     public static void PlayFrom(AbstractLevel level, Entity entity, string sound, SoundCategory category)
