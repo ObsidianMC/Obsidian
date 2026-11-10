@@ -506,7 +506,10 @@ public partial class Extensions
 
     private static NbtCompound LodestoneToNbt(string name, LodestoneTrackerDataComponent tracker)
     {
-        var tag = new NbtCompound(name) { new NbtTag<bool>("tracked", tracker.Tracked) };
+        // Like vanilla's codec, tracked is written only when it's false, its default being true.
+        var tag = new NbtCompound(name);
+        if (!tracker.Tracked)
+            tag.Add(new NbtTag<bool>("tracked", false));
         if (tracker.Target is GlobalPos target)
         {
             tag.Add(new NbtCompound("target")

@@ -23,7 +23,8 @@ public partial class UseItemOnPacket
         ["FlintAndSteelItem"] = (packet, use) => packet.UseIgniterAsync(use),
         ["FireChargeItem"] = (packet, use) => packet.UseIgniterAsync(use),
         ["BoneMealItem"] = (_, use) => UseBoneMealAsync(use),
-        ["HangingEntityItem"] = (packet, use) => packet.HangAsync(use)
+        ["HangingEntityItem"] = (packet, use) => packet.HangAsync(use),
+        ["CompassItem"] = (_, use) => UseCompassAsync(use)
     };
 
     // Each item's own useOn, by item id, looked up once per click. Fish buckets aren't vanilla useOn items (vanilla

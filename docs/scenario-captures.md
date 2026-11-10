@@ -22,7 +22,10 @@ replaces only what vanilla produced.
   gives the fence `west=true`, the connection vanilla's `/setblock` derives beside the piston, because Obsidian's
   commands don't derive placed states; recording again with the property given left every checkpoint unchanged.
   `piston_pushes_carpet_off_support` pushes a carpet over air: the finished move breaks it at tick 6 and one carpet
-  drops. A scenario naming an `item` also records in each checkpoint the total count of that item lying as item
+  drops. `hopper_fills_chiseled_bookshelf`, `hopper_drains_chiseled_bookshelf`,
+  `dropper_fills_chiseled_bookshelf_from_behind`, `hopper_fills_decorated_pot` and `hopper_drains_decorated_pot`
+  move items into and out of the blocks that hold them, each read by a comparator into a dust: the shelf's slots
+  and the last slot used, and how full the pot is. A scenario naming an `item` also records in each checkpoint the total count of that item lying as item
   entities within two blocks of its box, and the replay counts Obsidian's the same way, so it must be `level`.
 - `fluid_scenarios.json` (`VanillaFluids`) defines the box, setup fills, actions, dimension and checkpoint ticks; the
   capture records the checkpoints.
@@ -276,16 +279,17 @@ replaces only what vanilla produced.
   the game events within 16 blocks (with their source), the statistics awarded and the menu opened, and when a menu
   opened, what closing it changed and played. The replay drives `UseItemOnPacket` in one world, with full sky light
   as the capture's open sky has, runs the queued entity actions and the tick's block events, and checks swings from
-  the result. The original 92 cases retain their captured bytes. Another 208 cases cover buckets (72), chest
-  obstructions (73) and lighting (63), including ordered block writes with every flag bit and successful block
+  the result. The original 92 cases retain their captured bytes. Another 285 cases cover buckets (72), chest
+  obstructions (73), lighting (63) and the blocks that hold items (77: flower pots, chiseled bookshelves, decorated
+  pots, including ones still waiting for their loot table, lodestone compasses and jukeboxes), including ordered block writes with every flag bit and successful block
   destructions. These cases observe all writes, including positions absent from their setup; an unexpected position
   fails the replay. The older 92 cases compare final block states only. Extending ordered-write checks to those
   cases remains an open follow-up. The replay uses the capture's absolute coordinates: translating plant
   outlines changes their position-dependent offsets and can change a bucket ray hit. It also checks whether
   closing effects exist, rather than comparing them only when both sides happened to open a menu.
   `SpawnEggAmbientSoundMissing` explicitly asserts the sheep spawn egg's missing ambient sound; it fails if the
-  sound starts working (see [mob ambient sounds](known-gaps/mob-ambient-sounds.md)). No new case has an expected
-  difference.
+  sound starts working (see [mob ambient sounds](known-gaps/mob-ambient-sounds.md)). The expected differences of
+  the newer cases are named, each pinned to its exact cases, and fail when they disappear (see below).
 
 - `turtle_eggs.json` (`VanillaTurtleEggs.ReplayTurtleEggReference`) records vanilla's turtle eggs, from
   `Java/HatchingFixtures.java` (`CaptureFixtures=turtle_eggs`). Each case is its input: the blocks of a small block
@@ -470,7 +474,18 @@ add it to `contexts` and capture again. For `block_use`, add inputs to `cases` a
 selects the other hand. An optional `randomSeed` seeds the level random immediately before use; the failed-growth
 case verifies that a valid bone-meal target consumes the item even when its growth chance fails. Optional checks
 record sign text flags and editor, attack charge after a started and a refused swing, explicit and periodic
-container close sources, and awarded advancement criteria. The fixture lists
+container close sources, and awarded advancement criteria.
+
+Further optional inputs, for blocks that hold items, are recorded after everything else and change nothing the other
+cases record. A setup placement's `nbt` loads that block entity data (SNBT without the id and position) as a chunk
+load would, telling no comparator. `checkBlockEntity` records the clicked block entity's saved data, as a chunk saves
+it without its position, as `blockEntity`. `comparator` names a comparator's offset from the setup: once the use is
+recorded, its pending tick runs and its output is recorded as `comparatorSignal`, which shows both that it heard of
+the change and what it read. `breakAfterUse` makes the user break the clicked block afterwards with what they hold,
+and records under `broken` what changed, the entities around (with their items' components), what the bystander
+heard and the game events and statistics. The replay compares all of them: SNBT is compared as Obsidian writes the
+same NBT, the comparator's tick runs by ticking the level's scheduled ticks twice, and a break goes through a
+finished dig. The fixture lists
 location predicate terms in Obsidian's existing format; the probe converts them to 26.3's `all_of` and `match_block`
 encoding before registering them with vanilla's advancement system.
 Criteria without a location predicate, including `filled_bucket` with item predicates, are registered unchanged.
@@ -488,8 +503,10 @@ New `block_use` probe inputs are optional, so existing cases record exactly thei
   of a fluid-place game event.
 - `cats: [{"offset": [0, 1, 0], "sitting": true}]` adds a cat before the snapshot. Sitting and standing cats are
   varied independently of conducting blocks and of either double-chest half.
-- `checkInventory: true` records all 36 storage slots in vanilla slot order. `fullInventory: true` fills every
-  storage slot except the hand with stone. The replay compares storage, the hand and dropped entities together.
+- `checkInventory: true` records all 36 storage slots in vanilla slot order, each stack followed by the components
+  it changes from its item's as SNBT, with a lodestone tracker's target relative to the target (compared as Obsidian
+  writes the same NBT). `fullInventory: true` fills every storage slot except the hand with stone. Every case starts
+  with nothing in its inventory but its hands. The replay compares storage, the hand and dropped entities together.
 - `checkEffects: true` records server particle packet types and counts, and each sound's position and volume
   alongside the existing sounds, level events, game events and statistics. The replay compares every added field.
   Candle smoke comes from client-local particles; campfire shovel dousing sends level event 1009. Neither sends
