@@ -158,6 +158,27 @@ internal sealed class LevelFluids : IFluidLevelAccess
             this.fluidLevel.OnBlockChanged(position, old, block, flags);
     }
 
+    /// <summary>Uses the fluid engine's liquid-container rule with the live level's transactional writer.</summary>
+    internal bool PlaceLiquid(Vector position, IBlock block, FluidState fluid)
+    {
+        lock (this.sync)
+            return this.fluidLevel.PlaceLiquid(position, block, fluid,
+                (at, state, flags) => this.level.BlockUpdates.SetBlock(at, state, flags));
+    }
+
+    public void OnWaterlogged(Vector position, IBlock previous)
+    {
+        if (previous.GetProperty("lit") != "true"
+            || previous.BlockClass() is not ("CampfireBlock" or "CandleBlock"))
+            return;
+
+        void Publish() => BlockLighting.Extinguished(this.level, position, previous, null);
+        if (this.level.ActiveBlockUse is BlockUseEffects effects)
+            effects.After(Publish);
+        else
+            Publish();
+    }
+
     /// <summary>
     /// The complete chunk holding <paramref name="position"/>, if it's loaded, whether or not its ticks run yet. Call
     /// it under <see cref="TickLock"/>, which tracking chunks takes.

@@ -1,6 +1,7 @@
 using Obsidian.API.Containers;
 using Obsidian.API.BlockEntities;
 using Obsidian.Entities;
+using Obsidian.WorldData.Features;
 
 namespace Obsidian.WorldData;
 
@@ -167,7 +168,9 @@ public abstract partial class AbstractLevel
             firstViewers.TryAdd(position, viewer);
         }
 
-        foreach (var position in changed)
+        // A double chest's compound container visits the right half first, as its slot order does.
+        foreach (var position in changed.OrderBy(position =>
+            this.GameEventBlock(position)?.GetProperty("type") == "right" ? 0 : 1))
         {
             if (!this.IsBlockTicking(position))
             {
@@ -265,6 +268,10 @@ public abstract partial class AbstractLevel
 
     private void PlayContainerLidSound(Vector position, IBlock block, bool opening)
     {
+        // Vanilla plays one sound for a double chest, from the right half at the joined lid's center.
+        if (block.GetProperty("type") == "left")
+            return;
+
         var sound = block.RegistryId switch
         {
             BlockIds.Chest or BlockIds.TrappedChest => "chest",
@@ -278,7 +285,21 @@ public abstract partial class AbstractLevel
             return;
 
         var action = opening ? "open" : "close";
-        this.BlockUpdates.PlaySound(position, $"minecraft:block.{sound}.{action}",
-            0.5f, Globals.Random.NextSingle() * 0.1f + 0.9f);
+        var center = (VectorD)position + 0.5;
+        if (block.GetProperty("type") == "right")
+        {
+            var facing = WorldData.Features.FeatureHelpers.ParseFace(block.GetProperty("facing"));
+            center += (VectorD)facing.CounterClockWise().ToVector() * 0.5;
+        }
+
+        this.PacketBroadcaster.BroadcastToLevelInRange(this, center, new Net.Packets.Play.Clientbound.SoundPacket
+        {
+            SoundLocation = $"minecraft:block.{sound}.{action}",
+            SoundPosition = new SoundPosition(center.X, center.Y, center.Z),
+            Category = SoundCategory.Blocks,
+            Volume = 0.5f,
+            Pitch = Globals.Random.NextSingle() * 0.1f + 0.9f,
+            Seed = Globals.Random.NextInt64()
+        });
     }
 }

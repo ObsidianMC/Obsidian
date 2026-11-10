@@ -41,6 +41,9 @@ public partial class Portals
         player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.FlintAndSteel));
         Assert.True(world.TryAddPlayer(player));
         Assert.True(world.TryAddEntity(player));
+        var bystander = TestServerFactory.CreateConnectedPlayer(
+            context.Server, world, "Bystander", new VectorD(1.5, 64, -2.5));
+        Assert.True(world.TryAddPlayer(bystander));
 
         await BlockUpdates.UseOn(new Vector(0, 63, 0), BlockFace.Up).HandleAsync(context.Server, player);
 
@@ -48,7 +51,12 @@ public partial class Portals
         Assert.True(frame!.Value.IsComplete);
         player.FlushBlockAcknowledgement();
         Assert.Contains(((TestClient)player.Client).SentPackets, packet => packet is BlockChangedAckPacket);
-        Assert.Contains(((TestClient)player.Client).SentPackets, packet => packet is SoundPacket
+        // The acting client predicts flint and steel; only the bystander receives its server sound.
+        Assert.DoesNotContain(((TestClient)player.Client).SentPackets, packet => packet is SoundPacket
+        {
+            SoundLocation: "minecraft:item.flintandsteel.use"
+        });
+        Assert.Contains(((TestClient)bystander.Client).SentPackets, packet => packet is SoundPacket
         {
             SoundLocation: "minecraft:item.flintandsteel.use"
         });

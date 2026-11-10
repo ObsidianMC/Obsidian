@@ -28,9 +28,7 @@ level's world-write APIs, such as `ILevel.SetBlockAsync`, which do not require a
 callbacks can run before the vanilla lifecycle check, so an unregistered actor is not a supported way to invoke
 those callbacks either.
 
-## Chest opening rules
-
-Normal, trapped and copper chests open even with a redstone-conducting block above them or above the other half
-of a double chest, and cats sitting on chests do not keep them shut. The ender-chest path checks the block above
-already. These chest gaps predate PR #701 on 26.3.x; the next phase should capture both halves' obstruction and
-cat occupancy in `block_use` before adding the refusal rules.
+Chest obstruction is captured and implemented for normal, trapped and copper chests: a conductor or sitting cat
+above either valid half prevents the menu, sound and statistic, while the click still succeeds. Checks run before
+container resolution and again after awaited resolution. This does not close the general menu identity and
+publication race listed above; menu creation and showing a window are still separate steps.

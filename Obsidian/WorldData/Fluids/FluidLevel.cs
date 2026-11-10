@@ -192,7 +192,8 @@ internal sealed class FluidLevel
     /// Vanilla <c>LiquidBlockContainer.placeLiquid</c>: a dry waterloggable block takes a water source (lit campfires and
     /// candles go out) and schedules the water's tick.
     /// </summary>
-    public bool PlaceLiquid(Vector position, IBlock block, FluidState fluid)
+    public bool PlaceLiquid(Vector position, IBlock block, FluidState fluid,
+        Func<Vector, IBlock, BlockUpdateFlags, bool>? store = null)
     {
         if (block.GetProperty("waterlogged") != "false" || fluid.Kind != FluidKind.Water)
             return false;
@@ -201,7 +202,16 @@ internal sealed class FluidLevel
         if (waterlogged.GetProperty("lit") == "true")
             waterlogged = waterlogged.WithProperty("lit", false);
 
-        this.SetBlock(position, waterlogged, BlockUpdateFlags.All);
+        // A lit candle's liquid-container implementation extinguishes with UPDATE_ALL_IMMEDIATE (11).
+        var flags = block.BlockClass() == "CandleBlock" && block.GetProperty("lit") == "true"
+            ? BlockUpdateFlags.AllImmediate : BlockUpdateFlags.All;
+        var stored = store is null
+            ? this.SetBlock(position, waterlogged, flags)
+            : store(position, waterlogged, flags);
+        if (!stored)
+            return false;
+
+        this.access.OnWaterlogged(position, block);
         this.ScheduleTick(position, fluid.Kind, fluid.Type!.GetTickDelay(this));
         return true;
     }
