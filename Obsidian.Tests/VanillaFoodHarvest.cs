@@ -43,17 +43,6 @@ public sealed class VanillaFoodHarvest(ITestOutputHelper output)
 
     private static readonly Vector target = new(0, 64, 0);
 
-    // Every deviation is pinned to one exact case and field, and must disappear when parity improves.
-    private static readonly Dictionary<(string Case, string Field), string> knownDifferences = new()
-    {
-        [("hive_bottle_creative_full_false", "hand")] = "minecraft:glass_bottle x2",
-        [("hive_bottle_creative_full_false", "inventory")] =
-            "0=minecraft:glass_bottle x2, 1=minecraft:honey_bottle x1",
-        [("hive_bottle_creative_full_true", "hand")] = "minecraft:glass_bottle x2",
-        [("hive_bottle_creative_full_true", "inventory")] = "0=minecraft:glass_bottle x2, "
-            + string.Join(", ", Enumerable.Range(1, 35).Select(slot => $"{slot}=minecraft:stone x64"))
-    };
-
     private sealed record Harness(RealServerContext Context, ServerPlayer User, ServerPlayer Bystander);
 
     [Fact]
@@ -92,6 +81,18 @@ public sealed class VanillaFoodHarvest(ITestOutputHelper output)
     {
         if (!use.TryGetProperty("criteria", out var criteria))
             return await replay();
+
+        if (OptionalString(use, "shippedAdvancement") is string shipped)
+        {
+            var original = previous.Single(advancement => advancement.Identifier == "minecraft:" + shipped);
+            foreach (var entry in criteria.EnumerateObject())
+            {
+                var captured = JsonNode.Parse(entry.Value.GetProperty("conditions").GetRawText());
+                var actual = original.Criteria.Single(criterion => criterion.Identifier == entry.Name).Conditions;
+                Assert.True(JsonNode.DeepEquals(captured, JsonNode.Parse(actual.GetRawText())),
+                    "The captured shipped advancement conditions must equal Obsidian's shipped definition.");
+            }
+        }
 
         using var definition = JsonDocument.Parse("{\"criteria\":" + criteria.GetRawText() + "}");
         var advancement = AdvancementsRegistry.Parse("probe:" + Name(use), definition.RootElement);
@@ -174,11 +175,15 @@ public sealed class VanillaFoodHarvest(ITestOutputHelper output)
 
         if (use.TryGetProperty("nearbyBee", out _))
         {
+            var offset = new VectorD(1.5, 0, 0.5);
+            if (use.TryGetProperty("nearbyBeeOffset", out var at))
+                offset = new VectorD(at[0].GetDouble(), at[1].GetDouble(), at[2].GetDouble());
+
             var bee = new Bee
             {
                 Level = world,
                 EntityId = Server.GetNextEntityId(),
-                Position = (VectorD)target + new VectorD(1.5, 0, 0.5)
+                Position = (VectorD)target + offset
             };
             world.SpawnEntity(bee);
         }
@@ -300,6 +305,9 @@ public sealed class VanillaFoodHarvest(ITestOutputHelper output)
         if (use.TryGetProperty("dropPositions", out var positions))
             expected["drop positions"] = Set(Strings(positions));
 
+        if (use.TryGetProperty("dropMotion", out var motion))
+            expected["drop motion"] = Set(motion.EnumerateArray().Select(DropMotion));
+
         return expected;
     }
 
@@ -352,8 +360,21 @@ public sealed class VanillaFoodHarvest(ITestOutputHelper output)
         if (use.TryGetProperty("dropPositions", out _))
             observed["drop positions"] = Set(DropPositions(world));
 
+        if (use.TryGetProperty("dropMotion", out _))
+        {
+            var items = world.GetEntitiesInRange((VectorD)target, 5).OfType<ItemEntity>();
+            observed["drop motion"] = Set(items.Select(item => DropMotion(Text(item.Item), item.Motion)));
+        }
+
         return observed;
     }
+
+    private static string DropMotion(JsonElement item) => DropMotion(item.GetProperty("item").GetString()!,
+        new VectorD(item.GetProperty("x").GetDouble(), item.GetProperty("y").GetDouble(),
+            item.GetProperty("z").GetDouble()));
+
+    private static string DropMotion(string item, VectorD motion) =>
+        item + " motion " + Coordinate(motion.X) + "," + Coordinate(motion.Y) + "," + Coordinate(motion.Z);
 
     private static IEnumerable<string> Inventory(ServerPlayer user)
     {
@@ -379,7 +400,7 @@ public sealed class VanillaFoodHarvest(ITestOutputHelper output)
             yield return $"occupants={occupants}";
         }
 
-        foreach (var bee in world.GetEntitiesInRange((VectorD)target, 10).OfType<Bee>())
+        foreach (var bee in world.GetEntitiesInRange((VectorD)target, 20).OfType<Bee>())
         {
             var targeted = ReferenceEquals(bee.AttackTarget, user).ToString().ToLowerInvariant();
             var angry = (bee.AngerTicks > 0).ToString().ToLowerInvariant();
@@ -409,15 +430,8 @@ public sealed class VanillaFoodHarvest(ITestOutputHelper output)
         var differences = new List<string>();
         foreach (var (field, value) in expected)
         {
-            if (knownDifferences.TryGetValue((name, field), out var known))
-            {
-                if (actual[field] != known || value == known)
-                    differences.Add($"{field}: the known difference changed; vanilla [{value}], got [{actual[field]}]");
-            }
-            else if (actual[field] != value)
-            {
+            if (actual[field] != value)
                 differences.Add($"{field}: expected [{value}], got [{actual[field]}]");
-            }
         }
 
         return differences;
@@ -536,7 +550,7 @@ public sealed class VanillaFoodHarvest(ITestOutputHelper output)
             world.BlockUpdates.SetBlock(target + new Vector(0, -depth, 0), BlocksRegistry.Air, Quiet);
 
         await world.RunQueuedEntityActionsAsync();
-        foreach (var entity in world.GetEntitiesInRange((VectorD)target, Reach + 4).ToArray())
+        foreach (var entity in world.GetEntitiesInRange((VectorD)target, 20).ToArray())
         {
             if (entity is not ServerPlayer)
                 await world.DestroyEntityAsync(entity);

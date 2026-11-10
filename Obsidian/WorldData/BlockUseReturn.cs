@@ -54,17 +54,19 @@ internal static class BlockUseReturn
     /// creative mode one is taken from the hand; an emptied hand holds the result, and otherwise the result goes into
     /// the inventory like <see cref="Give"/>, dropping when it doesn't fit. In creative mode the hand stays as it is;
     /// with <paramref name="limitCreative"/> (vanilla's default) the result goes into the inventory only when no
-    /// storage slot holds the same item already, and without it, always.
+    /// storage slot holds the same item already, and without it, always. With <paramref name="consumeInCreative"/>,
+    /// hives instead consume an input in creative too and route the result through the ordinary exchange path.
     /// </summary>
     /// <returns>
     /// The temporary result after routing, which vanilla's <c>filled_bucket</c> criterion reads: whole when it went
     /// into the hand, dropped, or wasn't needed in creative mode; empty when the inventory took it.
     /// </returns>
-    public static ItemStack Exchange(BlockUse use, ItemStack result, bool limitCreative = true)
+    public static ItemStack Exchange(BlockUse use, ItemStack result, bool limitCreative = true,
+        bool consumeInCreative = false)
     {
         InsideCommit(use);
         var inventory = use.Player.Inventory;
-        if (use.Player.GameMode == GameMode.Creative)
+        if (use.Player.GameMode == GameMode.Creative && !consumeInCreative)
         {
             if (!limitCreative)
                 return Give(use, result);

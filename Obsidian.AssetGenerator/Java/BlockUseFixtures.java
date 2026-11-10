@@ -450,7 +450,7 @@ public final class BlockUseFixtures {
         // The fixture lists location terms directly; 26.3 encodes that conjunction as an all_of predicate.
         for (var criterion : criteria.entrySet()) {
             var conditions = criterion.getValue().getAsJsonObject().getAsJsonObject("conditions");
-            if (!conditions.has("location"))
+            if (!conditions.has("location") || !conditions.get("location").isJsonArray())
                 continue;
 
             var conjunction = new JsonObject();

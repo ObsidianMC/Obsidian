@@ -1,27 +1,56 @@
 # Food and harvest
 
-Phase 2 batch A of issue #538 is captured in `food_and_harvest.json`: 99 vanilla 26.3 uses, replayed by
+Phase 2 batch A of issue #538 is captured in `food_and_harvest.json`: 110 vanilla 26.3 uses, replayed by
 `VanillaFoodHarvest.ReplayFoodAndHarvestReference`. Every case compares the result, swings, food and saturation,
 hand and all inventory slots, changed blocks, ordered writes with every flag bit, destructions, drops, sounds,
 particles, level events, block events, game events, statistics, criteria and unexpected writes. Sound checks
 include pitch, category and exact transmitted position, plus volume and identity. Independent sound-variant
-seeds and each item entity's independently seeded initial velocity are not deterministic replay inputs.
-Every case also compares exact item drop positions. Bee cases compare occupant counts and each nearby bee's immediate target and
-anger state. The four tests in `FoodHarvestTransactions` separately check stale hands, capacity, competing uses
-and refusing a busy inventory under the tick lock.
+seeds and each item entity's independently seeded constructor velocity are not deterministic replay inputs.
+Every case compares exact item drop positions; pumpkin cases also compare all three deterministic motion components.
+Bee cases compare occupant counts and nearby bees' immediate targets and anger. The six tests in
+`FoodHarvestTransactions` check stale hands, capacity, competing uses, busy inventories, concurrent timed/harvest
+release (including the saved occupant list), and delayed honey writes after a harvest or hive replacement.
 
-## Captured differences
+## Captured parity
 
-Only these exact cases differ, each pinned by both hand and inventory in the replay (97 cases match outright):
+All 110 cases match their recorded fields without pins. Hives consume a glass bottle even in creative mode via
+`BlockUseReturn.Exchange(..., consumeInCreative: true)`. That option defaults to false, preserving bucket and
+cauldron callers, including #730's separate `limitCreative` rule for washed items. Creative single bottles replace
+the hand; stacked bottles return honey to storage or discard it when the creative inventory is full.
 
-| Case | Vanilla | Obsidian |
-|---|---|---|
-| `hive_bottle_creative_full_false` | Two glass bottles become one; one honey bottle enters storage. | Both glass bottles remain; one honey bottle enters storage. |
-| `hive_bottle_creative_full_true` | Two glass bottles become one; the full creative inventory discards the honey bottle. | Both glass bottles remain; the full creative inventory discards the honey bottle. |
+## Review regressions
 
-26.3's hive bottle branch shrinks its input in creative mode. This batch deliberately uses the shared
-`BlockUseReturn.Exchange` requested for hive harvests, whose filled-result creative policy retains the input.
-Follow up by deciding whether hive harvests need an explicit creative-consumption policy on that helper.
+- `TimedReleaseAndHarvestDetachEachStoredBeeOnce` pauses real entity registration while harvest runs against a
+  hive that began with two stored bees. It checks two live bees, no stored bees, the saved empty occupant list and
+  exactly one honey bottle. Entry, timed release and harvest mutate occupants under the same tick lock. The timer
+  finishes detaching before spawning and never writes its old snapshot back afterwards.
+- `QueuedNectarCannotRefillAHarvestedOrReplacedHive` checks a valid queued delivery, a harvest before queue drain,
+  and replacement by a new hive with the same original state. Queued honey writes require both the original
+  resident block entity and the state they were computed from.
+- `hive_bee_box_corner`, `hive_bee_box_overlap` and `hive_bee_outside_box` capture vanilla's inflated hive box,
+  including body overlap across its boundary. Loaded bees are checked directly against the exact box using
+  their current dimensions, without a spherical cutoff that could exclude a corner or a scaled bee.
+- `shipped_safe_honey_smoked` and `shipped_safe_honey_unsmoked` read the real advancement JSON from vanilla's
+  resources. Replay also checks those captured conditions against Obsidian's shipped definition. The four
+  `hive_codec_any_*` cases cover nested `all_of`/`any_of`, either matching branch, failure and an empty disjunction.
+- Every pumpkin carve capture now checks its level-random seed velocity, including all six clicked faces,
+  creative mode, tool breakage and offhand use.
+
+## Shipped advancement predicate forms
+
+Sixteen shipped 26.3 advancements contain object-form `location` predicates. Besides `safely_harvest_honey`, the
+other composite users are:
+
+- `adventure/heart_transplanter` (`any_of`, plus direct `match_block` criteria), `adventure/lighten_up`,
+  `adventure/play_jukebox_in_meadows`, `adventure/read_power_of_chiseled_bookshelf` (`all_of` and `any_of`),
+  `adventure/revaulting`, `adventure/under_lock_and_key`, and `adventure/use_lodestone`.
+- `husbandry/allay_deliver_cake_to_note_block`, `husbandry/make_a_sign_glow`, `husbandry/wax_off`,
+  `husbandry/wax_on`, and `nether/charge_respawn_anchor`.
+
+`husbandry/place_dried_ghast_in_water`, `husbandry/plant_any_sniffer_seed` and `husbandry/plant_seed` use direct
+object-form `match_block` predicates. Matching now accepts the codec object forms and their nested terms, while
+retaining legacy fixture arrays; location checks also respect their integer offsets. This fixes decoding and
+composition, not every unsupported inner location predicate or unrelated advancement trigger.
 
 ## Vines and smoke: the ambiguous lines resolved
 
@@ -46,8 +75,8 @@ targets but no running anger timer; the next AI tick starts Obsidian's existing 
 
 The bounded uses do not establish parity for the subsequent bee lifecycle. In particular:
 
-- `MobSpawner.TickHive` remains the existing timed-release implementation, with simplified weather, day/night,
-  elapsed-time and collision rules. Its normal release does not share the new harvest release path.
+- Normal timed release still has simplified weather, day/night, elapsed-time and collision rules. It now shares
+  occupant serialization with harvest and entry, but their release policies remain distinct.
 - Hive `flower_pos` restoration, stay-out-of-hive and ticks-without-nectar countdowns, occupant breeding/love
   progression, and exact later anger/random-draw timing are not implemented by this batch. Age progression on
   emergency release is applied, but only the immediate adult release is captured here.
@@ -56,5 +85,5 @@ The bounded uses do not establish parity for the subsequent bee lifecycle. In pa
 - Capture ticking bee/hive lifecycle scenarios before claiming parity for those paths. Dispenser harvests remain
   in PR #729's scope, and cave vine bone meal remains separate from this harvest work.
 
-No existing scenario fixture was re-recorded. Validation for this branch is restricted to affected classes and
+Only `food_and_harvest.json` was re-recorded. Validation for this branch is restricted to affected classes and
 their direct neighbours at the user's request; the user will run the full suite before merging.

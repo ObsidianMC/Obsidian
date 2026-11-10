@@ -152,13 +152,17 @@ internal static class FoodHarvest
 
         var level = use.Level;
         var center = use.Center;
-        var nearby = level.GetEntitiesInRange(center, 12).OfType<Bee>().Where(bee =>
-            bee.AttackTarget is null && Math.Abs(bee.Position.X - center.X) < 8.5
-            && Math.Abs(bee.Position.Y - center.Y) < 6.5 && Math.Abs(bee.Position.Z - center.Z) < 8.5).ToArray();
+        // Vanilla searches the hive's unit box inflated by (8, 6, 8), including intersecting entity boxes.
+        // Check loaded bees directly: a spherical query can omit box corners or scaled bees overlapping its edges.
+        var box = new BoundingBox((VectorD)use.Position - new VectorD(8, 6, 8),
+            (VectorD)use.Position + new VectorD(9, 7, 9));
+        var nearby = level.Regions.Values.SelectMany(region => region.Entities.Values).OfType<Bee>()
+            .Where(bee => bee.AttackTarget is null
+                && Intersects(box, bee.Dimension.CreateBBFromPosition(bee.Position)))
+            .OrderBy(bee => bee.EntityId)
+            .ToArray();
         var players = level.Players.Values.Where(player => player.GameMode != GameMode.Spectator
-            && Math.Abs(player.Position.X - center.X) < 8.5
-            && Math.Abs(player.Position.Y - center.Y) < 6.5
-            && Math.Abs(player.Position.Z - center.Z) < 8.5).ToArray();
+            && Intersects(box, player.Dimension.CreateBBFromPosition(player.Position))).ToArray();
         if (players.Length > 0)
         {
             foreach (var bee in nearby)
@@ -174,6 +178,7 @@ internal static class FoodHarvest
         var blocked = Entities.AI.BlockCollisionShapes.Get(level, exit,
             level.GameEventBlock(exit) ?? BlocksRegistry.Air).Count > 0;
         var retained = new NbtList(NbtTagType.Compound, "bees");
+        var released = new List<(Bee Bee, NbtCompound Occupant)>();
         foreach (var occupant in occupants.OfType<NbtCompound>())
         {
             if (!occupant.TryGetTag<NbtCompound>("entity_data", out var saved))
@@ -191,6 +196,14 @@ internal static class FoodHarvest
             bee.HivePosition = use.Position;
             var elapsed = Math.Max(0, occupant.GetInt("ticks_in_hive"));
             bee.Age = bee.Age < 0 ? Math.Min(0, bee.Age + elapsed) : Math.Max(0, bee.Age - elapsed);
+            released.Add((bee, occupant));
+        }
+
+        // Detach before registering any released entity. The ticker uses the same tick-lock section.
+        // Keep the failure list private until it is complete, so concurrent saves never see it being edited.
+        hive.Set(new NbtList(NbtTagType.Compound, "bees"));
+        foreach (var (bee, occupant) in released)
+        {
             if (!level.TrySpawnEntity(bee, hostOwned: true))
             {
                 retained.Add(occupant);
@@ -209,6 +222,11 @@ internal static class FoodHarvest
 
         hive.Set(retained);
     }
+
+    private static bool Intersects(BoundingBox first, BoundingBox second) =>
+        first.Min.X < second.Max.X && first.Max.X > second.Min.X
+        && first.Min.Y < second.Max.Y && first.Max.Y > second.Min.Y
+        && first.Min.Z < second.Max.Z && first.Max.Z > second.Min.Z;
 }
 
 public abstract partial class AbstractLevel

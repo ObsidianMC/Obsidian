@@ -347,21 +347,23 @@ replaces only what vanilla produced.
   [waxing, bells and redstone ore](known-gaps/waxing-bells-and-redstone-ore.md)).
 
 - `food_and_harvest.json` (`VanillaFoodHarvest.ReplayFoodAndHarvestReference`) records phase 2 batch A's
-  99 cake, candle cake, berry, pumpkin, plant-head trim and hive uses, from `Java/FoodHarvestFixtures.java`
+  110 cake, candle cake, berry, pumpkin, plant-head trim and hive uses, from `Java/FoodHarvestFixtures.java`
   (`CaptureFixtures=food_and_harvest`). It reuses `BlockUseFixtures`' real server, use dispatcher, packet and game
   event recorders and the observed jar's ordered writes. All cases compare every existing observable from the
   start, including every block-write flag bit and unexpected writes. `soundPackets` also checks exact transmitted
   positions, volume, pitch and category (the independent sound-variant seed is not a replay input).
   Additional outputs are `foodAfter`,
   `saturationAfter`, `inventory` (all 41 vanilla inventory slots), `smokey`, and `bees` (occupant count and each bee's
-  target/anger state); every case also compares `dropPositions` exactly. The spectator bystander hears effects
+  target/anger state); every case also compares `dropPositions` exactly. Pumpkin cases compare `dropMotion` too. The spectator bystander hears effects
   but cannot be chosen as a bee's target. Players are indexed as entities so nearby-bee targeting runs normally;
   cleanup excludes them. Each case seeds the level random and the four harvest/carve loot streams with
   `randomSeed`, default 1234. It clears seven cells below the target for smoke range/obstruction cases. The fixture
   covers age and hunger boundaries, both berry yield outcomes, all six pumpkin faces, broken shears, offhand use,
   full inventories, creative bottle exchanges, trim criteria before and after the write, occupied and obstructed
-  hives, and both campfire types at the smoke boundary. Only the two creative bottle cases differ, pinned exactly
-  in the replay (see [food and harvest](known-gaps/food-and-harvest.md)). Capture only this fixture with
+  hives, both campfire types at the smoke boundary, bees at and beyond the harvest search box, and nested codec
+  predicates. `shippedAdvancement` reads criteria directly from vanilla's advancement resource; replay verifies
+  those conditions against Obsidian's shipped definition. All recorded fields match without pins
+  (see [food and harvest](known-gaps/food-and-harvest.md)). Capture only this fixture with
   `dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=food_and_harvest`;
   `CaptureCases` selects exact `+`-separated names as for `block_use`.
 

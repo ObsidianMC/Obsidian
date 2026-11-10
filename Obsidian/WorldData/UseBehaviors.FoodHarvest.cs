@@ -162,8 +162,8 @@ internal static partial class UseBehaviors
             {
                 if (bottle)
                 {
-                    // Keep the shared filled-result policy; the creative hive exception is captured in known-gaps.
-                    BlockUseReturn.Exchange(use, new ItemStack(ItemsRegistry.HoneyBottle, 1));
+                    // A hive consumes a glass bottle in every game mode, unlike a bucket or washed item.
+                    BlockUseReturn.Exchange(use, new ItemStack(ItemsRegistry.HoneyBottle, 1), consumeInCreative: true);
                 }
                 else
                 {

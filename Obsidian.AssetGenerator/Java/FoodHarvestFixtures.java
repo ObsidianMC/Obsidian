@@ -114,7 +114,11 @@ public final class FoodHarvestFixtures {
                 var bee = new net.minecraft.world.entity.animal.bee.Bee(
                     (net.minecraft.world.entity.EntityType) BuiltInRegistries.ENTITY_TYPE.getValue(
                         net.minecraft.resources.Identifier.parse("minecraft:bee")), level);
-                bee.snapTo(target.getX() + 1.5, target.getY(), target.getZ() + 0.5, 0, 0);
+                var offset = input.has("nearbyBeeOffset") ? input.getAsJsonArray("nearbyBeeOffset") : null;
+                var x = offset == null ? 1.5 : offset.get(0).getAsDouble();
+                var y = offset == null ? 0 : offset.get(1).getAsDouble();
+                var z = offset == null ? 0.5 : offset.get(2).getAsDouble();
+                bee.snapTo(target.getX() + x, target.getY() + y, target.getZ() + z, 0, 0);
                 level.addFreshEntity(bee);
             }
 
@@ -124,6 +128,15 @@ public final class FoodHarvestFixtures {
             gameEvents.clear();
             awarded(user).clear();
 
+            if (input.has("shippedAdvancement")) {
+                var name = input.get("shippedAdvancement").getAsString();
+                var path = net.minecraft.resources.Identifier.parse("minecraft:advancement/" + name + ".json");
+                var resource = server.getResourceManager().getResource(path).orElseThrow();
+                try (var reader = resource.openAsReader()) {
+                    var shipped = JsonParser.parseReader(reader).getAsJsonObject();
+                    input.add("criteria", shipped.getAsJsonObject("criteria").deepCopy());
+                }
+            }
             var advancement = (AdvancementHolder) call("prepareCriteria", level, user, input);
             var hand = (InteractionHand) call("hand", input);
             var usedStack = user.getItemInHand(hand);
@@ -159,6 +172,8 @@ public final class FoodHarvestFixtures {
             input.add("bees", bees(level, target, user));
             if (input.has("checkDropPositions"))
                 input.add("dropPositions", dropPositions(level, target));
+            if (input.has("checkDropMotion"))
+                input.add("dropMotion", dropMotion(level, target));
             call("recordExtra", input, heard);
             input.add("entities", entities(level, target));
             call("record", input, heard, gameEvents);
@@ -230,13 +245,30 @@ public final class FoodHarvestFixtures {
         return result;
     }
 
+    private static JsonArray dropMotion(ServerLevel level, BlockPos target) throws Exception {
+        var result = new JsonArray();
+        for (var entity : level.getEntities((net.minecraft.world.entity.Entity)null,
+            new net.minecraft.world.phys.AABB(target).inflate(4), entity -> true)) {
+            if (entity instanceof net.minecraft.world.entity.item.ItemEntity item) {
+                var motion = item.getDeltaMovement();
+                var value = new JsonObject();
+                value.addProperty("item", (String) call("stack", item.getItem()));
+                value.addProperty("x", motion.x);
+                value.addProperty("y", motion.y);
+                value.addProperty("z", motion.z);
+                result.add(value);
+            }
+        }
+        return result;
+    }
+
     private static JsonArray bees(ServerLevel level, BlockPos target, ServerPlayer user) {
         var result = new JsonArray();
         if (level.getBlockEntity(target) instanceof net.minecraft.world.level.block.entity.BeehiveBlockEntity hive)
             result.add("occupants=" + hive.getOccupantCount());
 
         for (var entity : level.getEntities((net.minecraft.world.entity.Entity)null,
-            new net.minecraft.world.phys.AABB(target).inflate(8, 6, 8), entity -> true)) {
+            new net.minecraft.world.phys.AABB(target).inflate(20), entity -> true)) {
             if (entity instanceof net.minecraft.world.entity.animal.bee.Bee bee)
                 result.add("bee target=" + (bee.getTarget() == user) + " angry=" + bee.isAngry());
         }
