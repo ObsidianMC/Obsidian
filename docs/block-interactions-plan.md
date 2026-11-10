@@ -38,9 +38,9 @@ dandelions and the poplar sapling. Apart from placing a straw bed, none of it wo
 appendix).
 
 Two limits on these numbers. Parity is mostly unproven: only redstone (27 scenarios), fluids, daylight detectors,
-block transformers, block item placement, note blocks and door use are replayed against captured vanilla output, and the rest has
-hand-written tests or none. And a few vanilla details below come from memory rather than the jar; they're marked
-"confirm by capture".
+block transformers, block item placement, note blocks, door use and growing plants' random ticks are replayed
+against captured vanilla output, and the rest has hand-written tests or none. And a few vanilla details below come
+from memory rather than the jar; they're marked "confirm by capture".
 
 ## Fix these first
 
@@ -309,8 +309,9 @@ member per Mojang class; the generator binds it.
 
 - **Copper weathering (done):** all 13 `Weathering*` owners share the jar-derived age/next-stage table.
   `copper_weathering.json` captures every family and stage, draw order, neighborhood effects and connected halves.
-- **Growing plants:** kelp, cave vines (with glow berries), weeping and twisting vines (`GrowingPlantHeadBlock`),
-  melon and pumpkin stems, vines, the pitcher crop, the poplar sapling (needs weighted tree growers, see
+- **Growing plants:** done for kelp, cave vines (with glow berries), weeping and twisting vines
+  (`GrowingPlantHeadBlock`), melon and pumpkin stems, vines and the pitcher crop (`GrowingPlantRandomTicks.cs`,
+  replayed from `growing_plant_ticks.json`). Left: the poplar sapling (needs weighted tree growers, see
   `saplings-that-26-3-added.md`).
 - **Melting and weather:** ice, frosted ice, snow layers, and vanilla's `tickPrecipitation` in
   `AbstractLevel.TickChunkBlocks` (snow building up, water freezing, cauldrons filling in rain).
@@ -328,8 +329,8 @@ draws, and neither does the missing weather pass, so the level's random sequence
 would draw. Captures of growth draws only match once the blocks ticked before them in the same chunk are done.
 Capture each behaviour through a Java probe with its own seeded random rather than through a whole-level scenario.
 
-Capture: a `random_ticks` Java probe fixture (state in, draws consumed and state out), and an RCON scenario for
-dripstone. Fire turned out to fit a Java probe (`fire_ticks.json`), so it has no RCON scenario.
+Capture: the `growing_plant_ticks` Java probe fixture (state in, draws consumed and state out; add cases to it), and
+an RCON scenario for dripstone. Fire turned out to fit a Java probe (`fire_ticks.json`), so it has no RCON scenario.
 
 Performance alongside: items 8 (tick only block entities that tick) and 4 (typed properties for leaves and crops).
 
@@ -524,14 +525,14 @@ adds.
 |---|---|---|
 | Furnaces, blast furnaces, smokers | Works | The recipe book holds no cooking displays, so clients aren't shown the recipes taking a result unlocks; experience draws and the crafted statistic (see `known-gaps/workstation-details.md`) |
 | Brewing stands, campfires | Works | |
-| Crops | Works | Pitcher crop, melon and pumpkin stems don't grow |
+| Crops | Works | Stems and the pitcher crop captured (`growing_plant_ticks.json`); bone meal doesn't grow them |
 | Saplings | Works | Poplar doesn't grow |
 | Bamboo, sugar cane, cactus, nether wart, cocoa, sweet berries | Works | No capture of growth draws |
-| Cave vines | Missing | Kelp and the nether vines too (`GrowingPlantHeadBlock`) |
+| Cave vines | Works | Captured with kelp and the nether vines (`growing_plant_ticks.json`); no bone meal |
 | Grass, mycelium: spread | Works | |
 | Copper: oxidize | Works | Captured random draws, all 13 owners, connected doors/chests and retained block entities |
 | Leaves: decay | Works | |
-| Ice, snow layers: melt | Missing | No weather pass either |
+| Ice, snow layers: melt | Works | Captured melting, sparse frost collapse, biome borders, flat snow lines and entity lifting (`melting_weather.json`) |
 | Fire | Works | Captured (`fire_ticks.json`). Fire lights a portal later in the tick than vanilla's; soul fire placed off a soul fire base isn't put out on placement (`BaseFireBlock.onPlace` is unbound); fire a shape update destroys goes later in the tick |
 | Lava, water | Works | Flow is captured; lava's ignition isn't |
 | Farmland: hydrate | Works | |
@@ -575,7 +576,7 @@ Statements the code contradicts, to correct in phase 0.
   read 0".
 - **`docs/known-gaps/plant-growth-beyond-saplings.md`:** "only saplings and the propagule do anything", "crops don't
   grow on random ticks", "leaves don't decay", and its "Where to start". Still
-  true: ice, snow, copper, weather, bone meal on other plants.
+  true: copper, bone meal on other plants.
 - **`docs/known-gaps/vanilla-blocks-reactions-to-block-updates.md`:** doors, trapdoors, rails and TNT "aren't
   modelled"; scheduled ticks of other vanilla blocks "do nothing"; "only pressure plates and wooden buttons react to
   entities inside them"; its "Where to start".

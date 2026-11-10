@@ -34,8 +34,10 @@ internal static class ScenarioCaptures
     public const string BlockUse = "block_use";
     public const string TurtleEggs = "turtle_eggs";
     public const string Frogspawn = "frogspawn";
+    public const string GrowingPlantTicks = "growing_plant_ticks";
     public const string FurnaceResults = "furnace_results";
 
+    public const string MeltingWeather = "melting_weather";
 
     private const string Symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -64,12 +66,12 @@ internal static class ScenarioCaptures
 
     // The fixtures whose probes record only the cases asked for.
     private static readonly string[] SelectableCases =
-        [Redstone, Sulfur, MoreBlocks, StructurePieces, Fire, TickingBlocks, BlockUse];
-
+        [Redstone, Sulfur, MoreBlocks, StructurePieces, Fire, TickingBlocks, BlockUse, MeltingWeather];
 
     public static readonly string[] All =
         [Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps, SavedHeightmaps, Mining,
-            Placement, CopperWeathering, Fire, TickingBlocks, BlockUse, TurtleEggs, Frogspawn, FurnaceResults];
+            Placement, CopperWeathering, Fire, TickingBlocks, BlockUse, TurtleEggs, Frogspawn,
+            GrowingPlantTicks, MeltingWeather, FurnaceResults];
 
     private const string RedstoneNotes = """
         Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a
@@ -112,8 +114,7 @@ internal static class ScenarioCaptures
         {
             throw new ArgumentException(
                 "Case selection requires CaptureFixtures=redstone, sulfur, more_blocks, structure_pieces, "
-                + "fire, ticking_blocks or block_use.");
-
+                + "fire, ticking_blocks, block_use or melting_weather.");
         }
 
         if (fixtures.Contains(CopperWeathering))
@@ -147,6 +148,14 @@ internal static class ScenarioCaptures
                 return;
         }
 
+        if (fixtures.Contains(MeltingWeather))
+        {
+            var path = Path.Combine(assetsDirectory, "melting_weather.json");
+            await FixtureDumper.DumpMeltingWeatherAsync(server, path, cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
         if (fixtures.Contains(SavedHeightmaps))
         {
             await FixtureDumper.DumpSavedHeightmapsAsync(server, Path.Combine(assetsDirectory, "saved_heightmaps.json"));
@@ -171,6 +180,14 @@ internal static class ScenarioCaptures
         if (fixtures.Contains(Frogspawn))
         {
             await FixtureDumper.DumpFrogspawnAsync(server, Path.Combine(assetsDirectory, "frogspawn.json"));
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(GrowingPlantTicks))
+        {
+            var path = Path.Combine(assetsDirectory, "growing_plant_ticks.json");
+            await FixtureDumper.DumpGrowingPlantTicksAsync(server, path);
             if (fixtures.Count == 1)
                 return;
         }

@@ -230,7 +230,11 @@ internal sealed class FluidLevel
     {
         var block = this.GetBlock(position);
         var neighborPosition = position.Offset(direction);
-        this.ScheduleFluidShapeTick(position, block, neighbor);
+
+        // Kelp turning into its other part returns before vanilla schedules its water tick.
+        if (!this.KelpConverts(position, block, direction, neighbor))
+            this.ScheduleFluidShapeTick(position, block, neighbor);
+
         var updated = this.access.Reactions?.UpdateShape(position, block, direction, neighborPosition, neighbor)
             ?? this.UpdateVanillaShape(block, position, direction, neighbor, shapes, scheduleFluidTick: false);
 
@@ -241,6 +245,19 @@ internal sealed class FluidLevel
             this.DestroyBlock(position, (flags & BlockUpdateFlags.SuppressDrops) == 0, updateLimit, shapes);
         else
             this.SetBlock(position, updated, flags & ~BlockUpdateFlags.SuppressDrops, updateLimit, shapes);
+    }
+
+    // GrowingPlantShapes.Converts for kelp, the only growing plant holding water.
+    private bool KelpConverts(Vector position, IBlock block, BlockFace direction, IBlock neighbor)
+    {
+        if (block.RegistryId is not (BlockIds.Kelp or BlockIds.KelpPlant))
+            return false;
+
+        var ahead = GrowingPlantShapes.BlockAheadToRead(position, block, direction) is Vector at
+            ? this.GetBlock(at)
+            : null;
+
+        return GrowingPlantShapes.Converts(block, direction, neighbor, ahead);
     }
 
     private bool SetBlock(Vector position, IBlock block, BlockUpdateFlags flags, int updateLimit, VanillaShapes shapes)

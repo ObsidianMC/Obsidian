@@ -32,9 +32,11 @@
 		<VanillaDumperInput Include="Java\**\*.java;Java\**\*.json"
 		                    Exclude="Java\SulfurFixtures.java;Java\MoreBlockFixtures.java;Java\HeightmapFixtures.java;
 		                             Java\PlacementFixtures.java;Java\CopperWeatheringFixtures.java;
-		                             Java\FireFixtures.java;Java\BlockUseFixtures.java" />
+		                             Java\FireFixtures.java;Java\BlockUseFixtures.java;
+		                             Java\MeltingWeatherFixtures.java" />
 		<VanillaDumperInput Remove="Java\TickingBlockFixtures.java" />
 		<VanillaDumperInput Remove="Java\HatchingFixtures.java" />
+		<VanillaDumperInput Remove="Java\GrowingPlantTickFixtures.java" />
 		<VanillaDumperInput Remove="Java\FurnaceFixtures.java" />
 
 		<None Update="@(VanillaDumperInput)" CopyToOutputDirectory="PreserveNewest" />
@@ -48,6 +50,8 @@
 		<None Update="Java\TickingBlockFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\BlockUseFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\HatchingFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\GrowingPlantTickFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\MeltingWeatherFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\FurnaceFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 
 		<!-- On-request captures (CaptureVanillaWorldgen); not asset inputs, so editing them doesn't regenerate the assets. -->

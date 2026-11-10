@@ -30,7 +30,11 @@ public abstract partial class AbstractLevel
             if (machine.IsRemoved || !ReferenceEquals(this.GetResidentBlockEntity(machine.BlockPosition), machine))
                 return;
 
-            using (inventory.Lock())
+            // A menu or plugin may own the inventory and need tick. Skip this tick rather than wait for it.
+            if (!inventory.TryLock(out var inventoryLock))
+                return;
+
+            using (inventoryLock)
             {
                 if (inventory.ShowsRetired)
                     return;
@@ -123,9 +127,15 @@ public abstract partial class AbstractLevel
             }
 
             campfire = resident;
-            using (player.Inventory.Lock())
-            using (campfire.Inventory.Lock())
+            if (!player.Inventory.TryLock(out var handLock))
+                return false;
+
+            using (handLock)
             {
+                if (!campfire.Inventory.TryLock(out var heldCampfire))
+                    return false;
+
+                using var campfireLock = heldCampfire;
                 if (campfire.IsRemoved || campfire.Inventory.ShowsRetired)
                     return false;
 
@@ -164,7 +174,10 @@ public abstract partial class AbstractLevel
                 return ValueTask.CompletedTask;
 
             var block = this.BlockUpdates.GetBlock(campfire.BlockPosition);
-            using (campfire.Inventory.Lock())
+            if (!campfire.Inventory.TryLock(out var inventoryLock))
+                return ValueTask.CompletedTask;
+
+            using (inventoryLock)
                 finished = campfire.Cook(this.CookingRecipes, block.GetProperty("lit") == "true");
         }
 
