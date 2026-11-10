@@ -94,7 +94,7 @@ Source: `Entities/Mob.Persistence.cs`, `Entities/EntityNbt.cs`, `WorldData/MobSt
 
 - **Incomplete:** Exhaustive coverage of spawn/drop/griefing rules and specialized event contexts. Existing checks in bosses, raids and egg systems do not establish compliance for every mob action.
 - **Incomplete:** Full vibration event coverage and calibrated-sensor frequency filtering. Warning escalation, pending vibrations and active sensor/shrieker timing are transient rather than a complete saved vanilla listener state.
-- **Approximate:** Hive occupant timing/release and frogspawn lifecycle run through the player-nearby spawning loop; block lifecycles outside that loop and exact release/hatching conditions need parity work.
+- **Approximate:** Hive occupant timing/release runs through the player-nearby spawning loop; hives outside that loop and exact release conditions need parity work. Frogspawn hatches on its own scheduled block tick, captured from vanilla (`frogspawn.json`).
 
 Source: `Entities/Sheep.cs`, `Entities/Fox.cs`, `Entities/Enderman.cs`, `Entities/Silverfish.cs`, `Entities/SnowGolem.cs`, `Entities/Mob.Equipment.cs`, `WorldData/AbstractLevel.GameEvents.cs`, `WorldData/MobSpawner.Lifecycles.cs`.
 
@@ -137,7 +137,7 @@ Source: `Entities/Villager*.cs`, `Entities/ZombieVillager.cs`, `Entities/Wanderi
 | Wolf | Complete pack/owner-defense targeting, prey/tag rules, anger and follow/teleport conditions remain incomplete. Armor crack particles/sounds and custom equipment-component interactions need comparison. |
 | Parrot | Missing shoulder landing/release and jukebox dancing behavior. Imitation is limited to an explicit older mob list, omitting the 1.21.11 additions; following lacks full teleport/perching behavior. |
 | Fox | Missing full trusted-player defense, held-food eating and glow-berry interaction; simplified sleep/pounce/prey behavior. Metadata only exposes sleeping, omitting the full crouch/pounce/sit/faceplant presentation. |
-| Frog, Tadpole | Reduced long-jump/swimming/tongue decisions and water search; frog pregnancy uses a local placement scan rather than full spawn-laying behavior. Exact tongue timing, frogspawn conditions and maturation/bucket transfer need validation. |
+| Frog, Tadpole | Reduced long-jump/swimming/tongue decisions and water search; frog pregnancy uses a local placement scan rather than full spawn-laying behavior. Exact tongue timing, where frogs lay frogspawn and maturation/bucket transfer need validation. |
 | Goat | Approximate ram target selection/run-up/collision and long-jump trajectory/landing checks; full horn selection/drop and screaming/inheritance rules need comparison. |
 | Panda | Reduced personality activities, rolling, sneezing, resting and aggression. Breeding uses a fixed nearby bamboo count; full social/unhappy/thunder behavior and animation state are incomplete. |
 | Pig, Cow, Chicken, Sheep | Shared breeding/temptation/spawn-group/loot limitations. Sheep color mixing is a hard-coded subset rather than recipe-driven matching. Exact biome distributions, egg/jockey behavior and interaction presentation need validation. |

@@ -34,6 +34,7 @@
 		                             Java\PlacementFixtures.java;Java\CopperWeatheringFixtures.java;
 		                             Java\FireFixtures.java;Java\BlockUseFixtures.java" />
 		<VanillaDumperInput Remove="Java\TickingBlockFixtures.java" />
+		<VanillaDumperInput Remove="Java\HatchingFixtures.java" />
 		<VanillaDumperInput Remove="Java\GrowingPlantTickFixtures.java" />
 
 		<None Update="@(VanillaDumperInput)" CopyToOutputDirectory="PreserveNewest" />
@@ -46,6 +47,7 @@
 		<None Update="Java\FireFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\TickingBlockFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\BlockUseFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\HatchingFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\GrowingPlantTickFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 
 		<!-- On-request captures (CaptureVanillaWorldgen); not asset inputs, so editing them doesn't regenerate the assets. -->
