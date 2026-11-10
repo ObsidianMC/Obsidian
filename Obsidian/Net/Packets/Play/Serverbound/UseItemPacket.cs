@@ -42,7 +42,11 @@ public partial class UseItemPacket
         user.QueueBlockAcknowledgement(this.Sequence);
         if (!user.Alive || user.Respawning || user.HasPendingTeleport
             || !float.IsFinite(this.Yaw) || !float.IsFinite(this.Pitch))
+        {
+            var slot = this.Hand == InteractionHand.OffHand ? 45 : user.CurrentHeldItemSlot;
+            await user.SyncInventorySlotAsync(slot);
             return UseResult.Fail;
+        }
 
         // Vanilla handleUseItem applies the packet's aim before an item's own POV ray trace.
         user.Yaw = this.Yaw;

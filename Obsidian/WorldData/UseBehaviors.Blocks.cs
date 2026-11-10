@@ -132,7 +132,9 @@ internal static partial class UseBehaviors
                 use.Level.BlockUpdates.SetBlock(use.Position, use.Block.WithProperty("has_record", true));
                 return true;
             }, consumeItem: true))
+            {
                 return UseResult.Fail;
+            }
 
             await use.Player.SyncInventorySlotAsync(use.HandSlot);
             use.Level.EmitGameEvent(MobGameEvent.BlockChange, use.Center);
@@ -219,7 +221,9 @@ internal static partial class UseBehaviors
 
                     return true;
                 }))
+                {
                     return UseResult.Fail;
+                }
 
                 use.Level.BroadcastLevelEvent(1009, use.Position, 0);
                 use.Level.EmitGameEvent(MobGameEvent.BlockChange, use.Center, use.Player);
@@ -233,7 +237,9 @@ internal static partial class UseBehaviors
                     CraftingType.CampfireCooking, use.Item);
                 return recipe is not null && campfire.Place(use.Item!, recipe.CookingTime);
             }, consumeItem: true, destination: campfire.Inventory))
+            {
                 return UseResult.TryWithEmptyHand;
+            }
 
             await use.Player.SyncInventorySlotAsync(use.HandSlot);
             campfire.SendUpdate();
@@ -268,7 +274,9 @@ internal static partial class UseBehaviors
                 use.Level.Fill(use.Position, layers.Value);
                 return true;
             }, consumeItem: true))
+            {
                 return UseResult.TryWithEmptyHand;
+            }
 
             await use.Player.SyncInventorySlotAsync(use.HandSlot);
 
@@ -288,7 +296,9 @@ internal static partial class UseBehaviors
                 use.Level.TakeBoneMeal(use.Position);
                 return true;
             }))
+            {
                 return UseResult.Fail;
+            }
 
             use.Level.EmitGameEvent(MobGameEvent.BlockChange, use.Center, use.Player);
 
@@ -392,7 +402,9 @@ internal static partial class UseBehaviors
                 ItemDamage.ApplyIgniterCost(use, use.Item!);
                 return true;
             }))
+            {
                 return UseResult.Fail;
+            }
 
             PrimedTnt.Prime(use.Level, use.Position, use.Player);
             use.Level.EmitGameEvent(MobGameEvent.PrimeFuse, use.Center, use.Player);

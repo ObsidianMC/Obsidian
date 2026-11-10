@@ -279,7 +279,9 @@ internal static class BlockMenus
             var type = block.GetProperty("type");
             if (type is not ("left" or "right")
                 || ConnectedOffset(type, block.GetProperty("facing")) is not Vector offset)
+            {
                 return false;
+            }
 
             var partnerPosition = position + offset;
             var partner = level.BlockUpdates.GetBlock(partnerPosition);

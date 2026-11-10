@@ -96,10 +96,12 @@ public partial class UseItemOnPacket
         // The event's handlers may have filled the target (or a second half's place) or changed the player's hand
         // while it ran: all are checked again in the same step as the block is placed, and the item is only used once
         // it is.
+        // Vanilla BlockItem.placeBlock retains UPDATE_ALL_IMMEDIATE; plugin placement keeps its existing flags.
+        var flags = currentItem.Holder.Block is BlockType ? BlockUpdateFlags.All : BlockUpdateFlags.AllImmediate;
         var stored = await placeLevel.TrySetBlockAsync(
             position,
             block,
-            BlockUpdateFlags.All,
+            flags,
             current => use.CanCommit && (current.CanBeReplaced()
                     || VanillaPlacement.SlabCanBeReplaced(current, placed, replacesClicked, this.Face, upperHit))
                 && VanillaPlacement.SecondHalfFits(placeLevel.BlockUpdates, position, placed)

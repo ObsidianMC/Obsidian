@@ -32,30 +32,39 @@ internal static class BucketItems
         }
 
         if (!Handles(stack) || player.IsOnCooldown(stack) || player.GameMode == GameMode.Spectator)
+        {
+            await player.SyncInventorySlotAsync(slot);
             return UseResult.Pass;
+        }
 
-        BlockUse use;
+        BlockUse? use = null;
         lock (level.Fluids.TickLock)
         {
-            if (Trace(level, player, stack!.Holder.Id == ItemIds.Bucket) is not BlockShapeHit hit)
-                return UseResult.Pass;
-
-            use = new BlockUse
+            if (Trace(level, player, stack!.Holder.Id == ItemIds.Bucket) is BlockShapeHit hit)
             {
-                Server = server,
-                Level = level,
-                Player = player,
-                Position = hit.Position,
-                Block = level.BlockUpdates.GetBlock(hit.Position),
-                BlockEntity = level.GetResidentBlockEntity(hit.Position),
-                Face = hit.Face,
-                Cursor = hit.ClickedAt,
-                Hand = hand,
-                HandSlot = slot,
-                Item = stack,
-                UsedItem = snapshot,
-                Sequence = sequence
-            };
+                use = new BlockUse
+                {
+                    Server = server,
+                    Level = level,
+                    Player = player,
+                    Position = hit.Position,
+                    Block = level.BlockUpdates.GetBlock(hit.Position),
+                    BlockEntity = level.GetResidentBlockEntity(hit.Position),
+                    Face = hit.Face,
+                    Cursor = hit.ClickedAt,
+                    Hand = hand,
+                    HandSlot = slot,
+                    Item = stack,
+                    UsedItem = snapshot,
+                    Sequence = sequence
+                };
+            }
+        }
+
+        if (use is null)
+        {
+            await player.SyncInventorySlotAsync(slot);
+            return UseResult.Pass;
         }
 
         var result = UseResult.Fail;
@@ -72,6 +81,9 @@ internal static class BucketItems
                         Stack = stack!,
                         Hand = hand
                     });
+                if (plugin)
+                    use.ChangedInventorySlots.Add(slot);
+
                 result = plugin ? UseResult.Success : await ApplyAsync(use);
             }
         }
@@ -86,8 +98,9 @@ internal static class BucketItems
             player.Client.SendPacket(new BlockUpdatePacket(position, block.GetHashCode()));
         }
 
-        for (var index = 9; index <= 45; index++)
-            await player.SyncInventorySlotAsync(index);
+        var changed = result.ConsumesAction() ? use.ChangedInventorySlots : [use.HandSlot];
+        foreach (var changedSlot in changed)
+            await player.SyncInventorySlotAsync(changedSlot);
 
         return result;
     }
@@ -101,7 +114,11 @@ internal static class BucketItems
         var result = use.Item!.Holder.Id == ItemIds.Bucket
             ? await PickupAsync(use) : await PourAsync(use);
         if (result.ConsumesAction())
+        {
             use.Player.Statistics.Increment(use.UsedItem!.Holder.UnlocalizedName, type: "minecraft:used");
+            if (use.Item.Holder.Id == ItemIds.Bucket)
+                await use.Player.FireProgressAsync("filled_bucket", item: use.ExchangeRemainder);
+        }
 
         return result;
     }
@@ -138,7 +155,8 @@ internal static class BucketItems
             : [];
         if (!use.TryCommit(() =>
         {
-            if (!use.Level.BlockUpdates.SetBlock(use.Position, replacement))
+            var flags = waterlogged ? BlockUpdateFlags.All : BlockUpdateFlags.AllImmediate;
+            if (!use.Level.BlockUpdates.SetBlock(use.Position, replacement, flags))
                 return false;
 
             if (unsupported)
@@ -147,13 +165,16 @@ internal static class BucketItems
             return true;
         },
             exchangeResult: new ItemStack(filled, 1)))
+        {
             return UseResult.Fail;
+        }
 
         if (powder)
             use.Level.BroadcastLevelEvent(2001, use.Position, block.GetHashCode());
 
         if (unsupported)
         {
+            use.Level.BlockDestroyed?.Invoke(use.Position, replacement, true);
             use.Level.BroadcastLevelEvent(2001, use.Position, replacement.GetHashCode());
             use.Level.EmitGameEvent(MobGameEvent.BlockDestroy, use.Center, null, affectedBlock: replacement);
             foreach (var drop in drops)
@@ -232,7 +253,9 @@ internal static class BucketItems
         {
             if (!level.BlockUpdates.GetBlock(destination).IsSameState(previous)
                 || !ReferenceEquals(level.GetResidentBlockEntity(destination), entity))
+            {
                 return false;
+            }
 
             if (evaporates)
                 return true;
@@ -244,8 +267,33 @@ internal static class BucketItems
                 return true;
             }
 
+            if (destroys)
+            {
+                var emptied = FluidState.Of(previous).CreateLegacyBlock();
+                if (!level.BlockUpdates.SetBlock(destination, emptied, BlockUpdateFlags.All))
+                    return false;
+
+                // Keep the intermediate state until its shape updates run, with the hand already unlocked.
+                // The second write still runs under TryCommit's tick lock, before another use can intervene.
+                var effects = level.ActiveBlockUse!;
+                effects.After(() =>
+                {
+                    level.BlockDestroyed?.Invoke(destination, previous, true);
+                    if (previous.BlockClass() is not ("FireBlock" or "SoulFireBlock"))
+                        level.BroadcastLevelEvent(2001, destination, previous.GetHashCode());
+
+                    level.EmitGameEvent(MobGameEvent.BlockDestroy, (VectorD)destination + 0.5,
+                        null, affectedBlock: previous);
+                    foreach (var drop in drops)
+                        level.SpawnItem((VectorD)destination + 0.5, drop);
+                });
+                effects.After(() => level.BlockUpdates.SetBlock(destination, final, BlockUpdateFlags.AllImmediate));
+                return true;
+            }
+
             // Pouring into an existing source succeeds even if setting that identical state makes no change.
-            return level.BlockUpdates.SetBlock(destination, final) || previous.IsSameState(final);
+            return level.BlockUpdates.SetBlock(destination, final, BlockUpdateFlags.AllImmediate)
+                || previous.IsSameState(final);
         }, exchangeResult: use.Player.GameMode == GameMode.Creative
             ? null : new ItemStack(ItemsRegistry.Bucket, 1));
         if (!committed)
@@ -255,16 +303,6 @@ internal static class BucketItems
         {
             level.Evaporates(use.Player, destination);
             return UseResult.Success;
-        }
-
-        if (destroys)
-        {
-            if (previous.BlockClass() is not ("FireBlock" or "SoulFireBlock"))
-                level.BroadcastLevelEvent(2001, destination, previous.GetHashCode());
-
-            level.EmitGameEvent(MobGameEvent.BlockDestroy, (VectorD)destination + 0.5, null, affectedBlock: previous);
-            foreach (var drop in drops)
-                level.SpawnItem((VectorD)destination + 0.5, drop);
         }
 
         BlockLighting.Play(level, destination, water ? "minecraft:item.bucket.empty" : "minecraft:item.bucket.empty_lava",

@@ -1,3 +1,4 @@
+using Obsidian.API.Blocks;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Entities;
@@ -209,17 +210,21 @@ public partial class UseItemOnPacket
         }
 
         var fireItem = item.Holder.Id is ItemIds.FlintAndSteel or ItemIds.FireCharge;
+        var changeFlags = item.Holder.Id == ItemIds.FlintAndSteel
+            ? BlockUpdateFlags.AllImmediate : BlockUpdateFlags.All;
         if (fireItem && BlockLighting.CanLight(use.Block))
         {
             if (!use.TryCommit(() =>
             {
-                if (!level.BlockUpdates.SetBlock(use.Position, use.Block.WithProperty("lit", true)))
+                if (!level.BlockUpdates.SetBlock(use.Position, use.Block.WithProperty("lit", true), changeFlags))
                     return false;
 
                 ItemDamage.ApplyIgniterCost(use, item);
                 return true;
             }))
+            {
                 return UseResult.Fail;
+            }
 
             PlayIgniterSound(level, item, use.Position, use.Player.EntityId);
             level.EmitGameEvent(MobGameEvent.BlockChange, use.Center, use.Player);
@@ -241,10 +246,12 @@ public partial class UseItemOnPacket
             {
                 if (!level.BlockUpdates.GetBlock(firePosition).IsSameState(existing)
                     || !FireBlockBehavior.CanBePlaced(level.BlockUpdates, firePosition))
+                {
                     return false;
+                }
 
                 var fire = FireBlockBehavior.StateFor(level.BlockUpdates, firePosition);
-                if (!level.BlockUpdates.SetBlock(firePosition, fire))
+                if (!level.BlockUpdates.SetBlock(firePosition, fire, changeFlags))
                     return false;
 
                 ItemDamage.ApplyIgniterCost(use, item);

@@ -6,6 +6,7 @@ using Obsidian.API.Registries;
 using Obsidian.API.Utilities;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Serverbound;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
 using Obsidian.Registries;
@@ -150,7 +151,7 @@ public sealed class BlockUseBuckets
     }
 
     [Fact]
-    public async Task AnUnconfirmedTeleportRefusesTheItemPacketWithoutApplyingItsAim()
+    public async Task EarlyRefusalsCorrectTheUsedHandBeforeAcknowledgingWithoutApplyingTheAim()
     {
         await using var context = TestServerFactory.CreateServer($"bucket-teleport-{Guid.NewGuid():N}");
         WorldBlockEntities.AddEmptyChunk(context.World);
@@ -161,18 +162,100 @@ public sealed class BlockUseBuckets
         player.Pitch = 7;
         var yaw = player.Yaw.Degrees;
         var pitch = player.Pitch.Degrees;
-        player.TeleportId = 42;
         context.World.BlockUpdates.SetBlock(target, BlocksRegistry.Stone, Quiet);
+        var client = (TestClient)player.Client;
+        var sequence = 0;
+        foreach (var refusal in new[] { "teleport", "dead", "respawning", "invalid aim" })
+        {
+            foreach (var hand in new[] { InteractionHand.MainHand, InteractionHand.OffHand })
+            {
+                player.Health = refusal == "dead" ? 0 : 20;
+                player.Respawning = refusal == "respawning";
+                player.TeleportId = refusal == "teleport" ? ++sequence : -1;
+                player.Inventory.SetItem(45, new ItemStack(ItemsRegistry.LavaBucket, 1));
+                var packet = ItemPacket(hand, ++sequence, refusal == "invalid aim" ? float.NaN : 0);
+                client.ClearPackets();
+
+                Assert.Equal(UseResult.Fail, await packet.UseAsync(context.Server, player));
+                player.FlushBlockAcknowledgement();
+
+                var packets = client.SentPackets.ToArray();
+                var correction = Assert.Single(packets.OfType<ContainerSetSlotPacket>());
+                var acknowledgement = Assert.Single(packets.OfType<BlockChangedAckPacket>());
+                var slot = hand == InteractionHand.MainHand ? 36 : 45;
+                Assert.Equal(slot, correction.Slot);
+                Assert.Equal(player.Inventory.GetItem(slot), correction.SlotData);
+                Assert.Equal(sequence, acknowledgement.SequenceID);
+                Assert.True(Array.IndexOf(packets, correction) < Array.IndexOf(packets, acknowledgement));
+                Assert.Equal(yaw, player.Yaw.Degrees);
+                Assert.Equal(pitch, player.Pitch.Degrees);
+                Assert.Equal(ItemsRegistry.WaterBucket.Id, player.GetHeldItem()?.Holder.Id);
+                Assert.True(context.World.BlockUpdates.GetBlock(target + Vector.Up).IsAir);
+            }
+        }
+    }
+
+    private sealed record PacketExchange(string Name, Item Item, int Count, IBlock Block, bool Full, bool Creative,
+        InteractionHand Hand, int[] Slots);
+
+    [Fact]
+    public async Task BucketPacketsSynchronizeOnlyChangedSlotsOrTheRefusedHand()
+    {
+        await using var context = TestServerFactory.CreateServer($"bucket-slots-{Guid.NewGuid():N}");
+        WorldBlockEntities.AddEmptyChunk(context.World);
+        await context.World.GetBlockAsync(target);
+        var player = Player(context);
+        var client = (TestClient)player.Client;
+        PacketExchange[] cases =
+        [
+            new("pour", ItemsRegistry.WaterBucket, 1, BlocksRegistry.Stone, false, false,
+                InteractionHand.MainHand, [36]),
+            new("pickup", ItemsRegistry.Bucket, 1, BlocksRegistry.Water, false, false,
+                InteractionHand.MainHand, [36]),
+            new("stack", ItemsRegistry.Bucket, 3, BlocksRegistry.Water, false, false,
+                InteractionHand.MainHand, [36, 37]),
+            new("offhand stack", ItemsRegistry.Bucket, 3, BlocksRegistry.Water, false, false,
+                InteractionHand.OffHand, [45, 36]),
+            new("full", ItemsRegistry.Bucket, 3, BlocksRegistry.Water, true, false,
+                InteractionHand.MainHand, [36]),
+            new("creative pour", ItemsRegistry.WaterBucket, 1, BlocksRegistry.Stone, false, true,
+                InteractionHand.MainHand, []),
+            new("creative pickup", ItemsRegistry.Bucket, 1, BlocksRegistry.Water, false, true,
+                InteractionHand.MainHand, [37]),
+            new("creative full", ItemsRegistry.Bucket, 3, BlocksRegistry.Water, true, true,
+                InteractionHand.MainHand, []),
+            new("refusal", ItemsRegistry.Bucket, 1, BlocksRegistry.Stone, false, false,
+                InteractionHand.MainHand, [36])
+        ];
+
+        foreach (var probe in cases)
+        {
+            for (var slot = 9; slot <= 45; slot++)
+                player.Inventory.SetItem(slot, probe.Full ? new ItemStack(ItemsRegistry.Stone, 64) : null);
+
+            var handSlot = probe.Hand == InteractionHand.MainHand ? 36 : 45;
+            player.GameMode = probe.Creative ? GameMode.Creative : GameMode.Survival;
+            player.Inventory.SetItem(handSlot, new ItemStack(probe.Item, probe.Count));
+            context.World.BlockUpdates.SetBlock(target, probe.Block, Quiet);
+            context.World.BlockUpdates.SetBlock(target + Vector.Up, BlocksRegistry.Air, Quiet);
+            client.ClearPackets();
+
+            await ItemPacket(probe.Hand, 1).UseAsync(context.Server, player);
+
+            var slots = client.SentPackets.OfType<ContainerSetSlotPacket>().Select(packet => (int)packet.Slot).ToArray();
+            Assert.True(probe.Slots.SequenceEqual(slots),
+                $"{probe.Name}: expected slots [{string.Join(',', probe.Slots)}], got [{string.Join(',', slots)}]");
+        }
+    }
+
+    private static UseItemPacket ItemPacket(InteractionHand hand, int sequence, float yaw = 0)
+    {
         var packet = new UseItemPacket();
-        typeof(UseItemPacket).GetProperty(nameof(UseItemPacket.Yaw))!.SetValue(packet, 0f);
+        typeof(UseItemPacket).GetProperty(nameof(UseItemPacket.Hand))!.SetValue(packet, hand);
+        typeof(UseItemPacket).GetProperty(nameof(UseItemPacket.Sequence))!.SetValue(packet, sequence);
+        typeof(UseItemPacket).GetProperty(nameof(UseItemPacket.Yaw))!.SetValue(packet, yaw);
         typeof(UseItemPacket).GetProperty(nameof(UseItemPacket.Pitch))!.SetValue(packet, 90f);
-
-        Assert.Equal(UseResult.Fail, await packet.UseAsync(context.Server, player));
-
-        Assert.Equal(yaw, player.Yaw.Degrees);
-        Assert.Equal(pitch, player.Pitch.Degrees);
-        Assert.Equal(ItemsRegistry.WaterBucket.Id, player.GetHeldItem()?.Holder.Id);
-        Assert.True(context.World.BlockUpdates.GetBlock(target + Vector.Up).IsAir);
+        return packet;
     }
 
     [Fact]

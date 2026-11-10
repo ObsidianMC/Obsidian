@@ -163,7 +163,7 @@ internal sealed class LevelFluids : IFluidLevelAccess
     {
         lock (this.sync)
             return this.fluidLevel.PlaceLiquid(position, block, fluid,
-                (at, state) => this.level.BlockUpdates.SetBlock(at, state));
+                (at, state, flags) => this.level.BlockUpdates.SetBlock(at, state, flags));
     }
 
     public void OnWaterlogged(Vector position, IBlock previous)

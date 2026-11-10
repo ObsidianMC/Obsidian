@@ -1,3 +1,5 @@
+using Obsidian.API.Blocks;
+
 namespace Obsidian.WorldData;
 
 internal static partial class UseBehaviors
@@ -16,10 +18,13 @@ internal static partial class UseBehaviors
             // Vanilla candles require mayBuild; candle cakes instead distinguish the candle from the cake hit.
             if (use.HasItem || use.Block.GetProperty("lit") != "true"
                 || (cake ? use.Cursor.Y <= 0.5 : !use.MayBuild))
+            {
                 return ValueTask.FromResult(UseResult.TryWithEmptyHand);
+            }
 
             var committed = use.TryCommit(() =>
-                use.Level.BlockUpdates.SetBlock(use.Position, use.Block.WithProperty("lit", false)));
+                use.Level.BlockUpdates.SetBlock(use.Position, use.Block.WithProperty("lit", false),
+                    BlockUpdateFlags.AllImmediate));
             if (committed)
                 BlockLighting.Extinguished(use.Level, use.Position, use.Block, use.Player);
 
