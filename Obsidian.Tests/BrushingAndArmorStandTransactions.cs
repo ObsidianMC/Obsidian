@@ -1,6 +1,11 @@
 using Obsidian.API;
 using Obsidian.API.Blocks;
 using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
+using Obsidian.API.Loot;
+using Obsidian.API.Loot.Entries;
+using Obsidian.API.Loot.Functions;
+using Obsidian.API.Loot.Numbers;
 using Obsidian.API.Registries;
 using Obsidian.API.Utilities;
 using Obsidian.Entities;
@@ -102,6 +107,108 @@ public sealed class BrushingAndArmorStandTransactions
 
         Assert.Same(ItemsRegistry.IronHelmet, player.GetHeldItem()!.Holder);
         Assert.Same(ItemsRegistry.DiamondHelmet, stand.GetEquipment(EquipmentSlot.Helmet).Holder);
+    }
+
+    [Fact]
+    public async Task StandRemovedWhileTheExchangeWaitsKeepsTheHand()
+    {
+        await using var context = await WorldAsync("stand-removal-race");
+        var world = context.World;
+        var stand = Stand(world);
+        var player = Player(context, "User", new ItemStack(ItemsRegistry.IronHelmet));
+        var use = await ArmorStandUse.CaptureAsync(player, InteractionHand.MainHand, new VectorF(0, 1.8f, 0.2f));
+
+        // A removal under way holds the level's transfer lock. The use is let in once it holds the player's
+        // inventory, so it is waiting for the transfer lock, then the stand goes before the removal lets go.
+        using var removing = new System.Threading.ManualResetEventSlim();
+        using var remove = new System.Threading.ManualResetEventSlim();
+        var removed = false;
+        var remover = new System.Threading.Thread(() =>
+        {
+            using (world.TransferLock.Enter())
+            {
+                removing.Set();
+                remove.Wait();
+                removed = world.RemoveEntity(stand, transferring: false);
+            }
+        });
+        remover.Start();
+        removing.Wait();
+
+        var exchange = Task.Run(async () => await stand.UseAsync(use));
+        var waiting = System.Threading.SpinWait.SpinUntil(
+            () => InventoryBusy(player) || exchange.IsCompleted,
+            TimeSpan.FromSeconds(10));
+        Assert.True(waiting);
+        remove.Set();
+        remover.Join();
+        await exchange;
+
+        Assert.True(removed);
+        Assert.Same(ItemsRegistry.IronHelmet, player.GetHeldItem()!.Holder);
+        Assert.True(stand.GetEquipment(EquipmentSlot.Helmet).IsAir);
+    }
+
+    [Fact]
+    public async Task BrushEmptiedWhileItsLootRollsDoesNotFinish()
+    {
+        await using var context = await WorldAsync("brush-emptied");
+        var brush = new ItemStack(ItemsRegistry.Brush);
+        var player = Player(context, "User", brush);
+        var brushable = AlmostBrushed(context.World);
+        brushable.SetLootTable(ProbeTable, 123);
+
+        await StrokeWhileRollingAsync(context, player, brush, () => ChangeHeld(player, () => brush.Count = 0));
+
+        Assert.Equal(BlockIds.SuspiciousSand, context.World.BlockUpdates.GetBlock(target).RegistryId);
+        Assert.Equal(BrushableBlockEntity.StrokesToFinish - 1, brushable.BrushCount);
+        Assert.Equal(ProbeTable, brushable.LootTable);
+        Assert.Empty(Items(context.World));
+    }
+
+    [Fact]
+    public async Task BrushChangedWhileItsLootRollsDoesNotFinish()
+    {
+        await using var context = await WorldAsync("brush-changed");
+        var brush = new ItemStack(ItemsRegistry.Brush);
+        var player = Player(context, "User", brush);
+        var brushable = AlmostBrushed(context.World);
+        brushable.SetLootTable(ProbeTable, 123);
+
+        await StrokeWhileRollingAsync(context, player, brush, () => ChangeHeld(player,
+            () => brush[DataComponentType.Unbreakable] = ComponentBuilder.Unbreakable with { Value = true }));
+
+        Assert.Equal(BlockIds.SuspiciousSand, context.World.BlockUpdates.GetBlock(target).RegistryId);
+        Assert.Equal(BrushableBlockEntity.StrokesToFinish - 1, brushable.BrushCount);
+        Assert.Empty(Items(context.World));
+        Assert.Equal(0, brush.Damage);
+    }
+
+    [Fact]
+    public async Task LootRolledForAReplacedBlockIsNotGivenToItsReplacement()
+    {
+        await using var context = await WorldAsync("brush-replacement");
+        var world = context.World;
+        var brush = new ItemStack(ItemsRegistry.Brush);
+        var player = Player(context, "User", brush);
+        AlmostBrushed(world).SetLootTable(ProbeTable, 123);
+        BrushableBlockEntity? replacement = null;
+
+        // The same table and seed on suspicious gravel put where the sand was while the sand's loot rolls.
+        await StrokeWhileRollingAsync(context, player, brush, () =>
+        {
+            world.BlockUpdates.SetBlock(target, BlocksRegistry.Stone);
+            world.BlockUpdates.SetBlock(target, BlocksRegistry.SuspiciousGravel);
+            replacement = (BrushableBlockEntity)world.GetResidentBlockEntity(target)!;
+            replacement.SetLootTable(ProbeTable, 123);
+        });
+
+        Assert.NotNull(replacement);
+        Assert.Same(replacement, world.GetResidentBlockEntity(target));
+        Assert.Equal(0, replacement!.BrushCount);
+        Assert.Equal(ProbeTable, replacement.LootTable);
+        Assert.Null(replacement.Item);
+        Assert.Empty(Items(world));
     }
 
     [Fact]
@@ -223,7 +330,9 @@ public sealed class BrushingAndArmorStandTransactions
             new NbtCompound("equipment")
             {
                 new ItemStack(ItemsRegistry.IronHelmet).ToNbt("head"),
-                new ItemStack(ItemsRegistry.Stick, 1).ToNbt("mainhand")
+                new ItemStack(ItemsRegistry.Stick, 1).ToNbt("mainhand"),
+                new ItemStack(ItemsRegistry.DiamondHorseArmor).ToNbt("body"),
+                new ItemStack(ItemsRegistry.Saddle).ToNbt("saddle")
             },
             new NbtTag<bool>("Invisible", false),
             new NbtTag<bool>("Small", true),
@@ -264,10 +373,72 @@ public sealed class BrushingAndArmorStandTransactions
         stand.HeadPose = new VectorF(0, 0, 0);
         var changed = EntityNbt.Save(stand)!;
 
-        var equipment = new NbtCompound("equipment") { new ItemStack(ItemsRegistry.GoldenHelmet).ToNbt("head") };
+        // The body and saddle a use can't fill on a stand are saved as vanilla saves them, from what was loaded.
+        var equipment = new NbtCompound("equipment")
+        {
+            new ItemStack(ItemsRegistry.GoldenHelmet).ToNbt("head"),
+            new ItemStack(ItemsRegistry.DiamondHorseArmor).ToNbt("body"),
+            new ItemStack(ItemsRegistry.Saddle).ToNbt("saddle")
+        };
         Assert.True(NbtJson.Same(NbtJson.ToJson(equipment), NbtJson.ToJson(changed["equipment"])));
         Assert.False(changed.HasTag("Marker"));
         Assert.Empty((NbtCompound)changed["Pose"]);
+    }
+
+    private const string ProbeTable = "probe:brushing_rendezvous";
+
+    // A stroke whose loot runs `during` as it rolls, outside the level's locks, as a plugin's loot function could.
+    private static async Task StrokeWhileRollingAsync(RealServerContext context, ServerPlayer player,
+        ItemStack brush, Action during)
+    {
+        var table = new LootTable
+        {
+            Identifier = ProbeTable,
+            Pools =
+            [
+                new LootPool
+                {
+                    Rolls = new ConstantNumber { Value = 1 },
+                    Entries = [new ItemEntry { Name = ItemsRegistry.Diamond }]
+                }
+            ],
+            Functions = [new DuringRoll(during)]
+        };
+
+        PluginLootTables.Apply([table]);
+        try
+        {
+            await StrokeAsync(context, player, brush);
+        }
+        finally
+        {
+            PluginLootTables.Apply([]);
+        }
+    }
+
+    // Changes the held brush under the inventory's lock, as a click would.
+    private static void ChangeHeld(ServerPlayer player, Action change)
+    {
+        using (player.Inventory.Lock())
+            change();
+    }
+
+    private static bool InventoryBusy(ServerPlayer player)
+    {
+        if (!player.Inventory.TryLock(out var handle))
+            return true;
+
+        handle.Dispose();
+        return false;
+    }
+
+    private sealed class DuringRoll(Action during) : LootFunction
+    {
+        protected override ItemStack Run(ItemStack stack, LootContext context)
+        {
+            during();
+            return stack;
+        }
     }
 
     private static NbtCompound RoundTrip(NbtCompound saved)
