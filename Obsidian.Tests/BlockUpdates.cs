@@ -1103,6 +1103,7 @@ public sealed class BlockUpdates : IDisposable
 /// </summary>
 public sealed class ProbeRelay : IBlockBehavior
 {
+    public const string NeighborHookKey = "Obsidian.Tests.ProbeRelay.NeighborHook";
     public const string CallsKey = "Obsidian.Tests.ProbeRelay.Calls";
 
     private BlockType? type;
@@ -1143,6 +1144,9 @@ public sealed class ProbeRelay : IBlockBehavior
 
     public void NeighborChanged(NeighborChangedContext context)
     {
+        if (AppContext.GetData(NeighborHookKey) is Action<NeighborChangedContext> hook)
+            hook(context);
+
         Record($"neighbor {At(context.Position)} from {Short(context.SourceBlock)}");
 
         var power = context.Level.GetBestNeighborSignal(context.Position);

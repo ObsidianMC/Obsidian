@@ -110,8 +110,9 @@ internal sealed class BlockUse
     /// <summary>
     /// Commits a synchronous destination change and its hand exchange together. The tick lock comes first, then
     /// the hand and destination inventories. Busy inventories refuse the click rather than waiting under the tick
-    /// lock. The callback must validate its destination before writing, and must not await or invoke plugin hooks.
-    /// Send packets and run awaited hooks only after this returns.
+    /// lock. A state-only write scope suppresses external effects, including the normal block notifications.
+    /// Those effects are published in write order through the normal level path after both inventories unlock.
+    /// The callback validates before writing and never awaits.
     /// </summary>
     /// <remarks>
     /// A replacement is only for a single unstackable input, such as a filled fish bucket. Cauldrons and hives
@@ -134,6 +135,7 @@ internal sealed class BlockUse
                 return false;
             }
 
+            BlockUseEffects? effects = null;
             using (handLock)
             {
                 var held = this.Player.Inventory.GetItem(this.HandSlot);
@@ -155,6 +157,7 @@ internal sealed class BlockUse
                 }
 
                 using (destinationLock)
+                using (effects = new BlockUseEffects(this.Level))
                 {
                     if (destination?.ShowsRetired == true || !change())
                     {
@@ -172,9 +175,11 @@ internal sealed class BlockUse
                         this.ResyncHand = true;
                     }
 
-                    return true;
                 }
             }
+
+            effects!.Publish();
+            return true;
         }
     }
 

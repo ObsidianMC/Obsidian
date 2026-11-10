@@ -84,8 +84,14 @@ public abstract partial class AbstractLevel
     /// Runs under the tick lock the block was stored under, so that the updates of block changes don't interleave: a
     /// change made meanwhile on another thread waits for them, and its updates follow these.
     /// </remarks>
-    private void AfterBlockSet(Vector position, IBlock old, IBlock block, BlockUpdateFlags flags)
+    internal void AfterBlockSet(Vector position, IBlock old, IBlock block, BlockUpdateFlags flags)
     {
+        if (this.ActiveBlockUse is BlockUseEffects effects)
+        {
+            effects.After(() => this.AfterBlockSet(position, old, block, flags));
+            return;
+        }
+
         this.Fluids.OnBlockChanged(position, old, block, flags);
         this.NotifyBlockChange(position, old, block, flags);
     }
@@ -97,6 +103,12 @@ public abstract partial class AbstractLevel
     /// </summary>
     internal void NotifyBlockChange(Vector position, IBlock old, IBlock block, BlockUpdateFlags flags)
     {
+        if (this.ActiveBlockUse is BlockUseEffects effects)
+        {
+            effects.After(() => this.NotifyBlockChange(position, old, block, flags));
+            return;
+        }
+
         var neighbors = (flags & BlockUpdateFlags.Neighbors) != 0;
         var shapes = (flags & BlockUpdateFlags.KnownShape) == 0;
         if (old.GetHashCode() == block.GetHashCode() || (!neighbors && !shapes))

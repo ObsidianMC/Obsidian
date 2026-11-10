@@ -54,6 +54,12 @@ internal static class Composters
     /// <summary>Plays a composter sound to the players in range, from its block.</summary>
     internal static void PlaySound(AbstractLevel level, Vector position, string sound)
     {
+        if (level.ActiveBlockUse is BlockUseEffects effects)
+        {
+            effects.After(() => PlaySound(level, position, sound));
+            return;
+        }
+
         level.PacketBroadcaster.BroadcastToLevelInRange(level, position, new SoundPacket
         {
             // SoundId's names have no namespace, which vanilla's sound packet carries.

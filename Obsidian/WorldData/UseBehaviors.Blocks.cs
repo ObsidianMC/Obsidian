@@ -363,12 +363,12 @@ internal static partial class UseBehaviors
                 if (!use.Level.BlockUpdates.SetBlock(use.Position, BlocksRegistry.Air))
                     return false;
 
-                PrimedTnt.Prime(use.Level, use.Position, use.Player);
                 ItemDamage.ApplyIgniterCost(use, use.Item!);
                 return true;
             }))
                 return UseResult.Fail;
 
+            PrimedTnt.Prime(use.Level, use.Position, use.Player);
             use.Level.EmitGameEvent(MobGameEvent.PrimeFuse, use.Center, use.Player);
 
             var item = use.Item!;

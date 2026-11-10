@@ -208,6 +208,12 @@ internal static class Signs
 
     private static void OpenEditor(ILevel level, Vector position, IPlayer player, bool front)
     {
+        if (level is AbstractLevel { ActiveBlockUse: BlockUseEffects effects })
+        {
+            effects.After(() => OpenEditor(level, position, player, front));
+            return;
+        }
+
         editors[(level, position)] = player.Uuid;
         player.SendPacket(new OpenSignEditorPacket { Position = position, Slot = front ? SignTextSlot.Front : SignTextSlot.Back });
     }
@@ -298,7 +304,14 @@ internal static class Signs
         return builder.ToString();
     }
 
-    private static void PlaySound(ILevel level, Vector position, string sound) =>
+    private static void PlaySound(ILevel level, Vector position, string sound)
+    {
+        if (level is AbstractLevel { ActiveBlockUse: BlockUseEffects effects })
+        {
+            effects.After(() => PlaySound(level, position, sound));
+            return;
+        }
+
         level.PacketBroadcaster.QueuePacketToLevelInRange(level, (VectorD)position + new VectorD(0.5, 0.5, 0.5), new SoundPacket
         {
             SoundLocation = sound,
@@ -308,6 +321,7 @@ internal static class Signs
             Pitch = 1,
             Seed = Random.Shared.NextInt64()
         });
+    }
 
     private static BlockFace? Face(string? name) => name switch
     {

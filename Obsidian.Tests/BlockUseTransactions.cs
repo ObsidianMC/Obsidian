@@ -10,16 +10,71 @@ using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
 using System;
 using System.Linq;
+using System.IO;
 using System.Threading.Tasks;
 using Xunit;
 using ServerPlayer = Obsidian.Entities.Player;
 
 namespace Obsidian.Tests;
 
+[Collection(nameof(PluginTagFiles))]
 public sealed class BlockUseTransactions
 {
     private static readonly Vector target = new(8, 64, 8);
     private const BlockUpdateFlags Quiet = BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace;
+
+    [Fact]
+    public async Task NeighborPluginsSeeTheCommittedExchangeAndCanChangeTheHand()
+    {
+        await using var context = TestServerFactory.CreateServer($"exchange-neighbors-{Guid.NewGuid():N}");
+        var world = context.World;
+        WorldBlockEntities.AddEmptyChunk(world);
+        await world.GetBlockAsync(target);
+        await using var manager = BlockUpdates.CreatePluginManager(context);
+        var archive = Path.Join(Path.GetDirectoryName(world.PlayerDataPath)!, "neighbor.obby");
+        await File.WriteAllBytesAsync(archive, PluginLoading.ProbeArchive("1.0.0"));
+        Assert.NotNull(await manager.LoadPluginAsync(archive));
+        Assert.True(BlocksRegistry.TryGetPluginBlock("probe:relay", out var relay));
+        world.BlockUpdates.SetBlock(target + Vector.East, relay.DefaultState, Quiet);
+        world.BlockUpdates.SetBlock(target, BlocksRegistry.Jukebox, Quiet);
+        var player = Player(context, "User");
+        player.Inventory.SetItem(player.CurrentHeldItemSlot,
+            new ItemStack(ItemsRegistry.Get("minecraft:music_disc_cat"), 2));
+        var observedCommitted = false;
+        var changedHand = false;
+
+        AppContext.SetData(ProbeRelay.NeighborHookKey, (Action<NeighborChangedContext>)(neighbor =>
+        {
+            if (neighbor.SourcePosition != target || changedHand)
+                return;
+
+            observedCommitted = player.GetHeldItem()?.Count == 1
+                && world.BlockUpdates.GetBlock(target).GetProperty("has_record") == "true"
+                && Stored(context).Count == 1;
+            if (player.Inventory.TryLock(out var inventoryLock))
+            {
+                using (inventoryLock)
+                    player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.Diamond, 3));
+
+                changedHand = true;
+            }
+        }));
+        try
+        {
+            var packet = BlockUpdates.UseOn(target, BlockFace.Up, new VectorF(0.5f, 0.5f, 0.5f));
+            await packet.UseAsync(context.Server, player).AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+
+            Assert.True(observedCommitted);
+            Assert.True(changedHand);
+            Assert.Equal(ItemsRegistry.Diamond.Id, player.GetHeldItem()?.Holder.Id);
+            Assert.Equal(3, player.GetHeldItem()?.Count);
+            Assert.Equal(1, Stored(context).Count);
+        }
+        finally
+        {
+            AppContext.SetData(ProbeRelay.NeighborHookKey, null);
+        }
+    }
 
     [Fact]
     public async Task CompetingInsertionsKeepTheLosingItemAndCannotOverwriteTheWinner()

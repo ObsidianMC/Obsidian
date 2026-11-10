@@ -100,8 +100,13 @@ public abstract partial class AbstractLevel
         VectorD position,
         IEntity? source = null,
         IEntity? owner = null,
-        IBlock? affectedBlock = null) =>
-        mobGameEvents.Enqueue(new(kind, position, source, owner, affectedBlock));
+        IBlock? affectedBlock = null)
+    {
+        if (this.ActiveBlockUse is BlockUseEffects effects)
+            effects.After(() => this.EmitGameEvent(kind, position, source, owner, affectedBlock));
+        else
+            mobGameEvents.Enqueue(new(kind, position, source, owner, affectedBlock));
+    }
 
     internal async ValueTask TickMobGameEventsAsync()
     {
