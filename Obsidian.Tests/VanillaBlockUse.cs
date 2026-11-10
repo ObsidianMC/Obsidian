@@ -188,7 +188,9 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
             }
         }
 
+        LoadSetupData(world, use);
         Prepare(user, use);
+        var inventoryBefore = PrepareInventory(user, use);
         if (use.Reference.TryGetProperty("checkAttack", out _))
             ChargeAttack(user);
 
@@ -264,11 +266,301 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
                 differences.Add($"sign: color={color}, glowing={glowing}, waxed={waxed}, editor={edited}");
             }
         }
+        differences.AddRange(await CompareHeldItemsAsync(harness, use, inventoryBefore));
         Assert.True(differences.Count == 0, string.Join("; ", differences));
 
         if (use.Reference.TryGetProperty("checkCloseSources", out _))
             await CheckCloseSourcesAsync(harness, use);
     }
+
+    // A setup placement's block entity data, vanilla's SNBT without the id and position, loaded as a chunk loads it.
+    private static void LoadSetupData(WorldData.World world, Case use)
+    {
+        foreach (var setup in use.Reference.GetProperty("setup").EnumerateArray())
+        {
+            if (OptionalString(setup, "nbt") is not string snbt)
+                continue;
+
+            var position = target + Position(setup.GetProperty("offset"));
+            var blockEntity = (Obsidian.API.BlockEntities.BlockEntity)world.GetResidentBlockEntity(position)!;
+            blockEntity.Load(SnbtReader.ReadCompound(snbt));
+        }
+    }
+
+    // Vanilla's inventory slots the inventory checks read, by the player inventory's slots: the hotbar (0 to 8), the
+    // rest of the main inventory (9 to 35) and the offhand (40).
+    private static IEnumerable<(int Vanilla, int Slot)> InventorySlots()
+    {
+        for (var slot = 0; slot < 9; slot++)
+            yield return (slot, 36 + slot);
+
+        for (var slot = 9; slot < 36; slot++)
+            yield return (slot, slot);
+
+        yield return (40, 45);
+    }
+
+    // Like the capture's: a case that checks or fills the inventory starts with nothing in it but its hands, and
+    // fillInventory fills every other main inventory slot with a full stack. Returns the slots as they are before the
+    // use, or null when the case checks neither.
+    private static Dictionary<int, ItemStack?>? PrepareInventory(ServerPlayer user, Case use)
+    {
+        var fill = OptionalString(use.Reference, "fillInventory");
+        if (!use.Reference.TryGetProperty("checkInventory", out _) && fill is null)
+            return null;
+
+        foreach (var (_, slot) in InventorySlots())
+        {
+            if (slot == user.CurrentHeldItemSlot || slot == 45)
+                continue;
+
+            var filler = fill is null ? null : ItemsRegistry.Get(fill);
+            var stack = filler is null ? null : new ItemStack(filler, filler.MaxStackSize);
+            user.Inventory.SetItem(slot, stack);
+        }
+
+        return InventorySlots().ToDictionary(
+            slots => slots.Slot,
+            slots => user.Inventory.GetItem(slots.Slot) is ItemStack held ? new ItemStack(held, held.Count) : null);
+    }
+
+    // The optional checks of items held by blocks and players, in the capture's order: the inventory slots the use
+    // changed, the clicked block entity's saved data, a comparator's output once its pending tick ran, and what
+    // breaking the clicked block afterwards does.
+    private static async Task<List<string>> CompareHeldItemsAsync(
+        Harness harness,
+        Case use,
+        Dictionary<int, ItemStack?>? inventoryBefore)
+    {
+        var differences = new List<string>();
+        var world = harness.Context.World;
+        var reference = use.Reference;
+
+        if (reference.TryGetProperty("inventory", out var inventory))
+        {
+            var expected = Strings(inventory).Select(CanonicalSlot).ToArray();
+            var actual = InventoryChanges(harness.User, inventoryBefore!);
+            differences.AddRange(CompareLists("inventory", expected, actual));
+        }
+
+        if (reference.TryGetProperty("blockEntity", out var saved))
+        {
+            var expected = saved.ValueKind == JsonValueKind.String ? CanonicalNbt(saved.GetString()!) : null;
+            var actual = SavedData(world, target + use.Clicked);
+            if (expected != actual)
+                differences.Add($"block entity: expected {expected ?? "none"}, got {actual ?? "none"}");
+        }
+
+        if (reference.TryGetProperty("comparatorSignal", out var signal))
+        {
+            var comparator = target + Position(reference.GetProperty("comparator"));
+            var actual = await ComparatorOutputAsync(world, comparator);
+            if (actual != signal.GetInt32())
+                differences.Add($"comparator: expected {signal.GetInt32()}, got {actual}");
+        }
+
+        if (reference.TryGetProperty("destroyed", out var destroyed))
+            differences.AddRange(await CompareDestroyedAsync(harness, use, destroyed));
+
+        return differences;
+    }
+
+    // Each player inventory slot whose stack the use changed, as the capture writes them.
+    private static string[] InventoryChanges(ServerPlayer user, Dictionary<int, ItemStack?> before)
+    {
+        var changed = new List<string>();
+        foreach (var (vanilla, slot) in InventorySlots())
+        {
+            var now = user.Inventory.GetItem(slot);
+            var previous = before[slot];
+            if (DetailedText(now) != DetailedText(previous))
+                changed.Add($"{vanilla} {DetailedText(now)}");
+        }
+
+        return [.. changed];
+    }
+
+    // A block entity's saved data as a chunk saves it, without its position, as canonical SNBT; null without one.
+    private static string? SavedData(WorldData.World world, Vector position)
+    {
+        if (world.GetResidentBlockEntity(position) is not IBlockEntity blockEntity
+            || BlockEntityNbt.Save(blockEntity) is not NbtCompound saved)
+        {
+            return null;
+        }
+
+        foreach (var field in new[] { "x", "y", "z", "keepPacked" })
+            saved.Remove(field);
+
+        return Obsidian.Commands.Snbt.Write(saved);
+    }
+
+    // The comparator's output once the block ticks due within the comparator's delay ran, as the capture runs its
+    // pending tick.
+    private static async Task<int> ComparatorOutputAsync(WorldData.World world, Vector comparator)
+    {
+        await LoadChunksAroundAsync(world);
+        await world.BlockNotifications.DrainAsync();
+        for (var tick = 0; tick < 2; tick++)
+        {
+            world.Fluids.Tick();
+            await world.RunQueuedEntityActionsAsync();
+            await world.BlockNotifications.DrainAsync();
+        }
+
+        var entity = world.GetResidentBlockEntity(comparator);
+        return Assert.IsType<WorldData.Redstone.ComparatorBlockEntity>(entity).OutputSignal;
+    }
+
+    // The capture's area runs its block ticks; the replay's chunk runs them once the chunks around it are loaded too,
+    // which only the comparator checks need.
+    private static async Task LoadChunksAroundAsync(WorldData.World world)
+    {
+        for (var chunkX = -1; chunkX <= 1; chunkX++)
+        {
+            for (var chunkZ = -1; chunkZ <= 1; chunkZ++)
+            {
+                if (world.GetLoadedChunk(chunkX, chunkZ) is null)
+                    WorldBlockEntities.AddEmptyChunk(world, chunkX, chunkZ);
+
+                await world.GetChunkAsync(chunkX, chunkZ, scheduleGeneration: false);
+            }
+        }
+    }
+
+    // Named expected difference: a player breaking a block sends the players around it the block's break sound
+    // (BlockSoundPlayback), where vanilla sends level event 2001, whose clients play that sound with the break
+    // particles. Each captured break expects the sound in the event's place, so the replay fails once Obsidian sends
+    // the event.
+    private static Effects WithBreakSoundForLevelEvent(Effects expected)
+    {
+        var breaks = expected.LevelEvents
+            .Where(levelEvent => levelEvent.StartsWith("2001 ", StringComparison.Ordinal))
+            .ToArray();
+        var sounds = breaks
+            .Select(levelEvent => levelEvent.Split(' ')[2])
+            .Select(state => int.Parse(state, System.Globalization.CultureInfo.InvariantCulture))
+            .Select(state => BlockSoundsRegistry.Get(state).Break.ResourceLocation);
+        var others = expected.LevelEvents
+            .Where(levelEvent => !levelEvent.StartsWith("2001 ", StringComparison.Ordinal));
+
+        return expected with { Sounds = [.. sounds, .. expected.Sounds], LevelEvents = [.. others] };
+    }
+
+    // Named expected difference: a player's break emits block_destroy once the block is gone, after the game events of
+    // its removal (a jukebox stopping), where vanilla's playerWillDestroy emits it first. A break whose removal emits
+    // nothing is unaffected; the jukebox's fails once Obsidian emits it first.
+    private static Effects WithDestroyEventLast(Effects expected)
+    {
+        var destroy = expected.GameEvents
+            .Where(gameEvent => gameEvent.StartsWith("minecraft:block_destroy ", StringComparison.Ordinal))
+            .ToArray();
+        var others = expected.GameEvents
+            .Where(gameEvent => !gameEvent.StartsWith("minecraft:block_destroy ", StringComparison.Ordinal));
+
+        return expected with { GameEvents = [.. others, .. destroy] };
+    }
+
+    // The user breaks the clicked block, as a finished dig, and what that changed, played and dropped is compared.
+    private static async Task<IEnumerable<string>> CompareDestroyedAsync(
+        Harness harness,
+        Case use,
+        JsonElement destroyed)
+    {
+        var world = harness.Context.World;
+        var user = harness.User;
+        var before = Snapshot(world);
+        var statistics = user.ProgressStatistics.Save();
+        Forget(harness);
+
+        await FinishDigging(target + use.Clicked, use.Face).HandleAsync(harness.Context.Server, user);
+        await world.RunQueuedEntityActionsAsync();
+        await world.BlockNotifications.DrainAsync();
+        await world.ProcessBlockEventsAsync();
+
+        var effects = Record(harness, before);
+        var entities = DetailedEntities(world);
+        var stats = Awarded(statistics, user.ProgressStatistics.Save());
+
+        var expected = WithDestroyEventLast(WithBreakSoundForLevelEvent(ReadEffects(destroyed)));
+        var differences = CompareEffects("destroyed ", expected, effects).ToList();
+        var expectedEntities = Strings(destroyed.GetProperty("entities")).Select(CanonicalEntity).ToArray();
+        differences.AddRange(CompareSets("destroyed entities", expectedEntities, entities));
+        differences.AddRange(CompareSets("destroyed stats", Strings(destroyed.GetProperty("stats")), stats));
+        return differences;
+    }
+
+    // Like Entities, with each item's components.
+    private static string[] DetailedEntities(WorldData.World world)
+    {
+        var center = (VectorD)target + new VectorD(0.5, 0.5, 0.5);
+        return world.GetEntitiesInRange(center, Reach + 3)
+            .OfType<Entity>()
+            .Where(entity => entity is not ServerPlayer && InArea(entity.Position))
+            .Select(entity => entity is ItemEntity item ? "item " + DetailedText(item.Item) : EntityNbt.TypeId(entity))
+            .ToArray();
+    }
+
+    private static PlayerActionPacket FinishDigging(Vector position, BlockFace face)
+    {
+        using var writer = new Obsidian.Net.NetworkBuffer();
+        writer.WriteVarInt((int)PlayerActionStatus.FinishedDigging);
+        writer.WritePosition(position);
+        writer.WriteByte((byte)face);
+        writer.WriteVarInt(1);
+
+        using var reader = new Obsidian.Net.NetworkBuffer(writer.AsSpan(0, writer.Size).ToArray());
+        var packet = new PlayerActionPacket();
+        packet.Populate(reader);
+
+        return packet;
+    }
+
+    // An item stack as the capture's detailed text: "<id> x<count>", then the components it changes from its item's
+    // as canonical SNBT, with a lodestone tracker's target relative to the target.
+    private static string DetailedText(ItemStack? stack)
+    {
+        var text = Text(stack);
+        if (text == "empty" || !stack!.ToNbt().TryGetTag<NbtCompound>("components", out var components)
+            || components.Count == 0)
+        {
+            return text;
+        }
+
+        if (components.TryGetTag<NbtCompound>("minecraft:lodestone_tracker", out var tracker)
+            && tracker.TryGetTag<NbtCompound>("target", out var tracked)
+            && tracked.TryGetTag<NbtArray<int>>("pos", out var pos))
+        {
+            var relative = new[] { pos[0] - target.X, pos[1] - target.Y, pos[2] - target.Z };
+            tracked.Remove("pos");
+            tracked.Add(new NbtArray<int>("pos", relative));
+        }
+
+        return $"{text} {Obsidian.Commands.Snbt.Write(components)}";
+    }
+
+    // The capture's "<slot> <stack>" with its components as canonical SNBT.
+    private static string CanonicalSlot(string recorded)
+    {
+        var space = recorded.IndexOf(' ');
+        return $"{recorded[..space]} {CanonicalStack(recorded[(space + 1)..])}";
+    }
+
+    // The capture's "item <stack>" with its components as canonical SNBT, or another entity's type as it is.
+    private static string CanonicalEntity(string recorded) =>
+        recorded.StartsWith("item ", StringComparison.Ordinal) ? "item " + CanonicalStack(recorded[5..]) : recorded;
+
+    private static string CanonicalStack(string recorded)
+    {
+        var components = recorded.IndexOf(" {", StringComparison.Ordinal);
+        if (components < 0)
+            return recorded;
+
+        return $"{recorded[..components]} {CanonicalNbt(recorded[(components + 1)..])}";
+    }
+
+    // Vanilla's SNBT as Obsidian writes the same NBT, so that only names, types and values are compared.
+    private static string CanonicalNbt(string snbt) => Obsidian.Commands.Snbt.Write(SnbtReader.ReadCompound(snbt));
 
     private static void ChargeAttack(ServerPlayer player) =>
         typeof(PlayerBase).GetField("attackTicks", System.Reflection.BindingFlags.NonPublic

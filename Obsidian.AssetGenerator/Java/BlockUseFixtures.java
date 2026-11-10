@@ -179,9 +179,12 @@ public final class BlockUseFixtures {
                     sign.setText(text, SignTextSlot.FRONT);
                     sign.setText(text, SignTextSlot.BACK);
                 }
+                if (placement.has("nbt"))
+                    loadData(level, pos, placement.get("nbt").getAsString());
             }
 
             prepare(user, standing, input);
+            var inventoryBefore = prepareInventory(user, input);
             var before = snapshot(level, target);
             userPackets.clear();
             heard.clear();
@@ -281,10 +284,164 @@ public final class BlockUseFixtures {
                 runBlockEvents(level);
                 input.add("periodicCloseEvents", strings(gameEvents));
             }
+
+            recordHeldItems(level, user, target, input, inventoryBefore, heard, gameEvents);
         }
 
         clear(level, target);
         System.out.println("Used " + root.getAsJsonArray("cases").size() + " blocks");
+    }
+
+    // Loads a setup placement's block entity data, SNBT without the id and position, as a chunk load would: quietly,
+    // telling no comparator.
+    private static void loadData(ServerLevel level, BlockPos pos, String snbt) throws Exception {
+        var tag = net.minecraft.nbt.TagParser.parseCompoundFully(snbt);
+        var input = net.minecraft.world.level.storage.TagValueInput.create(
+            net.minecraft.util.ProblemReporter.DISCARDING, level.registryAccess(), tag);
+        level.getBlockEntity(pos).loadWithComponents(input);
+    }
+
+    // The slots of vanilla's Inventory the inventory checks read: the main inventory's 36 (0 to 8 the hotbar) and the
+    // offhand's (40).
+    private static List<Integer> inventorySlots() {
+        var slots = new ArrayList<Integer>();
+        for (int slot = 0; slot < 36; slot++)
+            slots.add(slot);
+
+        slots.add(40);
+        return slots;
+    }
+
+    // A case that checks or fills the inventory starts with nothing in it but its hands, so what earlier cases gave
+    // the player doesn't carry over; 'fillInventory' then fills every other main inventory slot with a full stack of
+    // that item. Returns copies of the slots as they are before the use, or null when the case checks neither.
+    private static List<ItemStack> prepareInventory(ProbePlayer user, JsonObject input) {
+        if (!input.has("checkInventory") && !input.has("fillInventory"))
+            return null;
+
+        var inventory = user.getInventory();
+        var selected = inventory.getSelectedSlot();
+        var filler = input.has("fillInventory")
+            ? BuiltInRegistries.ITEM.getValue(Identifier.parse(input.get("fillInventory").getAsString()))
+            : null;
+        for (int slot = 0; slot < 36; slot++) {
+            if (slot == selected)
+                continue;
+
+            var stack = filler == null ? ItemStack.EMPTY : new ItemStack(filler, filler.getDefaultMaxStackSize());
+            inventory.setItem(slot, stack);
+        }
+
+        var copies = new ArrayList<ItemStack>();
+        for (var slot : inventorySlots())
+            copies.add(inventory.getItem(slot).copy());
+
+        return copies;
+    }
+
+    // What the optional checks of items held by blocks and players record, after everything else: the inventory
+    // slots the use changed, the clicked block entity's saved data, a comparator's output once its pending tick ran,
+    // and what breaking the clicked block afterwards does.
+    private static void recordHeldItems(ServerLevel level, ProbePlayer user, BlockPos target, JsonObject input,
+        List<ItemStack> inventoryBefore, List<Packet<?>> heard, List<String> gameEvents) throws Exception {
+        var clicked = target.offset(position(input.getAsJsonArray("clicked")));
+        if (input.has("checkInventory"))
+            input.add("inventory", inventoryChanges(level, user, inventoryBefore));
+
+        if (input.has("checkBlockEntity"))
+            input.add("blockEntity", savedData(level, clicked));
+
+        if (input.has("comparator")) {
+            var pos = target.offset(position(input.getAsJsonArray("comparator")));
+            var state = level.getBlockState(pos);
+            if (level.getBlockTicks().hasScheduledTick(pos, state.getBlock()))
+                state.tick(level, pos, level.getRandom());
+
+            var comparator = (net.minecraft.world.level.block.entity.ComparatorBlockEntity) level.getBlockEntity(pos);
+            input.addProperty("comparatorSignal", comparator.getOutputSignal());
+        }
+
+        if (input.has("destroy")) {
+            var before = snapshot(level, target);
+            heard.clear();
+            gameEvents.clear();
+            user.awarded.clear();
+            user.gameMode.destroyBlock(clicked);
+            runBlockEvents(level);
+
+            var destroyed = new JsonObject();
+            destroyed.addProperty("changes", changes(level, target, before));
+            destroyed.add("entities", detailedEntities(level, target));
+            record(destroyed, heard, gameEvents);
+            destroyed.add("stats", strings(user.awarded));
+            input.add("destroyed", destroyed);
+        }
+    }
+
+    // Each inventory slot whose stack the use changed, as "<slot> <stack>" with vanilla's slot numbers.
+    private static JsonArray inventoryChanges(ServerLevel level, ProbePlayer user, List<ItemStack> before) {
+        var changed = new JsonArray();
+        var slots = inventorySlots();
+        for (int index = 0; index < slots.size(); index++) {
+            var now = user.getInventory().getItem(slots.get(index));
+            if (!ItemStack.matches(now, before.get(index)))
+                changed.add(slots.get(index) + " " + detailedStack(level, now));
+        }
+
+        return changed;
+    }
+
+    // A block entity's saved data as a chunk saves it, without its position, as vanilla's SNBT; null without one.
+    private static com.google.gson.JsonElement savedData(ServerLevel level, BlockPos pos) {
+        var blockEntity = level.getBlockEntity(pos);
+        if (blockEntity == null)
+            return com.google.gson.JsonNull.INSTANCE;
+
+        var saved = blockEntity.saveWithFullMetadata(level.registryAccess());
+        saved.remove("x");
+        saved.remove("y");
+        saved.remove("z");
+        return new com.google.gson.JsonPrimitive(saved.toString());
+    }
+
+    // Like entities, with each item's components.
+    private static JsonArray detailedEntities(ServerLevel level, BlockPos target) {
+        var found = new JsonArray();
+        for (var entity : level.getEntities((Entity)null, area(target, Reach + 1), entity -> true)) {
+            if (entity instanceof ItemEntity item) {
+                found.add("item " + detailedStack(level, item.getItem()));
+            } else {
+                found.add(BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString());
+            }
+        }
+
+        return found;
+    }
+
+    // Like stack, followed by the components the stack changes from its item's as SNBT, when there are any. A
+    // lodestone tracker's target is written relative to the target, like every other position the fixture records.
+    private static String detailedStack(ServerLevel level, ItemStack stack) {
+        var text = stack(stack);
+        var patch = stack.getComponentsPatch();
+        if (stack.isEmpty() || patch.isEmpty())
+            return text;
+
+        var ops = level.registryAccess().createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE);
+        var encoded = (net.minecraft.nbt.CompoundTag) net.minecraft.core.component.DataComponentPatch.CODEC
+            .encodeStart(ops, patch)
+            .getOrThrow();
+        encoded.getCompound("minecraft:lodestone_tracker")
+            .flatMap(tracker -> tracker.getCompound("target"))
+            .ifPresent(BlockUseFixtures::relativePosition);
+        return text + " " + encoded;
+    }
+
+    private static void relativePosition(net.minecraft.nbt.CompoundTag target) {
+        target.getIntArray("pos").ifPresent(pos -> target.putIntArray("pos", new int[] {
+            pos[0] - origin.getX(),
+            pos[1] - origin.getY(),
+            pos[2] - origin.getZ()
+        }));
     }
 
     private static GameProfile profile(String name) {
