@@ -269,19 +269,24 @@ Their upkeep runs on its own walk after each chunk's ticks. It covers placing th
 a block update (#703). That runs for the same block entities, in the same block-ticking chunks, as before.
 Restoring kept block entities and the pending loads of chunks that don't tick were never part of the per-chunk walk
 and are unchanged. A non-ticking container is now polled after the ticks of its chunk instead of at its place in
-the dictionary. This is still within the same tick, before the item access flush.
+the dictionary. This is still within the same tick, before the item access flush. Nothing in the pass reads what
+that update changes: a comparator that hears of it only schedules a block tick two game ticks later. What can
+differ is the order of that block tick among the others scheduled for the same game tick. The old order was the
+dictionary's, not vanilla's: vanilla tells comparators at the moment the items move.
 
 Same harness as the re-runnable block probe below: 25 block-ticking chunks holding 3,000 chests and 1,000 signs,
 plus an idle furnace and an idle hopper in each. One operation is one call of `TickBlockEntitiesAsync`. Before:
-`c043dcd3d` with the probe case added (`37f04c45e`); after: `016fa2d10`. Both runs were made on 2026-11-09 on the
-machine described there.
+`c043dcd3d` with the probe case added (`65d62c805`); after: `0e47f9b0a`. Both runs were made on 2026-11-09 on the
+machine described there. Reading each container's revision once per pass (`64e70a7ae`) didn't move the numbers
+(105.5 to 106.8 µs in three runs): an idle vanilla chest was already read once, so only plugin containers and
+changed ones read it less.
 
 | Operation | Before (ns/op) | After (ns/op) | Before (B/op) | After (B/op) |
 |---|---:|---:|---:|---:|
 | BlockEntityPass / 4,000 idle, 50 ticking | 212685.65 | 104262.85 | 18384.00 | 16784.00 |
 
 Of the roughly 104 µs left, about 40 µs is enumerating the chunks' block entity dictionaries for the upkeep. About
-60 µs is reading `Inventory.Revision` for the 3,000 chests (`BaseContainer.Revision` scans every slot). The 50
+60 µs is reading `Inventory.Revision` once for each of the 3,000 chests (`BaseContainer.Revision` scans every slot). The 50
 tickers' own ticks take about 10 µs and most of the allocations. Removing the upkeep walk would need it to become
 event-driven: block entities placed when their chunk loads, and containers that report their own changes.
 
