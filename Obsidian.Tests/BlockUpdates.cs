@@ -272,6 +272,39 @@ public sealed class BlockUpdates : IDisposable
         await manager.UnloadPluginAsync(container);
     }
 
+    // A chunk is complete in its region slot before the fluid level tracks it (generation and loads from disk track it
+    // after publishing it), and the shape updates of a change beside it must still reach across the border.
+    [Fact(DisplayName = "A change reshapes its neighbour in a complete chunk the level doesn't track yet",
+        Timeout = TestServerFactory.TestTimeout)]
+    public async Task ShapeUpdatesReachACompleteUntrackedChunk()
+    {
+        await using var context = TestServerFactory.CreateServer($"untracked-neighbour-{Guid.NewGuid():N}");
+        var world = context.World;
+        var fence = new Vector(32, 70, 8);
+        var placed = new Vector(31, 70, 8);
+
+        // Chunk (1, 0) is tracked; chunk (2, 0) holds the fence and is published complete, but not tracked.
+        var tracked = new Chunk(1, 0);
+        tracked.SetChunkStatus(ChunkGenStage.full);
+        world.LoadRegionByChunk(1, 0).SetChunk(tracked);
+        await world.GetChunkAsync(1, 0, scheduleGeneration: false);
+
+        var untracked = new Chunk(2, 0);
+        untracked.SetBlock(fence.X, fence.Y, fence.Z, VanillaSulfurBlocks.ParseState("minecraft:oak_fence"));
+        untracked.SetChunkStatus(ChunkGenStage.full);
+        world.LoadRegionByChunk(2, 0).SetChunk(untracked);
+
+        lock (world.Fluids.TickLock)
+        {
+            Assert.Contains(tracked, world.Fluids.TrackedChunks());
+            Assert.DoesNotContain(untracked, world.Fluids.TrackedChunks());
+        }
+
+        await world.SetBlockUntrackedAsync(placed.X, placed.Y, placed.Z, BlocksRegistry.Stone, BlockUpdateFlags.All);
+
+        Assert.Equal("true", untracked.GetBlock(fence.X, fence.Y, fence.Z).GetProperty("west"));
+    }
+
     [Fact(DisplayName = "A vanilla furnace and chest placed by a west-facing player face away from the player",
         Timeout = TestServerFactory.TestTimeout)]
     public async Task VanillaFurnaceAndChestFaceAsPlacedByPlayer()
