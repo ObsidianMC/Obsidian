@@ -7,7 +7,7 @@ namespace Obsidian.WorldData;
 
 internal enum MobGameEvent
 {
-    Step, Land, Swim, ProjectileShoot, ProjectileLand, BlockPlace, BlockDestroy, BlockChange,
+    Step, Land, Bounce, Swim, ProjectileShoot, ProjectileLand, BlockPlace, BlockDestroy, BlockChange,
     EntityDamage, EntityDie, EntityInteract, NoteBlockPlay, JukeboxPlay, JukeboxStop, SculkSensorClick,
     BlockActivate, BlockDeactivate, BlockOpen, BlockClose, ContainerOpen, ContainerClose, Eat, FluidPickup,
     FluidPlace, PrimeFuse, EntityPlace, ItemInteractFinish, ItemInteractStart, Equip, Unequip, Explode, Shear
@@ -44,32 +44,26 @@ public abstract partial class AbstractLevel
     private readonly Dictionary<Guid, WardenWarning> wardenWarnings = [];
     private long gameEventTick;
 
-    internal async ValueTask EmitMovementGameEventsAsync(Entity entity, VectorD oldPosition, MovementFlags oldFlags)
+    internal ValueTask EmitMovementGameEventsAsync(Entity entity, VectorD oldPosition, MovementFlags oldFlags)
     {
         var grounded = entity.MovementFlags.HasFlag(MovementFlags.OnGround);
-        if (grounded && !oldFlags.HasFlag(MovementFlags.OnGround))
-        {
-            EmitGameEvent(MobGameEvent.Land, entity.Position, entity);
-            await TrampleTurtleEggAsync(entity, true);
-        }
 
         var delta = entity.Position - oldPosition;
         var distance = Math.Sqrt(delta.X * delta.X + delta.Z * delta.Z);
         if (distance <= 0.00001 || distance > 8 || entity is Warden or Allay)
-            return;
+            return default;
 
         var water = GameEventBlock((Vector)entity.Position.Floor())?.RegistryId == BlockIds.Water;
         if (!grounded && !water)
-            return;
+            return default;
 
         var total = entity.GameEventStepDistance + distance;
         entity.GameEventStepDistance = total < 0.6 ? total : total % 0.6;
         if (total < 0.6)
-            return;
+            return default;
 
         EmitGameEvent(water ? MobGameEvent.Swim : MobGameEvent.Step, entity.Position, entity);
-        if (!water)
-            await TrampleTurtleEggAsync(entity);
+        return default;
     }
 
     private sealed record PendingMobVibration(MobVibration Event, long SelectedAt, long ArrivalAt, double Distance);

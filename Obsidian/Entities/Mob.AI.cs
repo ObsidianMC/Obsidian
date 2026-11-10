@@ -556,7 +556,8 @@ public partial class Mob
     {
         var kind = IncomingDamageKind ?? (applyArmor ? CombatDamageKind.Melee : CombatDamageKind.Magic);
         applyArmor &= kind is CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion
-            or CombatDamageKind.FireContact or CombatDamageKind.Thorns or CombatDamageKind.FallingStalactite;
+            or CombatDamageKind.FireContact or CombatDamageKind.HotFloor
+            or CombatDamageKind.Thorns or CombatDamageKind.FallingStalactite;
         if (!UsesAi)
         {
             await base.DamageAsync(source, amount);
@@ -564,7 +565,7 @@ public partial class Mob
         }
         if (IsRemoved || !Alive || source.Level != Level || !float.IsFinite(amount) || amount <= 0 || kind != CombatDamageKind.Void && !CanTakeDamage(source))
             return;
-        if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact &&
+        if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact or CombatDamageKind.HotFloor &&
             (IsFireImmune || HasPotionEffect((int)PotionEffect.FireResistance - 1)))
         {
             return;

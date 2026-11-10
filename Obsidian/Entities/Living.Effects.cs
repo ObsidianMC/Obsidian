@@ -90,6 +90,10 @@ public partial class Living
     {
         var effect = ReadPotionEffect(tag);
         if (effect.Duration == -1 || effect.Duration > 0)
+        {
             activePotionEffects[effect.Id] = new() { EffectData = effect, CurrentDuration = effect.Duration };
+            if (effect.Id == (int)PotionEffect.JumpBoost - 1)
+                this.RefreshJumpBoostFallProtection();
+        }
     }
 }

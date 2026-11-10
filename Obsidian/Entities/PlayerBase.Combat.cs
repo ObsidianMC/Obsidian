@@ -77,7 +77,8 @@ public partial class PlayerBase
             return;
         }
 
-        if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact && HasPotionEffect((int)PotionEffect.FireResistance - 1))
+        if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact or CombatDamageKind.HotFloor
+            && HasPotionEffect((int)PotionEffect.FireResistance - 1))
             return;
 
         var incomingFrom = sourcePosition ?? (directSource ?? source).Position;
@@ -98,8 +99,10 @@ public partial class PlayerBase
         }
         lastIncomingDamage = incoming;
         AcceptedDamageCount++;
+        LastDamageKind = kind;
         if (kind is CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion
-            or CombatDamageKind.FireContact or CombatDamageKind.Thorns or CombatDamageKind.FallingStalactite)
+            or CombatDamageKind.FireContact or CombatDamageKind.HotFloor
+            or CombatDamageKind.Thorns or CombatDamageKind.FallingStalactite)
         {
             // Worn items' armour is in the attributes' modifiers.
             UpdateEquipmentAttributes();
@@ -135,6 +138,7 @@ public partial class PlayerBase
         [CombatDamageKind.Fall] = "minecraft:fall",
         [CombatDamageKind.Fire] = "minecraft:on_fire",
         [CombatDamageKind.FireContact] = "minecraft:in_fire",
+        [CombatDamageKind.HotFloor] = "minecraft:hot_floor",
         [CombatDamageKind.Explosion] = "minecraft:explosion",
         [CombatDamageKind.Magic] = "minecraft:magic",
         [CombatDamageKind.Starvation] = "minecraft:starve",
@@ -422,23 +426,12 @@ public partial class PlayerBase
         if (gliding && Position.Y - previous.Y > -0.5 && FallDistance > 1) FallDistance = 1;
         if (previous.Y > Position.Y) FallDistance += (float)(previous.Y - Position.Y);
         if (!supported) return;
-        var floor = terrain.GetBlock((Vector)(Position - new VectorD(0, 0.2, 0)).Floor());
         var distance = FallDistance;
         this.RecordLanding(distance);
         if (distance >= 2)
             this.Statistics.Increment("minecraft:fall_one_cm", Centimetres(distance));
 
         FallDistance = 0;
-        if (floor?.RegistryId == BlockIds.SlimeBlock && !Sneaking)
-            return;
-        var jump = ActivePotionEffects.TryGetValue((int)PotionEffect.JumpBoost - 1, out var effect) ? effect.EffectData.Amplifier + 1 : 0;
-        // Vanilla's LivingEntity.calculateFallDamage: the landed-on block's multiplier (hay and honey 0.2, beds 0.5)
-        // scales the distance before it's rounded up; the jump boost is part of the safe fall distance.
-        var blockMultiplier = floor?.RegistryId is BlockIds.HayBlock or BlockIds.HoneyBlock ? 0.2
-            : floor != null && TagsRegistry.Block.Beds.Entries.Contains(floor.RegistryId) ? 0.5 : 1.0;
-        var damage = Math.Max(0, Math.Ceiling((distance - GetAttributeValue("minecraft:safe_fall_distance") - jump)
-            * blockMultiplier * GetAttributeValue("minecraft:fall_damage_multiplier")));
-        await DamageCombatAsync(this, (float)damage, CombatDamageKind.Fall);
     }
 
     private async ValueTask TickCombatAsync()

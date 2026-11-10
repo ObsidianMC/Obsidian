@@ -69,6 +69,10 @@ internal static class ContactFlags
             var inside = BlocksRegistry.GetEntityInsideBehavior(registryId) is null ? 0 : Inside;
             var steppedOn = BlocksRegistry.GetStepOnBehavior(registryId) is null ? 0 : SteppedOn;
             var fallenOn = BlocksRegistry.GetFallOnBehavior(registryId) is null ? 0 : FallenOn;
+            // Beds inherit the base fall hook in 26.3, with a distance-reduction property.
+            if (BlocksRegistry.GetDefault(registryId).BlockClass() == "BedBlock")
+                fallenOn = FallenOn;
+
             flags[stateId] = (byte)(inside | steppedOn | fallenOn);
         }
 
@@ -114,14 +118,20 @@ internal sealed class EntityContactPass(IContactLevel level)
         if (IsRemoved(entity) || !TouchesBlocks(entity))
             return default;
 
-        var fall = entity.TakeLanding();
-        if (fall > 0)
+        if (entity.TakeLanding() is BlockLanding fall)
         {
+            var beforeHook = entity.Position;
             var pending = this.FallenOnAsync(entity, fall);
             if (!pending.IsCompletedSuccessfully)
-                return this.AfterFallAsync(pending, entity);
+                return this.AfterFallAsync(pending, entity, fall, beforeHook);
 
             pending.GetAwaiter().GetResult();
+            this.LandingEvents(entity, fall, beforeHook);
+        }
+        else if (entity.ContactBounced)
+        {
+            // Restitution also runs for a downward push while already resting on the surface.
+            this.BounceEvent(entity);
         }
 
         return this.StepAndInsideAsync(entity);
@@ -164,15 +174,40 @@ internal sealed class EntityContactPass(IContactLevel level)
         _ => entity.Type == EntityType.Marker,
     };
 
-    private async ValueTask AfterFallAsync(ValueTask pending, Entity entity)
+    private async ValueTask AfterFallAsync(
+        ValueTask pending, Entity entity, BlockLanding fall, VectorD beforeHook)
     {
         await pending;
+        this.LandingEvents(entity, fall, beforeHook);
         await this.StepAndInsideAsync(entity);
+    }
+
+    private void LandingEvents(Entity entity, BlockLanding fall, VectorD beforeHook)
+    {
+        if (level.Level is AbstractLevel world && !IsRemoved(entity))
+        {
+            // Keep a lift caused by the hook, without substituting movement that preceded dispatch.
+            var impact = fall.Impact + (entity.Position - beforeHook);
+            world.EmitGameEvent(MobGameEvent.Land, impact, entity);
+        }
+
+        this.BounceEvent(entity);
+    }
+
+    private void BounceEvent(Entity entity)
+    {
+        if (entity.ContactBounced && level.Level is AbstractLevel world && !IsRemoved(entity))
+            world.EmitGameEvent(MobGameEvent.Bounce, entity.Position, entity);
+
+        entity.ContactBounced = false;
     }
 
     private ValueTask StepAndInsideAsync(Entity entity)
     {
-        if (entity.MovementFlags.HasFlag(MovementFlags.OnGround))
+        if (IsRemoved(entity))
+            return default;
+
+        if ((entity.MovementFlags & MovementFlags.OnGround) != 0)
         {
             var pending = this.SteppedOnAsync(entity);
             if (!pending.IsCompletedSuccessfully)
@@ -190,15 +225,16 @@ internal sealed class EntityContactPass(IContactLevel level)
         await this.InsideAsync(entity);
     }
 
-    private ValueTask FallenOnAsync(Entity entity, double distance)
+    private ValueTask FallenOnAsync(Entity entity, BlockLanding fall)
     {
-        if (this.SupportCell(entity, ContactFlags.FallenOn) is not (Vector position, IBlock state))
-            return default;
+        var state = fall.State;
+        if (state is null || (ContactFlags.Of(state) & ContactFlags.FallenOn) == 0)
+        {
+            return entity.CauseContactFallAsync(fall.Distance, impact: fall.Impact);
+        }
 
-        if (BlocksRegistry.GetFallOnBehavior(state.RegistryId) is IFallOnBehavior owner)
-            return owner.FallenOnAsync(level, position, state, entity, distance);
-
-        return default;
+        var owner = BlocksRegistry.GetFallOnBehavior(state.RegistryId) ?? FallOnBehaviors.BedBlock;
+        return owner.FallenOnAsync(level, fall.BlockPosition, state, entity, fall.Distance, fall.Impact);
     }
 
     private ValueTask SteppedOnAsync(Entity entity)
@@ -215,7 +251,7 @@ internal sealed class EntityContactPass(IContactLevel level)
     private ValueTask InsideAsync(Entity entity)
     {
         // Vanilla stops looking for blocks an entity is inside once it's dead, while it still steps on them.
-        if (entity is Living { Alive: false })
+        if (IsRemoved(entity) || entity is Living { Alive: false })
             return default;
 
         var box = entity.Dimension.CreateBBFromPosition(entity.Position);
@@ -236,7 +272,7 @@ internal sealed class EntityContactPass(IContactLevel level)
                 continue;
 
             // A block the entity was inside can kill it, and vanilla goes no further then.
-            if (entity is Living { Alive: false })
+            if (IsRemoved(entity) || entity is Living { Alive: false })
                 return default;
 
             var pending = this.EntityInsideAsync(entity, cell, state);
@@ -291,15 +327,28 @@ internal sealed class EntityContactPass(IContactLevel level)
         if (!AnyFlagged(ref blocks, box, stepY, flag))
             return null;
 
-        var cell = SupportOf(ref blocks, box, position) is Vector support
-            ? SteppedCell(ref blocks, support, stepY)
-            : new Vector((int)Math.Floor(position.X), stepY, (int)Math.Floor(position.Z));
+        var cell = SupportCellOf(ref blocks, box, position, stepY);
 
         if (blocks.Read(cell) is not IBlock state || (ContactFlags.Of(state) & flag) == 0)
             return null;
 
         return (cell, state);
     }
+
+    /// <summary>The same legacy support selection for impact recording, restitution and contact dispatch.</summary>
+    internal static (Vector, IBlock)? SupportAt(IContactLevel level, Entity entity, VectorD position)
+    {
+        var blocks = new ChunkCursor(level);
+        var box = entity.Dimension.CreateBBFromPosition(position);
+        var stepY = (int)Math.Floor(position.Y - StepDepth);
+        var cell = SupportCellOf(ref blocks, box, position, stepY);
+        return blocks.Read(cell) is IBlock state ? (cell, state) : null;
+    }
+
+    private static Vector SupportCellOf(ref ChunkCursor blocks, BoundingBox box, VectorD position, int stepY) =>
+        SupportOf(ref blocks, box, position) is Vector support
+            ? SteppedCell(ref blocks, support, stepY)
+            : new Vector((int)Math.Floor(position.X), stepY, (int)Math.Floor(position.Z));
 
     // Whether a cell of the box's footprint at y has the hook.
     private static bool AnyFlagged(ref ChunkCursor blocks, BoundingBox box, int y, byte flag)
