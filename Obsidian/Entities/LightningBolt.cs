@@ -51,9 +51,7 @@ public sealed partial class LightningBolt : Entity
     internal LightningBolt(IRandomSource random)
     {
         Type = EntityType.LightningBolt;
-        BoltRandom = random;
-        Seed = random.NextLong();
-        flashes = random.NextInt(3) + 1;
+        this.Reseed(random);
     }
 
     /// <summary>The seed clients draw the bolt's shape from; it changes with each flash.</summary>
@@ -71,7 +69,18 @@ public sealed partial class LightningBolt : Entity
     /// <summary>How many blocks the bolt set on fire, which the lightning advancement predicate reads.</summary>
     public int BlocksSetOnFire { get; private set; }
 
-    internal IRandomSource BoltRandom { get; }
+    internal IRandomSource BoltRandom { get; private set; }
+
+    /// <summary>
+    /// Draws the bolt's seed and flashes again from <paramref name="random"/>, which its own draws come from from then
+    /// on, as a bolt made with it would. Parity replays seed a bolt something else summoned, before it first ticks.
+    /// </summary>
+    internal void Reseed(IRandomSource random)
+    {
+        this.BoltRandom = random;
+        this.Seed = random.NextLong();
+        this.flashes = random.NextInt(3) + 1;
+    }
 
     // Vanilla's bolt has no size: its box is the point it stands on.
     internal override BoundingBox CurrentBox => new(this.Position, this.Position);

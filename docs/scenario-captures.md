@@ -387,7 +387,12 @@ replaces only what vanilla produced.
   out. The owner and the bystander stand nine blocks away, where experience orbs and dragon's breath don't reach them:
   vanilla's are players the level knows of but not entities of its sections, while the replay's are entities. The
   replay ticks a test server's world the same way and compares every field of every tick, with each known difference
-  pinned by case and field ([projectile block hits](known-gaps/projectile-block-hits.md)).
+  pinned by case and field ([projectile block hits](known-gaps/projectile-block-hits.md)). A case with `boltSeed`
+  and `levelSeed` seeds the lightning bolt its hit calls down, after the tick it appeared in and before its first
+  (the bolt's own random, its seed and flashes drawn again, then the level's random its strike draws from): the
+  Channeling case, whose bolt's life and copper sparks are otherwise random. The replay seeds them at the same point,
+  runs that case with its players as spectators on a ticking chunk ticket (the capture's players aren't in vanilla's
+  chunk map, so its storm draws no strike chances) and, like the capture, with random ticks off.
 - `turtle_eggs.json` (`VanillaTurtleEggs.ReplayTurtleEggReference`) records vanilla's turtle eggs, from
   `Java/HatchingFixtures.java` (`CaptureFixtures=turtle_eggs`). Each case is its input: the blocks of a small block
   view (air elsewhere), the origin, a seed, the overworld clock's time and the dimension, and either a random tick or

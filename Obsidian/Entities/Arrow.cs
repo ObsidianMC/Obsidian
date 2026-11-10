@@ -481,7 +481,7 @@ public partial class Arrow : Entity
     // lightning down where it hit, with the thunder of the enchantment's sound.
     private ValueTask ChannelAsync(AbstractLevel level, ProjectileBlockHit hit)
     {
-        if (CombatItems.EnchantmentLevel(Weapon, EnchantmentsRegistry.Channeling) <= 0 || !level.LevelData.Thundering)
+        if (CombatItems.EnchantmentLevel(Weapon, EnchantmentsRegistry.Channeling) <= 0 || !level.IsThundering())
             return ValueTask.CompletedTask;
 
         var block = level.BlockUpdates.GetBlock(hit.Block);
@@ -492,10 +492,29 @@ public partial class Arrow : Entity
             return ValueTask.CompletedTask;
 
         // Vanilla clamps the hit inside the block it struck (BlockPos.clampLocationWithin).
-        var strike = Clamp(hit.Location, hit.Block);
-        level.SpawnEntity(strike, EntityType.LightningBolt);
-        ProjectileBlockHits.PlaySound(level, strike, "minecraft:item.trident.thunder", 5, 1);
+        this.CallLightning(level, Clamp(hit.Location, hit.Block));
         return ValueTask.CompletedTask;
+    }
+
+    /// <summary>
+    /// Channeling's effects, as vanilla's <c>summon_entity</c> and <c>play_sound</c> run them: a lightning bolt at
+    /// <paramref name="position"/>, whose cause is the thrower when that's a player, then the trident's thunder there.
+    /// </summary>
+    /// <remarks>
+    /// Vanilla spawns the bolt at the bottom centre of the position's block and moves it to the position itself before
+    /// it first ticks, so it strikes from the position.
+    /// </remarks>
+    protected void CallLightning(AbstractLevel level, VectorD position)
+    {
+        var bolt = new LightningBolt
+        {
+            Level = level,
+            EntityId = Server.GetNextEntityId(),
+            Position = position,
+            Cause = this.Owner as PlayerBase
+        };
+        level.SpawnEntity(bolt);
+        ProjectileBlockHits.PlaySound(level, position, "minecraft:item.trident.thunder", 5, 1);
     }
 
     private static VectorD Clamp(VectorD location, Vector block)

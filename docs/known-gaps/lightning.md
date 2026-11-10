@@ -1,13 +1,19 @@
 # Lightning
 
 **Status:** mostly done. Lightning bolts (`LightningBolt`) strike as vanilla's do, from `/summon`, from a
-thunderstorm's chunk tick and from plugins: their life and flashes, fire around the strike on normal and hard
+thunderstorm's chunk tick, from a Channeling trident (with its thrower as the bolt's cause) and from plugins: their
+life and flashes, fire around the strike on normal and hard
 difficulty (and on every flash), lightning rods powered for eight ticks with sparks, copper cleared around the strike,
 the `lightning_strike` game event, five lightning damage and a tick of fire to living things, the conversions (creeper,
 pig, villager, mooshroom, copper golem, turtle), items destroyed, and the `lightning_strike` and `channeled_lightning`
 advancement triggers. Natural strikes find lightning rods and living things under the sky, and spawn skeleton traps.
-All of it is replayed from vanilla by `lightning_bolts.json` (see [scenario captures](../scenario-captures.md)).
-What's left:
+All of it is replayed from vanilla by `lightning_bolts.json`, and a Channeling trident hitting a lightning rod by
+`projectile_block_hits.json` (see [scenario captures](../scenario-captures.md)). What's left:
+
+- **A Channeling trident hitting a mob.** Its `post_attack` effect calls the bolt down at the victim's position, with
+  the trident's thunder and the thrower as its cause, as vanilla's `summon_entity` effect does (it spawns the bolt at
+  the bottom centre of the position's block, then moves it to the position before it first ticks); no capture covers
+  this path, only the rod's.
 
 - **Redstone lamps' write flags.** The redstone engine stores the lamps a rod powers with `SkipOnPlace` (512) as well
   as vanilla's flag 2, as it does for every clients-only change it makes. Nothing reacts differently, but the stored
