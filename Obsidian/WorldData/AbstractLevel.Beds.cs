@@ -252,6 +252,15 @@ public abstract partial class AbstractLevel
             Seed = Random.Shared.NextInt64()
         }, player.EntityId);
 
+        PacketBroadcaster.QueuePacketToLevelInRange(this, center, new LevelParticlesPacket
+        {
+            Position = position,
+            Offset = new VectorF(1, 1, 1),
+            ParticleCount = 8,
+            Randomization = ParticleRandomization.Alternative,
+            Data = new BucketSteamParticle()
+        });
+
         return true;
     }
 
@@ -262,4 +271,9 @@ public abstract partial class AbstractLevel
         "west" => new Vector(-1, 0, 0),
         _ => Vector.East
     };
+
+    private sealed class BucketSteamParticle : ParticleData
+    {
+        public override ParticleType ParticleType => ParticleType.LargeSmoke;
+    }
 }

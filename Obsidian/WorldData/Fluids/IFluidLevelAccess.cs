@@ -79,6 +79,11 @@ internal interface IFluidLevelAccess
     {
     }
 
+    /// <summary>Effects of water entering a liquid container, after a transactional write has committed.</summary>
+    public void OnWaterlogged(Vector position, IBlock previous)
+    {
+    }
+
     /// <summary>
     /// Delegates removal to the live level's serial queue, where loot can run without the tick lock.
     /// Returns false on generation-only views, which store the replacement directly without spawning entities.

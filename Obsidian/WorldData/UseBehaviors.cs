@@ -140,12 +140,11 @@ internal sealed class BlockUse
     /// The callback validates before writing and never awaits.
     /// </summary>
     /// <remarks>
-    /// A replacement is only for a single unstackable input, such as a filled fish bucket. Cauldrons and hives
-    /// need a separate exchange operation that consumes one and routes the result to the hand, inventory or world;
-    /// those batches must add that operation outside this critical section's callback.
+    /// A replacement is only for a single input. An exchange result instead consumes one of a stack and routes
+    /// the result to the hand, the player's storage or a deferred drop, matching vanilla's filled-result exchange.
     /// </remarks>
     public bool TryCommit(Func<bool> change, bool consumeItem = false, BaseContainer? destination = null,
-        ItemStack? replacement = null)
+        ItemStack? replacement = null, ItemStack? exchangeResult = null)
     {
         lock (this.Level.Fluids.TickLock)
         {
@@ -172,6 +171,7 @@ internal sealed class BlockUse
                         || held is not null && (held.Count <= 0 || held.Count != this.UsedItem?.Count
                             || !held.Equals(this.UsedItem))
                         || consumeItem && held is null
+                        || exchangeResult is not null && (held is null || replacement is not null)
                         || replacement is not null && (!consumeItem || held?.Count != 1))
                     {
                         this.ResyncHand = true;
@@ -206,6 +206,9 @@ internal sealed class BlockUse
                                 this.ResyncHand = true;
                             }
 
+                            if (exchangeResult is not null)
+                                this.ExchangeResult(exchangeResult, effects);
+
                             committed = true;
                         }
                     }
@@ -229,6 +232,40 @@ internal sealed class BlockUse
             failure?.Throw();
             return committed;
         }
+    }
+
+    // Called only with the player's inventory held and external effects suppressed. Filled buckets do not stack.
+    private void ExchangeResult(ItemStack result, BlockUseEffects effects)
+    {
+        var inventory = this.Player.Inventory;
+        var creative = this.Player.GameMode == GameMode.Creative;
+        if (!creative)
+        {
+            inventory.RemoveItem(this.HandSlot, 1);
+            if (inventory.GetItem(this.HandSlot) is null)
+            {
+                inventory.SetItem(this.HandSlot, result);
+                this.ResyncHand = true;
+                return;
+            }
+        }
+
+        var slots = Enumerable.Range(36, 9).Concat(Enumerable.Range(9, 27)).ToArray();
+        if (creative && slots.Append(45).Any(slot => inventory.GetItem(slot) is ItemStack item && item.Equals(result)))
+            return;
+
+        var available = slots.FirstOrDefault(slot => inventory.GetItem(slot) is not { Count: > 0 }, -1);
+        if (available >= 0)
+        {
+            inventory.SetItem(available, result);
+        }
+        else if (!creative)
+        {
+            var dropped = new ItemStack(result, result.Count);
+            effects.After(() => this.Level.SpawnItem(this.Player.Position + new VectorD(0, 1.3, 0), dropped));
+        }
+
+        this.ResyncHand = true;
     }
 
     /// <summary>Awards one of a <c>minecraft:custom</c> statistic, such as <c>minecraft:open_chest</c>.</summary>
