@@ -14861,7 +14861,1084 @@
           "state": "minecraft:chorus_plant[down=true,east=false,north=false,south=false,up=false,west=false]"
         }
       ]
+    },
+    {
+      "name": "review_coral_dry_neighbour_changes_while_death_pending",
+      "call": "set",
+      "origin": [
+        9,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:bubble_coral_block"
+        }
+      ],
+      "state": "minecraft:stone",
+      "seed": 1,
+      "actions": [
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:dirt"
+        }
+      ],
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 25
+        },
+        {
+          "call": "nextInt",
+          "bound": 40,
+          "value": 28
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:stone",
+          "flags": 3
+        },
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:dirt",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "type": "minecraft:bubble_coral_block",
+          "delay": 85
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "type": "minecraft:bubble_coral_block",
+          "delay": 88
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:bubble_coral_block"
+        },
+        {
+          "pos": [
+            9,
+            10,
+            8
+          ],
+          "state": "minecraft:dirt"
+        }
+      ]
+    },
+    {
+      "name": "review_dripstone_mud_in_nether",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:mud"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "seed": 4096,
+      "dimension": "minecraft:the_nether",
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.09789288
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.87547785
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:mud"
+        }
+      ]
+    },
+    {
+      "name": "review_mixed_pointed_dripstone_body_sulfur_spike_down_tip_randomTick",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:sulfur_spike[thickness=tip,vertical_direction=down]"
+        }
+      ],
+      "seed": 79,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.7242491
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.00885731
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:sulfur_spike[thickness=frustum,vertical_direction=down,waterlogged=false]",
+          "flags": 2
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=base,vertical_direction=down,waterlogged=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "type": "minecraft:pointed_dripstone",
+          "delay": 2
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "type": "minecraft:sulfur_spike",
+          "delay": 2
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:sulfur_spike[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=base,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "review_mixed_pointed_dripstone_body_sulfur_spike_down_tip_findTip",
+      "call": "findTip",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:sulfur_spike[thickness=tip,vertical_direction=down]"
+        }
+      ],
+      "seed": 79,
+      "maxLength": 7,
+      "includeMerged": false,
+      "tip": [
+        8,
+        9,
+        8
+      ],
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:sulfur_spike[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "review_mixed_pointed_dripstone_body_sulfur_spike_up_tip_randomTick",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:sulfur_spike[thickness=tip,vertical_direction=up]"
+        }
+      ],
+      "seed": 79,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.7242491
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.00885731
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:sulfur_spike[thickness=tip,vertical_direction=up,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "review_mixed_pointed_dripstone_body_sulfur_spike_up_tip_findTip",
+      "call": "findTip",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:sulfur_spike[thickness=tip,vertical_direction=up]"
+        }
+      ],
+      "seed": 79,
+      "maxLength": 7,
+      "includeMerged": false,
+      "tip": [
+        8,
+        9,
+        8
+      ],
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:sulfur_spike[thickness=tip,vertical_direction=up,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "review_mixed_sulfur_spike_body_pointed_dripstone_down_tip_randomTick",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:sulfur_spike[thickness=frustum,vertical_direction=down]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down]"
+        }
+      ],
+      "seed": 5121,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.0060720444
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:sulfur_spike[thickness=tip,vertical_direction=down,waterlogged=false]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]",
+          "flags": 2
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:sulfur_spike[thickness=base,vertical_direction=down,waterlogged=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "type": "minecraft:sulfur_spike",
+          "delay": 2
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "type": "minecraft:pointed_dripstone",
+          "delay": 2
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:sulfur_spike[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:sulfur_spike[thickness=base,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:sulfur"
+        }
+      ]
+    },
+    {
+      "name": "review_mixed_sulfur_spike_body_pointed_dripstone_down_tip_findTip",
+      "call": "findTip",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:sulfur_spike[thickness=frustum,vertical_direction=down]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down]"
+        }
+      ],
+      "seed": 5121,
+      "maxLength": 2,
+      "includeMerged": false,
+      "tip": [
+        8,
+        9,
+        8
+      ],
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:sulfur_spike[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:sulfur"
+        }
+      ]
+    },
+    {
+      "name": "review_mixed_sulfur_spike_body_pointed_dripstone_up_tip_randomTick",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:sulfur_spike[thickness=frustum,vertical_direction=down]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up]"
+        }
+      ],
+      "seed": 5121,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.0060720444
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:sulfur_spike[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:sulfur"
+        }
+      ]
+    },
+    {
+      "name": "review_mixed_sulfur_spike_body_pointed_dripstone_up_tip_findTip",
+      "call": "findTip",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:sulfur"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:sulfur_spike[thickness=frustum,vertical_direction=down]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up]"
+        }
+      ],
+      "seed": 5121,
+      "maxLength": 2,
+      "includeMerged": false,
+      "tip": [
+        8,
+        9,
+        8
+      ],
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:sulfur_spike[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:sulfur"
+        }
+      ]
+    },
+    {
+      "name": "review_dripstone_lands_without_drops",
+      "call": "landing",
+      "origin": [
+        8,
+        5,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "state": "minecraft:pointed_dripstone[vertical_direction=down]",
+      "entityDrops": false,
+      "silent": false,
+      "removed": true,
+      "items": 0,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "review_dripstone_lands_silently",
+      "call": "landing",
+      "origin": [
+        8,
+        5,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "state": "minecraft:pointed_dripstone[vertical_direction=down]",
+      "entityDrops": true,
+      "silent": true,
+      "removed": true,
+      "items": 1,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
     }
   ],
-  "_notes": "Vanilla block routines, recorded by the asset generator's TickingBlockFixtures.java against a block view of the case's setup (air elsewhere, void air outside the build height of -64 to 319) in the overworld, with a legacy random seeded with seed (0 by default) as both the routine's random and the level's. call is randomTick (the origin's state, only when its isRandomlyTicking holds, which ticks records), tick (the origin's scheduled tick), set (Level.setBlock of state at the origin with UPDATE_ALL) or landing (a falling block of state settling at the origin, with the entityDrops rule and silent flag). Writes store the block and, as Level.setBlock does, run the new state's onPlace and then, unless UPDATE_KNOWN_SHAPE is set, the neighbours' shape updates; neighbour notifications are not run. draws lists each draw in order; writes the block changes with their flags; scheduled the block and fluid ticks scheduled with their delays (a block tick counts as pending for hasScheduledTick); events the level events; gameEvents the game events with the state they carry; entities the entities added, with a falling block's state, position and damage; destroyed the blocks destroyed and whether they drop; items the items a landing dropped. after holds the final state of every setup or written position."
+  "_notes": "Vanilla block routines, recorded by the asset generator's TickingBlockFixtures.java against a block view of the case's setup (air elsewhere, void air outside the build height of -64 to 319) in the overworld, with a legacy random seeded with seed (0 by default) as both the routine's random and the level's. call is randomTick (the origin's state, only when its isRandomlyTicking holds, which ticks records), tick (the origin's scheduled tick), set (Level.setBlock of state at the origin with UPDATE_ALL) or landing (a falling block of state settling at the origin, with the entityDrops rule and silent flag). Writes store the block and, as Level.setBlock does, run the new state's onPlace and then, unless UPDATE_KNOWN_SHAPE is set, the neighbours' shape updates; neighbour notifications are not run. draws lists each draw in order; writes the block changes with their flags; scheduled the block and fluid ticks scheduled with their delays (a block tick counts as pending for hasScheduledTick); events the level events; gameEvents the game events with the state they carry; entities the entities added, with a falling block's state, position and damage; destroyed the blocks destroyed and whether they drop; items the items a landing dropped. after holds the final state of every setup or written position. Optional dimension uses that dimension type's environment attributes; actions are later UPDATE_ALL writes. call findTip invokes the native speleothem tip search with maxLength and includeMerged, recording tip as a position or null."
 }

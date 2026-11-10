@@ -14,6 +14,9 @@ import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
@@ -59,11 +62,14 @@ public final class TickingBlockFixtures {
         + "block and fluid ticks scheduled with their delays (a block tick counts as pending for hasScheduledTick); "
         + "events the level events; gameEvents the game events with the state they carry; entities the entities "
         + "added, with a falling block's state, position and damage; destroyed the blocks destroyed and whether they "
-        + "drop; items the items a landing dropped. after holds the final state of every setup or written position.";
+        + "drop; items the items a landing dropped. after holds the final state of every setup or written position. "
+        + "Optional dimension uses that dimension type's environment attributes; actions are later UPDATE_ALL writes. "
+        + "call findTip invokes the native speleothem tip search with maxLength and includeMerged, recording tip "
+        + "as a position or null.";
 
     private static final List<String> OUTPUTS = List.of(
         "ticks", "draws", "writes", "scheduled", "events", "gameEvents", "entities", "destroyed", "removed", "items",
-        "after");
+        "after", "tip");
 
     public static void main(String[] arguments) throws Exception {
         var version = VanillaDumper.bootstrap();
@@ -100,6 +106,15 @@ public final class TickingBlockFixtures {
         var seed = input.has("seed") ? input.get("seed").getAsLong() : 0L;
         var random = new RecordingRandom(seed);
         var level = ProbeLevel.allocate(random);
+        if (input.has("dimension")) {
+            var registries = (HolderLookup.Provider)VanillaDumper.vanillaRegistries();
+            var key = ResourceKey.create(Registries.DIMENSION_TYPE,
+                Identifier.parse(input.get("dimension").getAsString()));
+            var dimension = registries.lookupOrThrow(Registries.DIMENSION_TYPE).getOrThrow(key).value();
+            level.environment = EnvironmentAttributeSystem.builder()
+                .addConstantLayer(dimension.attributes())
+                .build();
+        }
 
         var touched = new LinkedHashSet<BlockPos>();
         for (var placement : input.getAsJsonArray("setup")) {
@@ -124,7 +139,24 @@ public final class TickingBlockFixtures {
             case "tick" -> level.getBlockState(origin).tick(level, origin, random);
             case "set" -> level.setBlock(origin, state(input.get("state").getAsString()), Block.UPDATE_ALL, 512);
             case "landing" -> land(input, level, origin);
+            case "findTip" -> {
+                var method = net.minecraft.world.level.block.SpeleothemBlock.class.getDeclaredMethod("findTip",
+                    BlockState.class, net.minecraft.world.level.LevelAccessor.class, BlockPos.class,
+                    int.class, boolean.class);
+                method.setAccessible(true);
+                var tip = (BlockPos)method.invoke(null, level.getBlockState(origin), level, origin,
+                    input.get("maxLength").getAsInt(), input.get("includeMerged").getAsBoolean());
+                input.add("tip", tip == null ? com.google.gson.JsonNull.INSTANCE : coordinates(tip));
+            }
             default -> throw new IllegalArgumentException("Unknown call " + call);
+        }
+
+        if (input.has("actions")) {
+            for (var entry : input.getAsJsonArray("actions")) {
+                var action = entry.getAsJsonObject();
+                level.setBlock(position(action.getAsJsonArray("pos")),
+                    state(action.get("state").getAsString()), Block.UPDATE_ALL, 512);
+            }
         }
 
         input.add("draws", random.draws);

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -7,6 +8,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Obsidian.API;
 using Obsidian.API.Blocks;
+using Obsidian.API.Registries;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.ChunkData;
 using Obsidian.Entities;
@@ -33,6 +35,30 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
 
     private static readonly JsonElement fixture = LoadFixture();
 
+    // The notification pipeline repeats shape dispatch after the fluid level, storing the third write with
+    // UPDATE_ALL instead of UPDATE_CLIENTS. Keep the complete expected flag value: no bits are masked.
+    // These entries must fail when the duplicate dispatch is fixed (see the block-update known gaps).
+    private static readonly Dictionary<string, int> pipelineDifferences = new()
+    {
+        ["dripstone_grows_down_from_a_column"] = 2,
+        ["dripstone_grows_down_at_seven_long"] = 2,
+        ["dripstone_tip_added_below_a_column"] = 2,
+        ["dripstone_tip_removed_from_a_column"] = 2,
+        ["review_mixed_pointed_dripstone_body_sulfur_spike_down_tip_randomTick"] = 2,
+        ["review_mixed_sulfur_spike_body_pointed_dripstone_down_tip_randomTick"] = 2,
+    };
+
+    // The bounded vanilla destroyBlock override records drops intent but suppresses resource creation. These two
+    // replays actually spawn one item, consuming exactly these five level-random doubles during deferred removal.
+    // Check that difference explicitly, including the item count; never swap out the recording random.
+    private static readonly HashSet<string> deferredLootDifferences =
+        ["stalagmite_breaks", "stalagmite_column_breaks"];
+
+    private static readonly double[] deferredItemDraws =
+        [0.730967787376657, 0.24053641567148587, 0.6374174253501083, 0.5504370051176339, 0.5975452777972018];
+
+    private const string PendingCoralDifference = "review_coral_dry_neighbour_changes_while_death_pending";
+
     /// <summary>
     /// Each case runs through Obsidian's dispatch (the owner the generator binds the block's class to, or a live
     /// block change) in a fresh world holding only the case's blocks, with the case's seed as the level's random. The
@@ -44,10 +70,11 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
     {
         Assert.Equal(ServerConstants.ProtocolDescription, fixture.GetProperty("version").GetString());
 
+        var timer = Stopwatch.StartNew();
         var cases = fixture.GetProperty("cases").EnumerateArray().ToArray();
         await FixtureCases.AssertAllAsync(cases, Name, ReplayAsync);
 
-        output.WriteLine($"Replayed {cases.Length} ticking block cases.");
+        output.WriteLine($"Replayed {cases.Length} ticking block cases in {timer.Elapsed.TotalSeconds:F2}s.");
     }
 
     private static string Name(JsonElement probe) => probe.GetProperty("name").GetString()!;
@@ -56,6 +83,9 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
     {
         await using var context = TestServerFactory.CreateServer($"ticking-blocks-{Guid.NewGuid():N}");
         var world = context.World;
+        if (probe.TryGetProperty("dimension", out var dimension))
+            world.Initialize(CodecRegistry.Dimensions.All[dimension.GetString()!]);
+
         world.LevelData.GameRules["random_tick_speed"] = "0";
         world.LevelData.GameRules["spawn_mobs"] = "false";
         if (probe.TryGetProperty("entityDrops", out var entityDrops))
@@ -84,7 +114,19 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
         var random = new RecordingRandom(seed);
         world.GrowthRandom = random;
 
+        var writes = new List<Write>();
+        var destroyed = new List<string>();
+        var expectedPositions = probe.GetProperty("after").EnumerateArray()
+            .Select(placement => Position(placement.GetProperty("pos")))
+            .ToHashSet();
         var differences = new List<string>();
+        world.Fluids.BlockStored = (position, block, flags) =>
+        {
+            writes.Add(new Write(position, block, flags));
+            if (!expectedPositions.Contains(position))
+                differences.Add($"Unexpected write outside the case: {position} -> {block}, flags {(int)flags}");
+        };
+        world.BlockDestroyed = (position, block, drops) => destroyed.Add(Destroyed(position, block, drops));
         var origin = Position(probe.GetProperty("origin"));
         var call = probe.GetProperty("call").GetString();
         switch (call)
@@ -102,23 +144,48 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
             case "landing":
                 await LandAsync(differences, probe, world, origin);
                 break;
+            case "findTip":
+                var tip = SulfurSpikeBehavior.FindTip(world.BlockUpdates, origin, world.BlockUpdates.GetBlock(origin),
+                    probe.GetProperty("maxLength").GetInt32(), probe.GetProperty("includeMerged").GetBoolean());
+                var recordedTip = probe.GetProperty("tip");
+                Vector? expectedTip = recordedTip.ValueKind == JsonValueKind.Null ? null : Position(recordedTip);
+                Expect(differences, "tip", expectedTip, tip);
+                break;
             default:
                 throw new InvalidOperationException($"Unknown call {call}");
         }
 
-        // Obsidian destroys blocks in the tick's entity phase, where vanilla's destroyBlock is immediate; the tick
-        // runs it. The probe's view doesn't drop items, so the drops' draws come from another random.
+        if (probe.TryGetProperty("actions", out var actions))
+        {
+            foreach (var action in actions.EnumerateArray())
+            {
+                var state = VanillaSulfurBlocks.ParseState(action.GetProperty("state").GetString()!);
+                world.BlockUpdates.SetBlock(Position(action.GetProperty("pos")), state);
+            }
+        }
+
+        // Keep observing through deferred destruction, including the level random used by item spawning.
         if (probe.GetProperty("destroyed").GetArrayLength() > 0)
         {
-            world.GrowthRandom = new LegacyRandomSource(seed);
             await world.DoWorldTickAsync();
         }
 
-        CompareDraws(differences, probe.GetProperty("draws"), random.Draws);
+        world.Fluids.BlockStored = null;
+        world.BlockDestroyed = null;
+
+        CompareWrites(differences, probe, writes);
+        var expectedDestroyed = probe.GetProperty("destroyed").EnumerateArray()
+            .Select(block => Destroyed(
+                Position(block.GetProperty("pos")),
+                VanillaSulfurBlocks.ParseState(block.GetProperty("state").GetString()!),
+                block.GetProperty("drops").GetBoolean()));
+        ExpectSequence(differences, "destroyed", expectedDestroyed, destroyed);
+        CompareDraws(differences, probe, random.Draws);
         CompareBlocks(differences, probe.GetProperty("after"), world);
+        CompareUnchangedBlocks(differences, probe.GetProperty("after"), world);
         CompareTicks(differences, probe.GetProperty("scheduled"), world);
         CompareEvents(differences, probe, client.SentPackets.OfType<LevelEventPacket>().ToList());
-        CompareFallingBlocks(differences, probe.GetProperty("entities"), world);
+        CompareEntities(differences, probe, world);
 
         if (differences.Count > 0)
             throw new Xunit.Sdk.XunitException(string.Join("\n", differences));
@@ -199,9 +266,23 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
     private static bool IsNear(WorldData.World world, Vector origin, Entity entity) =>
         world.GetNonPlayerEntitiesInRange((VectorD)origin, 10).Contains(entity);
 
-    private static void CompareDraws(List<string> differences, JsonElement expected, List<Draw> actual)
+    private static void CompareDraws(List<string> differences, JsonElement probe, List<Draw> actual)
     {
-        var draws = expected.EnumerateArray().Select(Draw.Parse);
+        var draws = probe.GetProperty("draws").EnumerateArray().Select(Draw.Parse).ToList();
+        if (Name(probe) == PendingCoralDifference)
+        {
+            // Vanilla draws 28 and attempts another schedule; Obsidian skips that draw while death is pending.
+            // Assert the capture's discarded draw too, so this exception cannot hide a changed fixture.
+            Assert.Equal(new Draw("nextInt", 40, "28"), draws[1]);
+            draws.RemoveAt(1);
+        }
+
+        if (deferredLootDifferences.Contains(Name(probe)))
+        {
+            draws.AddRange(deferredItemDraws.Select(value =>
+                new Draw("nextDouble", null, value.ToString("R", CultureInfo.InvariantCulture))));
+        }
+
         ExpectSequence(differences, "draws", draws.Select(Text), actual.Select(Text));
     }
 
@@ -219,14 +300,46 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
         }
     }
 
+    // The view starts empty outside setup, and after contains all setup positions. Check every loaded cell,
+    // including chunks beside the case and the full build height, so direct chunk writes cannot escape observation.
+    private static void CompareUnchangedBlocks(List<string> differences, JsonElement expected, WorldData.World world)
+    {
+        var positions = expected.EnumerateArray()
+            .Select(placement => Position(placement.GetProperty("pos")))
+            .ToHashSet();
+        foreach (var chunk in Chunks(world))
+        {
+            foreach (var section in chunk.Sections)
+            {
+                if (section.IsEmpty)
+                    continue;
+
+                for (var y = 0; y < 16; y++)
+                {
+                    for (var z = 0; z < 16; z++)
+                    {
+                        for (var x = 0; x < 16; x++)
+                        {
+                            var position = new Vector(chunk.X * 16 + x, section.YBase!.Value * 16 + y,
+                                chunk.Z * 16 + z);
+                            var block = section.GetBlock(x, y, z);
+                            if (!positions.Contains(position) && !block.IsAir)
+                                differences.Add($"Unexpected block outside the case at {position}: {block}");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // Every block and fluid tick pending in the nine chunks, against those vanilla scheduled. Vanilla's list can
-    // schedule the same tick twice, which is pending once.
+    // schedule the same position/type twice, even with another delay; only its first request is pending.
     private static void CompareTicks(List<string> differences, JsonElement expected, WorldData.World world)
     {
         var vanilla = expected.EnumerateArray()
+            .DistinctBy(tick => (Position(tick.GetProperty("pos")), tick.GetProperty("type").GetString()))
             .Select(tick => Tick(Position(tick.GetProperty("pos")), tick.GetProperty("type").GetString()!,
                 tick.GetProperty("delay").GetInt32()))
-            .Distinct()
             .ToList();
 
         var obsidian = new List<string>();
@@ -270,37 +383,70 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
 
     private static string Event(int type, Vector position, int data) => $"{type} at {position} ({data})";
 
-    // The falling blocks spawned, top down, with their block, position and the damage a stalactite does per block
-    // fallen.
-    private static void CompareFallingBlocks(List<string> differences, JsonElement expected, WorldData.World world)
+    private sealed record Write(Vector Position, IBlock Block, BlockUpdateFlags Flags)
     {
-        var vanilla = expected.EnumerateArray()
-            .Select(entity =>
-            {
-                var position = entity.GetProperty("pos");
-                var damage = entity.GetProperty("hurtEntities").GetBoolean()
-                    ? entity.GetProperty("damagePerDistance").GetSingle()
-                    : 0f;
-                var state = VanillaSulfurBlocks.ParseState(entity.GetProperty("state").GetString()!);
-                var x = position[0].GetDouble();
-                var y = position[1].GetDouble();
-                var z = position[2].GetDouble();
-                return Falling(state, x, y, z, damage);
-            })
-            .ToList();
+        public override string ToString() => $"{this.Position} {this.Block.StateId()} flags {(int)this.Flags}";
+    }
 
-        var obsidian = world.GetNonPlayerEntitiesInRange(new VectorD(8, 8, 8), 32)
-            .OfType<FallingBlock>()
+    private static void CompareWrites(List<string> differences, JsonElement probe, List<Write> actual)
+    {
+        var vanilla = probe.GetProperty("writes").EnumerateArray().Select(write => new Write(
+            Position(write.GetProperty("pos")),
+            VanillaSulfurBlocks.ParseState(write.GetProperty("state").GetString()!),
+            (BlockUpdateFlags)write.GetProperty("flags").GetInt32())).ToList();
+        if (pipelineDifferences.TryGetValue(Name(probe), out var index))
+        {
+            Assert.Equal(BlockUpdateFlags.Clients, vanilla[index].Flags);
+            vanilla[index] = vanilla[index] with { Flags = BlockUpdateFlags.All };
+        }
+
+        ExpectSequence(differences, "writes", vanilla.Select(write => write.ToString()),
+            actual.Select(write => write.ToString()));
+    }
+
+    private static string Destroyed(Vector position, IBlock state, bool drops) =>
+        $"{position} {state.StateId()} drops {drops}";
+
+    // Compare every captured entity field, and reject entities of unexpected types. Landing items and deferred
+    // destruction loot are checked separately: the bounded vanilla probe does not add those as entities.
+    private static void CompareEntities(List<string> differences, JsonElement probe, WorldData.World world)
+    {
+        var vanilla = probe.GetProperty("entities").EnumerateArray().Select(entity =>
+        {
+            var type = entity.GetProperty("type").GetString()!;
+            var position = entity.GetProperty("pos");
+            if (type != "minecraft:falling_block")
+                throw new InvalidOperationException($"Unsupported captured entity {type}");
+
+            var state = VanillaSulfurBlocks.ParseState(entity.GetProperty("state").GetString()!);
+            return Falling(state, position[0].GetDouble(), position[1].GetDouble(), position[2].GetDouble(),
+                entity.GetProperty("hurtEntities").GetBoolean(),
+                entity.GetProperty("damagePerDistance").GetSingle(), entity.GetProperty("maxDamage").GetInt32());
+        }).ToList();
+
+        var entities = world.GetNonPlayerEntitiesInRange(VectorD.Zero, float.MaxValue).ToArray();
+        var expectedItems = deferredLootDifferences.Contains(Name(probe)) ? 1 : 0;
+        if (probe.TryGetProperty("items", out var landingItems))
+            expectedItems = landingItems.GetInt32();
+
+        var items = entities.OfType<ItemEntity>().ToArray();
+        Expect(differences, "entity items", expectedItems, items.Sum(item => item.Item.Count));
+        foreach (var entity in entities)
+        {
+            if (entity is not FallingBlock && !(expectedItems > 0 && entity is ItemEntity))
+                differences.Add($"Unexpected entity {entity.Type} at {entity.Position}");
+        }
+
+        var obsidian = entities.OfType<FallingBlock>()
             .OrderByDescending(falling => falling.Position.Y)
             .Select(falling => Falling(falling.Block, falling.Position.X, falling.Position.Y, falling.Position.Z,
-                falling.StalactiteDamage))
-            .ToList();
-
+                falling.StalactiteDamage > 0, falling.StalactiteDamage, FallingBlock.StalactiteMaxDamage));
         ExpectSequence(differences, "falling", vanilla, obsidian);
     }
 
-    private static string Falling(IBlock block, double x, double y, double z, float damage) =>
-        string.Create(CultureInfo.InvariantCulture, $"{block.StateId()} at ({x}, {y}, {z}) hurting {damage}");
+    private static string Falling(IBlock block, double x, double y, double z, bool hurts, float damage, int max) =>
+        string.Create(CultureInfo.InvariantCulture,
+            $"minecraft:falling_block {block.StateId()} at ({x}, {y}, {z}) hurts {hurts}, damage {damage}, max {max}");
 
     private static string FluidName(FluidKind fluid) => fluid switch
     {

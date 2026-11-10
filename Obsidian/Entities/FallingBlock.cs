@@ -17,6 +17,8 @@ public sealed partial class FallingBlock : Entity
 
     internal float StalactiteDamage { get; set; }
 
+    internal const int StalactiteMaxDamage = 40;
+
     internal bool DropItem { get; set; } = true;
 
     internal bool CancelDrop { get; set; }
@@ -160,6 +162,6 @@ public sealed partial class FallingBlock : Entity
     {
         // Vanilla's falling stalactite rounds distance up after its one-block grace, then caps damage at 40.
         var damagingDistance = (int)Math.Ceiling(distance - 1);
-        return damagingDistance > 0 ? Math.Min(40, MathF.Floor(damagingDistance * size)) : 0;
+        return damagingDistance > 0 ? Math.Min(StalactiteMaxDamage, MathF.Floor(damagingDistance * size)) : 0;
     }
 }

@@ -12,6 +12,9 @@ public abstract partial class AbstractLevel
     // Protected by the block tick lock. Repeated shape updates must not enqueue duplicate drops.
     private readonly HashSet<Vector> pendingDestruction = [];
 
+    /// <summary>Observes a completed environmental destruction, before its drops are spawned.</summary>
+    internal Action<Vector, IBlock, bool>? BlockDestroyed { get; set; }
+
     /// <inheritdoc/>
     public bool DestroyBlock(Vector position, bool dropItems, IEntity? breaker = null) =>
         this.QueueBlockDestruction(
@@ -170,6 +173,8 @@ public abstract partial class AbstractLevel
         {
             return;
         }
+
+        this.BlockDestroyed?.Invoke(position, block, dropItems);
 
         await parts.RemovePartnerAsync(this);
         // Vanilla Level.destroyBlock sends 2001 (sound and particles), except for fire. Water washout and

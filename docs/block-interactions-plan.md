@@ -535,7 +535,7 @@ adds.
 | Farmland: hydrate | Works | |
 | Turtle eggs: hatch | Partial | Wrong time window; `Random.Shared`; sand and red sand only |
 | Frogspawn | Partial | Only frogspawn a frog laid hatches |
-| Sculk catalysts, pointed dripstone, amethyst buds | Partial | Pointed dripstone and amethyst buds work (`ticking_blocks.json`); sculk catalysts missing |
+| Sculk catalysts, pointed dripstone, amethyst buds | Partial | Pointed dripstone and amethyst buds work (`ticking_blocks.json`); mud-to-clay and path-to-dirt do not lift entities; sculk catalysts missing |
 | Trial spawners, vaults | Missing | |
 
 ### 9. Special block interactions
