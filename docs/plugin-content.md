@@ -106,6 +106,11 @@ public sealed class PipeBehavior : IBlockBehavior
 }
 ```
 
+For programmatic uses, the player-use packet requires an engine `Player`, and vanilla uses require a connected
+actor registered in the level. Custom `IClientPlayer` implementations are ignored at packet entry. See
+[programmatic player uses](known-gaps/block-use-stale-state.md#programmatic-player-uses) for refusal behavior and
+world-write alternatives.
+
 A block's `Behavior` gets vanilla's block hooks; each defaults to doing nothing:
 
 - `UseAsync`: a player uses the block (right-clicks it without sneaking), before the item in their hand.

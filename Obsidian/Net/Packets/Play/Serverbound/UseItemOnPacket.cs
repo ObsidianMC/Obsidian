@@ -261,7 +261,7 @@ public partial class UseItemOnPacket
     /// <summary>
     /// What every use owes once it's done, like vanilla's <c>handleUseItemOn</c>: the <c>any_block_use</c> trigger
     /// and the arm's swing when it consumed the click, then the clicked block and the one beside it, which the
-    /// client may have predicted wrongly, and the acknowledgement.
+    /// client may have predicted wrongly. Received sequences are acknowledged once per player tick.
     /// </summary>
     private static async ValueTask CompleteAsync(BlockUse use, UseResult result)
     {

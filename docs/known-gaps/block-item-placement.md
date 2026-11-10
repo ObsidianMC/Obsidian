@@ -23,6 +23,8 @@ What isn't covered yet:
 - **Adventure mode.** Block interactions and plugin item callbacks still run. Obsidian refuses vanilla item uses
   on blocks and item placement until it evaluates the item's `can_place_on` predicates, including where those
   predicates would permit the use.
+- **Ignition targets.** Flint and steel and fire charges do not light unlit campfires, candles or candle cakes.
+  This also predates PR #701 on 26.3.x; it belongs to phase 2's lighting batch in the block-interactions plan.
 - **Extending scaffolding.** Vanilla's `ScaffoldingBlockItem` places scaffolding along a scaffolding tower or bridge
   that's clicked. Obsidian places it where it was clicked, and refuses it where nothing would hold it.
 - **Random ages.** Kelp and weeping, twisting and cave vines take an age from the level's random, which Obsidian draws
