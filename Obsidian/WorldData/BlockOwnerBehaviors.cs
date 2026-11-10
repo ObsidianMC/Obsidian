@@ -104,6 +104,8 @@ internal static class TickBehaviors
     internal static IScheduledTickBehavior CoralWallFanBlock { get; } = new CoralPlantBehavior(onWall: true);
 
     internal static IScheduledTickBehavior ChorusPlantBlock { get; } = new ChorusPlantBehavior();
+
+    internal static IScheduledTickBehavior EyeblossomBlock { get; } = new EyeblossomBehavior();
 }
 
 /// <summary>

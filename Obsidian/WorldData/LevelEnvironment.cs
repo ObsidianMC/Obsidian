@@ -79,6 +79,12 @@ internal static class LevelEnvironment
     public const string WaterEvaporates = "minecraft:gameplay/water_evaporates";
 
     /// <summary>
+    /// Vanilla's <c>minecraft:gameplay/eyeblossom_open</c>: a tri-state, where its default leaves an eyeblossom as it
+    /// is. Only the overworld's day timeline sets it.
+    /// </summary>
+    public const string EyeblossomOpenAttribute = "minecraft:gameplay/eyeblossom_open";
+
+    /// <summary>
     /// Vanilla's <c>minecraft:gameplay/bed_rule</c>: when beds let players sleep and set their spawn, and whether
     /// they explode.
     /// </summary>
@@ -187,6 +193,27 @@ internal static class LevelEnvironment
             value = ApplyBiome(biome, attribute, value);
 
         return WorldTimelines.Apply(level, attribute, value);
+    }
+
+    /// <summary>
+    /// Whether an eyeblossom at <paramref name="position"/> should be open, as vanilla's
+    /// <c>environmentAttributes().getValue(EYEBLOSSOM_OPEN, pos).toBoolean(open)</c> decides: the attribute's
+    /// default leaves it as it is (<paramref name="open"/>), then the dimension type's map, the biome's and the
+    /// timelines apply. Only the overworld's day timeline sets it, open from 12600 to 23400 of each day.
+    /// </summary>
+    /// <remarks>
+    /// A map's <c>"default"</c> keeps the value it's given rather than going back to the eyeblossom's own state;
+    /// vanilla's types, biomes and timelines never set it.
+    /// </remarks>
+    public static bool EyeblossomOpen(this ILevel level, Vector position, bool open)
+    {
+        if (attributeMaps.TryGetValue(level.DimensionType.Element, out var typeMap))
+            open = typeMap.Apply(EyeblossomOpenAttribute, open);
+
+        if (BiomeAt(level, position) is BiomeCodec biome && attributeMaps.TryGetValue(biome.Element, out var biomeMap))
+            open = biomeMap.Apply(EyeblossomOpenAttribute, open);
+
+        return WorldTimelines.Apply(level, EyeblossomOpenAttribute, open);
     }
 
     /// <summary>
