@@ -18,12 +18,14 @@ and where to start.
 
 - [26.3 blocks](26-3-blocks.md)
 - [Block item placement](block-item-placement.md)
+- [Block-use state validation](block-use-stale-state.md)
 - [Bubble columns started by water](bubble-columns-started-by-water.md)
 - [Comparators reading unopened loot containers](comparators-reading-unopened-loot-containers.md)
 - [Plant growth beyond saplings](plant-growth-beyond-saplings.md)
 - [Recursive placement callbacks](recursive-placement-callbacks.md)
 - [Redstone](redstone.md)
 - [Saplings that 26.3 added](saplings-that-26-3-added.md)
+- [Sign interactions](sign-interactions.md)
 - [Tilling and other block transformers](tilling-and-other-block-transformers.md)
 - [Vanilla blocks' reactions to block updates](vanilla-blocks-reactions-to-block-updates.md)
 
@@ -55,6 +57,7 @@ and where to start.
 - [26.3 commands](26-3-commands.md)
 - [Chunk ticket parity](chunk-ticket-parity.md)
 - [Context number provider commands and world sources](context-number-provider-commands-and-world-sources.md)
+- [Inventory and world lock order](inventory-world-locking.md)
 - [Low disk space notifications](low-disk-space-notifications.md)
 - [Progress parity](progress-parity.md)
 - [Scoreboard display waits only for queueing](scoreboard-display-waits-only-for-queueing.md)
