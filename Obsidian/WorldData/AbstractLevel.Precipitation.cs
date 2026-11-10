@@ -24,7 +24,16 @@ public abstract partial class AbstractLevel
     }
 
     // The sea level the snow line is measured from (vanilla's Level.getSeaLevel, from the level's generator).
-    private int ClimateSeaLevel => this.Generator is MojangGenerator generator ? generator.SeaLevel : 63;
+    private int ClimateSeaLevel => this.Generator switch
+    {
+        MojangGenerator generator => generator.SeaLevel,
+
+        // FlatStemGenerator derives from SuperflatGenerator; vanilla's flat generator reports -63.
+        SuperflatGenerator => -63,
+
+        // Generators without a sea-level contract retain the conventional overworld reference height.
+        _ => 63
+    };
 
     // Vanilla's getBlockRandomPos: the next offset in a 16-block cube, x, y and z, from the linear congruential
     // sequence random ticks and the precipitation pass share. It has to match vanilla's, because the blocks it picks

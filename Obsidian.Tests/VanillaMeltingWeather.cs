@@ -110,6 +110,12 @@ public sealed class VanillaMeltingWeather(ITestOutputHelper output)
         if (probe.TryGetProperty("biomeSeed", out var biomeSeed))
             level.LevelData.RandomSeed = biomeSeed.GetInt64();
 
+        if (probe.TryGetProperty("generator", out var generator) && generator.GetString() == "flat")
+        {
+            var settings = new FlatLevelSettings([], biome);
+            level.Generator = new FlatStem("minecraft:overworld", "minecraft:overworld", settings).CreateGenerator();
+        }
+
         var setup = Setup(probe);
         for (var chunkX = -1; chunkX <= 1; chunkX++)
         {

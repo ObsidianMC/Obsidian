@@ -132,22 +132,29 @@ internal static class FixtureDumper
     }
 
     // An on-request probe: a dedicated server of its own, in a new normal world under the scratch directory.
-    internal static Task DumpMeltingWeatherAsync(VanillaServer server, string fixture,
+    internal static async Task DumpMeltingWeatherAsync(VanillaServer server, string fixture,
         IReadOnlyCollection<string>? cases = null)
     {
-        var world = Path.Combine(server.ScratchDirectory, $"melting-weather-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(world);
+        using var document = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(fixture));
+        var selected = document.RootElement.GetProperty("cases").EnumerateArray()
+            .Where(probe => cases is null || cases.Contains(probe.GetProperty("name").GetString()!))
+            .ToArray();
+        if (cases is not null && selected.Length != cases.Count)
+            throw new ArgumentException("Every selected case must exist and be named once.");
 
-        // The probe finds the server in the shutdown hook vanilla's Main registers.
-        var arguments = new List<string>
+        // Flat and noise generators supply different sea levels. Each group gets its own native server/world.
+        var groups = selected.GroupBy(probe => probe.TryGetProperty("generator", out var generator)
+            ? generator.GetString()! : "normal");
+        foreach (var group in groups)
         {
-            "--add-opens", "java.base/java.lang=ALL-UNNAMED",
-            "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("MeltingWeatherFixtures.java"), fixture
-        };
-        if (cases is not null)
-            arguments.Add(string.Join('+', cases));
-
-        return VanillaServer.RunJavaAsync(world, arguments.ToArray());
+            var world = Path.Combine(server.ScratchDirectory, $"melting-weather-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(world);
+            var names = string.Join('+', group.Select(probe => probe.GetProperty("name").GetString()));
+            await VanillaServer.RunJavaAsync(world,
+                "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+                "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("MeltingWeatherFixtures.java"),
+                fixture, names, group.Key);
+        }
     }
 
     public static async Task DumpServerAsync(VanillaServer server, string output)

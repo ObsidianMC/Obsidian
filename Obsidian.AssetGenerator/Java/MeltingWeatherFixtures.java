@@ -80,7 +80,7 @@ public final class MeltingWeatherFixtures {
         var root = JsonParser.parseString(Files.readString(fixturePath)).getAsJsonObject();
 
         try {
-            startServer();
+            startServer(args.length > 2 && args[2].equals("flat"));
             server.submit(MeltingWeatherFixtures::configure).join();
             var selected = args.length > 1 ? Set.of(args[1].split("\\+")) : null;
             var captured = 0;
@@ -175,6 +175,9 @@ public final class MeltingWeatherFixtures {
             loadArea(level);
 
             var bottom = level.dimension() == Level.NETHER ? 20 : 40;
+            // A flat world's grass is below this probe's usual floor and would add unrelated random-tick sections.
+            if (level.getSeaLevel() == -63)
+                bottom = level.getMinY();
             var top = level.dimension() == Level.NETHER ? 120 : 260;
             for (var x = MinBlock; x <= MaxBlock; x++) {
                 for (var z = MinBlock; z <= MaxBlock; z++) {
@@ -281,6 +284,9 @@ public final class MeltingWeatherFixtures {
     }
 
     private static void run(ServerLevel level, JsonObject testCase) {
+        if (testCase.has("generator"))
+            testCase.addProperty("seaLevel", level.getSeaLevel());
+
         level.updateSkyBrightness();
         testCase.addProperty("skyDarken", level.getSkyDarken());
 
@@ -570,13 +576,14 @@ public final class MeltingWeatherFixtures {
         return joined.toString();
     }
 
-    private static void startServer() throws Exception {
+    private static void startServer(boolean flat) throws Exception {
         Files.writeString(Path.of("eula.txt"), "eula=true\n");
 
-        // A normal overworld, so that the sea level the snow line is measured from is vanilla's 63, with nothing
-        // spawning and no watchdog, since each case runs as one task on the server thread.
+        // The generator is part of the input: its sea level sets the snow line. Nothing spawns and the watchdog is
+        // disabled because each bounded case runs as one task on the server thread.
         var properties = String.join("\n",
             "level-seed=melting-weather",
+            "level-type=" + (flat ? "minecraft:flat" : "minecraft:normal"),
             "generate-structures=false",
             "spawn-protection=0",
             "online-mode=false",
