@@ -96,6 +96,7 @@
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)collision_shapes.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)block_sounds.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)note_block_instruments.json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)flower_pot_contents.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)block_loot_tables.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\blocks.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\entities.json" />

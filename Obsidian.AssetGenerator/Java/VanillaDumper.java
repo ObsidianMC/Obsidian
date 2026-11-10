@@ -164,6 +164,7 @@ public final class VanillaDumper {
         dumper.dumpItemUseClasses();
         dumper.dumpItemClickClasses();
         dumper.dumpItemPlacedBlocks();
+        dumper.dumpFlowerPotContents();
         dumper.dumpItemAttachments();
         dumper.dumpCollisionShapes();
         dumper.dumpBlastResistance();
@@ -1356,6 +1357,26 @@ public final class VanillaDumper {
         }
 
         Json.write(output.resolve("item_placed_blocks.json"), placed, false);
+    }
+
+    /**
+     * {@code flower_pot_contents.json}: the block each {@code FlowerPotBlock} holds ({@code getPotted}), air for the
+     * empty pot. Planting an item's block in an empty pot gives the pot that holds it, and taking it out gives the
+     * held block's item.
+     */
+    private void dumpFlowerPotContents() throws IOException {
+        var flowerPot = Vanilla.type("net.minecraft.world.level.block.FlowerPotBlock");
+        var getPotted = Vanilla.method("net.minecraft.world.level.block.FlowerPotBlock", "getPotted");
+        var blockRegistry = Vanilla.get(REGISTRIES, "BLOCK");
+        var contents = new TreeMap<String, String>();
+
+        for (var block : (Iterable<?>) blockRegistry) {
+            if (flowerPot.isInstance(block)) {
+                contents.put(key(blockRegistry, block), key(blockRegistry, Vanilla.call(getPotted, block)));
+            }
+        }
+
+        Json.write(output.resolve("flower_pot_contents.json"), contents, false);
     }
 
     /**

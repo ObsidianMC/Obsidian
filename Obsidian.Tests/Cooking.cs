@@ -141,11 +141,11 @@ public sealed class Cooking
         Assert.Equal(7, Assert.IsType<NbtCompound>(savedInput["components"]).GetInt(privateType.Identifier));
         Assert.False(visibleInput.HasTag("components"));
 
-        // Data-backed vanilla displays use the same projection, while keeping their full item data on disk.
+        // A decorated pot shows its item the same way, while keeping its full item data on disk.
         var pot = DecoratedPotHolding(savedInput);
 
         Assert.False(Assert.IsType<NbtCompound>(pot.GetUpdateData()!["item"]).HasTag("components"));
-        Assert.True(Assert.IsType<NbtCompound>(pot.SnapshotData()["item"]).HasTag("components"));
+        Assert.True(Assert.IsType<NbtCompound>(BlockEntityNbt.SaveData(pot)["item"]).HasTag("components"));
 
         // Reloaded and put out, it cools by two ticks a tick.
         var reloaded = kitchen.Restore<CampfireBlockEntity>("minecraft:campfire", saved);
@@ -451,17 +451,14 @@ public sealed class Cooking
         return Assert.IsType<NbtCompound>(items[0]);
     }
 
-    private static DataBlockEntity DecoratedPotHolding(NbtCompound item)
+    private static DecoratedPotBlockEntity DecoratedPotHolding(NbtCompound item)
     {
-        var pot = new DataBlockEntity
-        {
-            Id = "minecraft:decorated_pot"
-        };
-
         var potItem = DataBlockEntity.Copy(item);
         potItem.Name = "item";
-        potItem.Remove("count");
-        pot.Set(potItem);
+        potItem.Remove("Slot");
+
+        var pot = new DecoratedPotBlockEntity(position);
+        pot.Load(new NbtCompound { potItem });
 
         return pot;
     }

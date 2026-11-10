@@ -442,8 +442,8 @@ adds.
 | Hoppers | Works | |
 | Dispensers, droppers | Works | Captured |
 | Furnaces, blast furnaces, smokers, brewing stands | Works | |
-| Chiseled bookshelves | Missing | No use handler; saved books only drop on break |
-| Decorated pots | Partial | Break and save work; no insertion, wobble, hopper access or comparator |
+| Chiseled bookshelves | Works | Captured (`block_use.json`, hoppers and a dropper in `redstone_scenarios.json`) |
+| Decorated pots | Partial | Captured; projectiles don't crack and break them (phase 3) |
 
 ### 3. Workstations and utility blocks
 
@@ -457,10 +457,10 @@ adds.
 | Cartography tables | Works | Capacity check stricter than vanilla |
 | Lecterns: books and pages | Works | |
 | Beacons | Works | No `construct_beacon`; pyramid measured at once |
-| Jukeboxes | Works | Comparator reads 0 |
+| Jukeboxes | Works | Comparator output captured; no hopper access ([item access](known-gaps/item-access-beyond-containers.md)) and no power while playing ([redstone](known-gaps/redstone.md)) |
 | End portal frames | Works | Portal-opening sound sent locally, not globally |
 | Respawn anchors: charge, set respawn | Works | Explodes next to water, unlike vanilla; no set-spawn sound |
-| Lodestones | Missing | The tracker component exists; nothing binds a compass |
+| Lodestones | Partial | Binding captured; a bound compass keeps its target once the lodestone goes ([item components](known-gaps/item-components-the-server-doesnt-apply-yet.md)) |
 | Vaults, trial spawners | Missing | Untyped saved data only |
 
 ### 4. Physical and direct interactions
@@ -474,7 +474,7 @@ adds.
 | Campfires, soul campfires: light and extinguish | Partial | Hand ignition, shovel dousing and waterlogging captured; projectile ignition waits for phase 3 |
 | Composters: insert, collect | Works | Feedback; thrown items aren't taken |
 | Cauldrons: buckets, bottles, washing | Missing | Only the comparator output exists |
-| Flower pots | Missing | Planting and taking plants; potted eyeblossoms turn with the time of day (`eyeblossom_ghast_portal_ticks.json`) |
+| Flower pots | Works | Captured; potted eyeblossoms turn with the time of day (`eyeblossom_ghast_portal_ticks.json`) |
 | Item frames, glow item frames | Works | |
 | Armor stands | Missing | Poses only |
 | Signs, hanging signs: edit | Works | The edit reservation stores no side or expiry, and another player can take it |
@@ -545,7 +545,7 @@ adds.
 | Rails: shape, powered, activator, detector | Works | No capture |
 | Daylight detectors | Works | Captured |
 | Lecterns: page signal | Works | |
-| Chiseled bookshelves: signal | Missing | |
+| Chiseled bookshelves: signal | Works | Captured |
 | Sculk sensors: signal | Partial | Comparator reads 0; timers not saved |
 | Calibrated sculk sensors | Missing | Accept every vibration |
 
