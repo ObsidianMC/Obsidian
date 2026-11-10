@@ -105,10 +105,13 @@ public sealed class BlockUseSafety
                 case "death":
                     player.Health = 0;
                     break;
+                case "count":
+                    player.GetHeldItem()!.Count++;
+                    break;
             }
         }));
 
-        foreach (var changed in new[] { "hand", "block", "death" })
+        foreach (var changed in new[] { "hand", "block", "death", "count" })
         {
             interference = changed;
             player.Health = 20;
@@ -119,7 +122,7 @@ public sealed class BlockUseSafety
             var packet = BlockUpdates.UseOn(target, BlockFace.Up, new VectorF(0.5f, 0.5f, 0.5f));
             Assert.Equal(UseResult.Fail, await packet.UseAsync(context.Server, player));
 
-            Assert.Equal(1, book.Count);
+            Assert.Equal(changed == "count" ? 2 : 1, book.Count);
             Assert.Null(player.OpenedContainer);
             if (world.GetResidentBlockEntity(target) is LecternBlockEntity lectern)
                 Assert.Null(lectern.Lectern.Book);

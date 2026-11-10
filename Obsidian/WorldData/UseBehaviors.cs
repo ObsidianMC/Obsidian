@@ -130,7 +130,8 @@ internal sealed class BlockUse
             {
                 var held = this.Player.Inventory.GetItem(this.HandSlot);
                 if (!ReferenceEquals(held, this.Item)
-                    || held is not null && (held.Count <= 0 || !held.Equals(this.UsedItem))
+                    || held is not null && (held.Count <= 0 || held.Count != this.UsedItem?.Count
+                        || !held.Equals(this.UsedItem))
                     || consumeItem && held is null)
                 {
                     this.ResyncHand = true;
