@@ -20,8 +20,11 @@ Progress item from being marked done:
   `item_used_on_block`; successful bucket/entity use, music-block, campfire and queued bone-meal operations still
   need their own confirmation hooks. There is no broad attempt-based fallback that could grant failed actions.
 - Recipe rewards explicitly add existing displays, persist known recipe ids in `recipeBook.recipes`, and fire
-  `recipe_unlocked` on first reward unlock. The existing recipe book still exposes all crafting recipes on join;
-  selective unlocking and vanilla recipe-book settings/highlights are a separate change.
+  `recipe_unlocked` on first reward unlock. Taking a furnace's, blast furnace's or smoker's result does the same for
+  the recipes it cooked, then fires `recipe_crafted` for each (`furnace_results.json`). The existing recipe book still
+  exposes all crafting recipes on join and holds no cooking displays, so a cooking recipe unlocked this way is known
+  and saved but the client's furnace recipe book isn't told; selective unlocking, cooking displays and vanilla
+  recipe-book settings, notifications and highlights are a separate change.
 - Function reward identifiers are read but cannot execute: the server has no Minecraft function system. Loot
   rewards use the existing loot evaluator and inherit its unsupported-condition/table-loading limitations.
 - Automatic statistics cover play/world time, death/rest/sneak timers, deaths, jumps, common movement distances,

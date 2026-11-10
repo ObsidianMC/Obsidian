@@ -34,6 +34,7 @@ internal static class ScenarioCaptures
     public const string BlockUse = "block_use";
     public const string TurtleEggs = "turtle_eggs";
     public const string Frogspawn = "frogspawn";
+    public const string FurnaceResults = "furnace_results";
 
 
     private const string Symbols = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -68,7 +69,7 @@ internal static class ScenarioCaptures
 
     public static readonly string[] All =
         [Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps, SavedHeightmaps, Mining,
-            Placement, CopperWeathering, Fire, TickingBlocks, BlockUse, TurtleEggs, Frogspawn];
+            Placement, CopperWeathering, Fire, TickingBlocks, BlockUse, TurtleEggs, Frogspawn, FurnaceResults];
 
     private const string RedstoneNotes = """
         Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a
@@ -170,6 +171,13 @@ internal static class ScenarioCaptures
         if (fixtures.Contains(Frogspawn))
         {
             await FixtureDumper.DumpFrogspawnAsync(server, Path.Combine(assetsDirectory, "frogspawn.json"));
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(FurnaceResults))
+        {
+            await FixtureDumper.DumpFurnaceResultsAsync(server, Path.Combine(assetsDirectory, "furnace_results.json"));
             if (fixtures.Count == 1)
                 return;
         }

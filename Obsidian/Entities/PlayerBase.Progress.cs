@@ -319,6 +319,21 @@ public partial class PlayerBase
             ItemEntity.DropHostOwned(this, item);
     }
 
+    /// <summary>
+    /// Gives the player the recipes a cooking machine cooked, as they take its result: vanilla's
+    /// <c>ServerPlayer.awardRecipes</c> adds those they don't know to their book, each firing <c>recipe_unlocked</c>,
+    /// then <c>recipe_crafted</c> fires for every one on the player's next tick.
+    /// </summary>
+    internal async ValueTask AwardCookedRecipesAsync(IEnumerable<string> identifiers)
+    {
+        var recipes = identifiers.Select(AdvancementsRegistry.Qualify).ToList();
+        foreach (var identifier in recipes)
+            await this.UnlockProgressRecipeAsync(identifier);
+
+        foreach (var identifier in recipes)
+            this.craftedRecipes.Enqueue(identifier);
+    }
+
     internal async ValueTask UnlockProgressRecipeAsync(string identifier)
     {
         var recipes = Events.MainEventHandler.PlayerRecipes(this);

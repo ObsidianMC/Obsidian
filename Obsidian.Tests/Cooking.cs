@@ -25,8 +25,8 @@ namespace Obsidian.Tests;
 
 /// <summary>
 /// Smoke tests of cooking: furnaces, blast furnaces and smokers cook with their fuel's burn time and speed (26.1),
-/// across a save, fed and emptied by hoppers, awarding experience; and campfires cook while keeping their items'
-/// private components on disk.
+/// across a save, fed and emptied by hoppers, awarding experience and the recipe; and campfires cook while keeping
+/// their items' private components on disk.
 /// </summary>
 [Collection(nameof(PluginTagFiles))]
 public sealed class Cooking
@@ -91,7 +91,8 @@ public sealed class Cooking
         Assert.True(kitchen.Extract(BlockFace.Down)?.Is(machine.Output));
         Assert.Equal(1, restored.RecipesUsed.Values.Sum());
 
-        // A player taking the rest gets the menu's four values and every cooked item's experience.
+        // A player taking the rest gets the menu's four values, every cooked item's experience and the recipe, which
+        // meets its recipe advancement's recipe_unlocked criterion.
         await kitchen.TickAsync(restored, (machine.Count - 1) * machine.CookTime);
         await kitchen.OpenAsync(restored.Furnace);
 
@@ -102,6 +103,8 @@ public sealed class Cooking
         Assert.True(kitchen.Player.CarriedItem?.Is(machine.Output));
         Assert.Empty(restored.RecipesUsed);
         Assert.Contains(kitchen.Entities(), entity => entity is ExperienceOrb);
+        Assert.Contains(AdvancementsRegistry.ForTrigger("minecraft:recipe_unlocked"),
+            advancement => kitchen.Player.Advancements.HasCriterion(advancement.Identifier, "has_the_recipe"));
     }
 
     [Fact(DisplayName = "A campfire cooks across a save, showing items without their private components",

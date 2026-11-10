@@ -252,6 +252,18 @@ replaces only what vanilla produced.
   dispatch, in one world, and compares the draws, the writes in order with their flags, blocks, ticks, sounds, level
   events and tadpoles.
 
+- `furnace_results.json` (`VanillaFurnaceResults.ReplayFurnaceResultReference`) records what vanilla's furnaces,
+  blast furnaces and smokers give out, from `Java/FurnaceFixtures.java` (`CaptureFixtures=furnace_results`). Each case
+  is its input: the machine, the recipes it cooked and how often, the recipes the player already knows, the
+  `limited_crafting` rule, a seed for the level's random and whether a player takes the result
+  (`awardUsedRecipesAndPopExperience`) or the machine is broken (`preRemoveSideEffects`). The probe decodes the
+  recipes from the vanilla data pack and gives the player vanilla's recipe book; it records the recipes awarded, those
+  the book added, the criterion triggers fired, the recipes `recipe_crafted` fired for, the orbs, the draws and how
+  many recipes the machine still holds. A machine walks its recipes in a hash order, so lists are sorted and cases
+  with several recipes give at most one a fractional experience. The replay takes each case's recipes from an
+  Obsidian machine with the same seed and gives them to a player, then compares the recipes, the orbs, what's left
+  and the recipes whose `recipe_unlocked` criteria were met; for a broken machine it compares the experience.
+
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.
 
@@ -285,6 +297,8 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=turtle_eggs
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=frogspawn
+
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=furnace_results
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=sulfur -p:CaptureCases=spike_shatters_after_falling+review_spike_pending_fall_keeps_frustum
 ```
@@ -328,7 +342,8 @@ encoding before registering them with vanilla's advancement system.
 
 The `turtle_eggs` and `frogspawn` captures run no server and re-record every case. To add one, add a case with its
 `name`, `seed`, `origin` and `setup` (and `time`, `dimension`, `place` or `tick`) and capture again; pick a seed whose
-first draw takes the branch the case is about.
+first draw takes the branch the case is about. The `furnace_results` capture also runs no server and re-records every
+case.
 
 A `structure_pieces` case with `captureReferences: true` also records `referenceChunks`: the saved
 `structures.References` from vanilla's chunk serializer at STRUCTURE_REFERENCES, across its bounding box plus
@@ -341,7 +356,7 @@ other dumpers, so editing it regenerates the assets once.
 
 The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft version> <cache directory>
 <scratch directory> <test assets directory>
-[redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+placement+fire+ticking_blocks+block_use+turtle_eggs+frogspawn]
+[redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+placement+fire+ticking_blocks+block_use+turtle_eggs+frogspawn+furnace_results]
 [case names]`.
 
 ## How it captures

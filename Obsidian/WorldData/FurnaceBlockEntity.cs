@@ -244,27 +244,53 @@ internal sealed partial class FurnaceBlockEntity
             : output == result && output!.Count + result.Count <= Math.Min(output.MaxStackSize, result.MaxStackSize);
     }
 
-    /// <summary>Takes accumulated XP on player extraction, including results previously taken by hoppers.</summary>
-    internal int TakeExperience(RecipeSet recipes, Func<float> random)
+    /// <summary>
+    /// A recipe the machine cooked, as taking its result gives it out: the recipe, and the experience of every time
+    /// it was cooked.
+    /// </summary>
+    internal readonly record struct CookedRecipe(SmeltingRecipe Recipe, int Experience);
+
+    /// <summary>
+    /// Takes the recipes the machine cooked since its result was last taken, results hoppers took included, with their
+    /// experience (vanilla's <c>getRecipesToAwardAndPopExperience</c>), under the inventory lock. A player taking the
+    /// result is given them; a machine broken only drops their experience.
+    /// </summary>
+    /// <param name="random">Draws the chance of a recipe's fraction of a point.</param>
+    internal List<CookedRecipe> TakeCookedRecipes(RecipeSet recipes, Func<float> random)
     {
-        var experience = 0;
+        var cooked = new List<CookedRecipe>();
         foreach (var (name, count) in this.RecipesUsed.ToArray())
         {
             // Keep an unloaded plugin's history; it can be awarded when that recipe returns.
             if (recipes.Recipes.GetValueOrDefault(name) is not SmeltingRecipe recipe)
                 continue;
 
-            var exact = count * recipe.Experience;
-            var rounded = (int)MathF.Floor(exact);
-            if (exact > rounded && random() < exact - rounded)
-                rounded++;
-
-            experience += rounded;
+            cooked.Add(new CookedRecipe(recipe, Experience(count, recipe.Experience, random)));
             this.RecipesUsed.Remove(name);
         }
 
         this.SetChanged();
-        return experience;
+        return cooked;
+    }
+
+    /// <summary>
+    /// The experience of all the recipes the machine cooked (see <see cref="TakeCookedRecipes"/>), which are taken.
+    /// </summary>
+    internal int TakeExperience(RecipeSet recipes, Func<float> random) =>
+        this.TakeCookedRecipes(recipes, random).Sum(cooked => cooked.Experience);
+
+    // Vanilla's AbstractFurnaceBlockEntity.createExperience: the whole points of the recipe's experience times the
+    // times cooked, worked out in single precision as vanilla does (ten iron ingots at 0.7 make exactly 7), and one
+    // more with the chance of what's left over.
+    private static int Experience(int count, float each, Func<float> random)
+    {
+        var exact = count * each;
+        var whole = (int)MathF.Floor(exact);
+        var fraction = exact - whole;
+        if (fraction > 0 && random() < fraction)
+            whole++;
+
+        return whole;
     }
 
     protected internal override ValueTask TickAsync() =>
