@@ -222,16 +222,21 @@ replaces only what vanilla produced.
 
 - `block_use.json` (`VanillaBlockUse.ReplayBlockUseReference`) records what using a block does, from
   `Java/BlockUseFixtures.java`. Like the placement probe it runs a dedicated server of its own in a flat world of air,
-  and each case uses its main hand's item through `ServerPlayerGameMode.useItemOn`; the area's chunks are forced, so
+  and each case uses its main hand's item through `ServerPlayerGameMode.useItemOn`; optional `rayUse` also runs
+  `ServerPlayerGameMode.useItem` when use-on passes. The area's chunks are forced, so
   block events run as a tick runs them. A case names its blocks, the clicked face, the item and count, the off hand,
   the game mode and sneaking. It records the result (which decides the swing), the blocks that changed, the hand,
   the entities that appeared, the sounds, level events and block events a second player beside the target received,
   the game events within 16 blocks (with their source), the statistics awarded and the menu opened, and when a menu
   opened, what closing it changed and played. The replay drives `UseItemOnPacket` in one world, with full sky light
   as the capture's open sky has, runs the queued entity actions and the tick's block events, and checks swings from
-  the result. The 92 cases cover the dispatcher, sign applications and editing, advancement context, use swing charge and
-  container close sources; mob ambient sounds aren't compared (see
-  [mob ambient sounds](known-gaps/mob-ambient-sounds.md)).
+  the result. The original 92 cases retain their captured bytes. Another 208 cases cover buckets (72), chest
+  obstructions (73) and lighting (63). The replay uses the capture's absolute coordinates: translating plant
+  outlines changes their position-dependent offsets and can change a bucket ray hit. It also checks whether
+  closing effects exist, rather than comparing them only when both sides happened to open a menu.
+  `SpawnEggAmbientSoundMissing` explicitly asserts the sheep spawn egg's missing ambient sound; it fails if the
+  sound starts working (see [mob ambient sounds](known-gaps/mob-ambient-sounds.md)). No new case has an expected
+  difference.
 
 - `turtle_eggs.json` (`VanillaTurtleEggs.ReplayTurtleEggReference`) records vanilla's turtle eggs, from
   `Java/HatchingFixtures.java` (`CaptureFixtures=turtle_eggs`). Each case is its input: the blocks of a small block
@@ -389,6 +394,30 @@ record sign text flags and editor, attack charge after a started and a refused s
 container close sources, and awarded advancement criteria. The fixture lists
 location predicate terms in Obsidian's existing format; the probe converts them to 26.3's `all_of` and `match_block`
 encoding before registering them with vanilla's advancement system.
+
+New `block_use` probe inputs are optional, so existing cases record exactly their earlier fields:
+
+- `player: [x, y, z, yaw, pitch]` overrides the actor's standing position and aim for that case. `rayUse: true`
+  records `useOnResult`, then uses the item from its own POV when that result allows it. This follows the client's
+  use-on/item-use dispatch for a block hit; a client looking only at a fluid source sends the item-use packet
+  directly. Water and lava buckets ignore the earlier use-on destination. Powder snow buckets are block items.
+- `dimension: "minecraft:the_nether"` uses the real Nether level and its environment attributes, with that area's
+  chunks forced too. This captures water evaporation, its eight large-smoke particles, bucket cost and absence
+  of a fluid-place game event.
+- `cats: [{"offset": [0, 1, 0], "sitting": true}]` adds a cat before the snapshot. Sitting and standing cats are
+  varied independently of conducting blocks and of either double-chest half.
+- `checkInventory: true` records all 36 storage slots in vanilla slot order. `fullInventory: true` fills every
+  storage slot except the hand with stone. The replay compares storage, the hand and dropped entities together.
+- `checkEffects: true` records server particle packet types and counts, and each sound's position and volume
+  alongside the existing sounds, level events, game events and statistics. The replay compares every added field.
+  Candle smoke comes from client-local particles; campfire shovel dousing sends level event 1009. Neither sends
+  a server particle packet. Random sound pitches are not fixture fields.
+
+For example, after adding a case, run
+`dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=block_use -p:CaptureCases=bucket_water_evaporates`.
+Select only added or deliberately changed cases, preserve existing line endings, and verify the original case
+text is unchanged. Drops are checked with deterministic sapling and torch cases; grass's random seed loot is
+not used as a fixed drop reference.
 
 The `turtle_eggs` and `frogspawn` captures run no server and re-record every case. To add one, add a case with its
 `name`, `seed`, `origin` and `setup` (and `time`, `dimension`, `place` or `tick`) and capture again; pick a seed whose

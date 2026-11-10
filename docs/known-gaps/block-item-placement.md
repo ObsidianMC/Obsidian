@@ -23,13 +23,12 @@ What isn't covered yet:
 - **Adventure mode.** Block interactions and plugin item callbacks still run. Obsidian refuses vanilla item uses
   on blocks and item placement until it evaluates the item's `can_place_on` predicates, including where those
   predicates would permit the use.
-- **Bucket destinations and waterlogging.** Water and lava buckets bypass the replaceable-block check and can
-  overwrite a solid block or block entity beyond the clicked face. They also never waterlog the clicked block.
-  Vanilla accepts air, a block the fluid can replace, or a liquid container; it tries beyond the clicked block
-  when appropriate and refuses a solid destination. This predates PR #701 on 26.3.x. The next phase needs bucket
-  captures before changing this path.
-- **Ignition targets.** Flint and steel and fire charges do not light unlit campfires, candles or candle cakes.
-  This also predates PR #701 on 26.3.x; it belongs to phase 2's lighting batch in the block-interactions plan.
+- **Other bucket uses.** Empty, water and lava buckets now use the player's ray from the item-use packet, with
+  source pickup, fluid replacement, waterlogging and evaporation captured in `block_use.json`. Powder snow uses
+  block placement and returns an empty bucket. Fish, axolotl and tadpole buckets retain their earlier use-on path;
+  migrating their ray tracing and extra contents is separate work. Cauldron exchanges remain phase 2 batch C.
+- **Projectile ignition.** Hand igniters light dry, unlit campfires, candles and candle cakes; empty hands put out
+  candles, and shovel-tagged items douse campfires. Lighting campfires from projectiles remains phase 3 work.
 - **Extending scaffolding.** Vanilla's `ScaffoldingBlockItem` places scaffolding along a scaffolding tower or bridge
   that's clicked. Obsidian places it where it was clicked, and refuses it where nothing would hold it.
 - **Random ages.** Kelp and weeping, twisting and cave vines take an age from the level's random, which Obsidian draws
