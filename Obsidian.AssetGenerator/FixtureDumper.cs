@@ -217,26 +217,16 @@ internal static class FixtureDumper
             cases is null ? "" : string.Join('+', cases));
     }
 
-    internal static async Task DumpBlockContactsAsync(
-        VanillaServer server,
-        string fixture,
-        IReadOnlyCollection<string> cases)
-    {
-        var world = Path.Combine(server.ScratchDirectory, "block-contacts");
-        if (Directory.Exists(world))
-            Directory.Delete(world, recursive: true);
+    // An on-request probe of controlled entity contacts, on block_use's observed copy of the vanilla jar.
+    internal static Task DumpBlockContactsAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string> cases) =>
+        RunObservedProbeAsync(server, fixture, "block-contacts", "BlockContactFixtures.java", cases);
 
-        Directory.CreateDirectory(world);
-        var observed = Path.Combine(world, "observed-classes");
-        await VanillaServer.RunJavaAsync(world,
-            "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("BlockUseInstrumentation.java"),
-            server.ClassPath[0], observed);
-        var observedJar = Path.Combine(observed, "vanilla-observed.jar");
-        var classPath = string.Join(Path.PathSeparator, new[] { observedJar }.Concat(server.ClassPath.Skip(1)));
-        await VanillaServer.RunJavaAsync(world,
-            "--add-opens", "java.base/java.lang=ALL-UNNAMED",
-            "-cp", classPath, Source("BlockContactFixtures.java"), fixture, string.Join('+', cases));
-    }
+    // An on-request probe: a dedicated server of its own, in a new flat world under the scratch directory. It shares
+    // block_use's observed copy of the vanilla jar for the ordered block writes.
+    internal static Task DumpProjectileHitsAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunObservedProbeAsync(server, fixture, "projectile-hits", "ProjectileHitFixtures.java", cases);
 
     // On-request probes: a dedicated server of its own each, in a flat world in a temporary folder that is deleted
     // afterwards, so no capture world is left in the checkout.

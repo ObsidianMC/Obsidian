@@ -1,3 +1,4 @@
+using Obsidian.API.Blocks;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Entities.AI;
@@ -64,12 +65,8 @@ internal sealed class MobProjectile : Entity
         NoGravity = type is not (EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion);
     }
 
-    public override void SpawnEntity(Velocity? velocity = null, int additionalData = 0)
-    {
+    public override void SpawnEntity(Velocity? velocity = null, int additionalData = 0) =>
         base.SpawnEntity(velocity ?? new Velocity(Motion.X, Motion.Y, Motion.Z), Owner?.EntityId ?? 0);
-        if (Level is AbstractLevel level)
-            level.EmitGameEvent(MobGameEvent.ProjectileShoot, Position, Owner ?? this);
-    }
 
     public override ValueTask DamageAsync(IEntity source, float amount = 1)
     {
@@ -108,18 +105,30 @@ internal sealed class MobProjectile : Entity
             Owner = level.FindEntity(ownerUuid);
 
         resolveOwner = false;
+
+        // Vanilla's LlamaSpit runs the base tick, and is shot, before it moves; the others once they have moved.
+        if (Type == EntityType.LlamaSpit)
+            this.EmitShotOnce(Owner);
+
         var terrain = new MobTerrain(Level);
-        var blockFraction = FindBlockHitFraction(terrain);
-        var (target, fraction) = FindEntityHit(blockFraction);
+        var blockHit = ProjectileBlockHits.Find(terrain, Position, Motion);
+        var (target, fraction) = FindEntityHit(blockHit?.Fraction ?? 1);
         var next = Position + Motion * fraction;
         if (!level.TryMoveEntity(this, Position, next))
             return;
 
         Position = next;
         BoundingBox = Dimension.CreateBBFromPosition(Position);
-        if (fraction < 1 || target != null)
+        this.EmitShotOnce(Owner);
+        if (target != null)
         {
             await ImpactAsync(level, terrain, target);
+            return;
+        }
+
+        if (blockHit is { } hit)
+        {
+            await HitBlockAsync(level, terrain, hit);
             return;
         }
 
@@ -134,25 +143,6 @@ internal sealed class MobProjectile : Entity
         }
 
         BroadcastFlight();
-    }
-
-    /// <summary>
-    /// The fraction of this tick's motion the projectile travels before it meets a block (1 when it meets none).
-    /// </summary>
-    private double FindBlockHitFraction(MobTerrain terrain)
-    {
-        var end = Position + Motion;
-        var min = VectorD.Min(Position, end) - new VectorD(0.3f);
-        var max = VectorD.Max(Position, end) + new VectorD(0.3f);
-        var swept = new BoundingBox(min, max);
-        var fraction = 1d;
-        foreach (var shape in terrain.GetCollisions(swept))
-        {
-            if (MobTerrain.RayIntersection(shape, Position, Motion) is double hit)
-                fraction = Math.Min(fraction, hit);
-        }
-
-        return fraction;
     }
 
     /// <summary>
@@ -192,8 +182,59 @@ internal sealed class MobProjectile : Entity
         || ReferenceEquals(candidate, Owner) && age < 25
         || candidate is IPlayer player && player.GameMode is GameMode.Creative or GameMode.Spectator;
 
-    /// <summary>Splashes, damages, explodes or sets fire where the projectile landed, then removes it.</summary>
-    private async ValueTask ImpactAsync(AbstractLevel level, MobTerrain terrain, IEntity? target)
+    // Vanilla's onHitBlock through the shared hit path, then what the projectile does on any hit (its onHit).
+    private async ValueTask HitBlockAsync(AbstractLevel level, MobTerrain terrain, ProjectileBlockHit hit)
+    {
+        if (!await ProjectileBlockHits.HitAsync(level, this, Owner, hit, () => this.OnBlockHitAsync(level, hit)))
+            return;
+
+        switch (Type)
+        {
+            case EntityType.SplashPotion:
+                await SplashAsync(null);
+                break;
+            case EntityType.Fireball:
+                await level.ExplodeAsync(this, 1, Owner);
+
+                // Vanilla's explosion sets fires while mob_griefing is on; Obsidian sets one where it landed.
+                if (level.LevelData.GetBooleanRule("mob_griefing"))
+                    await TrySetFireAsync(level, terrain);
+
+                break;
+            case EntityType.Snowball:
+                BroadcastCrack();
+                break;
+        }
+
+        await RemoveAsync();
+    }
+
+    // The block reactions of vanilla's onHitBlock overrides, once the block reacted: a small fireball sets fire in
+    // the empty cell in front of the face it hit, unless it's a mob's while mob_griefing is off; llama spit is gone.
+    private async ValueTask OnBlockHitAsync(AbstractLevel level, ProjectileBlockHit hit)
+    {
+        if (Type == EntityType.LlamaSpit)
+        {
+            await RemoveAsync();
+            return;
+        }
+
+        if (Type != EntityType.SmallFireball)
+            return;
+
+        if (Owner is Mob && !level.LevelData.GetBooleanRule("mob_griefing"))
+            return;
+
+        var fire = hit.Block + hit.Face.ToVector();
+        if (!level.BlockUpdates.GetBlock(fire).IsAir)
+            return;
+
+        var state = FireBlockBehavior.StateFor(level.BlockUpdates, fire);
+        level.BlockUpdates.SetBlock(fire, state, BlockUpdateFlags.All);
+    }
+
+    /// <summary>Splashes, damages, explodes or sets fire where the projectile hit an entity, then removes it.</summary>
+    private async ValueTask ImpactAsync(AbstractLevel level, MobTerrain terrain, IEntity target)
     {
         level.EmitGameEvent(MobGameEvent.ProjectileLand, Position, this, Owner);
         if (Type == EntityType.SplashPotion)
@@ -203,8 +244,7 @@ internal sealed class MobProjectile : Entity
             return;
         }
 
-        if (target != null)
-            await DamageTargetAsync(target);
+        await DamageTargetAsync(target);
 
         if (Type == EntityType.Fireball)
             await level.ExplodeAsync(this, 1, Owner);
@@ -212,14 +252,17 @@ internal sealed class MobProjectile : Entity
         if (Type is not EntityType.Snowball and not EntityType.LlamaSpit)
             await TrySetFireAsync(level, terrain);
 
-        // Vanilla's Snowball.onHit: entity event 3, the client's snowball crack particles.
         if (Type == EntityType.Snowball)
-        {
-            var crack = new EntityEventPacket { EntityId = EntityId, Event = 3 };
-            PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, crack);
-        }
+            BroadcastCrack();
 
         await RemoveAsync();
+    }
+
+    // Vanilla's Snowball.onHit: entity event 3, the client's snowball crack particles.
+    private void BroadcastCrack()
+    {
+        var crack = new EntityEventPacket { EntityId = EntityId, Event = 3 };
+        PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, crack);
     }
 
     private async ValueTask DamageTargetAsync(IEntity target)
@@ -347,9 +390,21 @@ internal sealed class MobProjectile : Entity
                 await ApplySplashEffectAsync(living, effect, strength, undead);
         }
 
-        var particles = new LevelEventPacket(2002, (Vector)Position.Floor(), 0x385dc6);
+        // Vanilla's AbstractThrownPotion.onHit: the splash's particles (instant ones for an instant potion), then its
+        // sound, which is a level event of its own.
+        var block = (Vector)Position.Floor();
+        var instant = effects.Any(effect => IsInstant(effect.Id));
+        var particles = new LevelEventPacket(instant ? 2007 : 2002, block, 0x385dc6);
         PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, particles);
+        if (!Silent)
+        {
+            var sound = new LevelEventPacket(instant ? 1054 : 1053, block, 0);
+            PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, sound);
+        }
     }
+
+    private static bool IsInstant(int effect) =>
+        effect == (int)PotionEffect.InstantDamage - 1 || effect == (int)PotionEffect.InstantHealth - 1;
 
     private IReadOnlyList<PotionEffectData> GetSplashEffects()
     {
