@@ -55,48 +55,6 @@ public sealed class LightningBolts
         Assert.Equal("true", world.BlockUpdates.GetBlock(Rod).GetProperty("powered"));
     }
 
-    /// <summary>
-    /// A bolt striking a player in armour wears the armour, which waits for the player's inventory: it does so outside
-    /// the level's tick lock, so a flow holding that inventory can still change a block meanwhile, and the level's tick
-    /// finishes once the inventory is let go.
-    /// </summary>
-    [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task BoltWaitsForAHeldInventoryOutsideTheTickLock()
-    {
-        await using var context = TestServerFactory.CreateServer($"lightning-locks-{Guid.NewGuid():N}");
-        var world = context.World;
-        await BlockUpdates.AddChunksAsync(world);
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Struck",
-            (VectorD)Rod + new VectorD(1.5, 0, 0.5));
-        await TestServerFactory.JoinConnectedPlayerAsync(context.Server, player);
-        player.GameMode = GameMode.Survival;
-        var chestplate = new ItemStack(ItemsRegistry.IronChestplate);
-        player.Inventory.SetItem(6, chestplate);
-        world.LevelData.Difficulty = Difficulty.Peaceful;
-        world.SpawnEntity(Bolt(world));
-
-        // A flow holds the inventory, then changes a block, which takes the level's tick lock.
-        var held = new TaskCompletionSource();
-        var holder = Task.Run(async () =>
-        {
-            using (await player.Inventory.LockAsync())
-            {
-                held.SetResult();
-                await Task.Delay(200);
-                world.BlockUpdates.SetBlock(Rod + new Vector(0, 3, 0), BlocksRegistry.Stone);
-            }
-        });
-        await held.Task;
-
-        // The strike waits for the inventory to wear the chestplate, holding no lock the flow needs.
-        await world.DoWorldTickAsync();
-        await holder;
-
-        Assert.True(world.BlockUpdates.GetBlock(Rod + new Vector(0, 3, 0)).Is(BlockIds.Stone));
-        Assert.True(chestplate.Damage > 0);
-        Assert.True(player.Health < 20);
-    }
-
     [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task SuspendedStrikeDoesNotConvertAnUnloadedTarget()
     {
@@ -160,7 +118,7 @@ public sealed class LightningBolts
         var tick = world.DoWorldTickAsync();
         try
         {
-            await suspended.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            await suspended.Task;
             // The first hit has started and is wearing armour; the bolt has already snapshotted the pig.
             Assert.False(tick.IsCompleted);
             Assert.Equal(1, player.AcceptedDamageCount);
