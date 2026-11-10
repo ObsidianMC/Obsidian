@@ -10,11 +10,11 @@ differs or isn't there yet.
 
 These items have a behaviour in vanilla but are dropped like any other here:
 
-- **Buckets** of every kind, filled and empty, wait for #720, which changes how a result item goes back into a
-  container.
+- **Buckets** of every kind, filled and empty, were left for a follow-up on #720, which changed how a result item
+  goes back into a container.
 - **Glass bottles** (water and full beehives) and **honey bottles** wait for phase 2's cauldrons and hives, and
   **water potions** turning dirt into mud for the same bottle hand-back.
-- **Honeycomb** waits for #725's waxing.
+- **Honeycomb** was left for a follow-up on #725's waxing.
 - **Wind charges**: Obsidian has no flight for a wind charge outside the breeze's. The capture keeps vanilla's shot
   (`wind_charge`, pinned).
 - **Lingering potions**: Obsidian throws no lingering potion yet.
