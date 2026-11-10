@@ -249,6 +249,42 @@ Rides with: plan phase 1.
 
 ### 8. Tick only the block entities that tick
 
+*Done. The block entity pass takes half the time; what is left is the container upkeep below.*
+
+Each chunk keeps the block entities whose classes override `TickAsync` (`Chunk.TickingBlockEntities`). A reflection
+check decides this once per class, so a new class that ticks can't be left out. The chunk's block entity methods
+(`SetBlockEntity`, `GetOrAddBlockEntity`, `RemoveBlockEntity`, `ReplaceBlockEntity`) mark the list stale. Chunk
+loading, restoring kept block entities and every level block write go through those methods. The level's tick then
+rebuilds the list from the dictionary, in the dictionary's own order. That is the order the old walk ticked them in,
+within a chunk and across chunks. The rebuild takes no lock: a change that lands during it leaves the list stale for
+the next tick. The tick skips a block entity that was removed or replaced since the list was built.
+
+The ticking ones still have their block checked each tick, as vanilla's tickers do. Not every block write goes
+through the level: generation and raw chunk writes don't. Catching those on change would add work to every block
+write, while the check costs a few nanoseconds per ticker. The other block entities aren't checked unless they have
+upkeep to do.
+
+Their upkeep runs on its own walk after each chunk's ticks. It covers placing them, running their pending
+`OnLoad`, a plugin container's save and items-changed poll, and telling comparators about items that moved without
+a block update (#703). That runs for the same block entities, in the same block-ticking chunks, as before.
+Restoring kept block entities and the pending loads of chunks that don't tick were never part of the per-chunk walk
+and are unchanged. A non-ticking container is now polled after the ticks of its chunk instead of at its place in
+the dictionary. This is still within the same tick, before the item access flush.
+
+Same harness as the re-runnable block probe below: 25 block-ticking chunks holding 3,000 chests and 1,000 signs,
+plus an idle furnace and an idle hopper in each. One operation is one call of `TickBlockEntitiesAsync`. Before:
+`c043dcd3d` with the probe case added (`37f04c45e`); after: `016fa2d10`. Both runs were made on 2026-11-09 on the
+machine described there.
+
+| Operation | Before (ns/op) | After (ns/op) | Before (B/op) | After (B/op) |
+|---|---:|---:|---:|---:|
+| BlockEntityPass / 4,000 idle, 50 ticking | 212685.65 | 104262.85 | 18384.00 | 16784.00 |
+
+Of the roughly 104 µs left, about 40 µs is enumerating the chunks' block entity dictionaries for the upkeep. About
+60 µs is reading `Inventory.Revision` for the 3,000 chests (`BaseContainer.Revision` scans every slot). The 50
+tickers' own ticks take about 10 µs and most of the allocations. Removing the upkeep walk would need it to become
+event-driven: block entities placed when their chunk loads, and containers that report their own changes.
+
 *From the code.*
 
 `TickBlockEntitiesAsync` walks every block entity of every block-ticking chunk each tick. For each it reads the
