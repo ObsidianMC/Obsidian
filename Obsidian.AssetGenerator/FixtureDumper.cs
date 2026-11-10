@@ -114,6 +114,11 @@ internal static class FixtureDumper
         VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
             Source("HatchingFixtures.java"), fixture);
 
+    // An on-request gameplay probe: vanilla's randomTick against each case's block view, with a seeded random.
+    internal static Task DumpGrowingPlantTicksAsync(VanillaServer server, string fixture) =>
+        VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
+            Source("GrowingPlantTickFixtures.java"), fixture);
+
     internal static Task DumpSulfurAsync(VanillaServer server, string fixture) =>
         VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
             Source("SulfurFixtures.java"), fixture);

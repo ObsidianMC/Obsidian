@@ -96,8 +96,8 @@ internal static partial class RandomTickBehaviors
         // Vanilla's CropBlock.getGrowthSpeed: 1, plus for each of the nine farmland blocks below the crop (the crop's
         // own square and its neighbours, a quarter of the neighbours' worth) a point for dry farmland or three for
         // moist farmland. Then halved when crops stand both east and west and north and south of it, or else on any
-        // diagonal.
-        private static float GrowthSpeed(AbstractLevel level, Vector position, IBlock crop)
+        // diagonal. Stems and the pitcher crop grow at the same speed (see GrowingPlantRandomTicks.cs).
+        internal static float GrowthSpeed(AbstractLevel level, Vector position, IBlock crop)
         {
             var below = position + Vector.Down;
             var speed = 1f;
