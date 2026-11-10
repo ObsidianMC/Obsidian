@@ -302,6 +302,20 @@ which never dispatches a generated owner's `UpdateShape`, so an observer placed 
 reaction. Worldgen reaches owners only through post-processing (`IPostProcessBehavior`, which soul sand and magma
 implement). The shared view in step 2 is where that is fixed.
 
+Done. Every arm of the switch is now a member of `ShapeUpdateBehaviors` named after its declaring class, in
+`WorldData/ShapeRules`, and the rules take one read-only view (`IShapeLevel`) that the live level, the notification
+pipeline, the fluid engine and generation all supply. Each member's `Reach` keeps the split between the two update
+engines as it was: live owners run first in both, the former arms run only in the shared pass (`ShapeUpdater`), and
+fences, bars, kelp, bubble columns and speleothems run in both. Grindstones and nether wart gained a rule (both
+captured in `more_blocks.json`); torchflower crops gained one that has no effect yet. The declaring classes still
+without a rule are listed in
+[known gaps](known-gaps/vanilla-blocks-reactions-to-block-updates.md#shape-rules-not-implemented-yet).
+
+The observer gap is still open. Generation's shape pass has no block ticks to schedule, so an observer placed by a
+template needs a tick executor during generation (or ticks saved with the chunk) before running its rule there
+helps; leaves and soul sand would then schedule ticks in generated chunks too, which `IPostProcessBehavior` does for
+soul sand and magma today. Owners other than those five stay out of generation until that is designed.
+
 ### Phase 5: ticking (L)
 
 Section 8 is 20 of 31 working. The pattern for most of what's left is one `RandomTickBehaviors` or `TickBehaviors`

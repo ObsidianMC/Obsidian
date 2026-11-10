@@ -68,8 +68,74 @@ different one. Obsidian deliberately doesn't emulate Java's heap layout for this
 
 - New reactions go in as generated owners: a vanilla class's tick, random tick, shape update, entity contact or
   on-place reaction is a member named after the Mojang class that declares it, in
-  `Obsidian/WorldData/BlockOwnerBehaviors.cs` or `RandomTickBehaviors.cs`, and the generator binds its blocks. Older
-  code still uses other routes: most shape rules live in `ShapeUpdater`, and redstone components register their
-  neighbour reactions, contact and ticks in `Obsidian/WorldData/Redstone`.
+  `Obsidian/WorldData/BlockOwnerBehaviors.cs` or `RandomTickBehaviors.cs`, and the generator binds its blocks. Shape
+  rules are all bound this way; a rule's `Reach` says whether the live engines run it first, only the shared pass
+  (`ShapeUpdater`, which generation and placement use too) runs it, or both. Redstone components still register
+  their neighbour reactions, contact and ticks in `Obsidian/WorldData/Redstone`.
 - Placement checks belong in `UseItemOnPacket`'s placement, before the place event: vanilla's `canSurvive` and
   `isUnobstructed`.
+
+## Shape rules not implemented yet
+
+`Assets/block_update_shape_classes.json` names 108 vanilla classes that declare `updateShape`. These have no member
+in `ShapeUpdateBehaviors` yet (the coral, coral plant and fan, dirt path and chorus plant rules come with the
+dripstone and amethyst work), so their blocks keep their state on a shape update. The shared pass still schedules the
+fluid tick of every waterlogged state, so where a class's rule does only that, nothing is lost. Each needs a capture
+before it is implemented. "Phase" refers to the [block interactions plan](../block-interactions-plan.md).
+
+| Declaring class | Blocks | Today | Phase |
+|---|---|---|---|
+| `AmethystClusterBlock` | amethyst clusters and buds | Don't drop when their support goes | 5 (budding amethyst) |
+| `BarrierBlock` | barrier | Fluid tick only | Shape-rule follow-up |
+| `BaseCoralPlantTypeBlock` | dead coral plants and fans | Don't drop when their floor goes | 5 (coral) |
+| `BaseCoralWallFanBlock` | dead coral wall fans | Don't drop when their wall goes | 5 (coral) |
+| `BasePressurePlateBlock` | pressure plates | Don't drop when their floor goes | 3 |
+| `BaseRailBlock` | rails | Redstone's rail reactions check support and shape | 4 |
+| `BeehiveBlock` | beehive, bee nest | Nothing | 2 (batch A) |
+| `BellBlock` | bell | Keeps its attachment and doesn't drop (see above) | 2 (batch E) |
+| `BigDripleafBlock`, `BigDripleafStemBlock` | big dripleaf | Don't drop or reshape | 3 |
+| `BrushableBlock`, `FallingBlock` | suspicious sand and gravel, anvils, dragon egg, sand | Fall through the live level's falling-block rule | 3 |
+| `CakeBlock`, `CandleCakeBlock` | cakes | Don't drop when their floor goes | 2 (batch A) |
+| `CampfireBlock` | campfires | No signal fire from hay below | 2 (batch B) |
+| `CandleBlock` | candles | Don't drop when their floor goes | 2 (batch B) |
+| `ChainBlock` | chains | Fluid tick only | Shape-rule follow-up |
+| `ChorusFlowerBlock` | chorus flower | Doesn't break without support | 5 (chorus) |
+| `ComparatorBlock`, `RepeaterBlock` | comparator, repeater | Redstone's rules lock repeaters; neither drops from a shape update | 4 |
+| `ConcretePowderBlock` | concrete powder | Falls; doesn't harden beside water | 5 |
+| `ConduitBlock` | conduit | Fluid tick only | 6 |
+| `CopperChestBlock` | copper chests | Don't pair or unpair on shape updates | 2 (batch E) |
+| `CopperGolemStatueBlock` | copper golem statues | Fluid tick only | 4 |
+| `CreakingHeartBlock` | creaking heart | Doesn't re-check its logs | 5 |
+| `DecoratedPotBlock` | decorated pot | Fluid tick only | 2 (batch D) |
+| `DriedGhastBlock` | dried ghast | Fluid tick only | 5 |
+| `EnderChestBlock` | ender chest | Fluid tick only | 6 |
+| `FlowerPotBlock` | flower pots | Don't drop when their floor goes | 2 (batch D) |
+| `FrogspawnBlock` | frogspawn | Doesn't drop without water | 5 |
+| `HeavyCoreBlock` | heavy core | Fluid tick only | Shape-rule follow-up |
+| `HugeMushroomBlock` | mushroom blocks and stems | Faces don't join neighbours | 5 |
+| `LightBlock` | light | Fluid tick only | Shape-rule follow-up |
+| `LightningRodBlock` | lightning rods | Fluid tick only | 4 |
+| `LiquidBlock` | water, lava | The fluid engine reacts instead | none |
+| `MangrovePropaguleBlock` | mangrove propagule | Doesn't drop when its support goes | 5 |
+| `MangroveRootsBlock` | mangrove roots | Fluid tick only | Shape-rule follow-up |
+| `MultifaceBlock` | glow lichen, sculk vein, resin clump | Faces don't follow their support | 5 |
+| `NetherPortalBlock` | nether portal | Doesn't break when its frame does | 6 |
+| `PistonHeadBlock` | piston head | Piston rules move and remove it; no shape reaction | 4 |
+| `PitcherCropBlock` | pitcher crop | Halves don't follow each other | 5 |
+| `ScaffoldingBlock` | scaffolding | No distance re-check or fall | 3 |
+| `SculkSensorBlock`, `SculkShriekerBlock` | sculk sensors, shrieker | Fluid tick only | 3 |
+| `SeaPickleBlock` | sea pickle | Doesn't drop when its floor goes | 5 |
+| `ShelfBlock` | shelves | No side connections | 2 (batch G) |
+| `ShelfMushroomBlock` | shelf mushroom | Doesn't drop when its support goes | 5 |
+| `SlabBlock`, `TrapDoorBlock`, `WaterloggedTransparentBlock` | slabs, trapdoors, copper grates | Fluid tick only | Shape-rule follow-up |
+| `SoulFireBlock` | soul fire | Doesn't go out off a soul fire base | 5 (fire) |
+| `TripWireBlock`, `TripWireHookBlock` | tripwire, hooks | Don't reconnect or drop on shape updates | 3 |
+
+Three kinds of block have their class's rule but miss part of it:
+
+- Torchflower crops have `VegetationBlock`'s rule, but Obsidian's survival check knows no torchflower crop, so one
+  never breaks; vanilla's crops also need light, which no crop checks yet. The `more_blocks` probe can't record
+  crops: their survival reads light, and its bounded level has no light engine. Phase 5.
+- Pointed dripstone has `SpeleothemBlock`'s rule for its shape, but schedules no fall or break: only sulfur spikes
+  tick. Phase 5.
+- Mushrooms (`VegetationBlock`) read the live level's light; generation's shape pass reads 15, as it always has.
