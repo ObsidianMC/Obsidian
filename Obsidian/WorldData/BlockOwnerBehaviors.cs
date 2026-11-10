@@ -47,6 +47,8 @@ internal static class OnPlaceBehaviors
     internal static IOnPlaceBehavior FrogspawnBlock { get; } = new FrogspawnBlockBehavior();
 
     internal static IOnPlaceBehavior FrostedIceBlock { get; } = new FrostedIceBlockBehavior();
+
+    internal static IOnPlaceBehavior ShelfBlock { get; } = new ShelfConnections.Placement();
 }
 
 /// <summary>

@@ -48,6 +48,7 @@ internal static class VanillaBlockEntities
         "minecraft:brushable_block" => new BrushableBlockEntity(),
         "minecraft:chiseled_bookshelf" => new ChiseledBookshelfBlockEntity(position),
         "minecraft:decorated_pot" => new DecoratedPotBlockEntity(position),
+        "minecraft:shelf" => new ShelfBlockEntity(position),
         _ => null
     };
 
