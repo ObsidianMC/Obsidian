@@ -41,24 +41,10 @@ internal static class EntityMovement
         }
 
         var bounds = mob.Dimension.CreateBBFromPosition(mob.Position);
-        var stepHeight = Math.Clamp(mob.GetAttributeValue("minecraft:generic.step_height"), 0, 10);
-        var displacement = Collide(terrain, bounds, velocity, mob is Mob ? stepHeight : 0, grounded);
-        var horizontalCollision = Math.Abs(displacement.X - velocity.X) > 0.00001f ||
-            Math.Abs(displacement.Z - velocity.Z) > 0.00001f;
-
-        var onGround = velocity.Y < 0 && Math.Abs(displacement.Y - velocity.Y) > 0.00001f;
-        if (!onGround && Math.Abs(velocity.Y) < 0.00001f)
-            onGround = !terrain.IsFree(bounds.OffsetBy(displacement + new VectorD(0, -0.001f, 0)));
-
-        mob.MovementFlags = (onGround ? MovementFlags.OnGround : MovementFlags.None) |
-            (horizontalCollision ? MovementFlags.HorizontalCollision : MovementFlags.None);
-
-        if (Math.Abs(displacement.X - velocity.X) > 0.00001f)
-            velocity.X = 0;
-        if (Math.Abs(displacement.Z - velocity.Z) > 0.00001f)
-            velocity.Z = 0;
-        if (Math.Abs(displacement.Y - velocity.Y) > 0.00001f)
-            velocity.Y = 0;
+        var next = Displace(mob, terrain, velocity, inWater || inLava ? 0.02 : gravity);
+        velocity = mob.Motion;
+        var displacement = next - mob.Position;
+        var horizontalCollision = mob.MovementFlags.HasFlag(MovementFlags.HorizontalCollision);
 
         if (!mob.NoGravity)
             velocity.Y -= inWater || inLava ? 0.02f : gravity;
@@ -73,7 +59,109 @@ internal static class EntityMovement
             if (terrain.IsFree(exit) && terrain.IsFreeOfFluid(exit))
                 mob.Motion = new VectorD(mob.Motion.X, 0.3f, mob.Motion.Z);
         }
-        return mob.Position + displacement;
+        return next;
+    }
+
+    /// <summary>
+    /// Resolves one movement against the world's collision shapes, records its fall, and restitutes collisions.
+    /// Travel adds gravity and drag afterwards; externally driven movement can use the same collision boundary.
+    /// </summary>
+    internal static VectorD Displace(Entity entity, MobTerrain terrain, VectorD velocity, double gravity = 0.08)
+    {
+        var bounds = entity.Dimension.CreateBBFromPosition(entity.Position);
+        var stepHeight = entity is Mob
+            ? Math.Clamp(entity.GetAttributeValue("minecraft:generic.step_height"), 0, 10)
+            : 0;
+        var grounded = entity.MovementFlags.HasFlag(MovementFlags.OnGround);
+        var displacement = Collide(terrain, bounds, velocity, stepHeight, grounded);
+        var hitX = Math.Abs(displacement.X - velocity.X) > 1e-7;
+        var hitZ = Math.Abs(displacement.Z - velocity.Z) > 1e-7;
+        var hitY = displacement.Y != velocity.Y;
+        var onGround = hitY && velocity.Y < 0;
+        entity.MovementFlags = (onGround ? MovementFlags.OnGround : MovementFlags.None)
+            | (hitX || hitZ ? MovementFlags.HorizontalCollision : MovementFlags.None);
+        var next = entity.Position + displacement;
+        var effectiveGravity = entity.NoGravity ? 0 : gravity;
+        (Vector, IBlock)? support = null;
+        var needsSupport = onGround && (entity.ContactFallDistance > 0 || displacement.Y < 0
+            || !entity.Sneaking && -velocity.Y > effectiveGravity);
+        if (needsSupport && entity.Level is WorldData.IContactLevel contactLevel)
+            support = WorldData.EntityContactPass.SupportAt(contactLevel, entity, next);
+
+        if (entity.ContactFallDistance > 0 && displacement.MagnitudeSquared() >= 1
+            && CrossesFallResetSurface(terrain, entity.Position, displacement))
+        {
+            entity.ResetFallDistance();
+        }
+
+        // LivingEntity refreshes fluid interaction at the resolved position before checking its fall.
+        if (entity is Living && terrain.ContainsFluid(bounds.OffsetBy(displacement), water: true))
+        {
+            entity.ResetFallDistance();
+        }
+        else
+        {
+            entity.TrackContactFall(displacement.Y, onGround, next, support);
+        }
+        var motionY = velocity.Y;
+        if (hitY)
+        {
+            motionY = 0;
+            if (onGround && !entity.Sneaking && -velocity.Y > effectiveGravity)
+            {
+                var floor = support?.Item2
+                    ?? terrain.GetBlock((Vector)(next - new VectorD(0, 0.2, 0)).Floor());
+                var restitution = floor?.RegistryId == BlockIds.SlimeBlock ? 1f : 0f;
+                if (floor is not null && TagsRegistry.Block.Beds.Entries.Contains(floor.RegistryId))
+                    restitution = 0.75f;
+
+                if (entity is not Living)
+                    restitution *= 0.8f;
+
+                if (restitution > 0)
+                {
+                    // 26.3 compensates for the portion of this move before impact, in vanilla's float drag.
+                    var fraction = displacement.Y / velocity.Y;
+                    var impactDrag = 1 + fraction * ((double)0.98f - 1);
+                    motionY = (fraction * effectiveGravity - velocity.Y) * impactDrag * restitution;
+                    entity.ContactBounced = true;
+                }
+            }
+        }
+
+        entity.Motion = new VectorD(hitX ? 0 : velocity.X, motionY, hitZ ? 0 : velocity.Z);
+        return next;
+    }
+
+    // Vanilla clips the feet's segment, capped at eight blocks, against resetting blocks and water.
+    private static bool CrossesFallResetSurface(MobTerrain terrain, VectorD start, VectorD displacement)
+    {
+        var length = displacement.Magnitude;
+        var end = start + displacement * (Math.Min(length, 8) / length);
+        var direction = end - start;
+        foreach (var cell in MobTerrain.CellsAlong(start, end))
+        {
+            if (terrain.GetBlock(cell) is not IBlock state)
+                continue;
+
+            var height = 1d;
+            if (!TagsRegistry.Block.FallDamageResetting.Entries.Contains(state.RegistryId))
+            {
+                var fluid = WorldData.Fluids.FluidState.Of(state);
+                if (!fluid.IsWater)
+                    continue;
+
+                var above = terrain.GetBlock(cell + Vector.Up);
+                height = above is not null && WorldData.Fluids.FluidState.Of(above).IsWater
+                    ? 1 : fluid.OwnHeight;
+            }
+
+            var surface = new BoundingBox((VectorD)cell, (VectorD)cell + new VectorD(1, height, 1));
+            if (MobTerrain.RayIntersection(surface, start, direction) is not null)
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>

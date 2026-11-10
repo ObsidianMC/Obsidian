@@ -235,6 +235,11 @@ internal static class FixtureDumper
             cases is null ? "" : string.Join('+', cases));
     }
 
+    // An on-request probe of controlled entity contacts, on block_use's observed copy of the vanilla jar.
+    internal static Task DumpBlockContactsAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string> cases) =>
+        RunObservedProbeAsync(server, fixture, "block-contacts", "BlockContactFixtures.java", cases);
+
     // An on-request probe: a dedicated server of its own, in a new flat world under the scratch directory. It shares
     // block_use's observed copy of the vanilla jar for the ordered block writes.
     internal static Task DumpProjectileHitsAsync(VanillaServer server, string fixture,
@@ -269,6 +274,7 @@ internal static class FixtureDumper
         {
             Directory.Delete(world, recursive: true);
         }
+
     }
 
     // An on-request probe: a dedicated server of its own, in a new normal world under the scratch directory.

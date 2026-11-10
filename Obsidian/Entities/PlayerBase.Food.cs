@@ -348,19 +348,6 @@ public partial class PlayerBase
                             AddPotionEffect((int)PotionEffect.Wither - 1, 40);
                 }
 
-        // Contact with magma block
-        var floorBlock = terrain.GetBlock((Vector)(Position - new VectorD(0, 0.01f, 0)).Floor());
-        if (floorBlock?.RegistryId == BlockIds.MagmaBlock
-            && !IsFireImmune
-            && !Sneaking
-            && !HasPotionEffect((int)PotionEffect.FireResistance - 1))
-        {
-            await DamageCombatAsync(this, 1, CombatDamageKind.FireContact);
-
-            if (!Alive || Respawning)
-                return;
-        }
-
         // Void handling
         var minimumY = Level is WorldData.AbstractLevel level ? level.MinY : -64;
         if (Position.Y < minimumY - 64)
