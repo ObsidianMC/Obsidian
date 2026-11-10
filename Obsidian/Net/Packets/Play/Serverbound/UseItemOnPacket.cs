@@ -266,8 +266,7 @@ public partial class UseItemOnPacket
         if (result.ConsumesAction())
         {
             var current = await use.Level.GetBlockAsync(use.Position);
-            var held = player.Inventory.GetItem(use.HandSlot);
-            await player.FireProgressAsync("any_block_use", item: held, block: current, position: use.Position);
+            await player.FireProgressAsync("any_block_use", item: use.Item, block: current, position: use.Position);
         }
 
         if (result.Swings())
