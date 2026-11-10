@@ -48,7 +48,7 @@ internal sealed class FrogspawnBlockBehavior : IOnPlaceBehavior, IScheduledTickB
         if (!survives)
             return;
 
-        BlockSounds.Play(concrete, position, "minecraft:block.frogspawn.hatch", 1f, 1f);
+        LevelSounds.PlayAtBlock(concrete, position, "minecraft:block.frogspawn.hatch", 1f, 1f);
         SpawnTadpoles(concrete, position, random);
     }
 

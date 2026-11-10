@@ -124,7 +124,8 @@ internal interface IBlockReactions
     public void NeighborChanged(Vector position, IBlock state, IBlock source, Vector sourcePosition);
 
     /// <summary>
-    /// Vanilla <c>updateShape</c> for the blocks this handles.
+    /// Vanilla <c>updateShape</c> for the blocks this handles. Validation only reads the resulting state, without
+    /// scheduling ticks or drawing from the level's random.
     /// </summary>
     /// <returns>The block's new state, or null to leave it to vanilla's shape rules.</returns>
     public IBlock? UpdateShape(
@@ -132,7 +133,8 @@ internal interface IBlockReactions
         IBlock state,
         BlockFace direction,
         Vector neighborPosition,
-        IBlock neighbor);
+        IBlock neighbor,
+        bool validation = false);
 
     /// <summary>
     /// What follows a change's neighbor updates: vanilla <c>updateNeighbourForOutputSignal</c> when

@@ -19,8 +19,8 @@ public partial class Mob
     private static readonly HashSet<string> saveFields =
     [
         "id", "UUID", "Pos", "Motion", "Rotation", "Health", "AbsorptionAmount", "Air", "Fire", "OnGround",
-        "TicksFrozen", "FallDistance", "NoAI", "LeftHanded", "CanPickUpLoot", "PersistenceRequired", "Silent",
-        "NoGravity", "Glowing", "CustomNameVisible", "CustomName", "attributes", "ObsidianEquipment", "Age",
+        "TicksFrozen", "PortalCooldown", "FallDistance", "NoAI", "LeftHanded", "CanPickUpLoot", "PersistenceRequired",
+        "Silent", "NoGravity", "Glowing", "CustomNameVisible", "CustomName", "attributes", "ObsidianEquipment", "Age",
         "InLove", "IsBaby", "ObsidianVariant", "Type", "EggLayTime", "IsChickenJockey", "Color", "Sheared",
         "sheared", "Size", "powered", "ignited", "Fuse", "ExplosionRadius", "ObsidianEffects", "InWaterTime",
         "DrownedConversionTime", "StrayConversionTime", "ObsidianPowderSnowTicks", "ObsidianStewEffect",

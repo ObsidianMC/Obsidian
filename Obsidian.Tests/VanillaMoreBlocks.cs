@@ -10,6 +10,7 @@ using Obsidian.WorldData;
 using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Features.Tree;
+using Obsidian.WorldData.Fluids;
 using System;
 using System.Linq;
 using System.Text.Json;
@@ -49,6 +50,25 @@ public sealed class VanillaMoreBlocks(ITestOutputHelper output)
     }
 
     private static async Task Replay(JsonElement probe)
+    {
+        await ReplayOnce(probe, fluidPath: false);
+
+        // A live level runs shape updates only in the fluid level's vanilla-ordered updater; the notification
+        // pipeline runs them where it's the only engine. Shape cases check both.
+        if (probe.GetProperty("kind").GetString() != "shape")
+            return;
+
+        try
+        {
+            await ReplayOnce(probe, fluidPath: true);
+        }
+        catch (Exception exception)
+        {
+            throw new Xunit.Sdk.XunitException($"Through the fluid level's shape update: {exception.Message}");
+        }
+    }
+
+    private static async Task ReplayOnce(JsonElement probe, bool fluidPath)
     {
         await using var context = TestServerFactory.CreateServer($"more-blocks-{Guid.NewGuid():N}");
         var world = context.World;
@@ -147,12 +167,23 @@ public sealed class VanillaMoreBlocks(ITestOutputHelper output)
             var neighbor = origin.Offset(side);
             AssertSharedPass(probe, world, origin, side);
 
-            world.BlockNotifications.Enqueue(new BlockChange(neighbor, BlocksRegistry.Air,
-                world.BlockUpdates.GetBlock(neighbor)), BlockUpdateFlags.SkipOnPlace);
-            await world.BlockNotifications.DrainAsync();
+            if (fluidPath)
+            {
+                // The step a live change's shape updates run (FluidLevel.OnChanged), with the flags they pass on.
+                var fluidLevel = new FluidLevel(world.Fluids);
+                fluidLevel.ExecuteShapeUpdate(side, origin, world.BlockUpdates.GetBlock(neighbor),
+                    BlockUpdateFlags.Clients, 512, VanillaShapes.All);
+            }
+            else
+            {
+                world.BlockNotifications.Enqueue(new BlockChange(neighbor, BlocksRegistry.Air,
+                    world.BlockUpdates.GetBlock(neighbor)), BlockUpdateFlags.SkipOnPlace);
+                await world.BlockNotifications.DrainAsync();
+            }
+
             if (probe.GetProperty("updated").GetString() == "minecraft:air")
             {
-                // The pipeline queues a block a shape update breaks for the level's tick, which removes it.
+                // Either path queues a block a shape update breaks for the level's tick, which removes it.
                 await world.DoWorldTickAsync();
             }
 

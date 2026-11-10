@@ -79,6 +79,18 @@ internal static class LevelEnvironment
     public const string WaterEvaporates = "minecraft:gameplay/water_evaporates";
 
     /// <summary>
+    /// Vanilla's <c>minecraft:gameplay/nether_portal_spawns_piglin</c>: whether nether portals' random ticks spawn
+    /// zombified piglins. Only the overworld's types set it.
+    /// </summary>
+    public const string NetherPortalSpawnsPiglin = "minecraft:gameplay/nether_portal_spawns_piglin";
+
+    /// <summary>
+    /// Vanilla's <c>minecraft:gameplay/eyeblossom_open</c>: a tri-state, where its default leaves an eyeblossom as it
+    /// is. Only the overworld's day timeline sets it.
+    /// </summary>
+    public const string EyeblossomOpenAttribute = "minecraft:gameplay/eyeblossom_open";
+
+    /// <summary>
     /// Vanilla's <c>minecraft:gameplay/bed_rule</c>: when beds let players sleep and set their spawn, and whether
     /// they explode.
     /// </summary>
@@ -101,14 +113,17 @@ internal static class LevelEnvironment
         [PiglinsZombify] = true,
         [SnowGolemMelts] = false,
         [RespawnAnchorWorks] = false,
-        [WaterEvaporates] = false
+        [WaterEvaporates] = false,
+        [NetherPortalSpawnsPiglin] = false
     }.ToFrozenDictionary();
 
-    // Vanilla's types' own values of those attributes, where they aren't the defaults (the nether's
-    // data/minecraft/dimension_type/the_nether.json): the server's copy of vanilla's types doesn't hold attributes.
+    // Vanilla's types' own values of those attributes, where they aren't the defaults (the overworld's and the nether's
+    // data/minecraft/dimension_type/*.json): the server's copy of vanilla's types doesn't hold attributes.
     private static readonly FrozenDictionary<string, FrozenDictionary<string, bool>> vanillaGameplay =
         new Dictionary<string, FrozenDictionary<string, bool>>
         {
+            ["minecraft:overworld"] = SpawnsPiglins(),
+            ["minecraft:overworld_caves"] = SpawnsPiglins(),
             ["minecraft:the_nether"] = new Dictionary<string, bool>
             {
                 [CanStartRaid] = false,
@@ -192,6 +207,27 @@ internal static class LevelEnvironment
     }
 
     /// <summary>
+    /// Whether an eyeblossom at <paramref name="position"/> should be open, as vanilla's
+    /// <c>environmentAttributes().getValue(EYEBLOSSOM_OPEN, pos).toBoolean(open)</c> decides: the attribute's
+    /// default leaves it as it is (<paramref name="open"/>), then the dimension type's map, the biome's and the
+    /// timelines apply. Only the overworld's day timeline sets it, open from 12600 to 23400 of each day.
+    /// </summary>
+    /// <remarks>
+    /// A map's <c>"default"</c> keeps the value it's given rather than going back to the eyeblossom's own state;
+    /// vanilla's types, biomes and timelines never set it.
+    /// </remarks>
+    public static bool EyeblossomOpen(this ILevel level, Vector position, bool open)
+    {
+        if (attributeMaps.TryGetValue(level.DimensionType.Element, out var typeMap))
+            open = typeMap.Apply(EyeblossomOpenAttribute, open);
+
+        if (BiomeAt(level, position) is BiomeCodec biome && attributeMaps.TryGetValue(biome.Element, out var biomeMap))
+            open = biomeMap.Apply(EyeblossomOpenAttribute, open);
+
+        return WorldTimelines.Apply(level, EyeblossomOpenAttribute, open);
+    }
+
+    /// <summary>
     /// The bed rule at <paramref name="position"/>: vanilla's default (sleep when it's dark, always set the spawn),
     /// then the dimension type's, then the biome's there.
     /// </summary>
@@ -243,6 +279,9 @@ internal static class LevelEnvironment
 
         return concrete.GetLoadedChunk(position.X >> 4, position.Z >> 4)?.GetBiome(position);
     }
+
+    private static FrozenDictionary<string, bool> SpawnsPiglins() =>
+        new Dictionary<string, bool> { [NetherPortalSpawnsPiglin] = true }.ToFrozenDictionary();
 
     private static FrozenDictionary<string, bool> Melts() =>
         new Dictionary<string, bool> { [SnowGolemMelts] = true }.ToFrozenDictionary();

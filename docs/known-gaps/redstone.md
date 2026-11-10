@@ -19,8 +19,9 @@ What follows is what still differs.
   at once; and entities press plates and arrows press buttons after they tick, where vanilla's do as they move.
   Cats sitting on a chest don't stop comparators reading it.
   Solid-block obstruction above a single chest or either double-chest half leaves the comparator's output stale
-  until another notification, as captured in vanilla; removing it alone does too. Observers use the shape owner
-  through both update engines. Captured player placement facing air or stone schedules no tick; `/setblock` and
+  until another notification, as captured in vanilla; removing it alone does too. Observers use the shape owner,
+  run once per block change by the fluid level's vanilla-ordered updater. Captured player placement facing air or
+  stone schedules no tick; `/setblock` and
   `/fill` give a placed observer the shape reaction from the side it watches, its part of vanilla's state derivation
   (they derive nothing else, see [26.3 commands](26-3-commands.md)). A piston's finished move derives the moved
   state from its new neighbours: pushed and pulled observers pulse even while watching unchanged air, fences

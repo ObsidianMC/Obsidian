@@ -131,6 +131,10 @@ internal static class TickBehaviors
 
     internal static IScheduledTickBehavior FrogspawnBlock { get; } = new FrogspawnBlockBehavior();
 
+    internal static IScheduledTickBehavior EyeblossomBlock { get; } = new EyeblossomBehavior();
+
+    internal static IScheduledTickBehavior DriedGhastBlock { get; } = new DriedGhastBehavior();
+
     internal static IScheduledTickBehavior FrostedIceBlock { get; } = new FrostedIceBlockBehavior();
 }
 

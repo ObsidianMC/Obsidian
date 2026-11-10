@@ -159,8 +159,7 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             {
                 for (var z = cz - distance; z <= cz + distance; z++)
                 {
-                    var center = new VectorD(x * 16 + 8, player.Position.Y, z * 16 + 8);
-                    if ((center - player.Position).MagnitudeSquared() > 16384)
+                    if (!IsCloseEnoughForSpawning(player, x, z))
                         continue;
 
                     var key = NumericsHelper.IntsToLong(x, z);
@@ -406,7 +405,7 @@ internal sealed partial class MobSpawner(AbstractLevel level)
 
             if (feet == null || floor == null ||
                 placement is null && (aquatic ? !feet.Is(BlockIds.Water) :
-                    !FluidState.Of(feet).IsEmpty || type is not EntityType.Ghast and not EntityType.Bat && (floor.IsLiquid || BlockCollisionShapes.Get(floor).Count == 0)))
+                    !FluidState.Of(feet).IsEmpty || type is not EntityType.Ghast and not EntityType.Bat && !IsSpawnableFloor(floor)))
             {
                 continue;
             }
@@ -467,9 +466,8 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             }
             else if (type == EntityType.Bat)
             {
-                var date = DateTime.Now;
-                var halloween = date.Month == 10 && date.Day >= 20 || date.Month == 11 && date.Day <= 3;
-                if (y >= seaLevel || !halloween && random.Next(2) == 0 || Math.Max(block, sky) > random.Next(halloween ? 7 : 4))
+                // 26.3's Bat.checkBatSpawnRules has no Halloween season any more.
+                if (y >= seaLevel || random.Next(2) == 0 || Math.Max(block, sky) > random.Next(4))
                     continue;
             }
             else if (type == EntityType.Ghast)
@@ -542,6 +540,48 @@ internal sealed partial class MobSpawner(AbstractLevel level)
         }
         return spawned;
     }
+
+    /// <summary>
+    /// Whether <paramref name="player"/> is close enough to the chunk at <paramref name="chunkX"/>,
+    /// <paramref name="chunkZ"/> for mobs to spawn there: within 128 blocks of its centre, across.
+    /// </summary>
+    /// <remarks>
+    /// Vanilla's <c>ChunkMap.playerIsCloseEnoughForSpawning</c> asks for strictly less than 128 blocks, and only of
+    /// chunks within a player's simulation distance; this takes 128 itself too.
+    /// </remarks>
+    internal static bool IsCloseEnoughForSpawning(IPlayer player, int chunkX, int chunkZ)
+    {
+        var center = new VectorD(chunkX * 16 + 8, player.Position.Y, chunkZ * 16 + 8);
+        return (center - player.Position).MagnitudeSquared() <= 16384;
+    }
+
+    /// <summary>
+    /// Vanilla's <c>ServerLevel.anyPlayerCloseEnoughForSpawning</c>: a player other than a spectator is close enough
+    /// to <paramref name="position"/>'s chunk for mobs to spawn there.
+    /// </summary>
+    internal static bool AnyPlayerCloseEnoughForSpawning(AbstractLevel level, Vector position)
+    {
+        var chunkX = position.X >> 4;
+        var chunkZ = position.Z >> 4;
+        return level.Players.Values.Any(player =>
+            player.GameMode != GameMode.Spectator && IsCloseEnoughForSpawning(player, chunkX, chunkZ));
+    }
+
+    /// <summary>
+    /// Whether a mob that stands on the ground may spawn on <paramref name="floor"/>: it's solid and not a liquid.
+    /// </summary>
+    /// <remarks>
+    /// Vanilla asks the floor's own <c>isValidSpawn</c>: by default its top face must be sturdy and its light under
+    /// 14 (so not a bottom slab or glowstone), and some blocks set their own rule (glass and barriers never, ice and
+    /// leaves only for some mobs, magma only for fire-immune ones). Obsidian doesn't have those rules yet.
+    /// </remarks>
+    internal static bool IsSpawnableFloor(IBlock floor) =>
+        !floor.IsLiquid && BlockCollisionShapes.Get(floor).Count > 0;
+
+    /// <summary>
+    /// Vanilla's <c>SpecialDates.isHalloween</c>: <paramref name="date"/>, the server's local date, is October 31st.
+    /// </summary>
+    internal static bool IsHalloween(DateTime date) => date.Month == 10 && date.Day == 31;
 
     // No player within 24 blocks of the position, one within 128, and the level's spawn at least 24 blocks away.
     private bool IsRightDistance(IPlayer[] players, VectorD position)
