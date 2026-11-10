@@ -1,15 +1,19 @@
 using Obsidian.API;
+using Obsidian.API.Registries;
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.World.Features;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Registries;
 using Obsidian.Tests;
+using Obsidian.Tests.Fakes;
+using Obsidian.WorldData;
 using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Features.Tree;
 using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Runtime.InteropServices;
 
 namespace WorldgenBench;
@@ -104,6 +108,8 @@ internal static class BlockRun
         DustLine(15);
         DustLine(30);
 
+        BlockEntityPass();
+
         GC.KeepAlive(result);
         GC.KeepAlive(flag);
         return 0;
@@ -136,6 +142,72 @@ internal static class BlockRun
 
         if (world.Pipeline.DroppedWork != 0)
             throw new InvalidOperationException("Dust benchmark exceeded the pipeline work limit.");
+    }
+
+    // A level's block entity pass over 25 block-ticking chunks holding 4,000 chests and signs, which don't tick,
+    // and an idle furnace and hopper in each chunk, which do. One operation is one level tick's pass.
+    private static void BlockEntityPass()
+    {
+        // The level writes region files: keep them out of the working directory, and gone however the case ends.
+        var folder = Path.Join(Path.GetTempPath(), $"obsidian-block-probe-{Guid.NewGuid():N}");
+        try
+        {
+            var world = TestWorldFactory.Create("block-probe", folder: folder);
+            try
+            {
+                MeasureBlockEntityPass(world);
+            }
+            finally
+            {
+                world.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            }
+        }
+        finally
+        {
+            if (Directory.Exists(folder))
+                Directory.Delete(folder, recursive: true);
+        }
+    }
+
+    private static void MeasureBlockEntityPass(World world)
+    {
+        var sign = BlocksRegistry.GetDefault(BlockIds.OakSign);
+
+        for (var chunkX = -2; chunkX <= 2; chunkX++)
+        {
+            for (var chunkZ = -2; chunkZ <= 2; chunkZ++)
+            {
+                var chunk = new Chunk(chunkX, chunkZ);
+                for (var index = 0; index < 160; index++)
+                {
+                    var block = index % 4 == 0 ? sign : BlocksRegistry.Chest;
+                    PlaceBlockEntity(chunk, index, block);
+                }
+
+                PlaceBlockEntity(chunk, 160, BlocksRegistry.Furnace);
+                PlaceBlockEntity(chunk, 161, BlocksRegistry.Hopper);
+
+                chunk.SetChunkStatus(ChunkGenStage.full);
+                world.LoadRegionByChunk(chunkX, chunkZ).SetChunk(chunk);
+            }
+        }
+
+        // Every chunk ticks: the ticket's ticking square and the ring beyond it.
+        using var ticket = world.AddChunkTicket(0, 0, radius: 1);
+
+        Measure("BlockEntityPass/4000-idle-50-ticking", 2_000, () => Complete(world.TickBlockEntitiesAsync()));
+    }
+
+    // Spaced so that no two block entities touch: index 0 to 255 covers the chunk's floor at y 64, two apart.
+    private static void PlaceBlockEntity(Chunk chunk, int index, IBlock block)
+    {
+        var x = (chunk.X << 4) + index % 8 * 2;
+        var z = (chunk.Z << 4) + index / 8 % 8 * 2;
+        var y = 64 + index / 64 * 2;
+        var position = new Vector(x, y, z);
+
+        chunk.SetBlock(x, y, z, block);
+        chunk.SetBlockEntity(x, y, z, BlockEntityNbt.Create(block.BlockEntityType()!, position));
     }
 
     private static void Complete(System.Threading.Tasks.ValueTask operation)
