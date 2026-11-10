@@ -1,4 +1,4 @@
-﻿using Obsidian.API.Events;
+using Obsidian.API.Events;
 using Obsidian.API.Inventory;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -110,10 +110,10 @@ public partial class PlayerActionPacket
             case PlayerActionStatus.StartedDigging:
             case PlayerActionStatus.ChangeDestroyDirection:
             case PlayerActionStatus.CancelledDigging:
-                player.Client.SendPacket(new BlockChangedAckPacket
-                {
-                    SequenceID = this.Sequence
-                });
+                if (player is PlayerBase actor)
+                    actor.QueueBlockAcknowledgement(this.Sequence);
+                else
+                    player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
                 break;
             case PlayerActionStatus.FinishedDigging:
                 {

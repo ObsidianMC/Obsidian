@@ -1019,7 +1019,8 @@ public sealed class BlockUpdates : IDisposable
 
     // A player using their main hand on the face of the block at position, at cursor on that block (0 to 1 on each
     // axis), or else at the middle of its top.
-    internal static UseItemOnPacket UseOn(Vector position, BlockFace face, VectorF? cursor = null)
+    internal static UseItemOnPacket UseOn(Vector position, BlockFace face, VectorF? cursor = null,
+        int sequence = 1, UseItemOnPacket? packet = null)
     {
         using var writer = new NetworkBuffer();
         writer.WriteVarInt((int)InteractionHand.MainHand);
@@ -1028,10 +1029,10 @@ public sealed class BlockUpdates : IDisposable
         writer.WriteAbsoluteFloatPositionF(cursor ?? new VectorF(0.5f, 1, 0.5f));
         writer.WriteBoolean(false);
         writer.WriteBoolean(false);
-        writer.WriteVarInt(1);
+        writer.WriteVarInt(sequence);
 
         using var reader = new NetworkBuffer(writer.AsSpan(0, writer.Size).ToArray());
-        var packet = new UseItemOnPacket();
+        packet ??= new UseItemOnPacket();
         packet.Populate(reader);
 
         return packet;

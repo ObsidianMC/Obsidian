@@ -68,6 +68,9 @@ public partial class UseItemOnPacket
         if (player is not Player user || user.Level is not AbstractLevel level)
             return null;
 
+        // Acknowledgements belong to received sequences, not to completions that may be deferred.
+        user.QueueBlockAcknowledgement(this.Sequence);
+
         if (!user.Alive || user.Respawning)
         {
             await this.RefuseAsync(user, level);
@@ -122,7 +125,7 @@ public partial class UseItemOnPacket
 
         var result = await this.UseBlockAsync(use);
         if (!use.CompletionDeferred)
-            await this.CompleteAsync(use, result);
+            await CompleteAsync(use, result);
 
         return result;
     }
@@ -260,7 +263,7 @@ public partial class UseItemOnPacket
     /// and the arm's swing when it consumed the click, then the clicked block and the one beside it, which the
     /// client may have predicted wrongly, and the acknowledgement.
     /// </summary>
-    private async ValueTask CompleteAsync(BlockUse use, UseResult result)
+    private static async ValueTask CompleteAsync(BlockUse use, UseResult result)
     {
         var player = use.Player;
         if (result.ConsumesAction())
@@ -272,11 +275,10 @@ public partial class UseItemOnPacket
         if (result.Swings())
             player.SwingForUse(use.Hand, use.Item, includeSelf: result == UseResult.SuccessServer);
 
-        this.ResendBlocks(use.Level, player);
+        ResendBlocks(use.Level, player, use.Position, use.Face);
         if (use.ResyncHand || !result.ConsumesAction())
             await player.SyncInventorySlotAsync(use.HandSlot);
 
-        this.Acknowledge(player);
     }
 
     private static async ValueTask FireAsync(BlockUse use, string trigger)
@@ -288,23 +290,19 @@ public partial class UseItemOnPacket
     // Refusals repair the client's prediction before acknowledging, including reach and lifecycle refusals.
     private async ValueTask RefuseAsync(Player player, AbstractLevel level)
     {
-        this.ResendBlocks(level, player);
+        ResendBlocks(level, player, this.Position, this.Face);
         var slot = this.Hand == InteractionHand.OffHand ? OffhandSlot : player.CurrentHeldItemSlot;
         await player.SyncInventorySlotAsync(slot);
-        this.Acknowledge(player);
     }
 
     // Read only loaded state: an impossible click must not load distant chunks just to correct its prediction.
-    private void ResendBlocks(AbstractLevel level, Player player)
+    private static void ResendBlocks(AbstractLevel level, Player player, Vector clicked, BlockFace face)
     {
-        var beside = this.Position + this.Face.ToVector();
-        foreach (var position in new[] { this.Position, beside })
+        var beside = clicked + face.ToVector();
+        foreach (var position in new[] { clicked, beside })
         {
             var block = level.GameEventBlock(position) ?? BlocksRegistry.Air;
             player.Client.SendPacket(new BlockUpdatePacket(position, block.GetHashCode()));
         }
     }
-
-    private void Acknowledge(IClientPlayer player) =>
-        player.Client.SendPacket(new BlockChangedAckPacket { SequenceID = this.Sequence });
 }

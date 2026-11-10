@@ -33,10 +33,10 @@ public partial class MainEventHandler
         var world = args.Level;
         var location = args.Location;
 
-        player.SendPacket(new BlockChangedAckPacket
-        {
-            SequenceID = sequence
-        });
+        if (player is PlayerBase actor)
+            actor.QueueBlockAcknowledgement(sequence);
+        else
+            player.SendPacket(new BlockChangedAckPacket { SequenceID = sequence });
 
         if (player.Level != world)
             return;

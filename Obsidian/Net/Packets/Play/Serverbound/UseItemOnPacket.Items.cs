@@ -21,7 +21,7 @@ public partial class UseItemOnPacket
         ["EnderEyeItem"] = (packet, use) => packet.UseIgniterAsync(use),
         ["FlintAndSteelItem"] = (packet, use) => packet.UseIgniterAsync(use),
         ["FireChargeItem"] = (packet, use) => packet.UseIgniterAsync(use),
-        ["BoneMealItem"] = (packet, use) => packet.UseBoneMealAsync(use),
+        ["BoneMealItem"] = (_, use) => UseBoneMealAsync(use),
         ["HangingEntityItem"] = (packet, use) => packet.HangAsync(use)
     };
 
@@ -110,7 +110,7 @@ public partial class UseItemOnPacket
 
     // Vanilla's BoneMealItem.useOn: bone meal grows a block that takes it, and is used up unless the player is in
     // creative mode, with rewards and the response following the committed action on the level's tick.
-    private ValueTask<UseResult> UseBoneMealAsync(BlockUse use)
+    private static ValueTask<UseResult> UseBoneMealAsync(BlockUse use)
     {
         if (!Growth.IsValidBonemealTarget(use.Level, use.Position, use.Block))
             return ValueTask.FromResult(UseResult.Pass);
@@ -121,7 +121,7 @@ public partial class UseItemOnPacket
         {
             if (!use.CanCommit)
             {
-                await this.CompleteAsync(use, UseResult.Fail);
+                await CompleteAsync(use, UseResult.Fail);
                 return;
             }
 
@@ -154,12 +154,12 @@ public partial class UseItemOnPacket
                     await FireAsync(execution, "item_used_on_block");
                 }
 
-                await this.CompleteAsync(execution, committed ? UseResult.SuccessServer : UseResult.Fail);
+                await CompleteAsync(execution, committed ? UseResult.SuccessServer : UseResult.Fail);
             });
             if (!handled)
                 use.Level.EnqueueEntityAction(CompleteQueuedUseAsync);
             else if (!ran)
-                await this.CompleteAsync(use, UseResult.Fail);
+                await CompleteAsync(use, UseResult.Fail);
         }
         return ValueTask.FromResult(UseResult.SuccessServer);
     }

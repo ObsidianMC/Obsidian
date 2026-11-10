@@ -4,6 +4,8 @@ using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
 using Obsidian.API.Events;
 using Obsidian.WorldData;
+using Obsidian.Net.Packets.Play.Serverbound;
+using Obsidian.Utilities.Collections;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
@@ -42,6 +44,8 @@ public sealed class BlockUseSafety
 
         await click.WaitAsync(TimeSpan.FromSeconds(10));
         Assert.NotNull(player.OpenedContainer);
+        player.FlushBlockAcknowledgement();
+        var sequence = 1;
 
         // Early refusals and an item's refused placement all repair both cells and the hand first.
         foreach (var refusal in new[] { "dead", "reach", "placement" })
@@ -53,7 +57,9 @@ public sealed class BlockUseSafety
             world.BlockUpdates.SetBlock(target + Vector.Up, BlocksRegistry.Stone);
             player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.Stone, 1));
 
+            packet = BlockUpdates.UseOn(target, BlockFace.Up, sequence: ++sequence);
             await packet.UseAsync(context.Server, player);
+            player.FlushBlockAcknowledgement();
 
             var packets = client.SentPackets.ToArray();
             var ack = Array.FindIndex(packets, sent => sent is BlockChangedAckPacket);
@@ -61,6 +67,66 @@ public sealed class BlockUseSafety
             Assert.Equal(2, packets.Take(ack).OfType<BlockUpdatePacket>().Count());
             Assert.True(slot >= 0 && slot < ack, refusal);
             Assert.IsType<BlockChangedAckPacket>(packets.Last());
+        }
+    }
+
+    [Fact]
+    public async Task PooledDeferredClicksKeepTheirCorrectionsAndAcknowledgeTheHighestReceivedSequence()
+    {
+        await using var context = TestServerFactory.CreateServer($"pooled-use-{Guid.NewGuid():N}");
+        var world = context.World;
+        WorldBlockEntities.AddEmptyChunk(world);
+        var target = new Vector(8, 64, 8);
+        var later = target + Vector.East;
+        await world.GetBlockAsync(target);
+        var pool = new SimpleObjectPool<UseItemOnPacket>(1);
+
+        foreach (var acknowledgeBeforeDrain in new[] { false, true })
+        {
+            var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "User",
+                new VectorD(8.5, 64, 10.5));
+            world.TryAddPlayer(player);
+            player.GameMode = GameMode.Survival;
+            var client = (TestClient)player.Client;
+            world.BlockUpdates.SetBlock(target + Vector.Down, BlocksRegistry.Farmland);
+            world.BlockUpdates.SetBlock(target, BlocksRegistry.Wheat);
+            world.BlockUpdates.SetBlock(later, BlocksRegistry.Stone);
+            player.Inventory.SetItem(player.CurrentHeldItemSlot, new ItemStack(ItemsRegistry.BoneMeal, 2));
+            client.ClearPackets();
+
+            var first = pool.Get();
+            BlockUpdates.UseOn(target, BlockFace.Up, sequence: 11, packet: first);
+            await first.HandleAsync(context.Server, player);
+            pool.Return(first);
+
+            var reused = pool.Get();
+            Assert.Same(first, reused);
+            BlockUpdates.UseOn(later, BlockFace.East, sequence: 12, packet: reused);
+            await reused.HandleAsync(context.Server, player);
+            pool.Return(reused);
+            Assert.Empty(client.SentPackets.OfType<BlockChangedAckPacket>());
+            if (acknowledgeBeforeDrain)
+                player.FlushBlockAcknowledgement();
+
+            var beforeDrain = client.SentPackets.Count;
+            await world.RunQueuedEntityActionsAsync();
+            var corrections = client.SentPackets.Skip(beforeDrain).ToArray();
+            Assert.Equal(new[] { target, target + Vector.Up },
+                corrections.OfType<BlockUpdatePacket>().Select(packet => packet.Position));
+            Assert.Contains(corrections, packet => packet is ContainerSetSlotPacket);
+            Assert.Equal(1, player.GetHeldItem()?.Count);
+
+            player.FlushBlockAcknowledgement();
+            Assert.Equal(12, Assert.Single(client.SentPackets.OfType<BlockChangedAckPacket>()).SequenceID);
+            if (!acknowledgeBeforeDrain)
+                Assert.IsType<BlockChangedAckPacket>(client.SentPackets.Last());
+
+            // Another tick can acknowledge a newer sequence, never a late completion's older one.
+            await BlockUpdates.UseOn(later, BlockFace.Up, sequence: 13).HandleAsync(context.Server, player);
+            player.FlushBlockAcknowledgement();
+            Assert.Equal(new[] { 12, 13 },
+                client.SentPackets.OfType<BlockChangedAckPacket>().Select(packet => packet.SequenceID));
+            world.TryRemovePlayer(player);
         }
     }
 
@@ -110,8 +176,9 @@ public sealed class BlockUseSafety
             player.Respawning = respawning;
             ((TestClient)player.Client).ClearPackets();
 
-            var packet = BlockUpdates.UseOn(target, BlockFace.Up, new VectorF(0.5f, 0.5f, 0.5f));
+            var packet = BlockUpdates.UseOn(target, BlockFace.Up, sequence: respawning ? 2 : 1);
             Assert.Null(await packet.UseAsync(context.Server, player));
+            player.FlushBlockAcknowledgement();
 
             Assert.Equal(2, crystals.Count);
             Assert.Empty(world.GetEntitiesInRange((VectorD)target, 8).Where(entity => !ReferenceEquals(entity, player)));
@@ -246,7 +313,7 @@ public sealed class BlockUseSafety
 
             for (var click = 0; click < 3; click++)
             {
-                var packet = BlockUpdates.UseOn(target, BlockFace.Up, new VectorF(0.5f, 0.5f, 0.5f));
+                var packet = BlockUpdates.UseOn(target, BlockFace.Up, sequence: click + 1);
                 await packet.UseAsync(context.Server, player);
             }
 
@@ -275,7 +342,8 @@ public sealed class BlockUseSafety
             };
             Assert.Equal(before + committed, player.Statistics.Get("minecraft:bone_meal", "minecraft:used"));
             Assert.Equal(committed, world.TakeGameEvents().Count(e => e.Kind == MobGameEvent.ItemInteractFinish));
-            Assert.Equal(3, client.SentPackets.OfType<BlockChangedAckPacket>().Count());
+            player.FlushBlockAcknowledgement();
+            Assert.Equal(3, Assert.Single(client.SentPackets.OfType<BlockChangedAckPacket>()).SequenceID);
             if (interference is "none" or "two_items")
                 Assert.Null(player.GetHeldItem());
             if (interference == "hand")
