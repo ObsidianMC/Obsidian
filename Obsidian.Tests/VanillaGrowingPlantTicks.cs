@@ -26,10 +26,6 @@ public sealed class VanillaGrowingPlantTicks(ITestOutputHelper output)
 {
     private static readonly JsonElement fixture = LoadFixture();
 
-    // The update flags vanilla's writes are compared on: neighbours, clients and known shape.
-    private const BlockUpdateFlags ComparedFlags =
-        BlockUpdateFlags.Neighbors | BlockUpdateFlags.Clients | BlockUpdateFlags.KnownShape;
-
     // Where the block notification pipeline, which repeats each write's shape updates after the fluid level's and
     // drains in the middle of them, still parts from vanilla (see docs/known-gaps/plant-growth-beyond-saplings.md):
     // it turns a head into its body first and stores it with every flag, or schedules kelp's water tick at a head the
@@ -74,7 +70,7 @@ public sealed class VanillaGrowingPlantTicks(ITestOutputHelper output)
         world.GrowthRandom = random;
         var writes = new List<Write>();
         world.Fluids.BlockStored = (position, block, flags) =>
-            writes.Add(new Write(position, block, flags & ComparedFlags));
+            writes.Add(new Write(position, block, flags));
         var differences = new List<string>();
 
         if (probe.TryGetProperty("origin", out var origin))
@@ -176,7 +172,7 @@ public sealed class VanillaGrowingPlantTicks(ITestOutputHelper output)
             .Select(write => new Write(
                 Position(write.GetProperty("pos")),
                 VanillaSulfurBlocks.ParseState(write.GetProperty("state").GetString()!),
-                (BlockUpdateFlags)write.GetProperty("flags").GetInt32() & ComparedFlags))
+                (BlockUpdateFlags)write.GetProperty("flags").GetInt32()))
             .ToList();
 
         var same = vanilla.Count == actual.Count
@@ -310,7 +306,7 @@ public sealed class VanillaGrowingPlantTicks(ITestOutputHelper output)
     private sealed record PipelineDifference(int? WriteStoredWithAllFlags = null, Vector? ExtraWaterTick = null);
 
     /// <summary>
-    /// A block stored at a position, with the update flags compared (see <see cref="ComparedFlags"/>).
+    /// A block stored at a position, with every update flag it was stored with (Obsidian's flags share vanilla's bits).
     /// </summary>
     private sealed record Write(Vector Position, IBlock State, BlockUpdateFlags Flags)
     {
