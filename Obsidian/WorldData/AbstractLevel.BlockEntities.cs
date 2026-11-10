@@ -208,10 +208,10 @@ public abstract partial class AbstractLevel
 
     /// <summary>
     /// Ticks the block entities of the chunks that tick, like vanilla's block entity tickers: those whose classes
-    /// tick (see <see cref="Chunk.TickingBlockEntities"/>) and whose block still has their type, after the pending
-    /// <see cref="BlockEntity.OnLoad"/> calls, each chunk's in turn followed by the upkeep of the rest (see
-    /// <see cref="KeepUpIdleBlockEntities"/>). Then runs the level's tickers (see <see cref="AddTicker"/>), takes in
-    /// the changes block entities announced (see <see cref="BlockEntity.SetChanged"/>) and sends the updates they
+    /// tick (see <c>BlockEntity.Ticks</c>) and whose block still has their type, after the pending
+    /// <see cref="BlockEntity.OnLoad"/> calls. The others get their upkeep in the same walk, at their place in it
+    /// (see <see cref="KeepUpIdleBlockEntity"/>). Then runs the level's tickers (see <see cref="AddTicker"/>), takes
+    /// in the changes block entities announced (see <see cref="BlockEntity.SetChanged"/>) and sends the updates they
     /// asked for.
     /// </summary>
     internal async ValueTask TickBlockEntitiesAsync()
@@ -233,10 +233,19 @@ public abstract partial class AbstractLevel
             if (!chunk.HasBlockEntities || !this.IsBlockTicking(new Vector(chunk.X * 16 + 8, 0, chunk.Z * 16 + 8)))
                 continue;
 
-            // Only the block entities whose classes tick, in the order the chunk holds them. One removed or replaced
-            // by an earlier tick, here or in another chunk, isn't ticked.
-            foreach (var blockEntity in chunk.TickingBlockEntities())
+            // Read in place: copying the values takes all the dictionary's locks, which chunk loading contends for.
+            // Read live, it never reaches one that an earlier tick removed or replaced.
+            foreach (var (_, value) in chunk.BlockEntities)
             {
+                if (value is not BlockEntity blockEntity)
+                    continue;
+
+                if (!blockEntity.Ticks)
+                {
+                    this.KeepUpIdleBlockEntity(chunk, blockEntity);
+                    continue;
+                }
+
                 if (!IsInPlace(chunk, blockEntity))
                     continue;
 
@@ -247,8 +256,6 @@ public abstract partial class AbstractLevel
                 if (blockEntity is ContainerBlockEntity container)
                     this.KeepUpContainer(container, container.Inventory.Revision);
             }
-
-            this.KeepUpIdleBlockEntities(chunk);
         }
 
         await this.RunTickersAsync();
@@ -260,55 +267,51 @@ public abstract partial class AbstractLevel
     }
 
     /// <summary>
-    /// The block entity pass's upkeep of the block entities of a ticking chunk whose classes don't tick: it places
-    /// those not placed yet and runs their pending <see cref="BlockEntity.OnLoad"/>, and keeps containers up with
-    /// their items (see <see cref="KeepUpContainer"/>), as it does for those that tick. Only one with something to
-    /// do has its block checked against it.
+    /// The block entity pass's upkeep of a block entity whose class doesn't tick: it's placed if it wasn't yet and its
+    /// pending <see cref="BlockEntity.OnLoad"/> runs, and a container is kept up with its items (see
+    /// <see cref="KeepUpContainer"/>), as one that ticks is after its tick. Most have nothing to do, which costs a
+    /// few field reads; only one that has is checked against its block.
     /// </summary>
-    private void KeepUpIdleBlockEntities(Chunk chunk)
+    private void KeepUpIdleBlockEntity(Chunk chunk, BlockEntity blockEntity)
     {
-        // Read in place: copying the values takes all the dictionary's locks, which chunk loading contends for.
-        foreach (var (_, value) in chunk.BlockEntities)
-        {
-            if (value is not BlockEntity { Ticks: false } blockEntity)
-                continue;
+        var container = blockEntity as ContainerBlockEntity;
+        var placing = blockEntity.Host is null || blockEntity.LoadPending;
 
-            var container = blockEntity as ContainerBlockEntity;
-            var placing = blockEntity.Host is null || blockEntity.LoadPending;
+        // Read once: a container's revision scans every one of its slots.
+        var items = container?.Inventory.Revision ?? 0;
+        var containerChanged = container is not null
+            && (ItemsUnheard(container, items) || ComparatorsBehind(container, items));
 
-            // Read once: a container's revision scans every one of its slots.
-            var items = container?.Inventory.Revision ?? 0;
-            var containerChanged = container is not null
-                && (ItemsUnheard(container, items) || ComparatorsBehind(container, items));
+        if (!placing && !containerChanged)
+            return;
 
-            if (!placing && !containerChanged)
-                continue;
+        if (!IsInPlace(chunk, blockEntity))
+            return;
 
-            if (!IsInPlace(chunk, blockEntity))
-                continue;
+        this.AttachBlockEntity(blockEntity);
+        this.RunLoad(blockEntity);
 
-            this.AttachBlockEntity(blockEntity);
-            this.RunLoad(blockEntity);
-
-            if (container is not null)
-                this.KeepUpContainer(container, items);
-        }
+        if (container is not null)
+            this.KeepUpContainer(container, items);
     }
 
     /// <summary>
-    /// Whether a block entity is still in its chunk and its block still has its type, which the block entity pass
-    /// requires before ticking or keeping it up.
+    /// Whether a block entity the pass reached is still live: not removed, and its block still has its type.
     /// </summary>
+    /// <remarks>
+    /// It doesn't check that the block entity is still the one stored at its position: the pass reads it from the
+    /// chunk's dictionary and checks it with no await in between, so nothing can have replaced it. An await between
+    /// the read and this check would need that comparison back, since a replacement doesn't always mark the old one
+    /// removed (IRedstoneLevel.SetBlockEntityAt doesn't).
+    /// </remarks>
     private static bool IsInPlace(Chunk chunk, BlockEntity blockEntity)
     {
         if (blockEntity.IsRemoved)
             return false;
 
         var position = blockEntity.BlockPosition;
-        if (!ReferenceEquals(chunk.GetBlockEntity(position.X, position.Y, position.Z), blockEntity))
-            return false;
-
         var type = chunk.GetBlock(position.X, position.Y, position.Z).BlockEntityType();
+
         return string.Equals(type, blockEntity.Id, StringComparison.OrdinalIgnoreCase);
     }
 
