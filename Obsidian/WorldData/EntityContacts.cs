@@ -136,7 +136,7 @@ internal sealed class EntityContactPass(IContactLevel level)
     internal static bool TouchesBlocks(Entity entity) => entity switch
     {
         PlayerBase player => player.GameMode != GameMode.Spectator,
-        ArmorStand stand => !stand.NoGravity && !stand.StandProperties.HasFlag(StandProperties.SetMarker),
+        ArmorStand stand => !stand.NoGravity && !stand.Marker,
         EnderDragon => false,
         Living => true,
         ItemEntity or ExperienceOrb or FallingBlock or PrimedTnt or FireworkRocket or FishingHook => true,
@@ -159,7 +159,7 @@ internal sealed class EntityContactPass(IContactLevel level)
     internal static bool IgnoresBlockTriggers(IEntity entity) => entity switch
     {
         IPlayer player => player.GameMode == GameMode.Spectator,
-        ArmorStand stand => stand.StandProperties.HasFlag(StandProperties.SetMarker),
+        ArmorStand stand => stand.Marker,
         DisplayEntity or TextDisplay or Interaction or OminousItemSpawner or Bat => true,
         _ => entity.Type == EntityType.Marker,
     };
