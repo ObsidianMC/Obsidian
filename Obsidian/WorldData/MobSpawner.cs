@@ -468,8 +468,8 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             }
             else if (type == EntityType.Bat)
             {
-                var halloween = IsHalloween(DateTime.Now);
-                if (y >= seaLevel || !halloween && random.Next(2) == 0 || Math.Max(block, sky) > random.Next(halloween ? 7 : 4))
+                // 26.3's Bat.checkBatSpawnRules has no Halloween season any more.
+                if (y >= seaLevel || random.Next(2) == 0 || Math.Max(block, sky) > random.Next(4))
                     continue;
             }
             else if (type == EntityType.Ghast)
@@ -580,9 +580,10 @@ internal sealed partial class MobSpawner(AbstractLevel level)
     internal static bool IsSpawnableFloor(IBlock floor) =>
         !floor.IsLiquid && BlockCollisionShapes.Get(floor).Count > 0;
 
-    /// <summary>Vanilla's <c>SpecialDates.isHalloween</c>: from October 20th to November 3rd.</summary>
-    internal static bool IsHalloween(DateTime date) =>
-        date.Month == 10 && date.Day >= 20 || date.Month == 11 && date.Day <= 3;
+    /// <summary>
+    /// Vanilla's <c>SpecialDates.isHalloween</c>: <paramref name="date"/>, the server's local date, is October 31st.
+    /// </summary>
+    internal static bool IsHalloween(DateTime date) => date.Month == 10 && date.Day == 31;
 
     // No player within 24 blocks of the position, one within 128, and the level's spawn at least 24 blocks away.
     private bool IsRightDistance(IPlayer[] players, VectorD position)
