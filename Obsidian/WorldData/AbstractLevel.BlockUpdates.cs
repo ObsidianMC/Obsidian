@@ -97,10 +97,17 @@ public abstract partial class AbstractLevel
     }
 
     /// <summary>
-    /// Queues the block notification pipeline's work for a committed change, as <paramref name="flags"/> ask, and drains it now.
-    /// Neighbor reactions need <see cref="BlockUpdateFlags.Neighbors"/>; shape updates run unless <see cref="BlockUpdateFlags.KnownShape"/>
-    /// is set, so clients-only writes still reach observers and other shape-reacting blocks. Call under the tick lock.
+    /// Queues the block notification pipeline's work for a committed change, as <paramref name="flags"/> ask, and drains it now:
+    /// the redstone engine's placement reactions, and with <see cref="BlockUpdateFlags.Neighbors"/> its neighbor reactions.
+    /// Call under the tick lock, after the fluid level ran the change's own updates.
     /// </summary>
+    /// <remarks>
+    /// The change's shape updates aren't queued: the fluid level's vanilla-ordered updater runs them, with vanilla's
+    /// flags on what they write (<see cref="FluidLevel.OnBlockChanged"/>, or <see cref="FluidLevel"/>'s own writes). For
+    /// a change at the top of a chain they've run when this is called; for a write nested in the chain they're queued
+    /// in the updater, and run in vanilla's order after the step that wrote it. Asking the shape rules here as well
+    /// converted blocks ahead of that order, stored them with every flag, and scheduled ticks vanilla doesn't.
+    /// </remarks>
     internal void NotifyBlockChange(Vector position, IBlock old, IBlock block, BlockUpdateFlags flags)
     {
         if (this.ActiveBlockUse is BlockUseEffects effects)
@@ -114,7 +121,7 @@ public abstract partial class AbstractLevel
         if (old.GetHashCode() == block.GetHashCode() || (!neighbors && !shapes))
             return;
 
-        this.BlockNotifications.Enqueue(new BlockChange(position, old, block), flags);
+        this.BlockNotifications.Enqueue(new BlockChange(position, old, block), flags, shapes: false);
 
         // The redstone engine's reactions for the change, drained now: its writes go to loaded chunks only, so they
         // complete synchronously under the tick lock. A drain already running picks this work up.

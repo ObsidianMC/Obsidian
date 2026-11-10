@@ -9,8 +9,9 @@ replaces only what vanilla produced.
   id and count) go into its block entity, as the `/setblock`'s `Items` data. Scenarios marked `level` need block
   entities (containers and hoppers), so the replay runs them on one shared test server and reuses loaded chunks,
   with a player beside each disjoint box, instead of on the redstone test world; they can't use reloads, entities
-  or arrows. `observer_watches_state_changes` also uses the whole level so both update engines deliver shape
-  work for the same changes; its recorded pulses guard scheduled-tick deduplication. The chest obstruction cases
+  or arrows. `observer_watches_state_changes` also uses the whole level, where the fluid level's updater delivers
+  shape work and the notification pipeline the neighbour reactions; its recorded pulses guard scheduled-tick
+  deduplication. The chest obstruction cases
   retain vanilla's stale comparator output when a solid block is placed
   above the chest and removed, including above either half of a double chest, without moving items.
   The `piston_*observer` / `piston_observer_*` and `sticky_piston_pull_idle_observer` cases record pulses after a
@@ -81,11 +82,12 @@ replaces only what vanilla produced.
   and music probes from `Java/MoreBlockFixtures.java`. Placement runs the chosen block's placement routine and
   survival check; signs are already a standing or ceiling variant. It records full states for every wool/concrete
   stair/slab color and poplar construction families, including powered placement, waterlogging and stair corners.
-  Shape cases record scheduled fluid/block ticks and replay through live notifications; where vanilla's shape
-  update breaks the block, the replay runs one level tick, which is when Obsidian removes it. Each shape case also
-  runs through the shared shape pass as generation reads it, wherever that pass has a rule for the block, so the
-  fence, stair and survival cases cover generation's rules too. The grindstone, wall button and nether wart cases
-  check blocks that gained a shape rule when rules were bound by declaring class. Leaf-distance ticks and
+  Shape cases record scheduled fluid/block ticks and replay twice: through the fluid level's shape update, which a
+  live level runs, and through the notification pipeline, which runs them where it's the only engine; where
+  vanilla's shape update breaks the block, the replay runs one level tick, which is when Obsidian removes it. Each
+  shape case also runs through the shared shape pass as generation reads it, wherever that pass has a rule for the
+  block, so the fence, stair and survival cases cover generation's rules too. The grindstone, wall button and nether
+  wart cases check blocks that gained a shape rule when rules were bound by declaring class. Leaf-distance ticks and
   axe providers also capture the next random draw; stripping checks state, sound ID and durability cost. Door,
   trapdoor and gate uses check state and sound ID (their captured pitch is not asserted by this replay); door
   placement checks the upper half. Note cases invoke vanilla's note and block-event routines, capture trigger
@@ -207,16 +209,18 @@ replaces only what vanilla produced.
   nylium under blocks that do and don't let light down; dirt paths turning to dirt, and which new blocks above or
   beside them schedule that; coral blocks, plants, fans and wall fans dying dry or staying by water, scheduling their
   death when placed or when a neighbour changes, and breaking when their support goes; chorus plants staying, breaking
-  and connecting as their support and neighbours change. The replay runs each case through Obsidian's generated
+  and connecting as their support and neighbours change; an oak door whose stone floor becomes soul sand (it stays)
+  or oak leaves (both halves break). The replay runs each case through Obsidian's generated
   owners, or a live block change, in its own world, and compares everything but the game events. Obsidian destroys
   blocks in the tick's entity phase, so a case that destroys one runs the world tick before comparing, keeping the
   recording random active. Ordered writes compare every flag bit; destruction compares state and drops intent;
   falling entities compare type, position, state, damage enablement, damage per distance and maximum damage. The
   replay rejects unexpected entities and writes outside the case and scans the loaded chunks for unexpected blocks.
-  Explicit expected differences pin six third-write flag changes from the duplicate shape-update pipeline, the
-  skipped pending-coral draw, and the two stalagmite cases' resource-spawn draws (the bounded probe suppresses loot).
-  Each exception fails when it disappears. The `review_*` cases also cover mud in the nether, mixed sulfur/dripstone
-  columns (growth and native `findTip`, including opposite-direction tips), and independent drops/silence landings.
+  Explicit expected differences pin the resource-spawn draws of the two stalagmite cases and the door on leaves (the
+  bounded probe suppresses loot), and the door's upper half breaking in the next entity phase, where vanilla breaks
+  the chain at once (the replay runs that phase alone, without block ticks); each fails when it disappears. The
+  `review_*` cases also cover mud in the nether, mixed sulfur/dripstone columns (growth and native `findTip`,
+  including opposite-direction tips), and independent drops/silence landings.
 - `eyeblossom_ghast_portal_ticks.json` (`VanillaEyeblossomGhastPortalTicks.ReplayEyeblossomGhastPortalReference`)
   records eyeblossoms, potted eyeblossoms, dried ghasts and nether portals from
   `Java/EyeblossomGhastPortalFixtures.java` (`CaptureFixtures=eyeblossom_ghast_portal`): a random tick, a scheduled

@@ -33,24 +33,12 @@ internal static class Coral
         return false;
     }
 
-    /// <summary>Schedules <paramref name="state"/>'s death, drawing its delay from <paramref name="random"/>.</summary>
+    /// <summary>
+    /// Schedules <paramref name="state"/>'s death, drawing its delay from <paramref name="random"/>. Like vanilla, a
+    /// neighbour's change draws the delay even while a death is already pending, and the scheduler drops the new tick.
+    /// </summary>
     public static void ScheduleDeath(IShapeLevel level, Vector position, IBlock state, IRandomSource random) =>
         level.ScheduleTick(position, state, DeathDelay + random.NextInt(DeathDelaySpread));
-
-    /// <summary>
-    /// The death a neighbour's change schedules (vanilla's <c>updateShape</c>), drawn only while none is pending.
-    /// </summary>
-    /// <remarks>
-    /// Obsidian asks a block's shape update more than once for one change (the vanilla-ordered neighbour update and
-    /// the notification pipeline both run it, and support checks ask it again), where vanilla asks once. Guarding on
-    /// the pending tick keeps the level's random to vanilla's one draw per change; vanilla also draws, and discards
-    /// the delay, for a change while a death is already pending, which this skips.
-    /// </remarks>
-    public static void ScheduleDeathOnChange(IShapeLevel level, Vector position, IBlock state)
-    {
-        if (!level.HasScheduledTick(position, state))
-            ScheduleDeath(level, position, state, level.Random);
-    }
 
     /// <summary>The dead coral of <paramref name="state"/>'s kind, in its default state.</summary>
     public static IBlock Dead(IBlock state) => deadForms.Value[state.RegistryId];
@@ -90,7 +78,7 @@ internal sealed class CoralBlockBehavior : IScheduledTickBehavior, IShapeUpdateB
         IBlock neighbor)
     {
         if (!Coral.TouchesWater(level, position))
-            Coral.ScheduleDeathOnChange(level, position, state);
+            Coral.ScheduleDeath(level, position, state, level.Random);
 
         return null;
     }
@@ -137,11 +125,9 @@ internal sealed class CoralPlantBehavior(bool onWall) : IOnPlaceBehavior, ISched
         if (direction == Support(state) && !survives)
             return BlocksRegistry.Air;
 
-        // A coral without support is about to break: Obsidian's support check before the break asks every face's
-        // shape update, which mustn't draw. Vanilla draws here only for a coral placed without support and without
-        // updates, and changed beside it.
+        // A coral without support is about to break; only supported dry coral needs a death tick.
         if (survives && !IsWet(level, position, state))
-            Coral.ScheduleDeathOnChange(level, position, state);
+            Coral.ScheduleDeath(level, position, state, level.Random);
 
         return null;
     }
