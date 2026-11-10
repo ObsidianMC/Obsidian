@@ -84,6 +84,8 @@ internal static class TickBehaviors
     internal static IScheduledTickBehavior GrowingPlantBlock { get; } = new KelpBlockBehavior();
 
     internal static IScheduledTickBehavior ComposterBlock { get; } = new ComposterBlockBehavior();
+
+    internal static IScheduledTickBehavior AbstractCauldronBlock { get; } = new CauldronDripTick();
 }
 
 /// <summary>

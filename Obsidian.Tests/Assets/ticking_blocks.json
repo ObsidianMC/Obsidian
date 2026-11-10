@@ -1,0 +1,9250 @@
+{
+  "version": "26.3",
+  "cases": [
+    {
+      "name": "dripstone_grows_down",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "seed": 79,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.7242491
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.00885731
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_grows_down_from_a_column",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=base,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "seed": 79,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.7242491
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.00885731
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]",
+          "flags": 2
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=base,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_grows_down_at_seven_long",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=base,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            6,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "seed": 79,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.7242491
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.00885731
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            3,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]",
+          "flags": 2
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            3,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            6,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=base,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_too_long_to_grow",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=base,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            6,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            3,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "seed": 79,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.7242491
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.00885731
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            3,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            6,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=base,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_growth_chance_misses",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "seed": 1,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.7308782
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.100473166
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_grows_a_stalagmite_on_the_floor",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "seed": 101,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.72192
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.0036949515
+        },
+        {
+          "call": "nextBoolean",
+          "value": false
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            6,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            6,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_grows_a_stalagmite_on_a_stalagmite",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        }
+      ],
+      "seed": 101,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.72192
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.0036949515
+        },
+        {
+          "call": "nextBoolean",
+          "value": false
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            6,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=up,waterlogged=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=up,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            6,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_grows_a_stalagmite_under_a_column",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=base,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            2,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "seed": 101,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.72192
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.0036949515
+        },
+        {
+          "call": "nextBoolean",
+          "value": false
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            3,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            2,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            3,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=base,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_merges_down_into_a_stalagmite",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        }
+      ],
+      "seed": 79,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.7242491
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.00885731
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip_merge,vertical_direction=down,waterlogged=false]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip_merge,vertical_direction=up,waterlogged=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip_merge,vertical_direction=up,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip_merge,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_merges_a_stalagmite_up",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        }
+      ],
+      "seed": 101,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.72192
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.0036949515
+        },
+        {
+          "call": "nextBoolean",
+          "value": false
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip_merge,vertical_direction=down,waterlogged=false]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip_merge,vertical_direction=up,waterlogged=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip_merge,vertical_direction=up,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip_merge,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_doesnt_grow_into_a_merged_tip",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip_merge,vertical_direction=up,waterlogged=false]"
+        }
+      ],
+      "seed": 79,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.7242491
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.00885731
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip_merge,vertical_direction=up,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_floor_too_far_for_a_stalagmite",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            -2,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "seed": 101,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.72192
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.0036949515
+        },
+        {
+          "call": "nextBoolean",
+          "value": false
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            -2,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_floor_eleven_below_takes_a_stalagmite",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            -1,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "seed": 101,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.72192
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.0036949515
+        },
+        {
+          "call": "nextBoolean",
+          "value": false
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            0,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            -1,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            0,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_stalagmite_scan_stops_at_water",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "seed": 101,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.72192
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.0036949515
+        },
+        {
+          "call": "nextBoolean",
+          "value": false
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_stalagmite_scan_stops_at_a_slab",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:stone_slab[type=bottom,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "seed": 101,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.72192
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.0036949515
+        },
+        {
+          "call": "nextBoolean",
+          "value": false
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:stone_slab[type=bottom,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_stalagmite_spot_taken_by_a_torch",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:torch"
+        },
+        {
+          "pos": [
+            8,
+            6,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "seed": 101,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.72192
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.0036949515
+        },
+        {
+          "call": "nextBoolean",
+          "value": false
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            6,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:torch"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_stalagmite_scan_passes_a_cobweb",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:cobweb"
+        },
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "seed": 101,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.72192
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.0036949515
+        },
+        {
+          "call": "nextBoolean",
+          "value": false
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:cobweb"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_stalagmite_on_a_slab",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            6,
+            8
+          ],
+          "state": "minecraft:stone_slab[type=top,waterlogged=false]"
+        }
+      ],
+      "seed": 101,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.72192
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.0036949515
+        },
+        {
+          "call": "nextBoolean",
+          "value": false
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            6,
+            8
+          ],
+          "state": "minecraft:stone_slab[type=top,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_needs_water_above",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "seed": 79,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.7242491
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.00885731
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_needs_a_water_source_above",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=1]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "seed": 79,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.7242491
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.00885731
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=1]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_doesnt_grow_under_lava",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:lava"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "seed": 79,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.7242491
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.00885731
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:lava[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_needs_a_dripstone_block_above",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "seed": 79,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.7242491
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.00885731
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_waterlogged_tip_doesnt_grow",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=true]"
+        }
+      ],
+      "seed": 79,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.7242491
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.00885731
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=true]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_tip_blocked_below",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "seed": 79,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.7242491
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.00885731
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_tip_above_water",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:water"
+        }
+      ],
+      "seed": 79,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.7242491
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.00885731
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_grows_only_from_the_top",
+      "call": "randomTick",
+      "origin": [
+        8,
+        9,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "seed": 79,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.7242491
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.00885731
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_stalagmite_doesnt_grow",
+      "call": "randomTick",
+      "origin": [
+        8,
+        5,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            3,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        }
+      ],
+      "seed": 79,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.7242491
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.00885731
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            3,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        },
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_drips_water_into_a_cauldron",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "seed": 4096,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.09789288
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.87547785
+        }
+      ],
+      "writes": [],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "type": "minecraft:cauldron",
+          "delay": 55
+        }
+      ],
+      "events": [
+        {
+          "type": 1504,
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "data": 0
+        }
+      ],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_drips_water_into_a_water_cauldron_1",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:water_cauldron[level=1]"
+        }
+      ],
+      "seed": 4096,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.09789288
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.87547785
+        }
+      ],
+      "writes": [],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "type": "minecraft:water_cauldron",
+          "delay": 55
+        }
+      ],
+      "events": [
+        {
+          "type": 1504,
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "data": 0
+        }
+      ],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:water_cauldron[level=1]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_drips_water_into_a_water_cauldron_2",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "seed": 4096,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.09789288
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.87547785
+        }
+      ],
+      "writes": [],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "type": "minecraft:water_cauldron",
+          "delay": 55
+        }
+      ],
+      "events": [
+        {
+          "type": 1504,
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "data": 0
+        }
+      ],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:water_cauldron[level=2]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_drips_water_into_a_water_cauldron_3",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:water_cauldron[level=3]"
+        }
+      ],
+      "seed": 4096,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.09789288
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.87547785
+        }
+      ],
+      "writes": [],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "type": "minecraft:water_cauldron",
+          "delay": 55
+        }
+      ],
+      "events": [
+        {
+          "type": 1504,
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "data": 0
+        }
+      ],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:water_cauldron[level=3]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_drips_water_over_a_lava_cauldron",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:lava_cauldron"
+        }
+      ],
+      "seed": 4096,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.09789288
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.87547785
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:lava_cauldron"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_drips_water_over_a_powder_snow_cauldron",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:powder_snow_cauldron[level=1]"
+        }
+      ],
+      "seed": 4096,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.09789288
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.87547785
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:powder_snow_cauldron[level=1]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_drips_lava_into_a_cauldron",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:lava"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "seed": 4608,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.052027225
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.61997324
+        }
+      ],
+      "writes": [],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "type": "minecraft:cauldron",
+          "delay": 55
+        }
+      ],
+      "events": [
+        {
+          "type": 1504,
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "data": 0
+        }
+      ],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:lava[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_lava_drip_chance_misses",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:lava"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "seed": 4096,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.09789288
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.87547785
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:lava[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_drips_lava_over_a_water_cauldron",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:lava"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:water_cauldron[level=1]"
+        }
+      ],
+      "seed": 4608,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.052027225
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.61997324
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:water_cauldron[level=1]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:lava[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_drips_with_nothing_below",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "seed": 4096,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.09789288
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.87547785
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_drip_chance_misses",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "seed": 1,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.7308782
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.100473166
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_drips_into_a_cauldron_ten_below",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            0,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "seed": 4096,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.09789288
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.87547785
+        }
+      ],
+      "writes": [],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            0,
+            8
+          ],
+          "type": "minecraft:cauldron",
+          "delay": 60
+        }
+      ],
+      "events": [
+        {
+          "type": 1504,
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "data": 0
+        }
+      ],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            0,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_cauldron_eleven_below_is_too_far",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            -1,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "seed": 4096,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.09789288
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.87547785
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            -1,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_drip_blocked_by_a_slab",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:stone_slab[type=bottom,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "seed": 4096,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.09789288
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.87547785
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:stone_slab[type=bottom,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_drips_past_a_cobweb",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:cobweb"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "seed": 4096,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.09789288
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.87547785
+        }
+      ],
+      "writes": [],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "type": "minecraft:cauldron",
+          "delay": 55
+        }
+      ],
+      "events": [
+        {
+          "type": 1504,
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "data": 0
+        }
+      ],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:cobweb"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_drips_from_a_column",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=base,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            3,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "seed": 4096,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.09789288
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.87547785
+        }
+      ],
+      "writes": [],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            3,
+            8
+          ],
+          "type": "minecraft:cauldron",
+          "delay": 55
+        }
+      ],
+      "events": [
+        {
+          "type": 1504,
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "data": 0
+        }
+      ],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            3,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=base,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_drips_from_a_waterlogged_tip",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=true]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "seed": 4096,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.09789288
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.87547785
+        }
+      ],
+      "writes": [],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "type": "minecraft:cauldron",
+          "delay": 55
+        }
+      ],
+      "events": [
+        {
+          "type": 1504,
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "data": 0
+        }
+      ],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=true]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_drips_under_any_block",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "seed": 4096,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.09789288
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.87547785
+        }
+      ],
+      "writes": [],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "type": "minecraft:cauldron",
+          "delay": 55
+        }
+      ],
+      "events": [
+        {
+          "type": 1504,
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "data": 0
+        }
+      ],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_drips_only_from_the_top",
+      "call": "randomTick",
+      "origin": [
+        8,
+        9,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "seed": 4096,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.09789288
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.87547785
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_dries_mud_into_clay",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:mud"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "seed": 4096,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.09789288
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.87547785
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:clay",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [
+        {
+          "type": 1504,
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "data": 0
+        }
+      ],
+      "gameEvents": [
+        {
+          "type": "minecraft:block_change",
+          "pos": [
+            8.5,
+            12.5,
+            8.5
+          ],
+          "state": "minecraft:clay"
+        }
+      ],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:clay"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_dries_mud_rather_than_fill_a_cauldron",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:mud"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "seed": 4096,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.09789288
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.87547785
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:clay",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [
+        {
+          "type": 1504,
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "data": 0
+        }
+      ],
+      "gameEvents": [
+        {
+          "type": "minecraft:block_change",
+          "pos": [
+            8.5,
+            12.5,
+            8.5
+          ],
+          "state": "minecraft:clay"
+        }
+      ],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:clay"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_drips_and_grows_in_one_tick",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:lava"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "seed": 4638,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.05256474
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.0057799816
+        }
+      ],
+      "writes": [],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "type": "minecraft:cauldron",
+          "delay": 55
+        }
+      ],
+      "events": [
+        {
+          "type": 1504,
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "data": 0
+        }
+      ],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:lava[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_drips_water_and_grows_in_one_tick",
+      "call": "randomTick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "seed": 4638,
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.05256474
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.0057799816
+        },
+        {
+          "call": "nextBoolean",
+          "value": true
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "type": "minecraft:cauldron",
+          "delay": 55
+        }
+      ],
+      "events": [
+        {
+          "type": 1504,
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "data": 0
+        }
+      ],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "cauldron_fills_with_water",
+      "call": "tick",
+      "origin": [
+        8,
+        5,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:water_cauldron[level=1]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [
+        {
+          "type": 1047,
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "data": 0
+        }
+      ],
+      "gameEvents": [
+        {
+          "type": "minecraft:block_change",
+          "pos": [
+            8.5,
+            5.5,
+            8.5
+          ],
+          "state": "minecraft:water_cauldron[level=1]"
+        }
+      ],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:water_cauldron[level=1]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "cauldron_fills_with_lava",
+      "call": "tick",
+      "origin": [
+        8,
+        5,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:lava"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:lava_cauldron",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [
+        {
+          "type": 1046,
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "data": 0
+        }
+      ],
+      "gameEvents": [
+        {
+          "type": "minecraft:block_change",
+          "pos": [
+            8.5,
+            5.5,
+            8.5
+          ],
+          "state": "minecraft:lava_cauldron"
+        }
+      ],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:lava_cauldron"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:lava[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "water_cauldron_1_fills",
+      "call": "tick",
+      "origin": [
+        8,
+        5,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:water_cauldron[level=1]"
+        }
+      ],
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:water_cauldron[level=2]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [
+        {
+          "type": 1047,
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "data": 0
+        }
+      ],
+      "gameEvents": [
+        {
+          "type": "minecraft:block_change",
+          "pos": [
+            8.5,
+            5.5,
+            8.5
+          ],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:water_cauldron[level=2]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "water_cauldron_2_fills",
+      "call": "tick",
+      "origin": [
+        8,
+        5,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:water_cauldron[level=2]"
+        }
+      ],
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:water_cauldron[level=3]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [
+        {
+          "type": 1047,
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "data": 0
+        }
+      ],
+      "gameEvents": [
+        {
+          "type": "minecraft:block_change",
+          "pos": [
+            8.5,
+            5.5,
+            8.5
+          ],
+          "state": "minecraft:water_cauldron[level=3]"
+        }
+      ],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:water_cauldron[level=3]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "water_cauldron_3_fills",
+      "call": "tick",
+      "origin": [
+        8,
+        5,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:water_cauldron[level=3]"
+        }
+      ],
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:water_cauldron[level=3]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "water_cauldron_ignores_lava",
+      "call": "tick",
+      "origin": [
+        8,
+        5,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:lava"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:water_cauldron[level=1]"
+        }
+      ],
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:water_cauldron[level=1]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:lava[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "lava_cauldron_ignores_water",
+      "call": "tick",
+      "origin": [
+        8,
+        5,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:lava_cauldron"
+        }
+      ],
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:lava_cauldron"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "powder_snow_cauldron_ignores_water",
+      "call": "tick",
+      "origin": [
+        8,
+        5,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:powder_snow_cauldron[level=1]"
+        }
+      ],
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:powder_snow_cauldron[level=1]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "cauldron_fills_from_mud",
+      "call": "tick",
+      "origin": [
+        8,
+        5,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:mud"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:water_cauldron[level=1]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [
+        {
+          "type": 1047,
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "data": 0
+        }
+      ],
+      "gameEvents": [
+        {
+          "type": "minecraft:block_change",
+          "pos": [
+            8.5,
+            5.5,
+            8.5
+          ],
+          "state": "minecraft:water_cauldron[level=1]"
+        }
+      ],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:water_cauldron[level=1]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:mud"
+        }
+      ]
+    },
+    {
+      "name": "cauldron_with_a_dry_stalactite",
+      "call": "tick",
+      "origin": [
+        8,
+        5,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        }
+      ]
+    },
+    {
+      "name": "cauldron_under_a_waterlogged_tip",
+      "call": "tick",
+      "origin": [
+        8,
+        5,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=true]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=true]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            12,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "cauldron_under_a_tip_eleven_above",
+      "call": "tick",
+      "origin": [
+        8,
+        5,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            17,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            18,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            16,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        },
+        {
+          "pos": [
+            8,
+            16,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            17,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            18,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "cauldron_under_a_tip_ten_above",
+      "call": "tick",
+      "origin": [
+        8,
+        5,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            16,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            17,
+            8
+          ],
+          "state": "minecraft:water"
+        },
+        {
+          "pos": [
+            8,
+            15,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:water_cauldron[level=1]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [
+        {
+          "type": 1047,
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "data": 0
+        }
+      ],
+      "gameEvents": [
+        {
+          "type": "minecraft:block_change",
+          "pos": [
+            8.5,
+            5.5,
+            8.5
+          ],
+          "state": "minecraft:water_cauldron[level=1]"
+        }
+      ],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:water_cauldron[level=1]"
+        },
+        {
+          "pos": [
+            8,
+            15,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            16,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            17,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "cauldron_without_a_stalactite",
+      "call": "tick",
+      "origin": [
+        8,
+        5,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        }
+      ],
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:cauldron"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_loses_its_ceiling",
+      "call": "set",
+      "origin": [
+        8,
+        11,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "state": "minecraft:air",
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "type": "minecraft:pointed_dripstone",
+          "delay": 2
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_column_loses_its_ceiling",
+      "call": "set",
+      "origin": [
+        8,
+        11,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=base,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "state": "minecraft:air",
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "type": "minecraft:pointed_dripstone",
+          "delay": 2
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=base,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "stalagmite_loses_its_floor",
+      "call": "set",
+      "origin": [
+        8,
+        4,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        }
+      ],
+      "state": "minecraft:air",
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "type": "minecraft:pointed_dripstone",
+          "delay": 1
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        }
+      ]
+    },
+    {
+      "name": "stalagmite_column_loses_its_floor",
+      "call": "set",
+      "origin": [
+        8,
+        4,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=base,vertical_direction=up,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            6,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=up,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        }
+      ],
+      "state": "minecraft:air",
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "type": "minecraft:pointed_dripstone",
+          "delay": 1
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=base,vertical_direction=up,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            6,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=up,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_falls",
+      "call": "tick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [
+        {
+          "type": "minecraft:falling_block",
+          "pos": [
+            8.5,
+            10.0,
+            8.5
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]",
+          "hurtEntities": true,
+          "damagePerDistance": 6.0,
+          "maxDamage": 40
+        }
+      ],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_column_falls",
+      "call": "tick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=base,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "type": "minecraft:pointed_dripstone",
+          "delay": 2
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "type": "minecraft:pointed_dripstone",
+          "delay": 2
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [
+        {
+          "type": "minecraft:falling_block",
+          "pos": [
+            8.5,
+            10.0,
+            8.5
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=base,vertical_direction=down,waterlogged=false]",
+          "hurtEntities": false,
+          "damagePerDistance": 0.0,
+          "maxDamage": 40
+        },
+        {
+          "type": "minecraft:falling_block",
+          "pos": [
+            8.5,
+            9.0,
+            8.5
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]",
+          "hurtEntities": false,
+          "damagePerDistance": 0.0,
+          "maxDamage": 40
+        },
+        {
+          "type": "minecraft:falling_block",
+          "pos": [
+            8.5,
+            8.0,
+            8.5
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]",
+          "hurtEntities": true,
+          "damagePerDistance": 6.0,
+          "maxDamage": 40
+        }
+      ],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_long_column_falls",
+      "call": "tick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=base,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            6,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            3,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            6,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            3,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "type": "minecraft:pointed_dripstone",
+          "delay": 2
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "type": "minecraft:pointed_dripstone",
+          "delay": 2
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "type": "minecraft:pointed_dripstone",
+          "delay": 2
+        },
+        {
+          "pos": [
+            8,
+            6,
+            8
+          ],
+          "type": "minecraft:pointed_dripstone",
+          "delay": 2
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "type": "minecraft:pointed_dripstone",
+          "delay": 2
+        },
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "type": "minecraft:pointed_dripstone",
+          "delay": 2
+        },
+        {
+          "pos": [
+            8,
+            3,
+            8
+          ],
+          "type": "minecraft:pointed_dripstone",
+          "delay": 2
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [
+        {
+          "type": "minecraft:falling_block",
+          "pos": [
+            8.5,
+            10.0,
+            8.5
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=base,vertical_direction=down,waterlogged=false]",
+          "hurtEntities": false,
+          "damagePerDistance": 0.0,
+          "maxDamage": 40
+        },
+        {
+          "type": "minecraft:falling_block",
+          "pos": [
+            8.5,
+            9.0,
+            8.5
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]",
+          "hurtEntities": false,
+          "damagePerDistance": 0.0,
+          "maxDamage": 40
+        },
+        {
+          "type": "minecraft:falling_block",
+          "pos": [
+            8.5,
+            8.0,
+            8.5
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]",
+          "hurtEntities": false,
+          "damagePerDistance": 0.0,
+          "maxDamage": 40
+        },
+        {
+          "type": "minecraft:falling_block",
+          "pos": [
+            8.5,
+            7.0,
+            8.5
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]",
+          "hurtEntities": false,
+          "damagePerDistance": 0.0,
+          "maxDamage": 40
+        },
+        {
+          "type": "minecraft:falling_block",
+          "pos": [
+            8.5,
+            6.0,
+            8.5
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]",
+          "hurtEntities": false,
+          "damagePerDistance": 0.0,
+          "maxDamage": 40
+        },
+        {
+          "type": "minecraft:falling_block",
+          "pos": [
+            8.5,
+            5.0,
+            8.5
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]",
+          "hurtEntities": false,
+          "damagePerDistance": 0.0,
+          "maxDamage": 40
+        },
+        {
+          "type": "minecraft:falling_block",
+          "pos": [
+            8.5,
+            4.0,
+            8.5
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]",
+          "hurtEntities": false,
+          "damagePerDistance": 0.0,
+          "maxDamage": 40
+        },
+        {
+          "type": "minecraft:falling_block",
+          "pos": [
+            8.5,
+            3.0,
+            8.5
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]",
+          "hurtEntities": true,
+          "damagePerDistance": 8.0,
+          "maxDamage": 40
+        }
+      ],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            3,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            6,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_waterlogged_tip_falls",
+      "call": "tick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=true]"
+        }
+      ],
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:water[level=0]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [
+        {
+          "type": "minecraft:falling_block",
+          "pos": [
+            8.5,
+            10.0,
+            8.5
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]",
+          "hurtEntities": true,
+          "damagePerDistance": 6.0,
+          "maxDamage": 40
+        }
+      ],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_falls_even_when_supported",
+      "call": "tick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "type": "minecraft:pointed_dripstone",
+          "delay": 2
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [
+        {
+          "type": "minecraft:falling_block",
+          "pos": [
+            8.5,
+            10.0,
+            8.5
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]",
+          "hurtEntities": false,
+          "damagePerDistance": 0.0,
+          "maxDamage": 40
+        },
+        {
+          "type": "minecraft:falling_block",
+          "pos": [
+            8.5,
+            9.0,
+            8.5
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]",
+          "hurtEntities": true,
+          "damagePerDistance": 6.0,
+          "maxDamage": 40
+        }
+      ],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_falls_from_a_merged_column",
+      "call": "tick",
+      "origin": [
+        8,
+        10,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip_merge,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip_merge,vertical_direction=up,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "type": "minecraft:pointed_dripstone",
+          "delay": 2
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [
+        {
+          "type": "minecraft:falling_block",
+          "pos": [
+            8.5,
+            10.0,
+            8.5
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]",
+          "hurtEntities": false,
+          "damagePerDistance": 0.0,
+          "maxDamage": 40
+        },
+        {
+          "type": "minecraft:falling_block",
+          "pos": [
+            8.5,
+            9.0,
+            8.5
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip_merge,vertical_direction=down,waterlogged=false]",
+          "hurtEntities": true,
+          "damagePerDistance": 6.0,
+          "maxDamage": 40
+        }
+      ],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_falls_from_the_middle_of_a_column",
+      "call": "tick",
+      "origin": [
+        8,
+        9,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=base,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]",
+          "flags": 2
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "type": "minecraft:pointed_dripstone",
+          "delay": 2
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [
+        {
+          "type": "minecraft:falling_block",
+          "pos": [
+            8.5,
+            9.0,
+            8.5
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]",
+          "hurtEntities": false,
+          "damagePerDistance": 0.0,
+          "maxDamage": 40
+        },
+        {
+          "type": "minecraft:falling_block",
+          "pos": [
+            8.5,
+            8.0,
+            8.5
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]",
+          "hurtEntities": true,
+          "damagePerDistance": 6.0,
+          "maxDamage": 40
+        }
+      ],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ]
+    },
+    {
+      "name": "stalagmite_breaks",
+      "call": "tick",
+      "origin": [
+        8,
+        5,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        }
+      ],
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]",
+          "drops": true
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "stalagmite_column_breaks",
+      "call": "tick",
+      "origin": [
+        8,
+        5,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=up,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            6,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        }
+      ],
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            6,
+            8
+          ],
+          "type": "minecraft:pointed_dripstone",
+          "delay": 1
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=up,waterlogged=false]",
+          "drops": true
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            6,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        }
+      ]
+    },
+    {
+      "name": "stalagmite_with_a_floor_stays",
+      "call": "tick",
+      "origin": [
+        8,
+        5,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        }
+      ],
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_tip_added_below_a_tip",
+      "call": "set",
+      "origin": [
+        8,
+        9,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]",
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_tip_added_below_a_column",
+      "call": "set",
+      "origin": [
+        8,
+        7,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=base,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]",
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]",
+          "flags": 2
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=middle,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=base,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_tip_removed_from_a_column",
+      "call": "set",
+      "origin": [
+        8,
+        8,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=base,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        }
+      ],
+      "state": "minecraft:air",
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]",
+          "flags": 2
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=frustum,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            11,
+            8
+          ],
+          "state": "minecraft:dripstone_block"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_merged_tip_added_above_a_stalagmite",
+      "call": "set",
+      "origin": [
+        8,
+        9,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        }
+      ],
+      "state": "minecraft:pointed_dripstone[thickness=tip_merge,vertical_direction=down,waterlogged=false]",
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip_merge,vertical_direction=down,waterlogged=false]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip_merge,vertical_direction=up,waterlogged=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip_merge,vertical_direction=up,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip_merge,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_tip_added_above_a_stalagmite",
+      "call": "set",
+      "origin": [
+        8,
+        9,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        }
+      ],
+      "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]",
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_merged_partner_removed",
+      "call": "set",
+      "origin": [
+        8,
+        9,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip_merge,vertical_direction=down,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip_merge,vertical_direction=up,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "state": "minecraft:air",
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            7,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            8,
+            8
+          ],
+          "state": "minecraft:pointed_dripstone[thickness=tip,vertical_direction=up,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            9,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            10,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_lands_and_breaks",
+      "call": "landing",
+      "origin": [
+        8,
+        5,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "state": "minecraft:pointed_dripstone[vertical_direction=down]",
+      "entityDrops": true,
+      "silent": false,
+      "removed": true,
+      "items": 1,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [
+        {
+          "type": 1045,
+          "pos": [
+            8,
+            5,
+            8
+          ],
+          "data": 0
+        }
+      ],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "dripstone_lands_silently_without_drops",
+      "call": "landing",
+      "origin": [
+        8,
+        5,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "state": "minecraft:pointed_dripstone[vertical_direction=down]",
+      "entityDrops": false,
+      "silent": true,
+      "removed": true,
+      "items": 0,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            4,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    }
+  ],
+  "_notes": "Vanilla block routines, recorded by the asset generator's TickingBlockFixtures.java against a block view of the case's setup (air elsewhere, void air outside the build height of -64 to 319) in the overworld, with a legacy random seeded with seed (0 by default) as both the routine's random and the level's. call is randomTick (the origin's state, only when its isRandomlyTicking holds, which ticks records), tick (the origin's scheduled tick), set (Level.setBlock of state at the origin with UPDATE_ALL) or landing (a falling block of state settling at the origin, with the entityDrops rule and silent flag). Writes store the block and, as Level.setBlock does, run the new state's onPlace and then, unless UPDATE_KNOWN_SHAPE is set, the neighbours' shape updates; neighbour notifications are not run. draws lists each draw in order; writes the block changes with their flags; scheduled the block and fluid ticks scheduled with their delays (a block tick counts as pending for hasScheduledTick); events the level events; gameEvents the game events with the state they carry; entities the entities added, with a falling block's state, position and damage; destroyed the blocks destroyed and whether they drop; items the items a landing dropped. after holds the final state of every setup or written position."
+}

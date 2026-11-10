@@ -189,6 +189,17 @@ replaces only what vanilla produced.
   path fireballs, explosions and end crystals use. It compares blocks and dropped items once the levels have
   ticked, as Obsidian removes fire a shape update destroys, drops a removed block entity's items, and lights a
   portal around new fire later in that tick.
+- `ticking_blocks.json` (`VanillaTickingBlocks.ReplayTickingBlockReference`) records single block routines from
+  `Java/TickingBlockFixtures.java`, against a bounded block view of the case's setup with a seeded, recording random
+  as both the routine's and the level's: a random tick (only of a state that random-ticks), a scheduled tick, a
+  `Level.setBlock` with its on-place and neighbour shape updates (not neighbour notifications), or a falling block's
+  landing. Each case records the draws, block writes, scheduled block and fluid ticks with their delays, level events,
+  game events, the entities added (a falling block's state and stalactite damage) and the blocks destroyed. The cases
+  cover pointed dripstone growing (the block and water source above, column length, stalagmite search), dripping
+  water and lava into each kind of cauldron or drying mud into clay, falling and breaking when the support goes,
+  thickness along a column, landing, and cauldrons taking the drip. The replay runs each case through Obsidian's
+  generated owners, or a live block change, in its own world, and compares everything but the game events. Obsidian
+  destroys blocks in the tick's entity phase, so a case that destroys one runs the world tick before comparing.
 
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.
@@ -215,6 +226,8 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=placement
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=fire
+
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=ticking_blocks
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=sulfur -p:CaptureCases=spike_shatters_after_falling+review_spike_pending_fall_keeps_frustum
 ```

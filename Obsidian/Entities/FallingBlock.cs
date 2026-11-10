@@ -81,7 +81,9 @@ public sealed partial class FallingBlock : Entity
         if (target?.Is(BlockIds.MovingPiston) == true)
             return;
 
-        if (this.Block.Is(BlockIds.SulfurSpike))
+        // A falling speleothem (a sulfur spike or pointed dripstone) breaks where it lands. Vanilla would place one
+        // that lands in a cell it can hang in, which isn't modelled.
+        if (TagsRegistry.Block.Speleothems.Entries.Contains(this.Block.RegistryId))
         {
             if (this.StalactiteDamage > 0)
             {
@@ -108,7 +110,7 @@ public sealed partial class FallingBlock : Entity
             if ((this.CancelDrop || drops) && !this.Silent)
             {
                 this.PacketBroadcaster.BroadcastToLevelInRange(this.Level, this.Position,
-                    new Net.Packets.Play.Clientbound.LevelEventPacket(1052, loc, 0));
+                    new Net.Packets.Play.Clientbound.LevelEventPacket(LandingEvent(this.Block), loc, 0));
             }
             await this.Level.DestroyEntityAsync(this);
             return;
@@ -149,6 +151,10 @@ public sealed partial class FallingBlock : Entity
         tag.Set(new NbtTag<bool>("DropItem", this.DropItem));
         tag.Set(new NbtTag<bool>("CancelDrop", this.CancelDrop));
     }
+
+    // Vanilla's getStalactiteLandingSound: POINTED_DRIPSTONE_LAND for pointed dripstone, SULFUR_SPIKE_LAND for sulfur
+    // spikes.
+    private static int LandingEvent(IBlock block) => block.Is(BlockIds.PointedDripstone) ? 1045 : 1052;
 
     internal static float StalactiteImpactDamage(double distance, float size)
     {

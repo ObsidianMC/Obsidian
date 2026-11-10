@@ -90,6 +90,11 @@ internal static class FixtureDumper
         return VanillaServer.RunJavaAsync(server.ScratchDirectory, arguments.ToArray());
     }
 
+    // An on-request gameplay probe: vanilla's block ticks, block changes and landings against each case's block view.
+    internal static Task DumpTickingBlocksAsync(VanillaServer server, string fixture) =>
+        VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
+            Source("TickingBlockFixtures.java"), fixture);
+
     internal static Task DumpSulfurAsync(VanillaServer server, string fixture) =>
         VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
             Source("SulfurFixtures.java"), fixture);
