@@ -37,18 +37,19 @@ internal static partial class UseBehaviors
             if (FlowerPots.ContentOf(use.Block) is not ItemStack plant)
                 return UseResult.Consume;
 
-            BlockUseReturn? given = null;
-            if (!use.TryCommit(() =>
+            var taken = use.TryCommit(() =>
             {
                 if (!use.Level.BlockUpdates.SetBlock(use.Position, BlocksRegistry.FlowerPot))
                     return false;
 
-                given = BlockUseReturn.Give(use, plant);
+                BlockUseReturn.Give(use, plant);
                 return true;
-            }))
+            });
+
+            if (!taken)
                 return UseResult.Fail;
 
-            await given!.FinishAsync(use);
+            await BlockUseReturn.SendChangedSlotsAsync(use);
             use.Level.EmitGameEvent(MobGameEvent.BlockChange, use.Center, use.Player);
 
             return UseResult.Success;

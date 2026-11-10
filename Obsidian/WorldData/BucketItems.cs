@@ -162,9 +162,10 @@ internal static class BucketItems
             if (unsupported)
                 use.Level.BlockUpdates.SetBlock(use.Position, BlocksRegistry.Air);
 
+            // Vanilla's createFilledResult, in the same commit as the source it empties.
+            use.ExchangeRemainder = BlockUseReturn.Exchange(use, new ItemStack(filled, 1));
             return true;
-        },
-            exchangeResult: new ItemStack(filled, 1)))
+        }))
         {
             return UseResult.Fail;
         }
@@ -249,7 +250,8 @@ internal static class BucketItems
         if (placing.IsCancelled)
             return UseResult.Fail;
 
-        var committed = use.TryCommit(() =>
+        // The pour itself, inside the commit.
+        bool Pour()
         {
             if (!level.BlockUpdates.GetBlock(destination).IsSameState(previous)
                 || !ReferenceEquals(level.GetResidentBlockEntity(destination), entity))
@@ -294,8 +296,20 @@ internal static class BucketItems
             // Pouring into an existing source succeeds even if setting that identical state makes no change.
             return level.BlockUpdates.SetBlock(destination, final, BlockUpdateFlags.AllImmediate)
                 || previous.IsSameState(final);
-        }, exchangeResult: use.Player.GameMode == GameMode.Creative
-            ? null : new ItemStack(ItemsRegistry.Bucket, 1));
+        }
+
+        var committed = use.TryCommit(() =>
+        {
+            if (!Pour())
+                return false;
+
+            // Vanilla's getEmptySuccessItem: outside creative mode the poured bucket becomes an empty one, in the same
+            // commit.
+            if (use.Player.GameMode != GameMode.Creative)
+                BlockUseReturn.Exchange(use, new ItemStack(ItemsRegistry.Bucket, 1));
+
+            return true;
+        });
         if (!committed)
             return UseResult.Fail;
 

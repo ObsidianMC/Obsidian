@@ -55,16 +55,17 @@ internal static partial class UseBehaviors
                 return UseResult.Consume;
 
             var enchanted = false;
-            BlockUseReturn? given = null;
-            if (!use.TryCommit(() =>
+            var taken = use.TryCommit(() =>
             {
                 if (shelf.TryTake(slot) is not ItemStack book)
                     return false;
 
                 enchanted = book.Is(ItemsRegistry.EnchantedBook);
-                given = BlockUseReturn.Give(use, book);
+                BlockUseReturn.Give(use, book);
                 return true;
-            }, destination: shelf.Inventory))
+            }, destination: shelf.Inventory);
+
+            if (!taken)
                 return UseResult.Fail;
 
             var sound = enchanted
@@ -72,7 +73,7 @@ internal static partial class UseBehaviors
                 : "minecraft:block.chiseled_bookshelf.pickup";
             use.Level.BlockUpdates.PlaySound(use.Position, sound);
 
-            await given!.FinishAsync(use);
+            await BlockUseReturn.SendChangedSlotsAsync(use);
             use.Level.EmitGameEvent(MobGameEvent.BlockChange, use.Center, use.Player);
 
             return UseResult.Success;

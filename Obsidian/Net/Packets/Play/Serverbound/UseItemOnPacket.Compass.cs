@@ -35,16 +35,18 @@ public partial class UseItemOnPacket
         // Vanilla replaces the stack only for a single compass of a player without infinite materials.
         var creative = use.Player.GameMode == GameMode.Creative;
         var inPlace = !creative && compass.Count == 1;
-        BlockUseReturn? given = null;
         var committed = inPlace
             ? use.TryCommit(() => true, consumeItem: true, replacement: bound)
             : use.TryCommit(() =>
             {
                 // Taken before the new compass is added, as vanilla does, so it may stack back into the hand.
                 if (!creative)
+                {
                     use.Player.Inventory.RemoveItem(use.HandSlot, 1);
+                    use.ChangedInventorySlots.Add(use.HandSlot);
+                }
 
-                given = BlockUseReturn.Give(use, bound);
+                BlockUseReturn.Give(use, bound);
                 return true;
             });
 
@@ -63,9 +65,7 @@ public partial class UseItemOnPacket
             Seed = Random.Shared.NextInt64()
         });
 
-        await use.Player.SyncInventorySlotAsync(use.HandSlot);
-        if (given is not null)
-            await given.FinishAsync(use);
+        await BlockUseReturn.SendChangedSlotsAsync(use);
 
         return UseResult.Success;
     }
