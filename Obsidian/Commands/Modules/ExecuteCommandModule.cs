@@ -173,7 +173,7 @@ public sealed class ExecuteCommandModule : CommandModuleBase
         foreach (var context in contexts)
         {
             var (currentYaw, currentPitch) = context.Rotation ?? (default, default);
-            if (!TryParseAngle(yawText, currentYaw.Degrees, out var yaw) || !TryParseAngle(pitchText, currentPitch.Degrees, out var pitch))
+            if (!TryParseAngle(yawText, currentYaw, out var yaw) || !TryParseAngle(pitchText, currentPitch, out var pitch))
                 return null;
 
             rotated.Add(context.Derive(context.Message, context.Executor, context.Origin, context.Level, (yaw, pitch)));

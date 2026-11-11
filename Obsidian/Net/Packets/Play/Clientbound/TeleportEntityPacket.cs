@@ -14,10 +14,10 @@ public partial class TeleportEntityPacket
     public VectorD Delta { get; init; }
 
     [Field(3)]
-    public Angle Yaw { get; init; }
+    public float Yaw { get; init; }
 
     [Field(4)]
-    public Angle Pitch { get; init; }
+    public float Pitch { get; init; }
 
     [Field(5)]
     public PositionFlags Flags { get; init; }

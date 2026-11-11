@@ -47,6 +47,7 @@ internal static class RedstoneRegistration
         ShelfConnections.Register(world, neighbors, engine);
         var tripwires = TripWire.Register(world, ticks, redstone, neighbors);
         var targets = TargetBlock.Register(world, ticks, redstone);
+        LightningRods.Register(redstone, neighbors);
         var plates = new PressurePlates(world);
         plates.RegisterTicks(ticks);
 

@@ -1,3 +1,5 @@
+using Obsidian.API.World.Generator.RandomSources;
+
 namespace Obsidian.WorldData;
 
 /// <summary>
@@ -45,17 +47,19 @@ internal static class PlacementDirections
     /// <summary>
     /// Vanilla <c>Direction.orderedByNearest(entity)</c>: the six directions from nearest to farthest from where a
     /// player with the given rotation (in degrees) looks. The nearest decides placed states players expect, so ties
-    /// go as vanilla's do: north and south over east and west, and a horizontal direction over up and down.
+    /// go as vanilla's do: north and south over east and west, and a horizontal direction over up and down. The trig is
+    /// vanilla's table sine on float radians: at a tie such as 45 degrees up, the last bit decides.
     /// </summary>
     public static BlockFace[] OrderedByNearest(float yaw, float pitch)
     {
-        var pitchRadians = pitch * (MathF.PI / 180);
-        var yawRadians = -yaw * (MathF.PI / 180);
+        const float DegreesToRadians = (float)(Math.PI / 180.0);
+        var pitchRadians = pitch * DegreesToRadians;
+        var yawRadians = -yaw * DegreesToRadians;
 
-        var up = MathF.Sin(pitchRadians);
-        var level = MathF.Cos(pitchRadians);
-        var east = MathF.Sin(yawRadians);
-        var south = MathF.Cos(yawRadians);
+        var up = Mth.Sin(pitchRadians);
+        var level = Mth.Cos(pitchRadians);
+        var east = Mth.Sin(yawRadians);
+        var south = Mth.Cos(yawRadians);
 
         var vertical = up < 0 ? BlockFace.Up : BlockFace.Down;
         var alongX = east > 0 ? BlockFace.East : BlockFace.West;

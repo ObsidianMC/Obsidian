@@ -77,7 +77,7 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
     // scaled riders too. Other passengers sit on the attachment itself.
     protected override VectorD PassengerOffset(int index)
     {
-        var seat = definition.Settings.PassengerAttachment(index, this.Yaw.Degrees);
+        var seat = definition.Settings.PassengerAttachment(index, this.Yaw);
 
         var passenger = this.Passengers[index];
         var scale = passenger.HasAttribute("minecraft:scale")
@@ -198,17 +198,17 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
             this.Pitch = rider.Pitch;
             this.MoveControl.Acceleration = MountSteering.Fly(
                 input,
-                rider.Yaw.Degrees,
-                rider.Pitch.Degrees,
+                rider.Yaw,
+                rider.Pitch,
                 this.GetAttributeValue("minecraft:flying_speed"));
 
             return;
         }
 
-        this.Pitch = rider.Pitch.Degrees * 0.5f;
+        this.Pitch = rider.Pitch * 0.5f;
         this.MoveControl.Acceleration = MountSteering.Walk(
             input,
-            this.Yaw.Degrees,
+            this.Yaw,
             this.MovementSpeed,
             this.MovementFlags.HasFlag(MovementFlags.OnGround),
             this.InWater || this.InLava);
@@ -249,6 +249,8 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
     private DamageSource SourceOf(IEntity source, CombatDamageKind kind)
     {
         var attacker = ReferenceEquals(source, this) ? null : source;
+        if (this.IncomingDamageKind.HasValue)
+            attacker = this.IncomingAttacker;
         var direct = this.IncomingDirectSource ?? attacker;
         var type = kind switch
         {
@@ -268,6 +270,7 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
             CombatDamageKind.Freezing => "minecraft:freeze",
             CombatDamageKind.Thorns => "minecraft:thorns",
             CombatDamageKind.Drowning => "minecraft:drown",
+            CombatDamageKind.Lightning => "minecraft:lightning_bolt",
             _ => "minecraft:magic"
         };
 

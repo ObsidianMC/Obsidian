@@ -82,8 +82,8 @@ public partial class Mob
         WriteVector(writer, "Motion", Motion);
 
         writer.WriteListStart("Rotation", NbtTagType.Float, 2);
-        writer.WriteFloat(Yaw.Degrees);
-        writer.WriteFloat(Pitch.Degrees);
+        writer.WriteFloat(Yaw);
+        writer.WriteFloat(Pitch);
         writer.EndList();
 
         writer.WriteFloat("Health", Health);

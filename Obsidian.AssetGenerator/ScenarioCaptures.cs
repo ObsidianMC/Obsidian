@@ -46,6 +46,7 @@ internal static class ScenarioCaptures
     public const string Shelves = "shelves";
     public const string StrawBeds = "straw_beds";
     public const string GoldenDandelions = "golden_dandelions";
+    public const string Lightning = "lightning";
 
     public const string MeltingWeather = "melting_weather";
 
@@ -78,13 +79,13 @@ internal static class ScenarioCaptures
     private static readonly string[] SelectableCases =
         [Redstone, Sulfur, MoreBlocks, StructurePieces, Fire, TickingBlocks, BlockUse, MeltingWeather,
             EyeblossomGhastPortal, Brushing, ArmorStandUse, WaxingBellsOre, Cauldrons, ProjectileHits, Dispenser,
-            Shelves, StrawBeds, GoldenDandelions];
+            Shelves, StrawBeds, GoldenDandelions, Lightning];
 
     public static readonly string[] All =
         [Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps, SavedHeightmaps, Mining,
             Placement, CopperWeathering, Fire, TickingBlocks, BlockUse, TurtleEggs, Frogspawn,
             GrowingPlantTicks, MeltingWeather, FurnaceResults, EyeblossomGhastPortal, Brushing, ArmorStandUse,
-            WaxingBellsOre, Cauldrons, ProjectileHits, Dispenser, Shelves, StrawBeds, GoldenDandelions];
+            WaxingBellsOre, Cauldrons, ProjectileHits, Dispenser, Shelves, StrawBeds, GoldenDandelions, Lightning];
 
     private const string RedstoneNotes = """
         Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a
@@ -142,7 +143,7 @@ internal static class ScenarioCaptures
                 "Case selection requires CaptureFixtures=redstone, sulfur, more_blocks, structure_pieces, "
                 + "fire, ticking_blocks, block_use, melting_weather, eyeblossom_ghast_portal, brushing, "
                 + "armor_stand_use, waxing_bells_ore, cauldrons, projectile_hits, dispenser, shelves, straw_beds or "
-                + "golden_dandelions.");
+                + "golden_dandelions or lightning.");
         }
 
         if (fixtures.Contains(CopperWeathering))
@@ -249,6 +250,14 @@ internal static class ScenarioCaptures
         {
             await FixtureDumper.DumpEyeblossomGhastPortalAsync(server,
                 Path.Combine(assetsDirectory, "eyeblossom_ghast_portal_ticks.json"), cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(Lightning))
+        {
+            var path = Path.Combine(assetsDirectory, "lightning_bolts.json");
+            await FixtureDumper.DumpLightningAsync(server, path, cases);
             if (fixtures.Count == 1)
                 return;
         }

@@ -45,6 +45,53 @@ internal sealed class CopperWeatheringBehavior : IRandomTickBehavior
 
     private static readonly Lazy<Dictionary<int, Stage>> stages = new(LoadStages);
 
+    // Each stage's block by the name of the stage after it, for going back a stage.
+    private static readonly Lazy<Dictionary<string, string>> previousStages = new(LoadPreviousStages);
+
+    private const string WaxedPrefix = "minecraft:waxed_";
+
+    /// <summary>Whether <paramref name="block"/> weathers, as vanilla's <c>instanceof WeatheringCopper</c>.</summary>
+    internal static bool IsWeathering(IBlock block) => stages.Value.ContainsKey(block.RegistryId);
+
+    /// <summary>
+    /// Whether <paramref name="block"/> is waxed copper, which vanilla's <c>HoneycombItem.WAX_OFF_BY_BLOCK</c> lists:
+    /// the waxed form of a block that weathers.
+    /// </summary>
+    internal static bool IsWaxed(IBlock block)
+    {
+        var name = block.UnlocalizedName;
+        if (!name.StartsWith(WaxedPrefix, StringComparison.Ordinal))
+            return false;
+
+        var unwaxed = "minecraft:" + name[WaxedPrefix.Length..];
+        return BlockStateProperties.TryGetState(unwaxed, null, out var plain) && IsWeathering(plain);
+    }
+
+    /// <summary>
+    /// The stage before <paramref name="block"/>'s, with its properties, or null for unweathered copper (vanilla's
+    /// <c>WeatheringCopper.getPrevious</c>).
+    /// </summary>
+    internal static IBlock? Previous(IBlock block)
+    {
+        if (!previousStages.Value.TryGetValue(block.UnlocalizedName, out var previous))
+            return null;
+
+        return BlockStateProperties.TryGetState(previous, block.GetProperties(), out var state) ? state : null;
+    }
+
+    /// <summary>
+    /// The unweathered stage of <paramref name="block"/>, with its properties (vanilla's
+    /// <c>WeatheringCopper.getFirst</c>).
+    /// </summary>
+    internal static IBlock First(IBlock block)
+    {
+        var first = block;
+        while (Previous(first) is IBlock previous)
+            first = previous;
+
+        return first;
+    }
+
     public void RandomTick(AbstractLevel level, Vector position, IBlock block, IRandomSource random)
     {
         if (!stages.Value.TryGetValue(block.RegistryId, out var stage) || stage.Next is null)
@@ -114,6 +161,18 @@ internal sealed class CopperWeatheringBehavior : IRandomTickBehavior
         var proportion = (older + 1f) / (older + same + 1f);
         var probability = proportion * proportion * (age == 0 ? 0.75f : 1f);
         return random.NextFloat() < probability;
+    }
+
+    private static Dictionary<string, string> LoadPreviousStages()
+    {
+        var previous = new Dictionary<string, string>();
+        foreach (var (id, stage) in stages.Value)
+        {
+            if (stage.Next is not null)
+                previous[stage.Next] = BlocksRegistry.GetDefault(id).UnlocalizedName;
+        }
+
+        return previous;
     }
 
     private static Dictionary<int, Stage> LoadStages()

@@ -111,7 +111,8 @@ public partial class PlayerBase
     /// Registers and queues the current server position together. An optional destination commits a direct move
     /// (waking from a bed) in the same critical section. Other travel reserves movement before moving the player.
     /// </summary>
-    internal ValueTask SendPositionAsync(VectorD delta, int relativeFlags = 0, VectorD? position = null)
+    internal ValueTask SendPositionAsync(
+        VectorD delta, PositionFlags relativeFlags = PositionFlags.None, VectorD? position = null)
     {
         lock (this.teleportStateGate)
         {
@@ -126,7 +127,7 @@ public partial class PlayerBase
         }
     }
 
-    private ValueTask QueueTeleportUnderLock(VectorD delta, int relativeFlags)
+    private ValueTask QueueTeleportUnderLock(VectorD delta, PositionFlags relativeFlags)
     {
         // Vanilla skips int.MaxValue: the counter runs 1..int.MaxValue-1, 0, 1...
         this.teleportCounter = this.teleportCounter >= int.MaxValue - 1 ? 0 : this.teleportCounter + 1;
@@ -146,7 +147,7 @@ public partial class PlayerBase
             Delta = delta,
             Yaw = this.Yaw,
             Pitch = this.Pitch,
-            RelativeFlags = relativeFlags
+            Flags = relativeFlags
         });
     }
 
@@ -161,11 +162,12 @@ public partial class PlayerBase
         this.Motion = VectorD.Zero;
         this.BoundingBox = this.Dimension.CreateBBFromPosition(this.Position);
         this.movementGeneration++;
-        return this.QueueTeleportUnderLock(VectorD.Zero, 0);
+        return this.QueueTeleportUnderLock(VectorD.Zero, PositionFlags.None);
     }
 
     internal async ValueTask ConfirmTeleportAsync(int id, VectorD position, float yaw, float pitch)
     {
+        var validRotation = TryClientRotation(yaw, pitch, out var rotation);
         long generation;
         Task? released;
         bool invalid;
@@ -176,7 +178,7 @@ public partial class PlayerBase
                 return;
 
             invalid = pending is null || double.IsNaN(position.X) || double.IsNaN(position.Y)
-                || double.IsNaN(position.Z) || !float.IsFinite(yaw) || !float.IsFinite(pitch);
+                || double.IsNaN(position.Z) || !validRotation;
             if (!invalid && pending!.Generation != this.movementGeneration)
                 return;
 
@@ -206,7 +208,8 @@ public partial class PlayerBase
         // 26.3 confirmations report the client's resolved transform. Start from the stored destination, then use
         // the same movement path with ground/collision flags cleared; a newer teleport can invalidate this work.
         var flags = this.MovementFlags & ~(MovementFlags.OnGround | MovementFlags.HorizontalCollision);
-        await this.ApplyPlayerMovementAsync(position, yaw, pitch, flags, true, generation);
+        await this.ApplyPlayerMovementAsync(
+            ClientPosition(position), rotation.Yaw, rotation.Pitch, flags, true, generation);
     }
 
     internal long CaptureMovementGeneration()

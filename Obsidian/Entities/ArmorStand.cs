@@ -37,6 +37,16 @@ public sealed partial class ArmorStand : Living
     // Changed on the level's tick under its tick lock; saves and players starting to see the stand read it too.
     private readonly Dictionary<EquipmentSlot, ItemStack> equipment = [];
 
+    // Vanilla's armor stand has 20 health, its max_health attribute.
+    public ArmorStand()
+    {
+        Type = EntityType.ArmorStand;
+        Health = 20;
+    }
+
+    // Vanilla's ArmorStand.thunderHit does nothing: lightning neither burns nor hurts it.
+    internal override ValueTask ThunderHitAsync(LightningBolt bolt) => ValueTask.CompletedTask;
+
     /// <summary>A small stand, half the size, like one placed as a baby.</summary>
     public bool Small { get; set; }
 

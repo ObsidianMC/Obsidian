@@ -2244,7 +2244,8 @@ public partial class Region : IRegion
 
                 if (EntityNbt.Save(levelEntity) is not NbtCompound saved)
                 {
-                    if (unloading && levelEntity is Mob { HasAi: true })
+                    // A lightning bolt goes with its chunk, as vanilla's does, rather than strike on into nothing.
+                    if (unloading && levelEntity is Mob { HasAi: true } or LightningBolt)
                         leaving.Add(levelEntity);
 
                     continue;

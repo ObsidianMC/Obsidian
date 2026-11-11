@@ -55,7 +55,8 @@ public sealed partial class Tadpole : PathfinderMob, IAgeLockable
 
         if (++Age >= MaturationTicks)
         {
-            var frog = (Frog)await ConvertToAsync(EntityType.Frog);
+            if (await ConvertToAsync(EntityType.Frog) is not Frog frog)
+                return;
             frog.Health = frog.GetAttributeValue("minecraft:generic.max_health");
             frog.SelectVariant();
             frog.SynchronizeMetadata();

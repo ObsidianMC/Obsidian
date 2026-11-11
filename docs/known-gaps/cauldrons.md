@@ -18,13 +18,6 @@ drips (`ticking_blocks.json`). What's left:
   [block interactions plan](../block-interactions-plan.md) owns this, with powder snow's fire handling.
 - **Dispensers using cauldrons.** A dispenser's buckets and bottles don't fill or empty a cauldron in front of it.
   Phase 4 of the plan, with the other dispenser behaviours.
-- **An empty bucket's own use after a cauldron passes.** A bucket on a cauldron that isn't full goes on to its own
-  use, which aims by the player's look. Obsidian holds a player's rotation in 256ths of a turn (`Angle`), where
-  vanilla keeps the float the client sent, so the ray can differ near an edge. The capture's player looks down at 30
-  degrees, which becomes 29.53: vanilla's ray passes between the cauldron's legs and misses (`pass`), Obsidian's
-  clips the north wall and fails (`fail`). The replay pins the three cases (`water2_bucket`, `snow1_bucket`,
-  `empty_bucket`) and fails once they match. This affects every use aimed by the look, not only cauldrons.
-
 - **Effect encoding.** A water bottle with a custom effect is refused, as vanilla's is, but Obsidian writes the effect
   without the default `show_icon` vanilla's codec adds, so `empty_water_bottle_custom_effect` and
   `water1_water_bottle_custom_effect` pin the hand and inventory. The gap is in item encoding, not cauldrons.

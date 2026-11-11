@@ -9,10 +9,10 @@ public partial class MovePlayerPosRotPacket
     public VectorD Position { get; private set; }
 
     [Field(1), DataFormat(typeof(float))]
-    public Angle Yaw { get; private set; }
+    public float Yaw { get; private set; }
 
     [Field(2), DataFormat(typeof(float))]
-    public Angle Pitch { get; private set; }
+    public float Pitch { get; private set; }
 
     [Field(3)]
     public MovementFlags MovementFlags { get; private set; }
