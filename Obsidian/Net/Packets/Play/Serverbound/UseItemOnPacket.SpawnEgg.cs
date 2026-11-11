@@ -21,7 +21,7 @@ public partial class UseItemOnPacket
         var stack = use.Item!;
         var block = use.Block;
         var level = use.Level;
-        var component = stack.GetComponent<EntityDataComponent>(DataComponentType.EntityData) ?? DefaultEntity(stack);
+        var component = SpawnEggs.EntityData(stack);
         if (component is null)
             return UseResult.Pass;
 
@@ -101,18 +101,5 @@ public partial class UseItemOnPacket
             updatedSpawner.SendUpdate();
         await use.Player.SyncInventorySlotAsync(use.HandSlot);
         return UseResult.Success;
-    }
-
-    // The entity a spawn egg's own entity_data names, for a stack that doesn't carry the component itself.
-    private static EntityDataComponent? DefaultEntity(ItemStack stack)
-    {
-        var data = CombatItems.Component(stack, "entity_data");
-        if (data.ValueKind != System.Text.Json.JsonValueKind.Object || !data.TryGetProperty("id", out var id))
-            return null;
-
-        if (!EntityNbt.TryParseType(id.GetString(), out var type))
-            return null;
-
-        return new EntityDataComponent(DataComponentType.EntityData) { RegistryId = (int)type };
     }
 }
