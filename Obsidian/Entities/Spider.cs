@@ -1,4 +1,6 @@
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Entities.AI;
+using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
 
@@ -14,6 +16,53 @@ public partial class Spider : PathfinderMob
     protected override int GetExperienceReward() => 5;
     private bool Dark => Math.Max(Terrain.GetBlockLight((Vector)Position.Floor()),
         Math.Max(0, Terrain.GetSkyLight((Vector)Position.Floor()) - (Level.DayTime is >= 12000 and < 23000 ? 11 : 0))) < 8;
+
+    /// <summary>
+    /// Vanilla's <c>Spider.finalizeSpawn</c> with the level's random, in vanilla's order: <c>Mob</c>'s spawn draws,
+    /// one time in 100 a skeleton riding it (set up as a spawned skeleton is, from the same random), then on hard,
+    /// by the special multiplier, one time in ten an effect it keeps for good: speed (two times in five), strength,
+    /// regeneration or invisibility.
+    /// </summary>
+    internal override SpawnCompanions FinalizeBareSpawn(AbstractLevel level, IRandomSource random)
+    {
+        FinalizeMobSpawnFromLevel(random);
+        Skeleton? rider = null;
+        if (random.NextInt(100) == 0)
+            rider = NewSkeletonJockey(level, random);
+
+        if (level.LevelData.Difficulty == Difficulty.Hard && random.NextFloat() < 0.1f * SpecialDifficulty)
+        {
+            var effect = random.NextInt(5) switch
+            {
+                <= 1 => PotionEffect.Speed,
+                2 => PotionEffect.Strength,
+                3 => PotionEffect.Regeneration,
+                _ => PotionEffect.Invisibility
+            };
+            AddPotionEffect((int)effect - 1, -1, 0, EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon);
+
+            // Vanilla brings the invisible flag in line with the effects before the spider's spawn data is sent.
+            if (effect == PotionEffect.Invisibility)
+                Invisible = true;
+        }
+
+        return new(Vehicle: null, Passenger: rider);
+    }
+
+    // Vanilla's spider jockey: a skeleton where the spider stands, turned its way, finalized from the level's random,
+    // which rides the spider once both are added.
+    private Skeleton NewSkeletonJockey(AbstractLevel level, IRandomSource random)
+    {
+        var skeleton = (Skeleton)Factories.EntitySpawner.CreateMob(level, EntityType.Skeleton)!;
+        skeleton.EntityId = Server.GetNextEntityId();
+        skeleton.Position = Position;
+        skeleton.Yaw = Yaw;
+        skeleton.Pitch = 0;
+        skeleton.InitializeAi(finalizeSpawn: false);
+        skeleton.FinalizeBareSpawn(level, random);
+        return skeleton;
+    }
+
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
         actions.AddGoal(1, new FloatGoal(this));

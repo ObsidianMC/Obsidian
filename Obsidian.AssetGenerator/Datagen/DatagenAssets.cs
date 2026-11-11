@@ -49,7 +49,7 @@ internal static class DatagenAssets
             WriteJson(Path.Combine(outputDirectory, registry + ".json"), definitions);
         }
 
-        foreach (var registry in new[] { "block_transformer", "decorated_pot_pattern", "timeline" })
+        foreach (var registry in new[] { "block_transformer", "decorated_pot_pattern", "timeline", "trial_spawner" })
         {
             var definitions = Combine(Path.Combine(data, registry), ToId);
             WriteJson(Path.Combine(outputDirectory, registry + ".json"), definitions);

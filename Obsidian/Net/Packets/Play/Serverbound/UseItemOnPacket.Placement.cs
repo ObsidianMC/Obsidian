@@ -241,7 +241,7 @@ public partial class UseItemOnPacket
 
     // Vanilla's Entity.blocksBuilding: living entities (players but spectators, mobs, armor stands), boats and
     // minecarts. Items, projectiles and the like don't keep a block from going where they are.
-    private static bool BlocksBuilding(IEntity entity) => entity switch
+    internal static bool BlocksBuilding(IEntity entity) => entity switch
     {
         IPlayer player => player.GameMode != GameMode.Spectator,
         Living or VehicleEntity => true,

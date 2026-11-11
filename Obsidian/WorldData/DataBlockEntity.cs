@@ -21,8 +21,7 @@ public sealed class DataBlockEntity : BlockEntity
         "minecraft:banner", "minecraft:beacon", "minecraft:campfire",
         "minecraft:creaking_heart",
         "minecraft:hanging_sign", "minecraft:jigsaw", "minecraft:mob_spawner", "minecraft:shelf", "minecraft:sign",
-        "minecraft:skull", "minecraft:structure_block", "minecraft:test_block", "minecraft:test_instance_block",
-        "minecraft:trial_spawner", "minecraft:vault"
+        "minecraft:skull", "minecraft:structure_block", "minecraft:test_block", "minecraft:test_instance_block"
     ];
 
     // The types kept as data whose saved items vanilla drops when the block is removed: those whose

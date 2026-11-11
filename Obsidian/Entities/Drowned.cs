@@ -1,5 +1,7 @@
 using Obsidian.API.Inventory;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Entities.AI;
+using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
 
@@ -7,6 +9,13 @@ namespace Obsidian.Entities;
 public sealed partial class Drowned : Zombie
 {
     public Drowned() => Type = EntityType.Drowned;
+
+    // Vanilla's Drowned.finalizeSpawn from the level's random isn't ported: a bare drowned sets itself up from its own.
+    internal override SpawnCompanions FinalizeBareSpawn(AbstractLevel level, IRandomSource random)
+    {
+        FinalizeSpawn();
+        return default;
+    }
     internal override bool Hostile => true;
     internal override bool SwimmingNavigation => true;
     protected override string? SoundName => "drowned";

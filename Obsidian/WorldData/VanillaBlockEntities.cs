@@ -8,7 +8,7 @@ namespace Obsidian.WorldData;
 
 /// <summary>
 /// The classes of vanilla's block entity types the server models: containers players open, brewing stands, sculk
-/// catalysts and the like.
+/// catalysts, trial spawners, vaults and the like.
 /// Vanilla's other types are <see cref="DataBlockEntity"/>s.
 /// </summary>
 internal static class VanillaBlockEntities
@@ -53,6 +53,8 @@ internal static class VanillaBlockEntities
         "minecraft:decorated_pot" => new DecoratedPotBlockEntity(position),
         "minecraft:sculk_catalyst" => new SculkCatalystBlockEntity(),
         "minecraft:shelf" => new ShelfBlockEntity(position),
+        "minecraft:trial_spawner" => new TrialSpawners.TrialSpawnerBlockEntity(),
+        "minecraft:vault" => new TrialSpawners.VaultBlockEntity(),
         CommandBlockEntity.TypeId => new CommandBlockEntity(),
         _ => null
     };

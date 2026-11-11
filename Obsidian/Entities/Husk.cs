@@ -1,3 +1,6 @@
+using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.WorldData;
+
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:husk")]
@@ -7,6 +10,15 @@ public sealed partial class Husk : Zombie
     protected override string? SoundName => "husk";
     internal int WaterTicks { get; set; } = -1;
     internal int ConversionTicks { get; set; } = -1;
+
+    // Vanilla's Husk.finalizeSpawn: the zombie's setup, then its own draw for picking up loot. A spawner's husk
+    // never tries for a camel husk, which only a natural spawn does.
+    internal override SpawnCompanions FinalizeBareSpawn(AbstractLevel level, IRandomSource random)
+    {
+        var companions = base.FinalizeBareSpawn(level, random);
+        CanPickUpLoot = random.NextFloat() < 0.55f * SpecialDifficulty;
+        return companions;
+    }
     protected override async ValueTask TickMobAsync()
     {
         if (Level.LevelData.Difficulty == Difficulty.Peaceful)

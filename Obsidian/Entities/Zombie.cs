@@ -1,3 +1,4 @@
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Entities.AI;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
@@ -105,22 +106,65 @@ public partial class Zombie : PathfinderMob, IAgeable
         if (!IsBaby)
             IsBaby = Random.NextSingle() < 0.05f;
         CanBreakDoors = Random.NextSingle() < SpecialDifficulty * 0.1f;
-        ReinforcementChance = Random.NextSingle() * 0.1f;
-        TryUpdateAttribute("minecraft:generic.knockback_resistance", Random.NextSingle() * 0.05f);
-        var rangeBonus = Random.NextDouble() * 1.5 * SpecialDifficulty;
-        if (rangeBonus > 1)
-            TryUpdateAttribute("minecraft:generic.follow_range", (float)(FollowRange * (1 + rangeBonus)));
-        if (Random.NextSingle() < SpecialDifficulty * 0.05f)
+        HandleSpawnAttributes(SpecialDifficulty);
+        PopulateDefaultWeapon(Random.NextSingle, Random.Next);
+    }
+
+    /// <summary>
+    /// Vanilla's <c>Zombie.finalizeSpawn</c> for a spawn that isn't a conversion, drawing from the level's random
+    /// (<paramref name="random"/>) rather than the mob's own, in vanilla's order: <c>Mob</c>'s spawn draws, picking up
+    /// loot, being a baby (and then riding a chicken nearby, or a new chicken jockey), breaking doors, the default
+    /// equipment, its enchantments and, on Halloween, a pumpkin. The draws and their order are part of the level's
+    /// random sequence; the attribute bonuses after them come from the mob's own random, as vanilla's
+    /// <c>handleAttributes</c> does.
+    /// </summary>
+    /// <returns>A new chicken the zombie rides, which the caller adds to the level before the zombie.</returns>
+    internal Chicken? FinalizeSpawnFromLevel(AbstractLevel level, IRandomSource random)
+    {
+        var special = SpecialDifficulty;
+
+        FinalizeMobSpawnFromLevel(random);
+        CanPickUpLoot = random.NextFloat() < 0.55f * special;
+        Chicken? jockey = null;
+        if (random.NextFloat() < 0.05f)
         {
-            ReinforcementChance += Random.NextSingle() * 0.25f + 0.5f;
-            var health = GetAttributeValue("minecraft:generic.max_health") * (Random.NextSingle() * 3 + 2);
-            TryUpdateAttribute("minecraft:generic.max_health", health);
-            Health = health;
-            CanBreakDoors = true;
+            IsBaby = true;
+            if (random.NextFloat() < 0.05f)
+                RideChickenNearby(level);
+            else if (random.NextFloat() < 0.05f)
+                jockey = NewChickenJockey(level, random);
         }
-        if (Random.NextSingle() >= (Level.LevelData.Difficulty == Difficulty.Hard ? 0.05f : 0.01f))
+
+        CanBreakDoors = random.NextFloat() < special * 0.1f;
+        PopulateDefaultEquipmentFromLevel(random, special);
+        PopulateEquipmentEnchantmentsFromLevel(random, special);
+        PutOnHalloweenHeadFromLevel(level, random);
+        HandleSpawnAttributes(special);
+        return jockey;
+    }
+
+    /// <summary>A spawner's bare zombie, set up as vanilla's <c>Zombie.finalizeSpawn</c> does.</summary>
+    internal override SpawnCompanions FinalizeBareSpawn(AbstractLevel level, IRandomSource random) =>
+        new(Vehicle: FinalizeSpawnFromLevel(level, random), Passenger: null);
+
+    /// <summary>
+    /// Vanilla's <c>Zombie.populateDefaultEquipmentSlots</c> from the level's random: <c>Mob</c>'s armour, then the
+    /// weapon.
+    /// </summary>
+    private protected virtual void PopulateDefaultEquipmentFromLevel(IRandomSource random, float special)
+    {
+        PopulateDefaultArmor(random.NextFloat, random.NextInt, special);
+        PopulateDefaultWeapon(random.NextFloat, random.NextInt);
+    }
+
+    // Vanilla's zombie weapon: one time in 20 on hard, one in 100 otherwise, an iron sword, an iron spear or (four
+    // times in six) an iron shovel.
+    private void PopulateDefaultWeapon(Func<float> nextFloat, Func<int, int> nextInt)
+    {
+        if (nextFloat() >= (Level.LevelData.Difficulty == Difficulty.Hard ? 0.05f : 0.01f))
             return;
-        var weapon = Random.Next(6) switch
+
+        var weapon = nextInt(6) switch
         {
             0 => ItemsRegistry.IronSword,
             1 => ItemsRegistry.IronSpear,
@@ -130,6 +174,61 @@ public partial class Zombie : PathfinderMob, IAgeable
         var durability = Obsidian.API.Inventory.DataComponents.ComponentBuilder.MaxDamage with { Value = 250 };
         item[DataComponentType.MaxDamage] = durability;
         SetEquipment(Obsidian.API.Inventory.EquipmentSlot.MainHand, item);
+    }
+
+    /// <summary>
+    /// Vanilla's <c>Zombie.handleAttributes</c>, from the mob's own random: its chance to call reinforcements, a
+    /// little knockback resistance, perhaps a longer follow range and, rarely, a leader's bonuses.
+    /// </summary>
+    private protected virtual void HandleSpawnAttributes(float special)
+    {
+        ReinforcementChance = Random.NextSingle() * 0.1f;
+        TryUpdateAttribute("minecraft:generic.knockback_resistance", Random.NextSingle() * 0.05f);
+        var rangeBonus = Random.NextDouble() * 1.5 * special;
+        if (rangeBonus > 1)
+            TryUpdateAttribute("minecraft:generic.follow_range", (float)(FollowRange * (1 + rangeBonus)));
+        if (Random.NextSingle() < special * 0.05f)
+        {
+            ReinforcementChance += Random.NextSingle() * 0.25f + 0.5f;
+            var health = GetAttributeValue("minecraft:generic.max_health") * (Random.NextSingle() * 3 + 2);
+            TryUpdateAttribute("minecraft:generic.max_health", health);
+            Health = health;
+            CanBreakDoors = true;
+        }
+    }
+
+    // Vanilla takes the first eligible chicken in the entity query, without a draw or nearest-distance sort:
+    // alive, carrying nobody and riding nothing, within 5 blocks across and 3 up or down of the zombie's box.
+    // A successful first jockey roll with no eligible chicken does not try the second roll.
+    private void RideChickenNearby(AbstractLevel level)
+    {
+        var box = Dimension.CreateBBFromPosition(Position);
+        var reach = new BoundingBox(box.Min - new VectorD(5, 3, 5), box.Max + new VectorD(5, 3, 5));
+        var chicken = level.GetNonPlayerEntitiesInRange(Position, 16)
+            .OfType<Chicken>()
+            .FirstOrDefault(chicken => chicken.Alive && !chicken.IsRemoved
+                && chicken.Passengers.Count == 0 && chicken.Vehicle is null
+                && reach.Intersects(chicken.Dimension.CreateBBFromPosition(chicken.Position)));
+        if (chicken is null)
+            return;
+
+        chicken.IsChickenJockey = true;
+        StartRiding(chicken);
+    }
+
+    // Vanilla's second jockey chance: a new chicken where the zombie stands, turned its way, finalized from the
+    // level's random, which the zombie rides.
+    private Chicken NewChickenJockey(AbstractLevel level, IRandomSource random)
+    {
+        var chicken = (Chicken)Factories.EntitySpawner.CreateMob(level, EntityType.Chicken)!;
+        chicken.EntityId = Server.GetNextEntityId();
+        chicken.Position = Position;
+        chicken.Yaw = Yaw;
+        chicken.Pitch = 0;
+        chicken.InitializeAi(finalizeSpawn: false);
+        chicken.FinalizeJockeySpawnFromLevel(random);
+        chicken.IsChickenJockey = true;
+        return chicken;
     }
 
     protected override ValueTask OnHurtAsync(IEntity source)

@@ -322,6 +322,55 @@ replaces only what vanilla produced.
   with a ticking chunk ticket for each, and compares all of it; its pinned differences are listed in [the known
   gaps](known-gaps/lightning.md).
 
+- `trial_spawners.json` (`VanillaTrialSpawners`) records trial spawners from `Java/TrialSpawnerFixtures.java`
+  (`CaptureFixtures=trial_spawners`), on a dedicated server of its own in a flat world of air (plains, seed `test-seed`,
+  the replay world's, whose random sequences the rewards roll from), frozen, whose level ticks the probe runs itself. A
+  `trial` case runs at origin (32i + 8, 64, 8) in a forced chunk of its own: it sets its blocks without updates, places
+  the spawner with its state and saved data (as a structure loads it), sends what that left to send, then stands its
+  players (survival unless the case says otherwise, with vanilla's offline UUIDs, which it records) and a spectator that
+  hears the area and tracks its chunk. It seeds the level's random and records the game time it starts from. Vanilla's
+  `SpecialDates` take today to be 2026-06-01 (the probe moves its Halloween constant, as the eyeblossom probe does), and
+  the replay's clock reads the same day: a bare skeleton or zombie draws for a pumpkin on Halloween, so a capture or
+  replay on the real date would differ that day. Each tick is one task on the server thread: the case's mob actions
+  (each mob the spawner spawned is killed, as `/kill` does, discarded, or moved 60 blocks down, under the floor and out
+  of the 47 blocks a spawner tracks its mobs to, a number of ticks after it appeared; a mob with its AI never ticks in
+  the area that way), the level's tick, then the chunk's changes sent. A frozen server still sends chunks' changes from
+  its own loop, so splitting a tick across tasks made a block entity's update land in one tick or the next by chance;
+  vanilla sends a tick's changes at the start of the next tick, the probe at its end, as Obsidian does. After each tick
+  it records the blocks the level stored (in order, with every flag, through the block use probe's observed jar), the
+  changed blocks, the spawner's saved data, the block entity data the spectator got for it, the entities (type,
+  position, a mob's yaw, which the spawner draws, and its name, what it holds and wears, health, persistence, an item's
+  stack), the sounds, level events and particles the spectator received, the game events within 16 blocks, the level
+  random's 48-bit state, and each item's id modulo 4. The saved data's UUID sets are written in a fixed order (vanilla
+  saves them from a hash set whose order changes from run to run), and its tracked mobs as `mob N` by the order they
+  spawned in (their UUIDs come from their own unseeded randoms). Natural spawning stays off, as it shuffles chunks with
+  the level's random every tick; spawners use vanilla's own test override (`overridePeacefulAndMobSpawnRule`) to spawn
+  anyway, except in the cases that test the rules. Most cases spawn from spawn data with `NoAI` and `NoGravity`, so
+  their mobs stay where they appear and get no spawn setup; the bare cases spawn from spawn data that only names the
+  mob, which gets vanilla's spawn setup from the level's random. Each case ends by recording the spawner's raw saved
+  data (`finalSaved`). The cases cover one player's wave with a mob leaving and one dying, the rewards, the cooldown and
+  the next trial; a second player behind a wall joining once the first is seen and scaling the wave and the rewards;
+  weighted mobs and loot tables; players out of sight, out of range and in creative; nothing to spawn; the `spawn_mobs`
+  and `spawner_blocks_work` rules; peaceful, where monsters never spawn; bare skeletons from the trial chambers' own
+  `trial_chamber/ranged/skeleton` config, each holding the bow its spawn setup gives it; bare zombies and husks from
+  their `trial_chamber/melee` configs, and 31 more bare zombies; bare spiders from theirs and 30 more, on hard (where a
+  spider may get an effect); bare silverfish, cave spiders and breezes; a reward ejected into a block of water walled in
+  with glass, rising, splashing back in and sinking; and inline configs with fields that don't read, a list entry that
+  doesn't read, values out of their ranges, an unknown registry id, and loot tables named without a namespace (which
+  vanilla reads as `minecraft:` and saves with it). Vanilla reads each config field on its own: one that doesn't read
+  takes its default, and a list drops its entries that don't. A case's `obsidianKeeps` names the saved fields Obsidian
+  keeps where vanilla drops them (a registry id it doesn't have, which may be a data pack's): the replay expects them as
+  the case's data had them and compares the rest with vanilla's. A `chamber` case forces the chunks around one far away,
+  places `minecraft:trial_chambers` there as `/place structure` does, and records each trial spawner's and vault's id,
+  state and saved data as placed, then after three ticks with the spawners' rules overridden, so that they pick their
+  spawn data from their registry configs. `ReplayTrialSpawnerReference` runs every trial case in one world, at its own
+  chunk, with the probe's players and seeds, the game time it started from and a ticking chunk ticket, and compares
+  everything above each tick, giving each item vanilla's id modulo 4 (it picks the ticks a resting item moves on, and
+  ids can't match between servers). `TrialChamberDataRoundTrips` loads each chamber block entity, as placed and ticked,
+  and each case's `finalSaved` into Obsidian's typed block entity, saves it as a chunk would, and expects vanilla's
+  saved data back exactly; each ticked spawner's spawn data must be one its registry config, as Obsidian reads it, can
+  pick. What still differs is listed in [the known gaps](known-gaps/trial-spawners.md).
+
 - `block_use.json` (`VanillaBlockUse.ReplayBlockUseReference`) records what using a block does, from
   `Java/BlockUseFixtures.java`. Like the placement probe it runs a dedicated server of its own in a flat world of air,
   and each case uses its main hand's item through `ServerPlayerGameMode.useItemOn`; optional `rayUse` also runs
@@ -761,6 +810,8 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=lightning
 
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=trial_spawners
+
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=special_blocks
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=sulfur -p:CaptureCases=spike_shatters_after_falling+review_spike_pending_fall_keeps_frustum
@@ -881,6 +932,14 @@ For `lightning`, `CaptureCases` accepts exact `+`-separated names in `lightning_
 cases; the others keep theirs. Every case takes well under a second after the server starts. The probe needs the block
 use probe's observed copy of the jar, which the capture builds first.
 
+For `trial_spawners`, `CaptureCases` accepts exact `+`-separated names in `trial_spawners.json` and records only
+those cases; the others keep theirs. The whole capture takes about ten seconds after the server starts. Capture them
+all together: rewards roll from the world's random sequences, which go on from case to case, so a case captured alone
+rolls from a sequence the replay doesn't reach. A case's
+`checkpoints`, `startTime`, `finalSaved`, its players' `uuid` and a chamber's `blockEntities` are what the probe
+writes; the rest is its input. The probe needs the block use probe's observed copy of the jar, which the capture
+builds first.
+
 For `special_blocks`, `CaptureCases` accepts exact `+`-separated names in `special_blocks.json` and records only those
 cases; the others keep theirs. The whole capture takes about 15 seconds, on the block use probe's observed copy of the
 jar.
@@ -993,7 +1052,7 @@ The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft 
 [redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+heightmaps+saved_heightmaps+mining+placement+
 copper_weathering+fire+ticking_blocks+block_use+waxing_bells_ore+cauldrons+turtle_eggs+frogspawn+growing_plant_ticks+
 melting_weather+furnace_results+brushing+armor_stand_use+projectile_hits+dispenser+shelves+straw_beds+
-golden_dandelions+lightning+special_blocks]
+golden_dandelions+lightning+trial_spawners+command_blocks+special_blocks]
 [case names]`.
 
 ## How it captures

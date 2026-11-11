@@ -32,6 +32,41 @@ internal sealed class MobTerrain(ILevel level) : IPathTerrain
         return false;
     }
 
+    /// <summary>
+    /// How far water (or lava) reaches above the bottom of <paramref name="bounds"/>, like vanilla's
+    /// <c>updateFluidHeightAndDoFluidPushing</c>: the highest surface among the fluid blocks the box (shrunk by 0.001)
+    /// is in, a full block where the same fluid is above. Null when the box touches none.
+    /// </summary>
+    public double? FluidHeight(BoundingBox bounds, bool water)
+    {
+        double? height = null;
+        var bottom = bounds.Min.Y + 0.001;
+        for (var x = (int)Math.Floor(bounds.Min.X + 0.001); x < (int)Math.Ceiling(bounds.Max.X - 0.001); x++)
+        {
+            for (var y = (int)Math.Floor(bounds.Min.Y + 0.001); y < (int)Math.Ceiling(bounds.Max.Y - 0.001); y++)
+            {
+                for (var z = (int)Math.Floor(bounds.Min.Z + 0.001); z < (int)Math.Ceiling(bounds.Max.Z - 0.001); z++)
+                {
+                    var point = new Vector(x, y, z);
+                    if (GetBlock(point) is not { } block)
+                        continue;
+
+                    var fluid = FluidState.Of(block);
+                    if (!(water ? fluid.IsWater : fluid.IsLava))
+                        continue;
+
+                    var above = GetBlock(point + Vector.Up);
+                    var full = above != null && (water ? FluidState.Of(above).IsWater : FluidState.Of(above).IsLava);
+                    var surface = y + (full ? 1 : fluid.OwnHeight);
+                    if (surface >= bottom)
+                        height = Math.Max(height ?? 0, surface - bottom);
+                }
+            }
+        }
+
+        return height;
+    }
+
     public VectorD FluidPush(BoundingBox bounds, bool water, VectorD motion)
     {
         if (level is not AbstractLevel concrete) return VectorD.Zero;
@@ -363,6 +398,49 @@ internal sealed class MobTerrain(ILevel level) : IPathTerrain
             var boxes = BlockCollisionShapes.Get(level, cell, block);
             if (BlockShapeRaycast.Clip(boxes, cell, VectorD.Zero, start, direction) is { } hit)
                 return hit.Hit;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Like vanilla's <c>Level.clip</c> with visual shapes and no fluids, which is what decides whether something can
+    /// be seen: the first visual box the segment from <paramref name="start"/> to <paramref name="end"/> crosses, or
+    /// <c>null</c> when it crosses none before it ends. Glass and leaves, say, have none, and neither has the void air
+    /// above and below the level. Vanilla's clip loads a chunk it reaches that isn't loaded, which can't be waited for
+    /// under the tick's locks: the clip stops there instead, with <paramref name="unloaded"/> set.
+    /// </summary>
+    public API.Blocks.BlockShapeHit? RaycastVisual(VectorD start, VectorD end, out bool unloaded)
+    {
+        unloaded = false;
+        var direction = end - start;
+        if (!double.IsFinite(direction.X + direction.Y + direction.Z + start.X + start.Y + start.Z)
+            || direction.MagnitudeSquared() < 1e-12)
+        {
+            return null;
+        }
+
+        foreach (var cell in CellsAlong(start, end))
+        {
+            if (level is AbstractLevel concrete && concrete.IsOutsideBuildHeight(cell.Y))
+                continue;
+
+            if (GetBlock(cell) is not IBlock block)
+            {
+                unloaded = true;
+                return null;
+            }
+
+            var state = block.GetHashCode();
+            var (offsetX, offsetY, offsetZ) = BlockPhysics.ShapeOffset(state, cell.X, cell.Z);
+            var boxes = BlockPhysics.ShapeBoxes(state, visual: true)
+                .Select(box => new BoundingBox(
+                    new VectorD(box[0], box[1], box[2]),
+                    new VectorD(box[3], box[4], box[5])))
+                .ToArray();
+            var hit = BlockShapeRaycast.Clip(boxes, cell, new VectorD(offsetX, offsetY, offsetZ), start, direction);
+            if (hit is not null)
+                return hit.Value.Hit;
         }
 
         return null;
