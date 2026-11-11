@@ -149,6 +149,16 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IRedstoneLevel,
     // Vanilla Level.soundSeedGenerator is independent of gameplay randomness, including piston pitch.
     internal IRandomSource SoundSeedRandom { get; set; } = new LegacyRandomSource(Random.Shared.NextInt64());
 
+    /// <summary>Draws a packet seed independently of gameplay, including callers outside the level tick.</summary>
+    internal long NextSoundSeed()
+    {
+        var random = this.SoundSeedRandom;
+        lock (random)
+        {
+            return random.NextLong();
+        }
+    }
+
     long IRedstoneLevel.DayTime => this.LevelData.DayTime;
 
     int IRedstoneLevel.GetSkyLight(Vector position) =>
