@@ -68,7 +68,9 @@ internal static class BucketVariants
         var identifier = OpaqueDataComponent.GetIdentifier(type);
         string? name = null;
         if (stack.UnmodeledComponents?.TryGetTagValue<string>(identifier, out var saved) == true)
+        {
             name = saved;
+        }
         else
         {
             var defaults = CombatItems.Component(stack, identifier["minecraft:".Length..]);
