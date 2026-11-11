@@ -244,8 +244,7 @@ internal sealed class PowderSnowContactBehavior : IEntityInsideBehavior, IFallOn
             }
         }
 
-        if (entity.IsContactBurning)
-            entity.RecordBurningSnow(level, position, block);
+        entity.RecordPowderSnow(level, position, block);
 
         entity.RequestContactExtinguish();
         return default;

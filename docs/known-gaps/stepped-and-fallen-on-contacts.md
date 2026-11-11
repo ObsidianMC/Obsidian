@@ -3,13 +3,16 @@
 **Status:** the phase 3 inside, fallen-on and stepped-on behaviours, posed player boxes, block speed and jump factors,
 stuck-in-block and entity-dependent collision are implemented; broader movement and sculk parity remain open.
 
-`block_contact_scenarios.json` contains the original 16 live RCON cases and 168 controlled native movement cases.
+`block_contact_scenarios.json` contains the original 16 live RCON cases and 180 controlled native movement cases.
 `VanillaBlockContact.ScenariosMatchVanilla` compares every recorded checkpoint from the start, including ordered
 writes and flags, motion, health, accepted damage types, drops and effects. No case has a blanket skip, delayed
 comparison start, or ignored unexpected write. Sound playback seeds are deliberately outside the capture;
 categories, positions, volume, pitch and ordering are compared. The 51 `inside_*` cases also compare removal,
 remaining fire ticks, item counts, vehicle damage, hopper slots, snowflake packet fields, honey particle events,
-and the next entity random integer as well as the next level random integer.
+and the next entity random integer as well as the next level random integer. Twelve additional `review_*` cases
+cover stand break/drop boundaries, Frost Walker slot checks, fire ticking and expiry, minecart slide effects, and
+snow visited before a campfire. Fire-ticking cases invoke vanilla's `baseTick` before each controlled move and also
+compare the shared burning flag; the mixed snow/campfire cases compare frozen ticks. These cases have no pins.
 
 The controlled moves exercise vanilla's collision and contact routines on a dedicated server. They are not a
 capture of autonomous travel or AI. In particular, `fall_slime_item` supplies its movement and therefore does not
@@ -54,17 +57,23 @@ Slime damps the horizontal movement of what walks on it. These original pose and
   existing vehicle damage and drop paths.
 - **Campfires:** lit campfires deal one point of `campfire` damage, soul campfires two. They do not ignite ordinary
   mobs or damage items. Fire-immune entities, Fire Resistance and Frost Walker in the feet slot prevent damage.
-  Armor stands instead ignite for five seconds and lose 0.15 health on subsequent contacts.
+  Armor stands instead ignite for five seconds and lose 0.15 health on subsequent contacts. They break when the
+  resulting health would be at most 0.5, without storing that last damage, play their break sound and drop equipment
+  in slot order (except vanishing-cursed equipment). Frost Walker protects stands too. Their remaining fire ticks
+  count down, update the burning flag and deal 4 health every 20 ticks; fire can break a stand away from the campfire.
 - **Honey:** side sliding resets fall distance, limits downward speed and damps a fast slide's horizontal speed.
   The level draws sound first and then event 53, which makes clients draw honey particles. Silent entities still
-  consume both draws. Items slide without those effects; living entities, boats and primed TNT produce them.
+  consume both draws. Items slide without those effects; living entities, boats, all minecart types and primed TNT
+  produce them.
 - **Hoppers:** the inside hook shares the ordinary tick's push/pull implementation and cooldown, taking the touching
   item from the bowl's suction area. The tick still collects items above the hopper. The hook adds no second
   pickup implementation. `EntityContactSafety.HopperContactTriesBusyInventoryUnderTickAndTransferLocksWithoutLosingItems`
   forces inventory contention with explicit gates and checks retry and conservation across contact and ticking.
 - **Dripleaf:** vanilla routes standing contact through `entityInside`, including sneaking entities and items.
   Unstable lasts 10 ticks, partial 10, full 100, followed by reset. Tilt sounds, vibrations and redstone reset are
-  captured. Ticks use the existing persisted block scheduler.
+  captured. Arrows and snowballs immediately tilt it fully and schedule its 100-tick reset, even while powered
+  (`projectile_block_hits.json`: `arrow_big_dripleaf`, `snowball_big_dripleaf`, `arrow_big_dripleaf_powered`).
+  Ticks use the existing persisted block scheduler.
 - **Shriekers:** stepping directly triggers a shriek, including sneaking or standing still. Spectators and unowned
   items/mobs do not trigger it. Both placed and natural shriekers are covered at activation; a placed shrieker's
   90-tick reset is captured. The shriek uses a scheduled block tick and emits `shriek`; placed shriekers do not
@@ -73,9 +82,14 @@ Slime damps the horizontal movement of what walks on it. These original pose and
   `mob_griefing`, including adventure players), and sends snowflakes with vanilla's per-axis speeds and
   randomization mode. Fire-immune entities do not melt it or play an extinguish sound. Extinguishing is completed
   after all inside hooks: two touched snow cells can both melt, after both particle draws. The extinguish sound
-  is audible even for a silent entity.
+  is audible even for a silent entity. Each snow cell queues a deferred melt check even when the entity is not yet
+  burning: a later campfire hook in the same pass can ignite it. Sound eligibility uses the fire/freeze state from
+  before the pass, so that ignition causes no extra extinguish sound or entity-random draws that pass.
 
-The only new pinned difference is the player's fire holdoff: native player block effects set remaining fire to
+`EntityContactSafety.EmptyAndFrostWalkerProtectedContactsAllocateNothing` checks 0 B/op for empty passes and
+Frost Walker-protected mob, player and stand campfire contacts, with warmed allocation counts and no clock.
+
+The only pinned difference is the player's fire holdoff: native player block effects set remaining fire to
 `-20`, whereas Obsidian keeps zero. `VanillaBlockContact` pins exactly `-20 != 0` from tick 1 through the last
 checkpoint of `inside_campfire_creative`, `inside_snow_player_griefing_off`, `inside_snow_adventure`,
 `inside_shrieker_player`, `inside_shrieker_sneak` and `inside_shrieker_can_summon`. Each pin must still occur;

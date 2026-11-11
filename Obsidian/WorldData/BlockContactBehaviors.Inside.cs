@@ -33,14 +33,11 @@ internal sealed class CampfireContactBehavior : IEntityInsideBehavior
             return default;
         }
 
+        if (CombatEffects.HasFrostWalker(living))
+            return default;
+
         if (entity is ArmorStand stand)
             return stand.BurnFromCampfireAsync();
-
-        foreach (var (item, slot) in CombatEffects.Armor(living))
-        {
-            if (slot == "feet" && CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.FrostWalker) > 0)
-                return default;
-        }
 
         var damage = block.RegistryId == BlockIds.SoulCampfire ? 2 : 1;
         return living.DamageCombatAsync(null, damage, CombatDamageKind.Campfire);
@@ -70,7 +67,7 @@ internal sealed class HoneySlideBehavior : IEntityInsideBehavior
         entity.Motion = new VectorD(motion.X * damping, (-0.05 - 0.08) * (double)0.98f, motion.Z * damping);
         entity.ResetFallDistance();
 
-        if (entity is not (Living or PrimedTnt or Boat) || level.Level is not AbstractLevel world)
+        if (entity is not (Living or PrimedTnt or Boat or AbstractMinecart) || level.Level is not AbstractLevel world)
             return default;
 
         // Vanilla draws sound first, then the client particle event, including when a silent entity slides.

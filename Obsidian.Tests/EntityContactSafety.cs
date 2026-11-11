@@ -1,6 +1,7 @@
 using Obsidian.API;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
+using Obsidian.API.Loot;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Entities;
 using Obsidian.Registries;
@@ -15,6 +16,42 @@ namespace Obsidian.Tests;
 
 public sealed class EntityContactSafety
 {
+    [Fact]
+    public async Task EmptyAndFrostWalkerProtectedContactsAllocateNothing()
+    {
+        await using var context = TestServerFactory.CreateServer($"contact-allocations-{Guid.NewGuid():N}");
+        var world = context.World;
+        WorldBlockEntities.AddEmptyChunk(world);
+        await world.GetChunkAsync(0, 0, scheduleGeneration: false);
+        var position = new VectorD(8.5, 64.4375, 8.5);
+        var mob = new Pig { Level = world, Position = position };
+        var stand = new ArmorStand { Level = world, Position = position };
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Protected", position);
+        var boots = new ItemStack(ItemsRegistry.DiamondBoots, 1);
+        EnchantmentHelper.Enchant(boots, EnchantmentsRegistry.FrostWalker, 1);
+        mob.SetEquipment(EquipmentSlot.Boots, boots);
+        stand.SetEquipment(EquipmentSlot.Boots, boots);
+        player.Inventory.SetItem(8, boots);
+
+        // First the empty pass, then all three owners of feet equipment. Count allocations, never elapsed time.
+        foreach (var block in new[] { BlocksRegistry.Air, BlocksRegistry.Campfire })
+        {
+            world.BlockUpdates.SetBlock(new Vector(8, 64, 8), block);
+            foreach (var entity in new Entity[] { mob, stand, player })
+            {
+                for (var index = 0; index < 20_000; index++)
+                    await world.EntityContacts.TouchAsync(entity);
+
+                var start = GC.GetAllocatedBytesForCurrentThread();
+                for (var index = 0; index < 100_000; index++)
+                    await world.EntityContacts.TouchAsync(entity);
+
+                var allocated = GC.GetAllocatedBytesForCurrentThread() - start;
+                Assert.Equal(0, allocated);
+            }
+        }
+    }
+
     [Fact]
     public async Task HopperContactTriesBusyInventoryUnderTickAndTransferLocksWithoutLosingItems()
     {

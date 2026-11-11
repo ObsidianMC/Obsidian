@@ -22,39 +22,54 @@ public partial class Entity
     internal virtual Random ContactRandom => this.ContactEffectRandom;
 
     private bool contactExtinguishPending;
+    private bool contactWasBurning;
+    private bool contactWasFrozen;
+    private List<(WorldData.IContactLevel Level, Vector Position, IBlock State)>? snowContacts;
 
-    private List<(WorldData.IContactLevel Level, Vector Position, IBlock State)>? burningSnow;
-
-    internal void RecordBurningSnow(WorldData.IContactLevel level, Vector position, IBlock state)
+    internal void BeginInsideContact()
     {
-        this.burningSnow ??= [];
-        this.burningSnow.Add((level, position, state));
+        this.contactWasBurning = this.IsContactBurning;
+        this.contactWasFrozen = this.PowderedSnowTicks > 0;
+    }
+
+    internal void RecordPowderSnow(WorldData.IContactLevel level, Vector position, IBlock state)
+    {
+        this.snowContacts ??= [];
+        this.snowContacts.Add((level, position, state));
     }
 
     internal void RequestContactExtinguish() => this.contactExtinguishPending = true;
 
     internal void FinishInsideContact()
     {
-        if (!this.contactExtinguishPending)
-            return;
-
-        this.contactExtinguishPending = false;
-        if (this.burningSnow is not null)
+        if (this.contactExtinguishPending)
         {
-            foreach (var (level, position, state) in this.burningSnow)
-                WorldData.PowderSnowContactBehavior.Melt(level, position, state, this);
+            this.contactExtinguishPending = false;
+            // Stands have no mob/player environment tick. Vanilla applies FREEZE once before deferred melts.
+            if (this is ArmorStand stand)
+                stand.FreezeFromPowderSnow();
 
-            this.burningSnow.Clear();
+            if (this.snowContacts is not null)
+            {
+                foreach (var (level, position, state) in this.snowContacts)
+                    WorldData.PowderSnowContactBehavior.Melt(level, position, state, this);
+
+                this.snowContacts.Clear();
+            }
+            this.ContactFireTicks = 0;
+            if (this.Burning)
+            {
+                this.Burning = false;
+                this.PacketBroadcaster.QueuePacketToLevelInRange(this.Level, this.Position,
+                    new Net.Packets.Play.Clientbound.SetEntityDataPacket { EntityId = this.EntityId, Entity = this });
+            }
         }
 
-        this.ExtinguishFromContact();
-    }
-
-    private void ExtinguishFromContact()
-    {
-        if (this.IsContactBurning)
+        // Vanilla snapshots fire/freeze before visiting cells, but evaluates melting after all their hooks. An
+        // ignition later in the pass can therefore melt earlier snow without an extinguish sound that pass.
+        if (this.contactWasBurning && !this.IsContactBurning || this.contactWasFrozen && this.PowderedSnowTicks == 0)
         {
-            // Vanilla draws two entity floats for the extinguish pitch, even when the entity is silent.
+            // Vanilla draws two entity floats for the pitch, even when the entity is silent.
             var pitch = 1.6f + (this.ContactRandom.NextSingle() - this.ContactRandom.NextSingle()) * 0.4f;
             if (this.Level is WorldData.AbstractLevel world)
             {
@@ -62,19 +77,12 @@ public partial class Entity
                 {
                     Mob mob => mob.ContactSoundCategory,
                     IPlayer => SoundCategory.Players,
+                    ArmorStand => SoundCategory.Neutral,
                     _ => SoundCategory.Ambient
                 };
                 WorldData.LevelSounds.Play(world, this.Position, "minecraft:entity.generic.extinguish_fire",
                     category, 0.7f, pitch);
             }
-        }
-
-        this.ContactFireTicks = 0;
-        if (this.Burning)
-        {
-            this.Burning = false;
-            this.PacketBroadcaster.QueuePacketToLevelInRange(this.Level, this.Position,
-                new Net.Packets.Play.Clientbound.SetEntityDataPacket { EntityId = this.EntityId, Entity = this });
         }
     }
 

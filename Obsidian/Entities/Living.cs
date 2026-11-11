@@ -113,7 +113,10 @@ public partial class Living : Entity, ILiving
     public void Ignite(int seconds)
     {
         if (!IsFireImmune && seconds > 0)
+        {
             fireTicks = Math.Max(fireTicks, checked(seconds * 20));
+            this.PowderedSnowTicks = 0;
+        }
     }
 
     public Living()
@@ -196,11 +199,12 @@ public partial class Living : Entity, ILiving
             }
         }
 
-        if (!Alive || this is not IPlayer and not Mob { HasAi: true } || !Burning && fireTicks == 0)
+        if (!Alive || this is not IPlayer and not Mob { HasAi: true } and not ArmorStand
+            || this is ArmorStand { IsRemoved: true } || !Burning && fireTicks == 0)
             return;
         var terrain = new MobTerrain(Level);
         var feet = (Vector)(Position + new VectorD(0, 0.1f, 0)).Floor();
-        if (Burning && fireTicks == 0)
+        if (Burning && fireTicks == 0 && this is not ArmorStand)
             fireTicks = 160;
         if (IsFireImmune || terrain.ContainsFluid(Dimension.CreateBBFromPosition(Position), water: true) ||
             Level.LevelData.Raining && terrain.GetSkyLight(feet) == 15)
@@ -212,7 +216,13 @@ public partial class Living : Entity, ILiving
         {
             if (fireTicks % 20 == 0 && !HasPotionEffect((int)PotionEffect.FireResistance - 1))
             {
-                await DamageCombatAsync(this, 1, CombatDamageKind.Fire);
+                if (this is ArmorStand stand)
+                {
+                    if (stand.Health > 0.5f)
+                        await stand.DamageByBurningAsync(4);
+                }
+                else
+                    await DamageCombatAsync(this, 1, CombatDamageKind.Fire);
             }
             fireTicks--;
         }

@@ -133,7 +133,18 @@ public partial class VanillaBlockContact
 
                         var entity = IsPlayer(entry) ? await this.JoinPlayerAsync(entry) : Summon(world, entry);
                         PrepareContactEntity(entity, entry);
+                        if (scenario.TryGetProperty("tickFire", out _))
+                            entity.Burning = false; // Native summon sets the counter before its first baseTick flag update.
                         entities[entry.GetProperty("summon").GetString()!] = entity;
+                    }
+
+                    if (tick > 0 && scenario.TryGetProperty("tickFire", out _))
+                    {
+                        foreach (var entity in entities.Values)
+                        {
+                            if (entity is not ArmorStand { IsRemoved: true })
+                                await entity.TickAsync();
+                        }
                     }
 
                     // Keep stationary pose changes observable before any movement can refresh the stored box.
@@ -143,7 +154,7 @@ public partial class VanillaBlockContact
                         {
                             if (this.removedContacts.Contains(entity)
                                 || entity is ItemEntity { Removed: true } or Mob { IsRemoved: true }
-                                    or VehicleEntity { IsRemoved: true })
+                                    or VehicleEntity { IsRemoved: true } or ArmorStand { IsRemoved: true })
                             {
                                 continue;
                             }
@@ -270,6 +281,34 @@ public partial class VanillaBlockContact
                     item.Item.Count = count.GetInt32();
             }
 
+            if (entity is ArmorStand stand)
+            {
+                if (entry.TryGetProperty("feet", out var feet))
+                    stand.SetEquipment(EquipmentSlot.Boots, new ItemStack(ItemsRegistry.Get(feet.GetString()!), 1));
+                if (entry.TryGetProperty("equipment", out var equipment))
+                {
+                    foreach (var piece in equipment.EnumerateObject())
+                    {
+                        var slot = piece.Name switch
+                        {
+                            "mainhand" => EquipmentSlot.MainHand,
+                            "offhand" => EquipmentSlot.OffHand,
+                            "chest" => EquipmentSlot.Chestplate,
+                            "head" => EquipmentSlot.Helmet,
+                            _ => throw new InvalidOperationException(piece.Name)
+                        };
+                        stand.SetEquipment(slot, new ItemStack(ItemsRegistry.Get(piece.Value.GetString()!), 1));
+                    }
+                }
+                if (entry.TryGetProperty("frostWalker", out _))
+                {
+                    var boots = new ItemStack(ItemsRegistry.DiamondBoots, 1);
+                    EnchantmentHelper.Enchant(boots, EnchantmentsRegistry.FrostWalker, 1);
+                    stand.SetEquipment(entry.TryGetProperty("frostWalkerSlot", out _)
+                        ? EquipmentSlot.Helmet : EquipmentSlot.Boots, boots);
+                }
+            }
+
             if (entity is Mob mob)
             {
                 // Match the capture's seeded entity random without changing the production random implementation.
@@ -327,7 +366,7 @@ public partial class VanillaBlockContact
                 {
                     var isRemoved = this.removedContacts.Contains(entity)
                         || entity is ItemEntity { Removed: true } or Mob { IsRemoved: true }
-                            or VehicleEntity { IsRemoved: true };
+                            or VehicleEntity { IsRemoved: true } or ArmorStand { IsRemoved: true };
                     if (removed.GetBoolean() != isRemoved)
                         differences.Add($"tick {tick} {observation.Name} removed: got {isRemoved}");
 
@@ -337,6 +376,10 @@ public partial class VanillaBlockContact
                     if (entity is VehicleEntity vehicle)
                         CompareNumber("vehicle damage", expected.GetProperty("vehicleDamage").GetDouble(), vehicle.Damage);
                 }
+                if (expected.TryGetProperty("fireFlag", out var fireFlag) && fireFlag.GetBoolean() != entity.Burning)
+                    differences.Add($"tick {tick} {observation.Name} fire flag: got {entity.Burning}");
+                if (expected.TryGetProperty("frozenTicks", out var frozenTicks))
+                    CompareNumber("frozen ticks", frozenTicks.GetInt32(), entity.PowderedSnowTicks);
                 if (expected.TryGetProperty("pose", out var pose))
                 {
                     var player = (PlayerBase)entity;

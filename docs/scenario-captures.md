@@ -704,7 +704,7 @@ both extension and retraction. `CaptureCases` can refresh each of these cases in
 gives its number of `ticks` and starts with empty `checkpoints`; `CaptureCases` records only the exact names supplied,
 and the other cases keep their recordings.
 
-The 168 `contactMoves` scenarios use `Java/BlockContactFixtures.java` on a real dedicated server, with the same
+The 180 `contactMoves` scenarios use `Java/BlockContactFixtures.java` on a real dedicated server, with the same
 scratch-only block-write instrumentation as block uses. They drive native `Entity.move` and
 `applyEffectsFromBlocks` with controlled velocities: falls, stationary contacts, walking and external pushes.
 This boundary exercises native collision, fall accounting, restitution and block hooks without AI or travel forces.
@@ -715,6 +715,12 @@ whose effect is removed before movement. `recordSafeFallDistance: true` also rec
 safe-fall-distance attribute at every checkpoint, including checkpoint zero. The review cases cover water at impact,
 water crossed before a dry landing, fluid touching only the body's edge, slime and bed support outside the centre,
 and Jump Boost I, II, a control fall and effect removal.
+
+The stand fire cases opt into `tickFire: true`, which calls native `Entity.baseTick` before each controlled move
+and records the shared burning flag separately from remaining fire ticks. They cover periodic burn damage, break
+and equipment drops away from the campfire, natural expiry and a stand's refusal of a Fire Resistance effect.
+`recordFreeze: true` records frozen ticks to check deferred snow melting and the pre-pass fire/freeze sound snapshot.
+A summon's `equipment` object maps vanilla slot names to item ids, allowing break cases to check every held/worn drop.
 
 A summon's `feet` puts an item in a living entity's feet slot (leather boots for powder snow), and `sneaking` holds
 its shift key down. A tick event's `jump` runs the named entity's `jumpFromGround` before movement. A summon of

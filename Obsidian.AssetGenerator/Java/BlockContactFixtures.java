@@ -176,6 +176,13 @@ public final class BlockContactFixtures {
                     event(level, event, entities);
                 }
             }
+            if (tick > 0 && input.has("tickFire")) {
+                for (var entity : entities.values()) {
+                    if (!entity.isRemoved()) {
+                        entity.baseTick();
+                    }
+                }
+            }
             // Pose refreshes must be observed without Entity.move refreshing the box for them.
             if (tick > 0 && !input.has("stationaryPlayer")) {
                 for (var entity : entities.values()) {
@@ -284,6 +291,13 @@ public final class BlockContactFixtures {
                     living.setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET, new ItemStack(
                         BuiltInRegistries.ITEM.getValue(Identifier.parse(event.get("feet").getAsString()))));
                 }
+                if (event.has("equipment")) {
+                    for (var entry : event.getAsJsonObject("equipment").entrySet()) {
+                        var slot = net.minecraft.world.entity.EquipmentSlot.byName(entry.getKey());
+                        living.setItemSlot(slot, new ItemStack(BuiltInRegistries.ITEM.getValue(
+                            Identifier.parse(entry.getValue().getAsString()))));
+                    }
+                }
                 if (event.has("fireResistance")) {
                     living.addEffect(new net.minecraft.world.effect.MobEffectInstance(
                         net.minecraft.world.effect.MobEffects.FIRE_RESISTANCE, 1000));
@@ -350,6 +364,18 @@ public final class BlockContactFixtures {
             var observation = checkpoint.getAsJsonObject("observations").getAsJsonObject(entry.getKey());
             observation.addProperty("removed", entity.isRemoved());
             observation.addProperty("fireTicks", entity.getRemainingFireTicks());
+            if (input.has("tickFire")) {
+                try {
+                    var flag = Entity.class.getDeclaredMethod("getSharedFlag", int.class);
+                    flag.setAccessible(true);
+                    observation.addProperty("fireFlag", (Boolean)flag.invoke(entity, 0));
+                } catch (ReflectiveOperationException exception) {
+                    throw new RuntimeException(exception);
+                }
+            }
+            if (input.has("recordFreeze")) {
+                observation.addProperty("frozenTicks", entity.getTicksFrozen());
+            }
             if (entity instanceof net.minecraft.world.entity.vehicle.VehicleEntity vehicle) {
                 observation.addProperty("vehicleDamage", vehicle.getDamage());
             }

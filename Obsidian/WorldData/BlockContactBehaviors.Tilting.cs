@@ -51,6 +51,12 @@ internal sealed class BigDripleafContactBehavior : IEntityInsideBehavior, ISched
         return default;
     }
 
+    internal static ValueTask ProjectileHit(IBlockLevel level, Vector position, IBlock block)
+    {
+        Change(level, position, block, "full", "down", 100);
+        return default;
+    }
+
     private static void Reset(IBlockLevel level, Vector position, IBlock block)
     {
         if (block.GetProperty("tilt") != "none")
@@ -69,7 +75,7 @@ internal sealed class BigDripleafContactBehavior : IEntityInsideBehavior, ISched
                 return;
 
             level.SetBlock(position, block.WithProperty("tilt", tilt), BlockUpdateFlags.Clients);
-            if (tilt != "unstable")
+            if (tilt != "unstable" && tilt != block.GetProperty("tilt"))
                 world.EmitGameEvent(MobGameEvent.BlockChange, (VectorD)position + 0.5);
 
             if (sound is not null)
