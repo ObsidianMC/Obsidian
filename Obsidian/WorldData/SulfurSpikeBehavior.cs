@@ -12,16 +12,33 @@ namespace Obsidian.WorldData;
 /// before it grows (see <see cref="DripstoneBehavior"/>).
 /// </summary>
 internal sealed class SulfurSpikeBehavior : IShapeUpdateBehavior, IScheduledTickBehavior,
-    IRandomTickBehavior, IBlockBehavior
+    IRandomTickBehavior, IBlockBehavior, IPostProcessBehavior
 {
     private static readonly IShapeUpdateBehavior sharedPassRule = new ReshapeRule();
 
     /// <summary>
     /// The shared pass reshapes the speleothem columns templates place, and leaves one that has lost its support as it
-    /// is, as its copy of the rule always did: it schedules no fall or break, which chunk completion would otherwise
-    /// save in the region's ticks.
+    /// is: generation's shape pass schedules nothing. Chunk completion schedules the fall or break (see
+    /// <see cref="PostProcess"/>).
     /// </summary>
     public IShapeUpdateBehavior? SharedPassRule => sharedPassRule;
+
+    /// <summary>
+    /// Chunk completion (vanilla's <c>LevelChunk.postProcessGeneration</c>) runs the rule against the live level, so a
+    /// speleothem that lost its support during generation falls or breaks once the chunk is full: after the shared
+    /// pass, the rule's update from the support side schedules that in the chunk's ticks (a stalactite's fall once).
+    /// </summary>
+    public void PostProcess(Generators.Mojang.Features.WorldGenRegion level, Vector position, IBlock state)
+    {
+        var current = level.GetBlock(position);
+        if (!TagsRegistry.Block.Speleothems.Entries.Contains(current.RegistryId))
+            return;
+
+        var supportSide = Direction(current).Opposite();
+        var support = position.Offset(supportSide);
+        var view = new CompletionShapeView(level);
+        this.UpdateShape(view, position, current, supportSide, support, level.GetBlock(support));
+    }
 
     // Vanilla's GROWTH_PROBABILITY_PER_RANDOM_TICK: the draw is part of the chunk's shared random sequence.
     private const float GrowthChance = 0.011377778f;

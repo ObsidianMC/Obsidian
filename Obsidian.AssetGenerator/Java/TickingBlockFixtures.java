@@ -75,7 +75,10 @@ public final class TickingBlockFixtures {
         + "listener each of deaths as a mob's death would (SculkCatalystBlockEntity.CatalystListener.handleGameEvent "
         + "for a mob not yet drained, that drops its experience: the charge, if any, at the death's position half "
         + "a block up, then the bloom), then runs its block entity tick catalystTicks times; cursors holds its "
-        + "charge cursors afterwards. Chunks always tick, and the view holds no entities.";
+        + "charge cursors afterwards. Chunks always tick, and the view holds no entities. call postProcess runs "
+        + "LevelChunk.postProcessGeneration for the origin as a marked position: its fluid ticks, then a liquid "
+        + "block ticks, and any other block takes Block.updateFromNeighbourShapes (its ticks scheduled in the "
+        + "level), written with flags 276 if it changed.";
 
     private static final List<String> OUTPUTS = List.of(
         "ticks", "draws", "writes", "scheduled", "events", "gameEvents", "entities", "destroyed", "removed", "items",
@@ -150,6 +153,7 @@ public final class TickingBlockFixtures {
             case "set" -> level.setBlock(origin, state(input.get("state").getAsString()), Block.UPDATE_ALL, 512);
             case "landing" -> land(input, level, origin);
             case "catalyst" -> catalyst(input, level, origin);
+            case "postProcess" -> postProcess(level, origin);
             case "findTip" -> {
                 var method = net.minecraft.world.level.block.SpeleothemBlock.class.getDeclaredMethod("findTip",
                     BlockState.class, net.minecraft.world.level.LevelAccessor.class, BlockPos.class,
@@ -190,6 +194,26 @@ public final class TickingBlockFixtures {
             .sorted(order)
             .forEach(pos -> after.add(placement(pos, level.getBlockState(pos))));
         input.add("after", after);
+    }
+
+    // Vanilla's LevelChunk.postProcessGeneration for one marked position, against the probe's level as the live level
+    // it runs against.
+    private static void postProcess(ProbeLevel level, BlockPos origin) {
+        var state = level.getBlockState(origin);
+        var fluid = state.getFluidState();
+        if (!fluid.isEmpty()) {
+            fluid.tick(level, origin, state);
+        }
+
+        if (state.getBlock() instanceof net.minecraft.world.level.block.LiquidBlock) {
+            state.tick(level, origin, level.getRandom());
+            return;
+        }
+
+        var updated = Block.updateFromNeighbourShapes(state, level, origin);
+        if (updated != state) {
+            level.setBlock(origin, updated, 276, 512);
+        }
     }
 
     // The sculk catalyst at the origin: each death reaches its listener as vanilla's handleGameEvent takes a mob's

@@ -202,7 +202,9 @@ replaces only what vanilla produced.
   `Java/TickingBlockFixtures.java`, against a bounded block view of the case's setup with a seeded, recording random
   as both the routine's and the level's: a random tick (only of a state that random-ticks), a scheduled tick, a
   `Level.setBlock` with its on-place and neighbour shape updates (not neighbour notifications), a falling block's
-  landing, or a sculk catalyst taking mobs' deaths and spreading their charge (`catalyst`). Each case records the draws, block writes, scheduled block and fluid ticks with their delays, level events,
+  landing, a sculk catalyst taking mobs' deaths and spreading their charge (`catalyst`), or chunk completion of a
+  marked position (`postProcess`: `LevelChunk.postProcessGeneration`'s fluid tick, then `updateFromNeighbourShapes`
+  with the level's ticks). Each case records the draws, block writes, scheduled block and fluid ticks with their delays, level events,
   game events, the entities added (a falling block's state and stalactite damage) and the blocks destroyed. The cases
   cover pointed dripstone growing (the block and water source above, column length, stalagmite search), dripping
   water and lava into each kind of cauldron or drying mud into clay, a waterlogged block counting as water (above
@@ -217,8 +219,10 @@ replaces only what vanilla produced.
   one in the air, one beside water, and more than a cursor holds) and ticking its block entity until the charge is
   spent or mid-spread, recording its charge cursors afterwards (`cursors`). The catalyst probe hands its listener each
   death as `handleGameEvent` takes a mob's (charge, then the bloom), and the replay offers it through
-  `AbstractLevel.OfferDeathToSculkCatalysts`. Its charge particles' level events follow vanilla's hash map order. The
-  replay runs each case through Obsidian's generated
+  `AbstractLevel.OfferDeathToSculkCatalysts`. Its charge particles' level events follow vanilla's hash map order.
+  The `completion_*` cases complete a stalactite, stalagmite, column, sulfur spike, kelp, kelp stem and vines with and
+  without support; their replay runs Obsidian's completion (`BiomeTerrain.PostProcess`) over nine empty chunks and
+  compares the blocks and the ticks saved in the chunk. The replay runs each case through Obsidian's generated
   owners, or a live block change, in its own world, and compares everything but the game events. Obsidian destroys
   blocks in the tick's entity phase, so a case that destroys one runs the world tick before comparing, keeping the
   recording random active. Ordered writes compare every flag bit; destruction compares state and drops intent;

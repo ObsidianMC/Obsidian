@@ -18,6 +18,9 @@ using Obsidian.Tests.Fakes;
 using Obsidian.Tests.Utilities;
 using Obsidian.Utilities;
 using Obsidian.WorldData;
+using Obsidian.WorldData.Generators.Biomes;
+using Obsidian.WorldData.Generators.Density;
+using Obsidian.WorldData.Generators.Features;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -75,6 +78,12 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
 
     private static async Task ReplayAsync(JsonElement probe)
     {
+        if (probe.GetProperty("call").GetString() == "postProcess")
+        {
+            ReplayCompletion(probe);
+            return;
+        }
+
         await using var context = TestServerFactory.CreateServer($"ticking-blocks-{Guid.NewGuid():N}");
         var world = context.World;
         if (probe.TryGetProperty("dimension", out var dimension))
@@ -198,6 +207,64 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
         if (differences.Count > 0)
             throw new Xunit.Sdk.XunitException(string.Join("\n", differences));
     }
+
+    // Chunk completion for the origin as a marked position, through Obsidian's own completion
+    // (BiomeTerrain.PostProcess) over nine empty chunks holding the case's blocks: the blocks and the ticks saved in
+    // the chunk must be vanilla's (its scheduled list, the first request of each position and type).
+    private static void ReplayCompletion(JsonElement probe)
+    {
+        var pipeline = completionPipeline.Value;
+        var area = new Dictionary<(int X, int Z), IChunk>();
+        for (var chunkX = -1; chunkX <= 1; chunkX++)
+        {
+            for (var chunkZ = -1; chunkZ <= 1; chunkZ++)
+            {
+                var chunk = new Chunk(chunkX, chunkZ, pipeline.MinY, pipeline.Height);
+                chunk.SetChunkStatus(ChunkGenStage.features);
+                area[(chunkX, chunkZ)] = chunk;
+            }
+        }
+
+        foreach (var placement in probe.GetProperty("setup").EnumerateArray())
+        {
+            var position = Position(placement.GetProperty("pos"));
+            var state = VanillaSulfurBlocks.ParseState(placement.GetProperty("state").GetString()!);
+            area[(position.X >> 4, position.Z >> 4)].SetBlock(position, state);
+        }
+
+        var center = (Chunk)area[(0, 0)];
+        center.PostProcessing.Add(Position(probe.GetProperty("origin")));
+        pipeline.PostProcess(area, 0, 0);
+
+        var differences = new List<string>();
+        foreach (var placement in probe.GetProperty("after").EnumerateArray())
+        {
+            var position = Position(placement.GetProperty("pos"));
+            var expected = placement.GetProperty("state").GetString()!;
+            var actual = area[(position.X >> 4, position.Z >> 4)].GetBlock(position);
+            if (!VanillaSulfurBlocks.ParseState(expected).IsSameState(actual))
+                differences.Add($"{position}: vanilla {expected}, Obsidian {actual}");
+        }
+
+        var vanilla = probe.GetProperty("scheduled").EnumerateArray()
+            .DistinctBy(tick => (Position(tick.GetProperty("pos")), tick.GetProperty("type").GetString()))
+            .Select(tick => Tick(Position(tick.GetProperty("pos")), tick.GetProperty("type").GetString()!,
+                tick.GetProperty("delay").GetInt32()))
+            .Order(StringComparer.Ordinal)
+            .ToList();
+        var blockTicks = center.BlockTicks.Pack().Select(tick => Tick(tick.Position, tick.Block, tick.Delay));
+        var fluidTicks = center.FluidTicks.Pack()
+            .Select(tick => Tick(tick.Position, FluidName(tick.Type), tick.Delay));
+        var obsidian = blockTicks.Concat(fluidTicks).Order(StringComparer.Ordinal).ToList();
+        ExpectSequence(differences, "ticks", vanilla, obsidian);
+
+        if (differences.Count > 0)
+            throw new Xunit.Sdk.XunitException(string.Join("\n", differences));
+    }
+
+    // The overworld's completion, shared by the cases: only its build range and fluid rules matter here.
+    private static readonly Lazy<BiomeTerrain> completionPipeline = new(() => BiomeTerrain.Create(
+        WorldgenDimension.Vanilla("minecraft:overworld"), 0, new FeatureRegistry(WorldgenData.Vanilla)));
 
     // AbstractLevel.TickChunkBlocks: only a randomly ticking state ticks, through its generated owner.
     private static void RandomTick(
