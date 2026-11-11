@@ -318,7 +318,8 @@ public final class DispenserFixtures {
         add(checkpoint, "particles", particles);
         add(checkpoint, "gameEvents", new ArrayList<>(gameEvents));
         if (input.has("details") && input.get("details").getAsBoolean()) {
-            add(checkpoint, "details", details(level, heard));
+            var variants = input.has("variants") && input.get("variants").getAsBoolean();
+            add(checkpoint, "details", details(level, heard, variants));
             var motions = new ArrayList<String>();
             for (var entity : level.getEntities((Entity) null, area(EntityReach), DispenserFixtures::notPlayer)) {
                 if (entity instanceof Projectile) {
@@ -336,7 +337,7 @@ public final class DispenserFixtures {
 
     // Opt-in payloads keep older captures unchanged. Only random flight coordinates, random sound pitch/seed,
     // and the random horizontal TNT impulse are omitted; stationary and vertical TNT velocities are exact.
-    private static List<String> details(ServerLevel level, List<Packet<?>> heard) {
+    private static List<String> details(ServerLevel level, List<Packet<?>> heard, boolean variants) {
         var result = new ArrayList<String>();
         if (level.getBlockEntity(origin) instanceof DispenserBlockEntity dispenser) {
             for (int slot = 0; slot < dispenser.getContainerSize(); slot++) {
@@ -373,6 +374,14 @@ public final class DispenserFixtures {
             }
 
             if (entity instanceof Mob mob) {
+                if (variants && entity instanceof net.minecraft.world.entity.animal.axolotl.Axolotl axolotl) {
+                    result.add(type + " variant=" + axolotl.getVariant().getId());
+                }
+                if (variants && entity instanceof net.minecraft.world.entity.animal.fish.TropicalFish fish) {
+                    var variant = fish.getPattern().getPackedId()
+                        | fish.getBaseColor().getId() << 16 | fish.getPatternColor().getId() << 24;
+                    result.add(type + " variant=" + variant);
+                }
                 if (entity instanceof net.minecraft.world.entity.Bucketable bucket && bucket.fromBucket()) {
                     var name = mob.hasCustomName() ? mob.getCustomName().getString() : "none";
                     result.add(type + " bucket health=" + number(mob.getHealth())

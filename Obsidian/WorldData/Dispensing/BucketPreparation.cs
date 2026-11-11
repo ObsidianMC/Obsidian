@@ -79,12 +79,15 @@ internal sealed class BucketPreparation(IBlock block, IBlockEntity? entity) : IA
         if (mob is null)
             return null;
 
+        // Finalize before restoring bucket data/components, so a later spawn can't randomize their variants.
+        mob.InitializeAi();
         if (stack.GetComponent<API.Inventory.DataComponents.BucketEntityDataComponent>(
             DataComponentType.BucketEntityData) is { } data)
         {
             mob.ReadNbt(data.Value);
         }
 
+        BucketVariants.Apply(mob, stack);
         switch ((object)mob)
         {
             case Fish fish:

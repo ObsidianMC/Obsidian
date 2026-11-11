@@ -158,7 +158,8 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
         int Ticks,
         Checkpoint[] Expected,
         bool Details,
-        long? SelectionSeed);
+        long? SelectionSeed,
+        bool Variants);
 
     private sealed record Harness(
         RealServerContext Context,
@@ -342,7 +343,7 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
             levelEvents,
             particles,
             gameEvents,
-            dispense.Details ? Details(harness, heard) : [],
+            dispense.Details ? Details(harness, heard, dispense.Variants) : [],
             dispense.Details ? FlightMotion(harness) : []);
     }
 
@@ -428,7 +429,7 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
         return (parts[0], motion);
     }
 
-    private static string[] Details(Harness harness, IClientboundPacket[] heard)
+    private static string[] Details(Harness harness, IClientboundPacket[] heard, bool variants)
     {
         var world = harness.Context.World;
         var result = new List<string>();
@@ -486,6 +487,11 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
 
             if (entity is Mob mob)
             {
+                if (variants && mob is Axolotl axolotl)
+                    result.Add($"{type} variant={axolotl.Variant}");
+                if (variants && mob is TropicalFish fish)
+                    result.Add($"{type} variant={fish.Variant}");
+
                 var fromBucket = mob is Fish { FromBucket: true } or Axolotl { FromBucket: true }
                     or Tadpole { FromBucket: true };
                 if (fromBucket)
@@ -851,7 +857,8 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
             ticks,
             checkpoints,
             input.TryGetProperty("details", out var details) && details.GetBoolean(),
-            input.TryGetProperty("selectionSeed", out var seed) ? seed.GetInt64() : null);
+            input.TryGetProperty("selectionSeed", out var seed) ? seed.GetInt64() : null,
+            input.TryGetProperty("variants", out var variants) && variants.GetBoolean());
     }
 
     private static ScenarioMob ReadMob(JsonElement mob) => new(

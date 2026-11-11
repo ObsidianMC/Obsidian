@@ -24,14 +24,22 @@ Droppers are unchanged: they still put an item into the container they face or d
 ## Buckets, bottles and waxing
 
 Water, lava and powder snow buckets place their contents; fish, axolotl and tadpole buckets also spawn their mob,
-with saved bucket data and the item's custom name. Empty buckets pick up sources, waterlogged blocks and powder
+with saved bucket data, species components and the item's custom name. Species components take precedence over
+older variant NBT. Empty buckets pick up sources, waterlogged blocks and powder
 snow. Glass bottles fill from water, including flowing and waterlogged water, without removing it. Water potions
 turn blocks in `convertible_to_mud` into mud, and honeycomb waxes the copper block in front with its properties.
 
-A filled result replaces the last empty bucket or bottle in its selected slot. When empty items remain, vanilla's
-`addToInventory` path uses the first empty slot, without merging stacks, or dispenses the result if no slot is empty.
+A result replaces the selected slot when its last item is used. With a custom stack size on a filled bucket or
+water potion, only one item is consumed and the other originals stay in that slot. When originals remain, vanilla's
+`addToInventory` path scans slots in order, using an empty slot or merging a compatible stack with room, and
+dispenses the result when neither fits. Components and maximum stack sizes are respected when merging.
 The captures include those paths and vanilla's extra click/smoke events for nested drop fallbacks. Cauldrons are
 unchanged: vanilla dispensers don't fill or empty them with buckets, bottles or water potions.
+
+Powder snow buckets place only into air; supported grass and other occupied blocks cause the filled bucket to
+drop. A failed fluid/block write, including an unavailable target chunk, keeps the filled bucket, with no
+empty-bucket remainder or mob spawned. Pouring into an identical fluid source or already-waterlogged container
+still succeeds.
 
 ## Differences in what is there
 
@@ -85,6 +93,9 @@ snapshot lets a click acquire inventory, then releases tick while keeping the cl
 busy inventory without changing the source or the stack; a retry delivers one result. Explicit signals and gates
 force this interleaving, without sleeps or timeouts. The other tests guard a click taking the selected arrow and
 bottle conservation across selected-slot, empty-slot and overflow delivery.
+`FailedBucketWriteKeepsTheFilledItemWithoutSpawningItsContents` uses a resident dispenser at a chunk edge with
+its neighbour unavailable from the start. It checks item conservation for water, lava, powder snow and an axolotl
+bucket without relying on an unload race.
 
 ## Replay comparisons
 
@@ -96,8 +107,11 @@ Cases with `details: true` additionally compare complete item component patches 
 equipment and dropped stacks, shulker contents, rocket angled state, deterministic sound category/volume/pitch and
 position, particle positions, mob velocities and vertical TNT velocity. Dropped component payloads are summed by
 identical stack rather than entity count. Bucket data cases also compare the mob's health, NoAI, gravity flag and
-custom name. All 60 new cases compare from their first tick; seeded cases pin slot selection and splash positions.
-The original 59 cases are unchanged. Projectile motion is recorded: the initial velocity comparison allows
+custom name. The phase's original 60 additions and 10 review regressions compare from their first tick; seeded
+cases pin slot selection and splash positions. The review cases cover custom stacked buckets/potions, compatible
+and incompatible remainder stacks, overflow, occupied powder-snow targets, and axolotl/tropical-fish variant
+components. Their `variants: true` opt-in compares the mob's variant metadata too. The original 59 cases are unchanged.
+Projectile motion is recorded: the initial velocity comparison allows
 only the two shots' spread radius; following ticks must have the captured drag and vertical acceleration. Exact
 random flight coordinates, TNT's random horizontal impulse, sound seeds and the arrow hit's random pitch are not
 compared. Only selected added/changed cases are re-recorded with `CaptureCases`.

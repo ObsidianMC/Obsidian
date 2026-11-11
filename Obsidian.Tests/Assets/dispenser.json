@@ -9052,6 +9052,1040 @@
           ]
         }
       ]
+    },
+    {
+      "name": "review_stacked_water_bucket_empty",
+      "facing": "east",
+      "ticks": 4,
+      "details": true,
+      "selectionSeed": 0,
+      "items": [
+        {
+          "slot": 0,
+          "id": "minecraft:water_bucket",
+          "count": 3,
+          "nbt": "{id:\"minecraft:water_bucket\",count:3,components:{\"minecraft:max_stack_size\":16}}"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:water_bucket x3"
+          ],
+          "details": [
+            "slot 0 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:water_bucket x3"
+          ],
+          "details": [
+            "slot 0 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:water_bucket x3"
+          ],
+          "details": [
+            "slot 0 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}"
+          ]
+        },
+        {
+          "tick": 4,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true];1,0,0=minecraft:water",
+          "items": [
+            "0 minecraft:water_bucket x2",
+            "1 minecraft:bucket x1"
+          ],
+          "sounds": [
+            "minecraft:item.bucket.empty"
+          ],
+          "levelEvents": [
+            "1000 0,0,0 0",
+            "2000 0,0,0 5"
+          ],
+          "gameEvents": [
+            "minecraft:fluid_place 1,0,0 none"
+          ],
+          "details": [
+            "slot 0 minecraft:water_bucket x2 {\"minecraft:max_stack_size\":16}",
+            "slot 1 minecraft:bucket x1",
+            "sound minecraft:item.bucket.empty block 1.500000,0.500000,0.500000 volume=1.000000 pitch=1.000000"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "review_stacked_water_bucket_merge",
+      "facing": "east",
+      "ticks": 4,
+      "details": true,
+      "selectionSeed": 0,
+      "items": [
+        {
+          "slot": 0,
+          "id": "minecraft:water_bucket",
+          "count": 3,
+          "nbt": "{id:\"minecraft:water_bucket\",count:3,components:{\"minecraft:max_stack_size\":16}}"
+        },
+        {
+          "slot": 1,
+          "id": "minecraft:bucket",
+          "count": 15
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:water_bucket x3",
+            "1 minecraft:bucket x15"
+          ],
+          "details": [
+            "slot 0 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 1 minecraft:bucket x15"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:water_bucket x3",
+            "1 minecraft:bucket x15"
+          ],
+          "details": [
+            "slot 0 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 1 minecraft:bucket x15"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:water_bucket x3",
+            "1 minecraft:bucket x15"
+          ],
+          "details": [
+            "slot 0 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 1 minecraft:bucket x15"
+          ]
+        },
+        {
+          "tick": 4,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true];1,0,0=minecraft:water",
+          "items": [
+            "0 minecraft:water_bucket x2",
+            "1 minecraft:bucket x16"
+          ],
+          "sounds": [
+            "minecraft:item.bucket.empty"
+          ],
+          "levelEvents": [
+            "1000 0,0,0 0",
+            "2000 0,0,0 5"
+          ],
+          "gameEvents": [
+            "minecraft:fluid_place 1,0,0 none"
+          ],
+          "details": [
+            "slot 0 minecraft:water_bucket x2 {\"minecraft:max_stack_size\":16}",
+            "slot 1 minecraft:bucket x16",
+            "sound minecraft:item.bucket.empty block 1.500000,0.500000,0.500000 volume=1.000000 pitch=1.000000"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "review_stacked_water_bucket_mismatch",
+      "facing": "east",
+      "ticks": 4,
+      "details": true,
+      "selectionSeed": 0,
+      "items": [
+        {
+          "slot": 0,
+          "id": "minecraft:water_bucket",
+          "count": 3,
+          "nbt": "{id:\"minecraft:water_bucket\",count:3,components:{\"minecraft:max_stack_size\":16}}"
+        },
+        {
+          "slot": 1,
+          "id": "minecraft:bucket",
+          "count": 15,
+          "nbt": "{id:\"minecraft:bucket\",count:15,components:{\"minecraft:custom_name\":\"Named remainder\"}}"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:water_bucket x3",
+            "1 minecraft:bucket x15"
+          ],
+          "details": [
+            "slot 0 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 1 minecraft:bucket x15 {\"minecraft:custom_name\":\"Named remainder\"}"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:water_bucket x3",
+            "1 minecraft:bucket x15"
+          ],
+          "details": [
+            "slot 0 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 1 minecraft:bucket x15 {\"minecraft:custom_name\":\"Named remainder\"}"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:water_bucket x3",
+            "1 minecraft:bucket x15"
+          ],
+          "details": [
+            "slot 0 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 1 minecraft:bucket x15 {\"minecraft:custom_name\":\"Named remainder\"}"
+          ]
+        },
+        {
+          "tick": 4,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true];1,0,0=minecraft:water",
+          "items": [
+            "0 minecraft:water_bucket x2",
+            "1 minecraft:bucket x15",
+            "2 minecraft:bucket x1"
+          ],
+          "sounds": [
+            "minecraft:item.bucket.empty"
+          ],
+          "levelEvents": [
+            "1000 0,0,0 0",
+            "2000 0,0,0 5"
+          ],
+          "gameEvents": [
+            "minecraft:fluid_place 1,0,0 none"
+          ],
+          "details": [
+            "slot 0 minecraft:water_bucket x2 {\"minecraft:max_stack_size\":16}",
+            "slot 1 minecraft:bucket x15 {\"minecraft:custom_name\":\"Named remainder\"}",
+            "slot 2 minecraft:bucket x1",
+            "sound minecraft:item.bucket.empty block 1.500000,0.500000,0.500000 volume=1.000000 pitch=1.000000"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "review_stacked_water_bucket_overflow",
+      "facing": "east",
+      "ticks": 4,
+      "details": true,
+      "selectionSeed": 0,
+      "items": [
+        {
+          "slot": 0,
+          "id": "minecraft:water_bucket",
+          "count": 3,
+          "nbt": "{id:\"minecraft:water_bucket\",count:3,components:{\"minecraft:max_stack_size\":16}}"
+        },
+        {
+          "slot": 1,
+          "id": "minecraft:water_bucket",
+          "count": 3,
+          "nbt": "{id:\"minecraft:water_bucket\",count:3,components:{\"minecraft:max_stack_size\":16}}"
+        },
+        {
+          "slot": 2,
+          "id": "minecraft:water_bucket",
+          "count": 3,
+          "nbt": "{id:\"minecraft:water_bucket\",count:3,components:{\"minecraft:max_stack_size\":16}}"
+        },
+        {
+          "slot": 3,
+          "id": "minecraft:water_bucket",
+          "count": 3,
+          "nbt": "{id:\"minecraft:water_bucket\",count:3,components:{\"minecraft:max_stack_size\":16}}"
+        },
+        {
+          "slot": 4,
+          "id": "minecraft:water_bucket",
+          "count": 3,
+          "nbt": "{id:\"minecraft:water_bucket\",count:3,components:{\"minecraft:max_stack_size\":16}}"
+        },
+        {
+          "slot": 5,
+          "id": "minecraft:water_bucket",
+          "count": 3,
+          "nbt": "{id:\"minecraft:water_bucket\",count:3,components:{\"minecraft:max_stack_size\":16}}"
+        },
+        {
+          "slot": 6,
+          "id": "minecraft:water_bucket",
+          "count": 3,
+          "nbt": "{id:\"minecraft:water_bucket\",count:3,components:{\"minecraft:max_stack_size\":16}}"
+        },
+        {
+          "slot": 7,
+          "id": "minecraft:water_bucket",
+          "count": 3,
+          "nbt": "{id:\"minecraft:water_bucket\",count:3,components:{\"minecraft:max_stack_size\":16}}"
+        },
+        {
+          "slot": 8,
+          "id": "minecraft:water_bucket",
+          "count": 3,
+          "nbt": "{id:\"minecraft:water_bucket\",count:3,components:{\"minecraft:max_stack_size\":16}}"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:water_bucket x3",
+            "1 minecraft:water_bucket x3",
+            "2 minecraft:water_bucket x3",
+            "3 minecraft:water_bucket x3",
+            "4 minecraft:water_bucket x3",
+            "5 minecraft:water_bucket x3",
+            "6 minecraft:water_bucket x3",
+            "7 minecraft:water_bucket x3",
+            "8 minecraft:water_bucket x3"
+          ],
+          "details": [
+            "slot 0 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 1 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 2 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 3 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 4 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 5 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 6 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 7 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 8 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:water_bucket x3",
+            "1 minecraft:water_bucket x3",
+            "2 minecraft:water_bucket x3",
+            "3 minecraft:water_bucket x3",
+            "4 minecraft:water_bucket x3",
+            "5 minecraft:water_bucket x3",
+            "6 minecraft:water_bucket x3",
+            "7 minecraft:water_bucket x3",
+            "8 minecraft:water_bucket x3"
+          ],
+          "details": [
+            "slot 0 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 1 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 2 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 3 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 4 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 5 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 6 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 7 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 8 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:water_bucket x3",
+            "1 minecraft:water_bucket x3",
+            "2 minecraft:water_bucket x3",
+            "3 minecraft:water_bucket x3",
+            "4 minecraft:water_bucket x3",
+            "5 minecraft:water_bucket x3",
+            "6 minecraft:water_bucket x3",
+            "7 minecraft:water_bucket x3",
+            "8 minecraft:water_bucket x3"
+          ],
+          "details": [
+            "slot 0 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 1 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 2 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 3 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 4 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 5 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 6 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 7 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 8 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}"
+          ]
+        },
+        {
+          "tick": 4,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true];1,0,0=minecraft:water",
+          "items": [
+            "0 minecraft:water_bucket x3",
+            "1 minecraft:water_bucket x3",
+            "2 minecraft:water_bucket x3",
+            "3 minecraft:water_bucket x3",
+            "4 minecraft:water_bucket x3",
+            "5 minecraft:water_bucket x3",
+            "6 minecraft:water_bucket x3",
+            "7 minecraft:water_bucket x2",
+            "8 minecraft:water_bucket x3"
+          ],
+          "entities": [
+            "item minecraft:bucket x1"
+          ],
+          "sounds": [
+            "minecraft:item.bucket.empty"
+          ],
+          "levelEvents": [
+            "1000 0,0,0 0",
+            "2000 0,0,0 5",
+            "1000 0,0,0 0",
+            "2000 0,0,0 5"
+          ],
+          "gameEvents": [
+            "minecraft:fluid_place 1,0,0 none"
+          ],
+          "details": [
+            "drop minecraft:bucket x1 total=1",
+            "slot 0 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 1 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 2 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 3 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 4 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 5 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 6 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "slot 7 minecraft:water_bucket x2 {\"minecraft:max_stack_size\":16}",
+            "slot 8 minecraft:water_bucket x3 {\"minecraft:max_stack_size\":16}",
+            "sound minecraft:item.bucket.empty block 1.500000,0.500000,0.500000 volume=1.000000 pitch=1.000000"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "review_stacked_water_potion_empty",
+      "facing": "east",
+      "ticks": 4,
+      "details": true,
+      "selectionSeed": 0,
+      "items": [
+        {
+          "slot": 0,
+          "id": "minecraft:potion",
+          "count": 3,
+          "nbt": "{id:\"minecraft:potion\",count:3,components:{\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}}"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:potion x3"
+          ],
+          "details": [
+            "slot 0 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:potion x3"
+          ],
+          "details": [
+            "slot 0 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:potion x3"
+          ],
+          "details": [
+            "slot 0 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}"
+          ]
+        },
+        {
+          "tick": 4,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true];1,0,0=minecraft:mud",
+          "items": [
+            "0 minecraft:potion x2",
+            "1 minecraft:glass_bottle x1"
+          ],
+          "sounds": [
+            "minecraft:item.bottle.empty"
+          ],
+          "levelEvents": [
+            "1000 0,0,0 0",
+            "2000 0,0,0 5"
+          ],
+          "particles": [
+            "minecraft:splash 1",
+            "minecraft:splash 1",
+            "minecraft:splash 1",
+            "minecraft:splash 1",
+            "minecraft:splash 1"
+          ],
+          "gameEvents": [
+            "minecraft:fluid_place 0,0,0 none"
+          ],
+          "details": [
+            "particle minecraft:splash 0.023082,1.000000,0.175977 count=1",
+            "particle minecraft:splash 0.309051,1.000000,0.117007 count=1",
+            "particle minecraft:splash 0.613036,1.000000,0.982820 count=1",
+            "particle minecraft:splash 0.781535,1.000000,0.252776 count=1",
+            "particle minecraft:splash 0.831441,1.000000,0.606345 count=1",
+            "slot 0 minecraft:potion x2 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 1 minecraft:glass_bottle x1",
+            "sound minecraft:item.bottle.empty block 0.500000,0.500000,0.500000 volume=1.000000 pitch=1.000000"
+          ]
+        }
+      ],
+      "setup": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:dirt"
+        }
+      ]
+    },
+    {
+      "name": "review_stacked_water_potion_merge",
+      "facing": "east",
+      "ticks": 4,
+      "details": true,
+      "selectionSeed": 0,
+      "items": [
+        {
+          "slot": 0,
+          "id": "minecraft:potion",
+          "count": 3,
+          "nbt": "{id:\"minecraft:potion\",count:3,components:{\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}}"
+        },
+        {
+          "slot": 1,
+          "id": "minecraft:glass_bottle",
+          "count": 15
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:potion x3",
+            "1 minecraft:glass_bottle x15"
+          ],
+          "details": [
+            "slot 0 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 1 minecraft:glass_bottle x15"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:potion x3",
+            "1 minecraft:glass_bottle x15"
+          ],
+          "details": [
+            "slot 0 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 1 minecraft:glass_bottle x15"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:potion x3",
+            "1 minecraft:glass_bottle x15"
+          ],
+          "details": [
+            "slot 0 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 1 minecraft:glass_bottle x15"
+          ]
+        },
+        {
+          "tick": 4,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true];1,0,0=minecraft:mud",
+          "items": [
+            "0 minecraft:potion x2",
+            "1 minecraft:glass_bottle x16"
+          ],
+          "sounds": [
+            "minecraft:item.bottle.empty"
+          ],
+          "levelEvents": [
+            "1000 0,0,0 0",
+            "2000 0,0,0 5"
+          ],
+          "particles": [
+            "minecraft:splash 1",
+            "minecraft:splash 1",
+            "minecraft:splash 1",
+            "minecraft:splash 1",
+            "minecraft:splash 1"
+          ],
+          "gameEvents": [
+            "minecraft:fluid_place 0,0,0 none"
+          ],
+          "details": [
+            "particle minecraft:splash 0.240536,1.000000,0.637417 count=1",
+            "particle minecraft:splash 0.333218,1.000000,0.385189 count=1",
+            "particle minecraft:splash 0.550437,1.000000,0.597545 count=1",
+            "particle minecraft:splash 0.941249,1.000000,0.274954 count=1",
+            "particle minecraft:splash 0.984842,1.000000,0.879183 count=1",
+            "slot 0 minecraft:potion x2 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 1 minecraft:glass_bottle x16",
+            "sound minecraft:item.bottle.empty block 0.500000,0.500000,0.500000 volume=1.000000 pitch=1.000000"
+          ]
+        }
+      ],
+      "setup": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:dirt"
+        }
+      ]
+    },
+    {
+      "name": "review_stacked_water_potion_overflow",
+      "facing": "east",
+      "ticks": 4,
+      "details": true,
+      "selectionSeed": 0,
+      "items": [
+        {
+          "slot": 0,
+          "id": "minecraft:potion",
+          "count": 3,
+          "nbt": "{id:\"minecraft:potion\",count:3,components:{\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}}"
+        },
+        {
+          "slot": 1,
+          "id": "minecraft:potion",
+          "count": 3,
+          "nbt": "{id:\"minecraft:potion\",count:3,components:{\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}}"
+        },
+        {
+          "slot": 2,
+          "id": "minecraft:potion",
+          "count": 3,
+          "nbt": "{id:\"minecraft:potion\",count:3,components:{\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}}"
+        },
+        {
+          "slot": 3,
+          "id": "minecraft:potion",
+          "count": 3,
+          "nbt": "{id:\"minecraft:potion\",count:3,components:{\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}}"
+        },
+        {
+          "slot": 4,
+          "id": "minecraft:potion",
+          "count": 3,
+          "nbt": "{id:\"minecraft:potion\",count:3,components:{\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}}"
+        },
+        {
+          "slot": 5,
+          "id": "minecraft:potion",
+          "count": 3,
+          "nbt": "{id:\"minecraft:potion\",count:3,components:{\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}}"
+        },
+        {
+          "slot": 6,
+          "id": "minecraft:potion",
+          "count": 3,
+          "nbt": "{id:\"minecraft:potion\",count:3,components:{\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}}"
+        },
+        {
+          "slot": 7,
+          "id": "minecraft:potion",
+          "count": 3,
+          "nbt": "{id:\"minecraft:potion\",count:3,components:{\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}}"
+        },
+        {
+          "slot": 8,
+          "id": "minecraft:potion",
+          "count": 3,
+          "nbt": "{id:\"minecraft:potion\",count:3,components:{\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}}"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:potion x3",
+            "1 minecraft:potion x3",
+            "2 minecraft:potion x3",
+            "3 minecraft:potion x3",
+            "4 minecraft:potion x3",
+            "5 minecraft:potion x3",
+            "6 minecraft:potion x3",
+            "7 minecraft:potion x3",
+            "8 minecraft:potion x3"
+          ],
+          "details": [
+            "slot 0 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 1 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 2 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 3 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 4 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 5 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 6 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 7 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 8 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:potion x3",
+            "1 minecraft:potion x3",
+            "2 minecraft:potion x3",
+            "3 minecraft:potion x3",
+            "4 minecraft:potion x3",
+            "5 minecraft:potion x3",
+            "6 minecraft:potion x3",
+            "7 minecraft:potion x3",
+            "8 minecraft:potion x3"
+          ],
+          "details": [
+            "slot 0 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 1 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 2 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 3 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 4 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 5 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 6 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 7 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 8 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:potion x3",
+            "1 minecraft:potion x3",
+            "2 minecraft:potion x3",
+            "3 minecraft:potion x3",
+            "4 minecraft:potion x3",
+            "5 minecraft:potion x3",
+            "6 minecraft:potion x3",
+            "7 minecraft:potion x3",
+            "8 minecraft:potion x3"
+          ],
+          "details": [
+            "slot 0 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 1 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 2 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 3 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 4 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 5 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 6 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 7 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 8 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}"
+          ]
+        },
+        {
+          "tick": 4,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true];1,0,0=minecraft:mud",
+          "items": [
+            "0 minecraft:potion x3",
+            "1 minecraft:potion x3",
+            "2 minecraft:potion x3",
+            "3 minecraft:potion x3",
+            "4 minecraft:potion x3",
+            "5 minecraft:potion x3",
+            "6 minecraft:potion x3",
+            "7 minecraft:potion x2",
+            "8 minecraft:potion x3"
+          ],
+          "entities": [
+            "item minecraft:glass_bottle x1"
+          ],
+          "sounds": [
+            "minecraft:item.bottle.empty"
+          ],
+          "levelEvents": [
+            "1000 0,0,0 0",
+            "2000 0,0,0 5",
+            "1000 0,0,0 0",
+            "2000 0,0,0 5"
+          ],
+          "particles": [
+            "minecraft:splash 1",
+            "minecraft:splash 1",
+            "minecraft:splash 1",
+            "minecraft:splash 1",
+            "minecraft:splash 1"
+          ],
+          "gameEvents": [
+            "minecraft:fluid_place 0,0,0 none"
+          ],
+          "details": [
+            "drop minecraft:glass_bottle x1 total=1",
+            "particle minecraft:splash 0.023082,1.000000,0.175977 count=1",
+            "particle minecraft:splash 0.312936,1.000000,0.367976 count=1",
+            "particle minecraft:splash 0.613036,1.000000,0.982820 count=1",
+            "particle minecraft:splash 0.705175,1.000000,0.001387 count=1",
+            "particle minecraft:splash 0.781535,1.000000,0.252776 count=1",
+            "slot 0 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 1 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 2 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 3 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 4 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 5 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 6 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 7 minecraft:potion x2 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "slot 8 minecraft:potion x3 {\"minecraft:max_stack_size\":16,\"minecraft:potion_contents\":{potion:\"minecraft:water\"}}",
+            "sound minecraft:item.bottle.empty block 0.500000,0.500000,0.500000 volume=1.000000 pitch=1.000000"
+          ]
+        }
+      ],
+      "setup": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:dirt"
+        }
+      ]
+    },
+    {
+      "name": "review_powder_snow_supported_grass",
+      "facing": "east",
+      "ticks": 4,
+      "details": true,
+      "selectionSeed": 0,
+      "items": [
+        {
+          "slot": 0,
+          "id": "minecraft:powder_snow_bucket",
+          "count": 1
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:powder_snow_bucket x1"
+          ],
+          "details": [
+            "slot 0 minecraft:powder_snow_bucket x1"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:powder_snow_bucket x1"
+          ],
+          "details": [
+            "slot 0 minecraft:powder_snow_bucket x1"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:powder_snow_bucket x1"
+          ],
+          "details": [
+            "slot 0 minecraft:powder_snow_bucket x1"
+          ]
+        },
+        {
+          "tick": 4,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "entities": [
+            "item minecraft:powder_snow_bucket x1"
+          ],
+          "levelEvents": [
+            "1000 0,0,0 0",
+            "2000 0,0,0 5",
+            "1000 0,0,0 0",
+            "2000 0,0,0 5"
+          ],
+          "details": [
+            "drop minecraft:powder_snow_bucket x1 total=1"
+          ]
+        }
+      ],
+      "setup": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:short_grass"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:dirt"
+        }
+      ]
+    },
+    {
+      "name": "review_bucket_variant_axolotl",
+      "facing": "east",
+      "ticks": 4,
+      "details": true,
+      "selectionSeed": 0,
+      "items": [
+        {
+          "slot": 0,
+          "id": "minecraft:axolotl_bucket",
+          "count": 1,
+          "nbt": "{id:\"minecraft:axolotl_bucket\",count:1,components:{\"minecraft:bucket_entity_data\":{NoAI:1b,NoGravity:1b,Silent:1b,Health:3.0f,Variant:0},\"minecraft:axolotl/variant\":\"blue\"}}"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:axolotl_bucket x1"
+          ],
+          "details": [
+            "slot 0 minecraft:axolotl_bucket x1 {\"minecraft:axolotl/variant\":\"blue\",\"minecraft:bucket_entity_data\":{Health:3.0f,NoAI:1b,NoGravity:1b,Silent:1b,Variant:0}}"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:axolotl_bucket x1"
+          ],
+          "details": [
+            "slot 0 minecraft:axolotl_bucket x1 {\"minecraft:axolotl/variant\":\"blue\",\"minecraft:bucket_entity_data\":{Health:3.0f,NoAI:1b,NoGravity:1b,Silent:1b,Variant:0}}"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:axolotl_bucket x1"
+          ],
+          "details": [
+            "slot 0 minecraft:axolotl_bucket x1 {\"minecraft:axolotl/variant\":\"blue\",\"minecraft:bucket_entity_data\":{Health:3.0f,NoAI:1b,NoGravity:1b,Silent:1b,Variant:0}}"
+          ]
+        },
+        {
+          "tick": 4,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true];1,0,0=minecraft:water",
+          "items": [
+            "0 minecraft:bucket x1"
+          ],
+          "entities": [
+            "minecraft:axolotl"
+          ],
+          "sounds": [
+            "minecraft:item.bucket.empty_axolotl"
+          ],
+          "levelEvents": [
+            "1000 0,0,0 0",
+            "2000 0,0,0 5"
+          ],
+          "gameEvents": [
+            "minecraft:entity_place 1,0,0 none"
+          ],
+          "details": [
+            "minecraft:axolotl bucket health=3.000000 noAI=true noGravity=true name=none",
+            "minecraft:axolotl variant=4",
+            "minecraft:axolotl velocity=0.000000,0.000000,0.000000",
+            "slot 0 minecraft:bucket x1",
+            "sound minecraft:item.bucket.empty_axolotl neutral 1.500000,0.500000,0.500000 volume=1.000000 pitch=1.000000"
+          ]
+        }
+      ],
+      "variants": true
+    },
+    {
+      "name": "review_bucket_variant_tropical_fish",
+      "facing": "east",
+      "ticks": 4,
+      "details": true,
+      "selectionSeed": 0,
+      "items": [
+        {
+          "slot": 0,
+          "id": "minecraft:tropical_fish_bucket",
+          "count": 1,
+          "nbt": "{id:\"minecraft:tropical_fish_bucket\",count:1,components:{\"minecraft:bucket_entity_data\":{NoAI:1b,NoGravity:1b,Silent:1b,Health:3.0f,Variant:0},\"minecraft:tropical_fish/pattern\":\"clayfish\",\"minecraft:tropical_fish/base_color\":\"red\",\"minecraft:tropical_fish/pattern_color\":\"blue\"}}"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:tropical_fish_bucket x1"
+          ],
+          "details": [
+            "slot 0 minecraft:tropical_fish_bucket x1 {\"minecraft:bucket_entity_data\":{Health:3.0f,NoAI:1b,NoGravity:1b,Silent:1b,Variant:0},\"minecraft:tropical_fish/base_color\":\"red\",\"minecraft:tropical_fish/pattern\":\"clayfish\",\"minecraft:tropical_fish/pattern_color\":\"blue\"}"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:tropical_fish_bucket x1"
+          ],
+          "details": [
+            "slot 0 minecraft:tropical_fish_bucket x1 {\"minecraft:bucket_entity_data\":{Health:3.0f,NoAI:1b,NoGravity:1b,Silent:1b,Variant:0},\"minecraft:tropical_fish/base_color\":\"red\",\"minecraft:tropical_fish/pattern\":\"clayfish\",\"minecraft:tropical_fish/pattern_color\":\"blue\"}"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true]",
+          "items": [
+            "0 minecraft:tropical_fish_bucket x1"
+          ],
+          "details": [
+            "slot 0 minecraft:tropical_fish_bucket x1 {\"minecraft:bucket_entity_data\":{Health:3.0f,NoAI:1b,NoGravity:1b,Silent:1b,Variant:0},\"minecraft:tropical_fish/base_color\":\"red\",\"minecraft:tropical_fish/pattern\":\"clayfish\",\"minecraft:tropical_fish/pattern_color\":\"blue\"}"
+          ]
+        },
+        {
+          "tick": 4,
+          "changes": "-1,0,0=minecraft:redstone_block;0,0,0=minecraft:dispenser[facing=east,triggered=true];1,0,0=minecraft:water",
+          "items": [
+            "0 minecraft:bucket x1"
+          ],
+          "entities": [
+            "minecraft:tropical_fish"
+          ],
+          "sounds": [
+            "minecraft:item.bucket.empty_fish"
+          ],
+          "levelEvents": [
+            "1000 0,0,0 0",
+            "2000 0,0,0 5"
+          ],
+          "gameEvents": [
+            "minecraft:entity_place 1,0,0 none"
+          ],
+          "details": [
+            "minecraft:tropical_fish bucket health=3.000000 noAI=true noGravity=true name=none",
+            "minecraft:tropical_fish variant=185468161",
+            "minecraft:tropical_fish velocity=0.000000,0.000000,0.000000",
+            "slot 0 minecraft:bucket x1",
+            "sound minecraft:item.bucket.empty_fish neutral 1.500000,0.500000,0.500000 volume=1.000000 pitch=1.000000"
+          ]
+        }
+      ],
+      "variants": true
     }
   ]
 }

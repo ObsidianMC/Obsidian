@@ -60,7 +60,7 @@ internal static partial class DispenseBehaviors
         return result;
     }
 
-    // addToInventory uses the first empty slot; it doesn't merge into an existing stack of the result.
+    // Vanilla scans slots in order, inserting into an empty slot or merging a compatible, non-full stack.
     private static Dispensed Exchange(DispenseSource source, ItemStack stack, ItemStack result)
     {
         var rest = DispenseSource.Shrink(stack);
@@ -69,8 +69,17 @@ internal static partial class DispenseBehaviors
 
         for (var slot = 0; slot < source.Inventory.Size; slot++)
         {
-            if (source.Inventory.GetItem(slot) is { Count: > 0, IsAir: false })
+            var resident = source.Inventory.GetItem(slot);
+            if (resident is { Count: > 0, IsAir: false })
+            {
+                if (resident.Equals(result) && resident.Count + result.Count <= Math.Min(64, resident.MaxStackSize))
+                {
+                    source.Inventory.SetItem(slot, new ItemStack(resident, resident.Count + result.Count));
+                    return Dispensed.Kept(rest);
+                }
+
                 continue;
+            }
 
             source.Inventory.SetItem(slot, result);
             return Dispensed.Kept(rest);
@@ -90,7 +99,7 @@ internal static partial class DispenseBehaviors
             var previous = prepared.Block;
             var contents = BucketContents.Of(stack)!;
             var accepts = contents.PowderSnow
-                ? previous.IsAir || !previous.IsLiquidBlock() && previous.CanBeReplaced()
+                ? previous.IsAir
                 : BucketItems.Accepts(previous, contents.Fluid, sneaking: false);
             if (!accepts || level.IsOutsideBuildHeight(target.Y))
                 return DropWithEffects(source, stack);
@@ -103,15 +112,18 @@ internal static partial class DispenseBehaviors
             }
             else if (contents.PowderSnow)
             {
-                level.BlockUpdates.SetBlock(target, BlocksRegistry.PowderSnow, BlockUpdateFlags.AllImmediate);
+                if (!level.BlockUpdates.SetBlock(target, BlocksRegistry.PowderSnow, BlockUpdateFlags.AllImmediate))
+                    return Dispensed.Failed(stack);
             }
             else if (contents.Fluid == FluidKind.Water && previous.IsLiquidBlockContainer())
             {
-                level.Fluids.PlaceLiquid(target, previous, new FluidState(FluidKind.Water, 8, false));
+                var placed = level.Fluids.PlaceLiquid(target, previous, new FluidState(FluidKind.Water, 8, false));
+                if (!placed && previous.GetProperty("waterlogged") != "true")
+                    return Dispensed.Failed(stack);
             }
-            else
+            else if (!Pour(source, prepared, contents.Fluid))
             {
-                Pour(source, prepared, contents.Fluid);
+                return Dispensed.Failed(stack);
             }
 
             if (!evaporates)
@@ -130,8 +142,7 @@ internal static partial class DispenseBehaviors
                     level.EmitGameEvent(MobGameEvent.EntityPlace, Center(target));
             }
 
-            // A successful filled-bucket dispense returns a fresh empty bucket.
-            return Dispensed.Kept(new ItemStack(ItemsRegistry.Bucket, 1));
+            return Exchange(source, stack, new ItemStack(ItemsRegistry.Bucket, 1));
         }
 
         private static void PlayEmptySound(DispenseSource source, BucketContents contents)
@@ -154,15 +165,27 @@ internal static partial class DispenseBehaviors
             });
         }
 
-        private static void Pour(DispenseSource source, BucketPreparation prepared, FluidKind kind)
+        private static bool Pour(DispenseSource source, BucketPreparation prepared, FluidKind kind)
         {
             var level = source.Level;
             var target = source.Target;
             var final = new FluidState(kind, 8, false).CreateLegacyBlock();
+            if (prepared.Destroys
+                && !level.BlockUpdates.SetBlock(target, FluidState.Of(prepared.Block).CreateLegacyBlock()))
+            {
+                return false;
+            }
+
+            // An identical source is also a successful pour. Void air from an unavailable chunk isn't one.
+            if (!level.BlockUpdates.SetBlock(target, final, BlockUpdateFlags.AllImmediate)
+                && !prepared.Block.IsSameState(final))
+            {
+                return false;
+            }
+
             if (prepared.Destroys)
             {
                 var previous = prepared.Block;
-                level.BlockUpdates.SetBlock(target, FluidState.Of(previous).CreateLegacyBlock());
                 level.ActiveBlockUse!.After(() =>
                 {
                     level.BlockDestroyed?.Invoke(target, previous, true);
@@ -175,7 +198,7 @@ internal static partial class DispenseBehaviors
                 });
             }
 
-            level.BlockUpdates.SetBlock(target, final, BlockUpdateFlags.AllImmediate);
+            return true;
         }
     }
 
@@ -258,7 +281,7 @@ internal static partial class DispenseBehaviors
             BlockLighting.Play(level, source.Position, "minecraft:item.bottle.empty");
             level.EmitGameEvent(MobGameEvent.FluidPlace, Center(source.Position));
             level.BlockUpdates.SetBlock(source.Target, BlocksRegistry.Mud);
-            return Dispensed.Kept(new ItemStack(ItemsRegistry.GlassBottle, 1));
+            return Exchange(source, stack, new ItemStack(ItemsRegistry.GlassBottle, 1));
         }
     }
 

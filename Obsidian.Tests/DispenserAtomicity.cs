@@ -160,6 +160,50 @@ public sealed class DispenserAtomicity
         .Where(entity => entity.Item.Holder.Id == ItemIds.Potion)
         .Sum(entity => entity.Item.Count);
 
+    [Fact]
+    public async Task FailedBucketWriteKeepsTheFilledItemWithoutSpawningItsContents()
+    {
+        await using var context = TestServerFactory.CreateServer($"dispenser-unavailable-{Guid.NewGuid():N}");
+        var world = context.World;
+        WorldBlockEntities.AddEmptyChunk(world);
+        var position = new Vector(15, 65, 8);
+        var target = position + Vector.East;
+        await world.GetBlockAsync(position);
+        var state = BlocksRegistry.Dispenser.WithProperty("facing", "east");
+        world.BlockUpdates.SetBlock(position, state,
+            BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace);
+        var container = Assert.IsAssignableFrom<ContainerBlockEntity>(world.GetResidentBlockEntity(position));
+
+        // Only the dispenser's chunk is resident. No unload task or chance overlap is needed to force the write
+        // failure: preparation reads void air in its unavailable neighbour and SetBlock must refuse that target.
+        Assert.Null(world.GetLoadedChunk(1, 0));
+        Item[] buckets =
+        [
+            ItemsRegistry.WaterBucket, ItemsRegistry.LavaBucket,
+            ItemsRegistry.PowderSnowBucket, ItemsRegistry.AxolotlBucket
+        ];
+        foreach (var bucket in buckets)
+        {
+            using (await container.Inventory.LockAsync())
+                container.Inventory.SetItem(0, new ItemStack(bucket, 1));
+
+            await RedstoneDispenser.FireAsync(world, position, state, dropper: false);
+
+            using (await container.Inventory.LockAsync())
+            {
+                var stored = container.Inventory.Where(item => item is not null).ToArray();
+                var retained = Assert.Single(stored);
+                Assert.Equal(bucket.Id, retained.Holder.Id);
+                Assert.Equal(1, retained.Count);
+            }
+
+            Assert.Null(world.GetLoadedChunk(1, 0));
+            Assert.True(world.BlockUpdates.GetBlock(target).IsAir);
+            Assert.Empty(world.GetEntitiesInRange((VectorD)position, 16).OfType<Mob>());
+            Assert.Empty(world.GetEntitiesInRange((VectorD)position, 16).OfType<ItemEntity>());
+        }
+    }
+
     private sealed class ObservedInventory() : BaseContainer(9)
     {
         private TaskCompletionSource? nextRead;
