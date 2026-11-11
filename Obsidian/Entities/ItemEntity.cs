@@ -13,6 +13,8 @@ public partial class ItemEntity : Entity
 
     // Ticks since it was spawned or loaded, like vanilla's unsaved Entity.tickCount; it paces merging.
     private int ticksExisted;
+
+    private int? restPhase;
     internal void SetExtendedLifetime() => age = -6000;
     // Merges, pickups, hopper pulls and removal check and set it under the transfer lock of the level owning the item
     // (see Entity.EnterOwningLevel), so a stack isn't transferred after its entity is removed, even when the removal
@@ -26,6 +28,16 @@ public partial class ItemEntity : Entity
     private ILevel? terrainLevel;
 
     public ItemStack Item { get; set; }
+
+    /// <summary>
+    /// What, with its age, picks the ticks the item moves on while it rests on the ground (vanilla's entity id, which
+    /// staggers resting items): its own id unless set. Replays set vanilla's, as ids can't match between servers.
+    /// </summary>
+    internal int RestPhase
+    {
+        get => this.restPhase ?? this.EntityId;
+        set => this.restPhase = value;
+    }
 
     public bool CanPickup
     {
@@ -215,7 +227,7 @@ public partial class ItemEntity : Entity
         }
 
         var from = Position;
-        var next = EntityMovement.Move(this, this.terrain, VectorD.Zero, 0.04f, 0.98f);
+        var next = EntityMovement.MoveItem(this, this.terrain, this.ticksExisted);
         if (Level is AbstractLevel level && !level.TryMoveEntity(this, Position, next))
             return;
         if (next != Position)
@@ -227,38 +239,63 @@ public partial class ItemEntity : Entity
         if (this.ticksExisted % (movedBlock ? 2 : 40) != 0)
             return;
 
-        foreach (var ent in this.Level.GetNonPlayerEntitiesInRange(this.Position, 0.5f))
+        await this.MergeWithNeighboursAsync();
+    }
+
+    // Vanilla's mergeWithNeighbours: each item whose box meets this one's, widened by half a block across, that can
+    // take the other's stack whole. The smaller stack goes into the larger, and on a tie this one into the other,
+    // which decides which of them is left and where.
+    private async ValueTask MergeWithNeighboursAsync()
+    {
+        var reach = this.BoundingBox;
+        reach = new BoundingBox(reach.Min - new VectorD(0.5, 0, 0.5), reach.Max + new VectorD(0.5, 0, 0.5));
+        foreach (var ent in this.Level.GetNonPlayerEntitiesInRange(this.Position, 1.5f))
         {
-            if (ent is not ItemEntity itemEntity)
+            if (ent is not ItemEntity itemEntity || ReferenceEquals(itemEntity, this)
+                || !MobTerrain.Overlaps(reach, itemEntity.BoundingBox))
+            {
                 continue;
+            }
 
-            if (itemEntity.EntityId <= this.EntityId)
-                continue;
-
-            bool remove;
+            ItemEntity? emptied;
             using (this.EnterOwningLevel(out var owner))
             {
                 // Both stacks are this level's only while the other item hasn't left it since the lookup.
                 if (itemEntity.Level != owner || !itemEntity.IsMemberOf(owner) || !this.IsMemberOf(owner))
                     continue;
-                if (this.Removed || itemEntity.Removed || this.Item.IsNullOrAir() || itemEntity.Item.IsNullOrAir() || this.Item != itemEntity.Item)
+                if (!this.IsMergeable || !itemEntity.IsMergeable || this.Item != itemEntity.Item
+                    || this.Item.Count + itemEntity.Item.Count > itemEntity.Item.MaxStackSize)
+                {
                     continue;
-                var count = Math.Min(this.Item.MaxStackSize - this.Item.Count, itemEntity.Item.Count);
-                if (count <= 0)
-                    continue;
-                this.Item.Count += count;
-                itemEntity.Item.Count -= count;
-                this.pickupDelay = Math.Max(this.pickupDelay, itemEntity.pickupDelay);
-                this.age = Math.Min(this.age, itemEntity.age);
-                remove = itemEntity.Removed = itemEntity.Item.Count == 0;
-                this.SendItemUpdate();
-                if (!remove)
-                    itemEntity.SendItemUpdate();
+                }
+
+                var (into, merged) = itemEntity.Item.Count < this.Item.Count ? (this, itemEntity) : (itemEntity, this);
+                var count = Math.Min(Math.Min(into.Item.MaxStackSize, 64) - into.Item.Count, merged.Item.Count);
+                into.Item.Count += count;
+                merged.Item.Count -= count;
+                into.pickupDelay = Math.Max(into.pickupDelay, merged.pickupDelay);
+                into.age = Math.Min(into.age, merged.age);
+                emptied = merged.Item.Count == 0 ? merged : null;
+                if (emptied is not null)
+                    emptied.Removed = true;
+
+                into.SendItemUpdate();
+                if (emptied is null)
+                    merged.SendItemUpdate();
             }
-            if (remove)
-                await itemEntity.RemoveAsync();
+
+            if (emptied is null)
+                continue;
+
+            await emptied.RemoveAsync();
+            if (ReferenceEquals(emptied, this))
+                break;
         }
     }
+
+    // Vanilla's isMergable: still there, not past its lifetime, and with room in its stack.
+    private bool IsMergeable =>
+        !this.Removed && this.age < 6000 && !this.Item.IsNullOrAir() && this.Item.Count < this.Item.MaxStackSize;
 
     /// <summary>What <see cref="TryTake"/> took from an item entity's stack, and whether that emptied it.</summary>
     internal readonly record struct Taken(ItemStack Stack, bool Emptied);

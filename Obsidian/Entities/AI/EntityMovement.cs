@@ -63,6 +63,56 @@ internal static class EntityMovement
     }
 
     /// <summary>
+    /// An item entity's move out of fluids, like vanilla's <c>ItemEntity.tick</c>: gravity first, then the move, then
+    /// drag (and the friction of the block it lands on), and a bounce off the ground. An item at rest on the ground only
+    /// moves every fourth tick of its age and id (see <see cref="ItemEntity.RestPhase"/>). Living things move before
+    /// gravity pulls (see <see cref="Move(Entity, MobTerrain, VectorD, float, float)"/>), which would leave an item one
+    /// gravity step higher on every tick it flies.
+    /// </summary>
+    /// <remarks>
+    /// In water or lava the item moves as before (see <see cref="Move(Entity, MobTerrain, VectorD, float, float)"/>).
+    /// Vanilla keeps the item's gravity in double precision and its drag as a float.
+    /// </remarks>
+    /// <param name="age">The ticks the item has existed, which with its id picks its resting moves.</param>
+    internal static VectorD MoveItem(ItemEntity item, MobTerrain terrain, int age)
+    {
+        const double gravity = 0.04;
+        const float drag = 0.98f;
+
+        var bounds = item.Dimension.CreateBBFromPosition(item.Position);
+        if (terrain.ContainsFluid(bounds, water: true) || terrain.ContainsFluid(bounds, water: false))
+            return Move(item, terrain, VectorD.Zero, (float)gravity, drag);
+
+        if (!item.NoGravity)
+            item.Motion = new VectorD(item.Motion.X, item.Motion.Y - gravity, item.Motion.Z);
+
+        var motion = item.Motion;
+        var resting = item.MovementFlags.HasFlag(MovementFlags.OnGround)
+            && motion.X * motion.X + motion.Z * motion.Z <= 1.0E-5f
+            && (age + item.RestPhase) % 4 != 0;
+        if (resting)
+            return item.Position;
+
+        var next = Displace(item, terrain, motion, gravity);
+
+        // Vanilla's Entity.move leaves the entity where it is when collision cut its move to almost nothing, which is
+        // what stops a resting item creeping on. It holds for every entity; only items apply it so far.
+        var moved = (next - item.Position).MagnitudeSquared();
+        if (moved <= 1.0E-7 && motion.MagnitudeSquared() - moved >= 1.0E-7)
+            next = item.Position;
+
+        var grounded = item.MovementFlags.HasFlag(MovementFlags.OnGround);
+        var friction = grounded ? drag * terrain.GetFriction(next) : drag;
+        var after = item.Motion;
+        var vertical = after.Y * drag;
+        if (grounded && vertical < 0)
+            vertical *= -0.5;
+
+        item.Motion = new VectorD(after.X * friction, vertical, after.Z * friction);
+        return next;
+    }
+
+    /// <summary>
     /// The upward velocity a jump gives <paramref name="mob"/> where it stands, like vanilla's <c>getJumpPower</c>: its
     /// jump strength by the jump factor of the block it's on (honey halves it).
     /// </summary>

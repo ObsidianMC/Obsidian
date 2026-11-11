@@ -127,28 +127,37 @@ internal static partial class DispenseBehaviors
     }
 
     /// <summary>
-    /// Vanilla's <c>DefaultDispenseItemBehavior.spawnItem</c>: one item from 0.7 blocks out of the centre, lowered by
-    /// a little, with the item entity's own motion drawn and replaced by one along the facing.
+    /// What a dispenser drops: one item from 0.7 blocks out of its centre, as vanilla's
+    /// <c>DefaultDispenseItemBehavior.spawnItem</c> drops it with accuracy 6 (see <see cref="SpawnItem"/>).
     /// </summary>
-    /// <remarks>
-    /// Draws from the level's random in vanilla's order: the two draws of the item entity's own motion, then the
-    /// speed and three triangles, as vanilla draws them from its level's random.
-    /// </remarks>
     internal static void DropItem(AbstractLevel level, Vector position, BlockFace facing, ItemStack item)
     {
-        // Vanilla DefaultDispenseItemBehavior: an item's speed (6) times its spread per unit of speed.
-        const double spread = 6 * 0.0172275;
-
         var step = facing.ToVector();
-        var lowered = facing.IsVertical() ? 0.125 : 0.15625;
-        var x = position.X + 0.5 + 0.7 * step.X;
-        var y = position.Y + 0.5 + 0.7 * step.Y - lowered;
-        var z = position.Z + 0.5 + 0.7 * step.Z;
+        var from = new VectorD(
+            position.X + 0.5 + 0.7 * step.X,
+            position.Y + 0.5 + 0.7 * step.Y,
+            position.Z + 0.5 + 0.7 * step.Z);
+        SpawnItem(level, item, 6, facing, from);
+    }
+
+    /// <summary>
+    /// Vanilla's <c>DefaultDispenseItemBehavior.spawnItem</c>: <paramref name="item"/> from
+    /// <paramref name="position"/>, lowered by a little, moving along <paramref name="direction"/>, spread more the
+    /// lower <paramref name="accuracy"/> is.
+    /// </summary>
+    /// <remarks>
+    /// Draws from the level's random in vanilla's order: the speed, then three triangles. The item entity's own
+    /// starting motion, which this replaces, comes from its own random in 26.3, not the level's.
+    /// </remarks>
+    internal static void SpawnItem(AbstractLevel level, ItemStack item, int accuracy, BlockFace direction,
+        VectorD position)
+    {
+        // Vanilla's spread per unit of accuracy.
+        var spread = 0.0172275 * accuracy;
+        var step = direction.ToVector();
+        var lowered = direction.IsVertical() ? 0.125 : 0.15625;
 
         var random = level.GrowthRandom;
-        random.NextDouble();
-        random.NextDouble();
-
         var speed = random.NextDouble() * 0.1 + 0.2;
         var motion = new VectorD(
             random.Triangle(step.X * speed, spread),
@@ -159,7 +168,7 @@ internal static partial class DispenseBehaviors
         {
             Level = level,
             EntityId = Server.GetNextEntityId(),
-            Position = new VectorD(x, y, z),
+            Position = new VectorD(position.X, position.Y - lowered, position.Z),
             Item = item,
             Motion = motion
         }, hostOwned: true);
