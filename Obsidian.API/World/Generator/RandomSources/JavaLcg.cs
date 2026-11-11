@@ -21,6 +21,9 @@ internal struct JavaLcg
 
     public void SetSeed(long seed) => this.seed = (seed ^ Multiplier) & ModulusMask;
 
+    /// <summary>The generator's 48-bit state, as <c>java.util.Random</c> holds it after scrambling its seed.</summary>
+    public readonly long State => this.seed;
+
     /// <summary>
     /// The next <paramref name="bits"/> random bits (1 to 32) in the low bits of the result.
     /// </summary>

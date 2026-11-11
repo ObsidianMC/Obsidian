@@ -1,4 +1,5 @@
 using Obsidian.API.Inventory;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Entities.AI;
 using Obsidian.WorldData;
 
@@ -33,6 +34,31 @@ public partial class Skeleton : PathfinderMob
         targets.AddGoal(3, new NearestAttackableTargetGoal(this, entity => entity.Type == EntityType.IronGolem));
         targets.AddGoal(3, new NearestAttackableTargetGoal(this, entity => entity.Type == EntityType.Turtle &&
             entity is IAgeable { IsBaby: true } && entity.MovementFlags.HasFlag(MovementFlags.OnGround)));
+    }
+
+    /// <summary>
+    /// Vanilla's <c>AbstractSkeleton.finalizeSpawn</c> with the level's random, in vanilla's order: the base spawn
+    /// setup, the type's default equipment, its enchantments, picking up loot and, on Halloween, a pumpkin.
+    /// </summary>
+    internal override SpawnCompanions FinalizeBareSpawn(AbstractLevel level, IRandomSource random)
+    {
+        var special = SpecialDifficulty;
+        FinalizeMobSpawnFromLevel(random);
+        PopulateBareEquipment(random, special);
+        CanPickUpLoot = random.NextFloat() < 0.55f * special;
+        PutOnHalloweenHeadFromLevel(level, random);
+        return default;
+    }
+
+    /// <summary>
+    /// Vanilla's <c>AbstractSkeleton</c> default equipment and its enchantments, from the level's random: armour, a
+    /// bow, then the enchantments of what it holds and wears.
+    /// </summary>
+    private protected virtual void PopulateBareEquipment(IRandomSource random, float special)
+    {
+        PopulateDefaultArmor(random.NextFloat, random.NextInt, special);
+        SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(ItemsRegistry.Bow));
+        PopulateEquipmentEnchantmentsFromLevel(random, special);
     }
 
     protected override void FinalizeSpawn()

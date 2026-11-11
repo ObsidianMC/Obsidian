@@ -63,6 +63,69 @@ internal static class EntityMovement
     }
 
     /// <summary>
+    /// An item entity's move, like vanilla's <c>ItemEntity.tick</c> after its fluid contact was updated (see
+    /// <see cref="ItemEntity"/>): deep in water or lava it rises a little and slows across, or else gravity pulls it;
+    /// then the move, then drag (and the friction of the block it lands on), and a bounce off the ground. An item at
+    /// rest on the ground only moves every fourth tick of its age and id (see <see cref="ItemEntity.RestPhase"/>).
+    /// Living things move before gravity pulls (see <see cref="Move(Entity, MobTerrain, VectorD, float, float)"/>),
+    /// which would leave an item one gravity step higher on every tick it flies.
+    /// </summary>
+    /// <remarks>
+    /// Vanilla keeps the item's gravity in double precision and its drag, fluid factors and rise as floats.
+    /// </remarks>
+    /// <param name="age">The ticks the item has existed, which with its id picks its resting moves.</param>
+    internal static VectorD MoveItem(ItemEntity item, MobTerrain terrain, int age)
+    {
+        const double gravity = 0.04;
+        const float drag = 0.98f;
+
+        var bounds = item.Dimension.CreateBBFromPosition(item.Position);
+        var waterHeight = terrain.FluidHeight(bounds, water: true);
+        var lavaHeight = terrain.FluidHeight(bounds, water: false);
+
+        // Deep enough in a fluid (more than 0.1 above its feet), it's held up instead of pulled down.
+        if (waterHeight > 0.1f)
+            item.Motion = InFluid(item.Motion, 0.99f);
+        else if (lavaHeight > 0.1f)
+            item.Motion = InFluid(item.Motion, 0.95f);
+        else if (!item.NoGravity)
+            item.Motion = new VectorD(item.Motion.X, item.Motion.Y - gravity, item.Motion.Z);
+
+        var motion = item.Motion;
+        var resting = item.MovementFlags.HasFlag(MovementFlags.OnGround)
+            && motion.X * motion.X + motion.Z * motion.Z <= 1.0E-5f
+            && (age + item.RestPhase) % 4 != 0;
+        if (resting)
+            return item.Position;
+
+        var next = Displace(item, terrain, motion, gravity);
+
+        // Vanilla's Entity.move leaves the entity where it is when collision cut its move to almost nothing, which is
+        // what stops a resting item creeping on. It holds for every entity; only items apply it so far.
+        var moved = (next - item.Position).MagnitudeSquared();
+        if (moved <= 1.0E-7 && motion.MagnitudeSquared() - moved >= 1.0E-7)
+            next = item.Position;
+
+        var grounded = item.MovementFlags.HasFlag(MovementFlags.OnGround);
+        var friction = grounded ? drag * terrain.GetFriction(next) : drag;
+        var after = item.Motion;
+        var vertical = after.Y * drag;
+        if (grounded && vertical < 0)
+            vertical *= -0.5;
+
+        item.Motion = new VectorD(after.X * friction, vertical, after.Z * friction);
+        return next;
+    }
+
+    // Vanilla's ItemEntity.setFluidMovement: slowed across by the fluid's factor, and lifted a little while it rises
+    // slower than 0.06 a tick.
+    private static VectorD InFluid(VectorD motion, float factor)
+    {
+        var rise = motion.Y < 0.06f ? 5.0E-4f : 0;
+        return new VectorD(motion.X * factor, motion.Y + rise, motion.Z * factor);
+    }
+
+    /// <summary>
     /// The upward velocity a jump gives <paramref name="mob"/> where it stands, like vanilla's <c>getJumpPower</c>: its
     /// jump strength by the jump factor of the block it's on (honey halves it).
     /// </summary>

@@ -10,6 +10,12 @@ public class LegacyRandomSource : BitRandomSource
 
     public LegacyRandomSource(long seed) => this.state = new JavaLcg(seed);
 
+    /// <summary>
+    /// The generator's 48-bit state, which vanilla's <c>LegacyRandomSource</c> keeps in its <c>seed</c> field: parity
+    /// replays compare it to tell how many draws were made.
+    /// </summary>
+    internal long State => this.state.State;
+
     public override IRandomSource Fork() => new LegacyRandomSource(this.NextLong());
 
     public override IPositionalRandomFactory ForkPositional() => new LegacyPositionalRandomFactory(this.NextLong());

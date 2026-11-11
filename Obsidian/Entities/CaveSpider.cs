@@ -1,9 +1,15 @@
+using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.WorldData;
+
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:cave_spider")]
 public sealed partial class CaveSpider : Spider
 {
     public CaveSpider() => Type = EntityType.CaveSpider;
+
+    // Vanilla's CaveSpider.finalizeSpawn does nothing, not even Mob's or the spider's draws.
+    internal override SpawnCompanions FinalizeBareSpawn(AbstractLevel level, IRandomSource random) => default;
     protected internal override async ValueTask PerformMeleeAttackAsync(IEntity target)
     {
         var health = target.Health;
