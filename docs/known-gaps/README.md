@@ -34,6 +34,7 @@ and where to start.
 - [Saplings that 26.3 added](saplings-that-26-3-added.md)
 - [Sign interactions](sign-interactions.md)
 - [Tilling and other block transformers](tilling-and-other-block-transformers.md)
+- [Trial spawners and vaults](trial-spawners.md)
 - [Vanilla blocks' reactions to block updates](vanilla-blocks-reactions-to-block-updates.md)
 - [Waxing, bells and redstone ore](waxing-bells-and-redstone-ore.md)
 
