@@ -845,18 +845,36 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
             return false;
 
         // The name must map to this player alone; undo the registration rather than leave lookups disagreeing.
-        if (this.UsernameToUuidMappings.TryAdd(player.Username, player.Uuid))
+        if (!this.UsernameToUuidMappings.TryAdd(player.Username, player.Uuid))
         {
-            // Like vanilla's placeNewPlayer, joining puts the player at the end of the player list.
-            lock (this.playerList)
-                this.playerList.Add(player);
-
-            return true;
+            this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player));
+            return false;
         }
 
-        this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player));
+        this.PlayerRegistered?.Invoke(player);
+
+        // Like vanilla's placeNewPlayer, joining puts the player at the end of the player list. A disconnect may have
+        // unregistered them meanwhile, and its removal from the list (which takes this lock after unregistering) may be
+        // over already: append only a player still registered, so the list never keeps one that left.
+        lock (this.playerList)
+        {
+            if (this.IsOnline(player))
+            {
+                this.playerList.Add(player);
+                return true;
+            }
+        }
+
+        // The disconnect's release may have run before the name was mapped; don't leave the name behind either.
+        this.UsernameToUuidMappings.TryRemove(new KeyValuePair<string, Guid>(player.Username, player.Uuid));
         return false;
     }
+
+    /// <summary>
+    /// Runs in <see cref="AddPlayer"/> between registering the player and adding them to the player list; tests hold
+    /// it to disconnect the player there.
+    /// </summary>
+    internal Action<IPlayer>? PlayerRegistered { get; set; }
 
     /// <summary>
     /// The online players in vanilla's player list order: the order they joined in, but a player who respawned (after
