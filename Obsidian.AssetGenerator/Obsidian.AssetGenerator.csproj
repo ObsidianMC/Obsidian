@@ -54,6 +54,7 @@
 		<VanillaDumperInput Remove="Java\ShelfFixtures.java" />
 		<VanillaDumperInput Remove="Java\StrawBedFixtures.java" />
 		<VanillaDumperInput Remove="Java\GoldenDandelionFixtures.java" />
+		<VanillaDumperInput Remove="Java\CommandBlockFixtures.java" />
 
 		<None Update="@(VanillaDumperInput)" CopyToOutputDirectory="PreserveNewest" />
 		<!-- Gameplay probes run only through their requested CaptureFixtures entry. -->
@@ -85,6 +86,7 @@
 		<None Update="Java\ShelfFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\StrawBedFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\GoldenDandelionFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\CommandBlockFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 
 		<!-- On-request captures (CaptureVanillaWorldgen); not asset inputs, so editing them doesn't regenerate the assets. -->
 		<None Update="Captures\**\*.java" CopyToOutputDirectory="PreserveNewest" />

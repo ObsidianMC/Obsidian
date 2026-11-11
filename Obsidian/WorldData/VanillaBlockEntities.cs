@@ -55,6 +55,7 @@ internal static class VanillaBlockEntities
         "minecraft:shelf" => new ShelfBlockEntity(position),
         "minecraft:trial_spawner" => new TrialSpawners.TrialSpawnerBlockEntity(),
         "minecraft:vault" => new TrialSpawners.VaultBlockEntity(),
+        CommandBlockEntity.TypeId => new CommandBlockEntity(),
         _ => null
     };
 

@@ -354,6 +354,9 @@ internal static class TestServerFactory
         broadcaster.Server = server;
         eventDispatcher.RegisterEvents();
 
+        // As the level factory does: the level runs its command blocks' commands on this server.
+        world.OwningServer = server;
+
         return new RealServerContext
         {
             Server = server,

@@ -1,5 +1,6 @@
 using Obsidian.API.Inventory;
 using Obsidian.API.Commands;
+using Obsidian.Commands;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 
@@ -11,7 +12,8 @@ namespace Obsidian.Entities;
 /// Breaking it drops a plain minecart.
 /// </summary>
 /// <remarks>
-/// The command runs as the console would, with the cart as the executor; vanilla runs it at permission level 2.
+/// The command runs through the same <see cref="StoredCommand"/> as a command block's, at permission level 2, with the
+/// cart as the executor, from where it is.
 /// </remarks>
 [MinecraftEntity("minecraft:command_block_minecart")]
 public sealed partial class CommandBlockMinecart : AbstractMinecart
@@ -21,29 +23,31 @@ public sealed partial class CommandBlockMinecart : AbstractMinecart
 
     private int age;
     private int lastActivated = -ActivationDelay;
-    private ChatMessage? lastOutput;
 
     public CommandBlockMinecart() => this.Type = EntityType.CommandBlockMinecart;
 
+    /// <summary>The command it runs and what its last run did, which a command block keeps too.</summary>
+    internal StoredCommand Stored { get; } = new();
+
     /// <summary>The command it runs (vanilla's <c>Command</c>).</summary>
-    public string Command { get; set; } = string.Empty;
+    public string Command
+    {
+        get => this.Stored.Command;
+        set => this.Stored.SetCommand(value);
+    }
 
     /// <summary>How many times the command last succeeded (vanilla's <c>SuccessCount</c>).</summary>
-    public int SuccessCount { get; private set; }
+    public int SuccessCount => this.Stored.SuccessCount;
 
     /// <summary>Whether it keeps the command's last output (vanilla's <c>TrackOutput</c>).</summary>
-    public bool TrackOutput { get; set; } = true;
+    public bool TrackOutput
+    {
+        get => this.Stored.TrackOutput;
+        set => this.Stored.TrackOutput = value;
+    }
 
     /// <summary>The command's last output, if it keeps it (vanilla's <c>LastOutput</c>).</summary>
-    public ChatMessage? LastOutput
-    {
-        get => this.lastOutput;
-        private set
-        {
-            this.lastOutput = value;
-            this.DataChanged = true;
-        }
-    }
+    public ChatMessage? LastOutput => this.Stored.LastOutput;
 
     protected override Item DropItem => ItemsRegistry.Get(ItemIds.Minecart);
 
@@ -70,10 +74,10 @@ public sealed partial class CommandBlockMinecart : AbstractMinecart
     /// </summary>
     internal void Edit(string command, bool trackOutput)
     {
-        this.Command = command;
-        this.TrackOutput = trackOutput;
+        this.Stored.SetCommand(command);
+        this.Stored.TrackOutput = trackOutput;
         if (!trackOutput)
-            this.LastOutput = null;
+            this.Stored.LastOutput = null;
 
         this.DataChanged = true;
     }
@@ -94,37 +98,15 @@ public sealed partial class CommandBlockMinecart : AbstractMinecart
         this.lastActivated = this.age;
     }
 
-    // Vanilla's BaseCommandBlock.performCommand.
+    // Vanilla's MinecartCommandBase: the command runs as the cart, from where it is, turned as it is.
     private async ValueTask PerformCommandAsync()
     {
-        this.SuccessCount = 0;
-        if (string.IsNullOrWhiteSpace(this.Command)
-            || this.Level.Players.Values.FirstOrDefault()?.Server is not IServer server)
-        {
+        if (this.Level is not WorldData.AbstractLevel level)
             return;
-        }
 
-        var sender = new MinecartCommandSender();
-        var line = this.Command.StartsWith('/') ? this.Command : $"/{this.Command}";
-        var context = new CommandContext(line, sender, null, server)
-        {
-            Executor = this,
-            Origin = this.Position,
-            Level = this.Level
-        };
-
-        try
-        {
-            await server.CommandHandler.ProcessCommand(context);
-            this.SuccessCount = 1;
-        }
-        catch (Exception)
-        {
-            this.SuccessCount = 0;
-        }
-
-        if (this.TrackOutput && sender.Output is ChatMessage output)
-            this.LastOutput = output;
+        var run = new CommandRun(level, this.Position, (this.Yaw, this.Pitch), Executor: this);
+        await this.Stored.PerformAsync(run);
+        this.DataChanged = true;
     }
 
     public override void Write(INetStreamWriter writer)
@@ -140,39 +122,16 @@ public sealed partial class CommandBlockMinecart : AbstractMinecart
         this.MetadataIndex = 15;
     }
 
+    // The cart's custom name is the entity's, which it saves itself.
     internal override void WriteNbt(NbtCompound tag)
     {
         base.WriteNbt(tag);
-        tag.Set(new NbtTag<string>("Command", this.Command));
-        tag.Set(new NbtTag<int>("SuccessCount", this.SuccessCount));
-        tag.Set(new NbtTag<bool>("TrackOutput", this.TrackOutput));
-        tag.SetOrRemove("LastOutput", this.TrackOutput ? this.LastOutput?.ToNbt("LastOutput") : null);
+        this.Stored.Save(tag, withName: false);
     }
 
     internal override void ReadNbt(NbtCompound tag)
     {
         base.ReadNbt(tag);
-        this.Command = tag.TryGetTagValue<string>("Command", out var command) ? command : string.Empty;
-        this.SuccessCount = tag.TryGetNumber<int>("SuccessCount", out var successes) ? successes : 0;
-        this.TrackOutput = !tag.TryGetBool("TrackOutput", out var track) || track;
-        this.lastOutput = this.TrackOutput && tag.TryGetTag("LastOutput", out var output) ? output.TextFromNbt() : null;
-    }
-
-    // Collects what the command says, the last line of which the cart keeps.
-    private sealed class MinecartCommandSender : ICommandSender
-    {
-        public CommandIssuers Issuer => CommandIssuers.Console;
-
-        public IPlayer? Player => null;
-
-        public ChatMessage? Output { get; private set; }
-
-        public Task SendMessageAsync(ChatMessage message)
-        {
-            this.Output = message;
-            return Task.CompletedTask;
-        }
-
-        public Task SendMessageAsync(ChatMessage message, Guid sender) => this.SendMessageAsync(message);
+        this.Stored.Load(tag, withName: false);
     }
 }

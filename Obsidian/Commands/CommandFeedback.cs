@@ -12,6 +12,15 @@ internal static class CommandFeedback
     public static Task SuccessAsync(this CommandContext context, string message) =>
         context.Sender.SendMessageAsync(ChatMessage.Simple(message));
 
+    /// <summary>
+    /// Tells the sender a command succeeded, but not operators watching command blocks, like vanilla's
+    /// <c>sendSuccess(message, false)</c>.
+    /// </summary>
+    public static Task UnbroadcastSuccessAsync(this CommandContext context, string message) =>
+        context.Sender is CommandBlockSender block
+            ? block.SendUnbroadcastAsync(ChatMessage.Simple(message))
+            : context.Sender.SendMessageAsync(ChatMessage.Simple(message));
+
     /// <summary>Tells the sender a command failed, in red like vanilla's errors.</summary>
     public static Task FailAsync(this CommandContext context, string message)
     {

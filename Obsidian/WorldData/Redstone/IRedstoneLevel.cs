@@ -95,6 +95,14 @@ internal interface IRedstoneLevel : IBlockChangeWorld
     void CraftCrafter(Vector position);
 
     /// <summary>
+    /// Runs a due tick of the command block at <paramref name="position"/> on the entity path (vanilla
+    /// <c>CommandBlock.tick</c>), where its command can run. Worlds without commands do nothing.
+    /// </summary>
+    void RunCommandBlock(Vector position)
+    {
+    }
+
+    /// <summary>
     /// How many viewers have the trapped chest at <paramref name="position"/> open, as its last opener recheck
     /// counted them (vanilla <c>ChestBlockEntity.getOpenCount</c>). Worlds without players have none.
     /// </summary>

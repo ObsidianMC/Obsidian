@@ -48,6 +48,7 @@ internal static class RedstoneRegistration
         neighbors.Register(BlockIds.BigDripleaf, BigDripleafContactBehavior.Instance);
         ShelfConnections.Register(world, neighbors, engine);
         RedstoneBell.Register(world, neighbors, engine);
+        CommandBlocks.Register(world, ticks, neighbors, engine);
         var tripwires = TripWire.Register(world, ticks, redstone, neighbors);
         var targets = TargetBlock.Register(world, ticks, redstone);
         LightningRods.Register(redstone, neighbors);

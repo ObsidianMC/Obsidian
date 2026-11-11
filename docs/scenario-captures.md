@@ -544,6 +544,36 @@ replaces only what vanilla produced.
   coordinates, sound seeds, random arrow-hit pitch and TNT's random horizontal impulse are omitted (see
   [dispenser behaviours](known-gaps/dispenser-behaviours.md)).
 
+- `command_blocks.json` (`VanillaCommandBlocks.ReplayCommandBlockReference`) records command blocks tick by tick,
+  from `Java/CommandBlockFixtures.java` (`CaptureFixtures=command_blocks`), on a dedicated server of its own in a flat
+  world of air in a temporary folder, frozen and stepped one tick at a time. A case sets up its blocks without
+  updates and its command blocks with their `command`, `auto` and `trackOutput`. Fields are set in the order loading
+  their data sets them, so an always active repeating block schedules its first tick then. A case can also set game
+  `rules` (`command_block_output`, `send_command_feedback`, `command_blocks_work` and
+  `max_command_sequence_length`, each back to its default first). Its `actions` run before their tick: a block set
+  with every update, or an `edit` that an operator in creative mode sends through vanilla's own
+  `handleSetCommandBlock`. After each tick the probe records the area's changed blocks (a comparator and dust read
+  `SuccessCount`), and each command block's success count, power, condition, `auto` and `LastOutput` without its
+  wall-clock time. It also records the chat the operator received as text: `/say`, operators' `[@: …]` notices and
+  the editor's "Command set". After the last tick it records what each block saves (vanilla's `saveCustomOnly`,
+  which the editor is sent), with `LastExecution` relative to the game time before the first tick. A second player,
+  not an operator, is online for selectors to find after the operator. The 25 cases
+  cover:
+  - impulse blocks on rising edges, including one powered before it was placed, which waits for an update;
+  - commands that succeed, fail and are empty; untracked output; each rule; and Searge's easter egg;
+  - `execute as @a run say hi` and `execute as @a if entity @s` with both players online, whose success counts of 2
+    a comparator reads, and whose per-branch "Test passed. Count: 1" operators aren't told of;
+  - repeating blocks, always active and while powered;
+  - chains in order, past an inactive chain block and powered by redstone, conditional chains after a success and a
+    failure, the sequence length, and a loop, which ends when it reaches a block that already ran this tick;
+  - edits making a repeating block, resetting the success count (which leaves the comparator's output stale, as in
+    vanilla), clearing tracked output, making a chain block conditional and turning a repeating block into an
+    impulse one.
+
+  The replay sends the edits as `SetCommandBlockPacket` bytes and compares everything from the start. It also
+  requires Obsidian's output to start with the time wherever vanilla's does. No difference is pinned; what isn't
+  captured is listed in [command blocks](known-gaps/command-blocks.md).
+
 - `projectile_block_hits.json` (`VanillaProjectileHits.ReplayProjectileHitReference`) records projectiles hitting
   blocks, from `Java/ProjectileHitFixtures.java` (`CaptureFixtures=projectile_hits`). Like the block use probe it
   runs a dedicated server of its own in a flat world of air, at easy, with mob griefing off and time, weather and
@@ -1022,7 +1052,7 @@ The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft 
 [redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+heightmaps+saved_heightmaps+mining+placement+
 copper_weathering+fire+ticking_blocks+block_use+waxing_bells_ore+cauldrons+turtle_eggs+frogspawn+growing_plant_ticks+
 melting_weather+furnace_results+brushing+armor_stand_use+projectile_hits+dispenser+shelves+straw_beds+
-golden_dandelions+lightning+trial_spawners+special_blocks]
+golden_dandelions+lightning+trial_spawners+command_blocks+special_blocks]
 [case names]`.
 
 ## How it captures

@@ -155,6 +155,10 @@ public partial class PlayerBase
         if (!this.AwaitingEndCredits)
             return false;
         this.AwaitingEndCredits = false;
+
+        // Vanilla's client asks to respawn once the credits are over, and PlayerList.respawn moves the player to the
+        // end of the player list.
+        this.MoveToEndOfPlayerList();
         var generation = ++this.portalGeneration;
         this.lastPortal = BlockIds.EndPortal;
         this.lastPortalType = null;

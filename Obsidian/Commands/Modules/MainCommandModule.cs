@@ -164,11 +164,12 @@ public sealed class MainCommandModule : CommandModuleBase
     [CommandInfo("Save World", "/save")]
     public async Task SaveAsync()
     {
-        // Run by a command block minecart, inside a level's tick, it saves once the ticks are over.
-        if (this.Player?.Level is World world)
-        {
+        // The world of the level the command runs in: a player's, a command block's or minecart's, or the console's
+        // default world. Run by a command block or minecart, inside a level's tick, it saves once the ticks are over.
+        var level = CommandFeedback.LevelOf(this.CommandContext);
+        var world = level as World ?? (level as WorldData.Dimension)?.ParentWorld as World;
+        if (world is not null)
             await ((Server)this.Server).RunOutsideTicksAsync(world.FlushAsync);
-        }
     }
 
     [Command("forcechunkreload")]
