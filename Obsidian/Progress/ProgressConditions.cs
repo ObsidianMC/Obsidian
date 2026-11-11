@@ -93,34 +93,85 @@ internal static class ProgressConditions
     private static bool LocationEvent(IPlayer player, JsonElement conditions, ItemStack? item,
         IBlock? block, Vector? position)
     {
-        if (conditions.ValueKind != JsonValueKind.Array)
-            return false;
-
-        foreach (var condition in conditions.EnumerateArray())
+        // Shipped 26.3 criteria use codec objects; older fixtures store an implicit conjunction as an array.
+        if (conditions.ValueKind == JsonValueKind.Array)
         {
-            var type = AdvancementsRegistry.Qualify(condition.GetProperty("condition").GetString()!);
-            var matched = type switch
-            {
-                "minecraft:match_tool" => condition.EnumerateObject()
-                    .All(property => property.Name is "condition" or "predicate")
-                    && Item(item, condition.GetProperty("predicate")),
-                "minecraft:block_state_property" => condition.EnumerateObject()
-                    .All(property => property.Name is "condition" or "block" or "properties")
-                    && block is not null
-                    && block.UnlocalizedName
-                        == AdvancementsRegistry.Qualify(condition.GetProperty("block").GetString()!)
-                    && (!condition.TryGetProperty("properties", out var properties)
-                        || LootTableJson.MatchesProperties(block.GetProperties(), properties)),
-                "minecraft:location_check" => condition.EnumerateObject()
-                    .All(property => property.Name is "condition" or "predicate")
-                    && Location(player, condition.GetProperty("predicate"), position),
-                _ => false
-            };
-            if (!matched)
-                return false;
+            return conditions.EnumerateArray()
+                .All(term => LocationEvent(player, term, item, block, position));
         }
 
-        return true;
+        if (conditions.ValueKind != JsonValueKind.Object)
+            return false;
+
+        if (!conditions.TryGetProperty("type", out var discriminator)
+            && !conditions.TryGetProperty("condition", out discriminator))
+        {
+            return false;
+        }
+
+        if (discriminator.ValueKind != JsonValueKind.String)
+            return false;
+
+        var type = AdvancementsRegistry.Qualify(discriminator.GetString()!);
+        if (type is "minecraft:all_of" or "minecraft:any_of")
+        {
+            if (!conditions.EnumerateObject().All(property => property.Name is "type" or "condition" or "terms")
+                || !conditions.TryGetProperty("terms", out var terms))
+            {
+                return false;
+            }
+
+            // Vanilla's terms codec accepts a single condition as well as a list, including recursively.
+            if (terms.ValueKind == JsonValueKind.Object)
+                return LocationEvent(player, terms, item, block, position);
+
+            if (terms.ValueKind != JsonValueKind.Array)
+                return false;
+
+            var entries = terms.EnumerateArray();
+            return type == "minecraft:all_of"
+                ? entries.All(term => LocationEvent(player, term, item, block, position))
+                : entries.Any(term => LocationEvent(player, term, item, block, position));
+        }
+
+        return type switch
+        {
+            "minecraft:match_tool" => conditions.EnumerateObject()
+                .All(property => property.Name is "type" or "condition" or "predicate")
+                && (!conditions.TryGetProperty("predicate", out var predicate) || Item(item, predicate)),
+            "minecraft:match_block" => conditions.EnumerateObject()
+                .All(property => property.Name is "type" or "condition" or "blocks" or "state")
+                && block is not null && EventBlock(block, conditions),
+            "minecraft:block_state_property" => conditions.EnumerateObject()
+                .All(property => property.Name is "type" or "condition" or "block" or "properties")
+                && block is not null
+                && block.UnlocalizedName == AdvancementsRegistry.Qualify(conditions.GetProperty("block").GetString()!)
+                && (!conditions.TryGetProperty("properties", out var properties)
+                    || LootTableJson.MatchesProperties(block.GetProperties(), properties)),
+            "minecraft:location_check" => conditions.EnumerateObject()
+                .All(property => property.Name is "type" or "condition" or "predicate"
+                    or "offsetX" or "offsetY" or "offsetZ")
+                && EventLocation(player, conditions, position),
+            _ => false
+        };
+    }
+
+    private static bool EventBlock(IBlock block, JsonElement condition) =>
+        (!condition.TryGetProperty("blocks", out var blocks)
+            || LootTableJson.MatchesRegistrySet(blocks, "block", block.UnlocalizedName, block.RegistryId))
+        && (!condition.TryGetProperty("state", out var state)
+            || LootTableJson.MatchesProperties(block.GetProperties(), state));
+
+    private static bool EventLocation(IPlayer player, JsonElement condition, Vector? position)
+    {
+        if (!condition.TryGetProperty("predicate", out var predicate))
+            return true;
+
+        var origin = position ?? (Vector)player.Position.Floor();
+        var x = condition.TryGetProperty("offsetX", out var offsetX) ? offsetX.GetInt32() : 0;
+        var y = condition.TryGetProperty("offsetY", out var offsetY) ? offsetY.GetInt32() : 0;
+        var z = condition.TryGetProperty("offsetZ", out var offsetZ) ? offsetZ.GetInt32() : 0;
+        return Location(player, predicate, origin + new Vector(x, y, z));
     }
 
     private static bool Inventory(IPlayer player, JsonElement predicates)
@@ -225,6 +276,14 @@ internal static class ProgressConditions
                         return false;
                 }
             }
+            else if (property.Name == "smokey")
+            {
+                if (entity.Level is not WorldData.AbstractLevel level
+                    || WorldData.CampfireSmoke.Reaches(level, (Vector)origin.Floor()) != property.Value.GetBoolean())
+                {
+                    return false;
+                }
+            }
             else if (property.Name == "block")
             {
                 var block = new MobTerrain(entity.Level).GetBlock((Vector)origin.Floor());
@@ -243,7 +302,7 @@ internal static class ProgressConditions
     private static bool Block(IBlock block, JsonElement predicate) => predicate.EnumerateObject().All(property =>
         property.Name switch
         {
-            "blocks" => LootTableJson.MatchesRegistrySet(property.Value, "block", block.UnlocalizedName, block.BaseId),
+            "blocks" => LootTableJson.MatchesRegistrySet(property.Value, "block", block.UnlocalizedName, block.RegistryId),
             "state" => LootTableJson.MatchesProperties(block.GetProperties(), property.Value),
             _ => false
         });

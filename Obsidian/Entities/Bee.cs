@@ -13,6 +13,17 @@ public sealed partial class Bee : FarmAnimal
     private int stingTicks;
     private int searchCooldown;
     private bool hasNectar;
+    private bool harvestTargetPending;
+
+    internal void TargetHarvester(IEntity player)
+    {
+        if (HasStung)
+            return;
+
+        AttackTarget = player;
+        harvestTargetPending = true;
+    }
+
     internal int CropsGrownSincePollination { get; private set; }
     public Bee() => Type = EntityType.Bee;
 
@@ -54,6 +65,13 @@ public sealed partial class Bee : FarmAnimal
         await base.TickMobAsync();
         if (MobBitMask.HasFlag(MobBitmask.NoAi))
             return;
+        if (harvestTargetPending)
+        {
+            harvestTargetPending = false;
+            AngerTicks = Random.Next(400, 801);
+            SynchronizeMetadata();
+        }
+
         if (AngerTicks > 0 && --AngerTicks == 0)
         {
             AttackTarget = null;
@@ -152,17 +170,30 @@ public sealed partial class Bee : FarmAnimal
             ((Navigator)Navigator!).NavigateTo(point);
             if ((point - Position).MagnitudeSquared() < 2 && GetHive(hive) is DataBlockEntity entity)
             {
-                lock (entity.Data)
+                // Entry participates in the same occupant transaction as harvest and timed release.
+                lock (((AbstractLevel)Level).Fluids.TickLock)
                 {
-                    if (!entity.Data.TryGetTag<NbtList>("bees", out var occupants))
-                        occupants = new NbtList(NbtTagType.Compound, "bees");
-                    if (occupants.Count >= 3)
-                        return;
-                    API.Data.AttachmentStorage.For(this).Retire();
-                    var data = EntityNbt.Save(this)!;
-                    data.Name = "entity_data";
-                    occupants.Add(new NbtCompound { data, new NbtTag<int>("ticks_in_hive", 0), new NbtTag<int>("min_ticks_in_hive", HasNectar ? 2400 : 600) });
-                    entity.Set(occupants);
+                    lock (entity.Data)
+                    {
+                        if (!ReferenceEquals(GetHive(hive), entity) || entity.IsRemoved)
+                            return;
+
+                        if (!entity.Data.TryGetTag<NbtList>("bees", out var occupants))
+                            occupants = new NbtList(NbtTagType.Compound, "bees");
+                        if (occupants.Count >= 3)
+                            return;
+
+                        API.Data.AttachmentStorage.For(this).Retire();
+                        var data = EntityNbt.Save(this)!;
+                        data.Name = "entity_data";
+                        occupants.Add(new NbtCompound
+                        {
+                            data,
+                            new NbtTag<int>("ticks_in_hive", 0),
+                            new NbtTag<int>("min_ticks_in_hive", HasNectar ? 2400 : 600)
+                        });
+                        entity.Set(occupants);
+                    }
                 }
                 await RemoveAsync();
             }

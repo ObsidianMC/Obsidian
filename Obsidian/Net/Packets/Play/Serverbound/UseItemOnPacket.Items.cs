@@ -26,6 +26,7 @@ public partial class UseItemOnPacket
         ["HoneycombItem"] = (_, use) => CopperWaxing.UseHoneycombAsync(use),
         ["HangingEntityItem"] = (packet, use) => packet.HangAsync(use),
         ["BrushItem"] = (_, use) => UseBrush(use),
+        ["ShearsItem"] = (_, use) => FoodHarvest.TrimAsync(use),
         ["CompassItem"] = (_, use) => UseCompassAsync(use)
     };
 

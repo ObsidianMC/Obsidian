@@ -10,6 +10,9 @@ internal static partial class UseBehaviors
 
     private sealed class CandleUse(bool cake) : IBlockUseBehavior
     {
+        public ValueTask<UseResult> UseWithoutItemAsync(BlockUse use) => cake
+            ? EatCakeAsync(use, candle: true) : ValueTask.FromResult(UseResult.Pass);
+
         public ValueTask<UseResult> UseItemOnAsync(BlockUse use)
         {
             if (cake && use.Item?.Holder.Id is ItemIds.FlintAndSteel or ItemIds.FireCharge)
