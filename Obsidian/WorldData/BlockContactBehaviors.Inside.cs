@@ -28,7 +28,7 @@ internal sealed class CampfireContactBehavior : IEntityInsideBehavior
     public ValueTask EntityInsideAsync(IContactLevel level, Vector position, IBlock block, Entity entity)
     {
         if (block.GetProperty("lit") != "true" || entity is not Living living || living.IsFireImmune
-            || living.HasPotionEffect((int)PotionEffect.FireResistance - 1))
+            || living is not ArmorStand && living.HasPotionEffect((int)PotionEffect.FireResistance - 1))
         {
             return default;
         }

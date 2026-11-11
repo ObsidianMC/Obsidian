@@ -50,6 +50,22 @@ public partial class VanillaBlockContact
 
             var mobGriefing = !scenario.TryGetProperty("mobGriefing", out var griefing) || griefing.GetBoolean();
             world.LevelData.GameRules["mob_griefing"] = mobGriefing.ToString();
+            var blockDrops = !scenario.TryGetProperty("blockDrops", out var dropsRule) || dropsRule.GetBoolean();
+            world.LevelData.GameRules["block_drops"] = blockDrops.ToString();
+            world.LevelData.Raining = scenario.TryGetProperty("raining", out var rain) && rain.GetBoolean();
+            if (world.LevelData.Raining)
+            {
+                // The rain cases stand under open sky in vanilla's plains. Empty replay chunks have no computed
+                // skylight, so supply that environment explicitly before exercising the ordinary rain checks.
+                for (var y = min.Y; y <= max.Y; y++)
+                {
+                    for (var z = min.Z; z <= max.Z; z++)
+                    {
+                        for (var x = min.X; x <= max.X; x++)
+                            world.GetLoadedChunk(x >> 4, z >> 4)!.SetLightLevel(x, y, z, LightType.Sky, 15);
+                    }
+                }
+            }
             world.GrowthRandom = new LegacyRandomSource(scenario.GetProperty("seed").GetInt64());
             world.TakeGameEvents();
             var entities = new Dictionary<string, Entity>();
@@ -256,7 +272,7 @@ public partial class VanillaBlockContact
 
         private static void PrepareContactEntity(Entity entity, JsonElement entry)
         {
-            // The capture never ticks its entities, so where their tick began stays where they were summoned.
+            // Controlled movement starts at the summon position, independently of autonomous travel.
             entity.TickStartPosition = entity.Position;
             if (entry.TryGetProperty("entitySeed", out var entitySeed))
                 entity.ContactEffectRandom = new ContactRandom(entitySeed.GetInt64());
@@ -280,6 +296,9 @@ public partial class VanillaBlockContact
                 if (entry.TryGetProperty("count", out var count))
                     item.Item.Count = count.GetInt32();
             }
+
+            if (entity is Living affected && entry.TryGetProperty("fireResistance", out _))
+                affected.AddPotionEffect((int)PotionEffect.FireResistance - 1, 1000);
 
             if (entity is ArmorStand stand)
             {
@@ -320,9 +339,6 @@ public partial class VanillaBlockContact
 
                 if (entry.TryGetProperty("jumpBoost", out var jumpBoost))
                     mob.AddPotionEffect((int)PotionEffect.JumpBoost - 1, 1000, jumpBoost.GetInt32());
-
-                if (entry.TryGetProperty("fireResistance", out _))
-                    mob.AddPotionEffect((int)PotionEffect.FireResistance - 1, 1000);
 
                 if (entry.TryGetProperty("feet", out var feet))
                     mob.SetEquipment(EquipmentSlot.Boots, new ItemStack(ItemsRegistry.Get(feet.GetString()!), 1));
@@ -376,6 +392,9 @@ public partial class VanillaBlockContact
                     if (entity is VehicleEntity vehicle)
                         CompareNumber("vehicle damage", expected.GetProperty("vehicleDamage").GetDouble(), vehicle.Damage);
                 }
+                if (expected.TryGetProperty("fireResistance", out var resistance) && entity is Living affected
+                    && resistance.GetBoolean() != affected.HasPotionEffect((int)PotionEffect.FireResistance - 1))
+                    differences.Add($"tick {tick} {observation.Name} Fire Resistance: expected {resistance}");
                 if (expected.TryGetProperty("fireFlag", out var fireFlag) && fireFlag.GetBoolean() != entity.Burning)
                     differences.Add($"tick {tick} {observation.Name} fire flag: got {entity.Burning}");
                 if (expected.TryGetProperty("frozenTicks", out var frozenTicks))

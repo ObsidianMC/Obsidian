@@ -118,6 +118,12 @@ public final class BlockContactFixtures {
         server.getCommands().performPrefixedCommand(server.createCommandSourceStack(),
             "gamerule minecraft:mob_griefing " + (!input.has("mobGriefing")
                 || input.get("mobGriefing").getAsBoolean()));
+        server.getCommands().performPrefixedCommand(server.createCommandSourceStack(),
+            "gamerule minecraft:block_drops " + (!input.has("blockDrops")
+                || input.get("blockDrops").getAsBoolean()));
+        var raining = input.has("raining") && input.get("raining").getAsBoolean();
+        level.getWeatherData().setRaining(raining);
+        level.setRainLevel(raining ? 1.0F : 0.0F);
         level.getRandom().setSeed(input.get("seed").getAsLong());
         var watcher = new ServerPlayer(server, level, new GameProfile(UUID.randomUUID(), "ContactWatcher"),
             ClientInformation.createDefault());
@@ -364,6 +370,11 @@ public final class BlockContactFixtures {
             var observation = checkpoint.getAsJsonObject("observations").getAsJsonObject(entry.getKey());
             observation.addProperty("removed", entity.isRemoved());
             observation.addProperty("fireTicks", entity.getRemainingFireTicks());
+            if (input.has("recordFireResistance")
+                && entity instanceof net.minecraft.world.entity.LivingEntity living) {
+                observation.addProperty("fireResistance", living.hasEffect(
+                    net.minecraft.world.effect.MobEffects.FIRE_RESISTANCE));
+            }
             if (input.has("tickFire")) {
                 try {
                     var flag = Entity.class.getDeclaredMethod("getSharedFlag", int.class);

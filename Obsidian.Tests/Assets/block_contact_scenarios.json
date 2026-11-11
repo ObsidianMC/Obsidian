@@ -170581,6 +170581,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 25,
+       "fireResistance": true,
        "fireFlag": false
       }
      },
@@ -170689,6 +170690,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 24,
+       "fireResistance": true,
        "fireFlag": true
       }
      },
@@ -170797,6 +170799,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 23,
+       "fireResistance": true,
        "fireFlag": true
       }
      },
@@ -170905,6 +170908,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 22,
+       "fireResistance": true,
        "fireFlag": true
       }
      },
@@ -171013,6 +171017,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 21,
+       "fireResistance": true,
        "fireFlag": true
       }
      },
@@ -171121,6 +171126,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 20,
+       "fireResistance": true,
        "fireFlag": true
       }
      },
@@ -171229,6 +171235,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 19,
+       "fireResistance": true,
        "fireFlag": true
       }
      },
@@ -171339,6 +171346,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 18,
+       "fireResistance": true,
        "fireFlag": true
       }
      },
@@ -171447,6 +171455,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 17,
+       "fireResistance": true,
        "fireFlag": true
       }
      },
@@ -171555,6 +171564,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 16,
+       "fireResistance": true,
        "fireFlag": true
       }
      },
@@ -171663,6 +171673,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 15,
+       "fireResistance": true,
        "fireFlag": true
       }
      },
@@ -171771,6 +171782,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 14,
+       "fireResistance": true,
        "fireFlag": true
       }
      },
@@ -171879,6 +171891,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 13,
+       "fireResistance": true,
        "fireFlag": true
       }
      },
@@ -171987,6 +172000,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 12,
+       "fireResistance": true,
        "fireFlag": true
       }
      },
@@ -172095,6 +172109,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 11,
+       "fireResistance": true,
        "fireFlag": true
       }
      },
@@ -172203,6 +172218,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 10,
+       "fireResistance": true,
        "fireFlag": true
       }
      },
@@ -172311,6 +172327,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 9,
+       "fireResistance": true,
        "fireFlag": true
       }
      },
@@ -172419,6 +172436,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 8,
+       "fireResistance": true,
        "fireFlag": true
       }
      },
@@ -172527,6 +172545,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 7,
+       "fireResistance": true,
        "fireFlag": true
       }
      },
@@ -172635,6 +172654,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 6,
+       "fireResistance": true,
        "fireFlag": true
       }
      },
@@ -172743,6 +172763,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 5,
+       "fireResistance": true,
        "fireFlag": true
       }
      },
@@ -172851,6 +172872,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 4,
+       "fireResistance": true,
        "fireFlag": true
       }
      },
@@ -172959,6 +172981,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 3,
+       "fireResistance": true,
        "fireFlag": true
       }
      },
@@ -173067,6 +173090,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 2,
+       "fireResistance": true,
        "fireFlag": true
       }
      },
@@ -173175,6 +173199,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 1,
+       "fireResistance": true,
        "fireFlag": true
       }
      },
@@ -173283,6 +173308,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 0,
+       "fireResistance": true,
        "fireFlag": false
       }
      },
@@ -173391,6 +173417,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 0,
+       "fireResistance": true,
        "fireFlag": false
       }
      },
@@ -173499,6 +173526,7 @@
        "damageType": null,
        "removed": false,
        "fireTicks": 0,
+       "fireResistance": true,
        "fireFlag": false
       }
      },
@@ -173518,7 +173546,8 @@
    "nextRandom": -1155484576,
    "nextEntityRandom": {
     "a": -1188957731
-   }
+   },
+   "recordFireResistance": true
   },
   {
    "name": "review_snow_then_campfire_no_griefing",
@@ -174329,6 +174358,1700 @@
     }
    ],
    "nextRandom": 304908421,
+   "nextEntityRandom": {
+    "a": -1188957731
+   }
+  },
+  {
+   "name": "review_campfire_stand_no_block_drops",
+   "contactMoves": true,
+   "recordInside": true,
+   "min": [
+    -1,
+    63,
+    0
+   ],
+   "max": [
+    1,
+    65,
+    0
+   ],
+   "ticks": 2,
+   "seed": 0,
+   "setup": [
+    {
+     "pos": [
+      -1,
+      63,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      63,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      63,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      64,
+      0
+     ],
+     "state": "minecraft:campfire"
+    }
+   ],
+   "entities": [
+    {
+     "tick": 0,
+     "summon": "a",
+     "type": "minecraft:armor_stand",
+     "pos": [
+      0.5,
+      64.8,
+      0.5
+     ],
+     "motion": [
+      0,
+      -0.5,
+      0
+     ],
+     "noGravity": false,
+     "noAi": true,
+     "entitySeed": 123,
+     "health": 0.6,
+     "fireTicks": 100,
+     "feet": "minecraft:diamond_boots",
+     "equipment": {
+      "mainhand": "minecraft:diamond_sword",
+      "offhand": "minecraft:shield",
+      "chest": "minecraft:diamond_chestplate",
+      "head": "minecraft:diamond_helmet"
+     }
+    }
+   ],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "blocks": [
+      {
+       "pos": [
+        -1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        -1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:campfire[facing=north,lit=true,signal_fire=false,waterlogged=false]"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        -1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "a": {
+       "position": [
+        0.5,
+        64.8,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        -0.5,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": false,
+       "health": 0.6,
+       "damageType": null,
+       "removed": false,
+       "fireTicks": 100
+      }
+     },
+     "drops": [],
+     "containers": [],
+     "entityEvents": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [],
+     "particles": []
+    },
+    {
+     "tick": 1,
+     "blocks": [
+      {
+       "pos": [
+        -1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        -1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:campfire[facing=north,lit=true,signal_fire=false,waterlogged=false]"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        -1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "a": {
+       "position": [
+        0.5,
+        64.4375,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": true,
+       "health": 0.6,
+       "damageType": null,
+       "removed": true,
+       "fireTicks": 100
+      }
+     },
+     "drops": [],
+     "containers": [],
+     "entityEvents": [],
+     "writes": [],
+     "sounds": [
+      "minecraft:entity.armor_stand.break"
+     ],
+     "soundDetails": [
+      {
+       "id": "minecraft:entity.armor_stand.break",
+       "category": "neutral",
+       "volume": 1.0,
+       "pitch": 1.0,
+       "position": [
+        0.5,
+        64.375,
+        0.5
+       ]
+      }
+     ],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [
+      "minecraft:hit_ground 0,0,0 minecraft:armor_stand",
+      "minecraft:entity_die 0,0,0 minecraft:armor_stand"
+     ],
+     "particles": []
+    },
+    {
+     "tick": 2,
+     "blocks": [
+      {
+       "pos": [
+        -1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        -1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:campfire[facing=north,lit=true,signal_fire=false,waterlogged=false]"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        -1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "a": {
+       "position": [
+        0.5,
+        64.4375,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": true,
+       "health": 0.6,
+       "damageType": null,
+       "removed": true,
+       "fireTicks": 100
+      }
+     },
+     "drops": [],
+     "containers": [],
+     "entityEvents": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [],
+     "particles": []
+    }
+   ],
+   "blockDrops": false,
+   "nextRandom": -152527805,
+   "nextEntityRandom": {
+    "a": -1188957731
+   }
+  },
+  {
+   "name": "review_stand_rain_burn_break",
+   "contactMoves": true,
+   "recordInside": true,
+   "min": [
+    -1,
+    63,
+    0
+   ],
+   "max": [
+    1,
+    65,
+    0
+   ],
+   "ticks": 2,
+   "seed": 0,
+   "setup": [
+    {
+     "pos": [
+      -1,
+      63,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      63,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      63,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      64,
+      0
+     ],
+     "state": "minecraft:campfire"
+    }
+   ],
+   "entities": [
+    {
+     "tick": 0,
+     "summon": "a",
+     "type": "minecraft:armor_stand",
+     "pos": [
+      1.5,
+      65,
+      0.5
+     ],
+     "motion": [
+      0,
+      0,
+      0
+     ],
+     "noGravity": false,
+     "noAi": true,
+     "entitySeed": 123,
+     "feet": "minecraft:diamond_boots",
+     "fireTicks": 20,
+     "health": 4.5
+    }
+   ],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "blocks": [
+      {
+       "pos": [
+        -1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        -1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:campfire[facing=north,lit=true,signal_fire=false,waterlogged=false]"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        -1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "a": {
+       "position": [
+        1.5,
+        65.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": false,
+       "health": 4.5,
+       "damageType": null,
+       "removed": false,
+       "fireTicks": 20,
+       "fireFlag": false
+      }
+     },
+     "drops": [],
+     "containers": [],
+     "entityEvents": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [],
+     "particles": []
+    },
+    {
+     "tick": 1,
+     "blocks": [
+      {
+       "pos": [
+        -1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        -1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:campfire[facing=north,lit=true,signal_fire=false,waterlogged=false]"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        -1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "a": {
+       "position": [
+        1.5,
+        65.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": false,
+       "health": 4.5,
+       "damageType": null,
+       "removed": true,
+       "fireTicks": 19,
+       "fireFlag": true
+      }
+     },
+     "drops": [
+      "minecraft:diamond_boots x1"
+     ],
+     "containers": [],
+     "entityEvents": [],
+     "writes": [],
+     "sounds": [
+      "minecraft:entity.armor_stand.break"
+     ],
+     "soundDetails": [
+      {
+       "id": "minecraft:entity.armor_stand.break",
+       "category": "neutral",
+       "volume": 1.0,
+       "pitch": 1.0,
+       "position": [
+        1.5,
+        65.0,
+        0.5
+       ]
+      }
+     ],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [
+      "minecraft:entity_die 1,1,0 minecraft:armor_stand"
+     ],
+     "particles": []
+    },
+    {
+     "tick": 2,
+     "blocks": [
+      {
+       "pos": [
+        -1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        -1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:campfire[facing=north,lit=true,signal_fire=false,waterlogged=false]"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        -1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "a": {
+       "position": [
+        1.5,
+        65.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": false,
+       "health": 4.5,
+       "damageType": null,
+       "removed": true,
+       "fireTicks": 19,
+       "fireFlag": true
+      }
+     },
+     "drops": [
+      "minecraft:diamond_boots x1"
+     ],
+     "containers": [],
+     "entityEvents": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [],
+     "particles": []
+    }
+   ],
+   "tickFire": true,
+   "raining": true,
+   "nextRandom": -1930858313,
+   "nextEntityRandom": {
+    "a": -1188957731
+   }
+  },
+  {
+   "name": "review_stand_rain_burn_survives",
+   "contactMoves": true,
+   "recordInside": true,
+   "min": [
+    -1,
+    63,
+    0
+   ],
+   "max": [
+    1,
+    65,
+    0
+   ],
+   "ticks": 2,
+   "seed": 0,
+   "setup": [
+    {
+     "pos": [
+      -1,
+      63,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      63,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      63,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      64,
+      0
+     ],
+     "state": "minecraft:campfire"
+    }
+   ],
+   "entities": [
+    {
+     "tick": 0,
+     "summon": "a",
+     "type": "minecraft:armor_stand",
+     "pos": [
+      1.5,
+      65,
+      0.5
+     ],
+     "motion": [
+      0,
+      0,
+      0
+     ],
+     "noGravity": false,
+     "noAi": true,
+     "entitySeed": 123,
+     "feet": "minecraft:diamond_boots",
+     "fireTicks": 20,
+     "health": 9
+    }
+   ],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "blocks": [
+      {
+       "pos": [
+        -1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        -1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:campfire[facing=north,lit=true,signal_fire=false,waterlogged=false]"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        -1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "a": {
+       "position": [
+        1.5,
+        65.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": false,
+       "health": 9.0,
+       "damageType": null,
+       "removed": false,
+       "fireTicks": 20,
+       "fireFlag": false
+      }
+     },
+     "drops": [],
+     "containers": [],
+     "entityEvents": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [],
+     "particles": []
+    },
+    {
+     "tick": 1,
+     "blocks": [
+      {
+       "pos": [
+        -1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        -1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:campfire[facing=north,lit=true,signal_fire=false,waterlogged=false]"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        -1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "a": {
+       "position": [
+        1.5,
+        65.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": false,
+       "health": 5.0,
+       "damageType": null,
+       "removed": false,
+       "fireTicks": 0,
+       "fireFlag": true
+      }
+     },
+     "drops": [],
+     "containers": [],
+     "entityEvents": [],
+     "writes": [],
+     "sounds": [
+      "minecraft:entity.generic.extinguish_fire"
+     ],
+     "soundDetails": [
+      {
+       "id": "minecraft:entity.generic.extinguish_fire",
+       "category": "neutral",
+       "volume": 0.7,
+       "pitch": 1.7943721,
+       "position": [
+        1.5,
+        65.0,
+        0.5
+       ]
+      }
+     ],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [
+      "minecraft:entity_damage 1,1,0 none"
+     ],
+     "particles": []
+    },
+    {
+     "tick": 2,
+     "blocks": [
+      {
+       "pos": [
+        -1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        -1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:campfire[facing=north,lit=true,signal_fire=false,waterlogged=false]"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        -1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "a": {
+       "position": [
+        1.5,
+        65.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": false,
+       "health": 5.0,
+       "damageType": null,
+       "removed": false,
+       "fireTicks": 0,
+       "fireFlag": false
+      }
+     },
+     "drops": [],
+     "containers": [],
+     "entityEvents": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [],
+     "particles": []
+    }
+   ],
+   "tickFire": true,
+   "raining": true,
+   "nextRandom": -1155484576,
+   "nextEntityRandom": {
+    "a": -39088943
+   }
+  },
+  {
+   "name": "review_campfire_stand_fire_resistance",
+   "contactMoves": true,
+   "recordInside": true,
+   "min": [
+    -1,
+    63,
+    0
+   ],
+   "max": [
+    1,
+    65,
+    0
+   ],
+   "ticks": 2,
+   "seed": 0,
+   "setup": [
+    {
+     "pos": [
+      -1,
+      63,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      63,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      63,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      64,
+      0
+     ],
+     "state": "minecraft:campfire"
+    }
+   ],
+   "entities": [
+    {
+     "tick": 0,
+     "summon": "a",
+     "type": "minecraft:armor_stand",
+     "pos": [
+      0.5,
+      64.8,
+      0.5
+     ],
+     "motion": [
+      0,
+      -0.5,
+      0
+     ],
+     "noGravity": false,
+     "noAi": true,
+     "entitySeed": 123,
+     "health": 20,
+     "fireTicks": 25,
+     "feet": "minecraft:diamond_boots",
+     "equipment": {
+      "mainhand": "minecraft:diamond_sword",
+      "offhand": "minecraft:shield",
+      "chest": "minecraft:diamond_chestplate",
+      "head": "minecraft:diamond_helmet"
+     },
+     "fireResistance": true
+    }
+   ],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "blocks": [
+      {
+       "pos": [
+        -1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        -1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:campfire[facing=north,lit=true,signal_fire=false,waterlogged=false]"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        -1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "a": {
+       "position": [
+        0.5,
+        64.8,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        -0.5,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": false,
+       "health": 20.0,
+       "damageType": null,
+       "removed": false,
+       "fireTicks": 25,
+       "fireResistance": true,
+       "fireFlag": false
+      }
+     },
+     "drops": [],
+     "containers": [],
+     "entityEvents": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [],
+     "particles": []
+    },
+    {
+     "tick": 1,
+     "blocks": [
+      {
+       "pos": [
+        -1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        -1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:campfire[facing=north,lit=true,signal_fire=false,waterlogged=false]"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        -1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "a": {
+       "position": [
+        0.5,
+        64.4375,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": true,
+       "health": 19.85,
+       "damageType": null,
+       "removed": false,
+       "fireTicks": 24,
+       "fireResistance": true,
+       "fireFlag": true
+      }
+     },
+     "drops": [],
+     "containers": [],
+     "entityEvents": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [
+      "minecraft:hit_ground 0,0,0 minecraft:armor_stand",
+      "minecraft:entity_damage 0,0,0 none"
+     ],
+     "particles": []
+    },
+    {
+     "tick": 2,
+     "blocks": [
+      {
+       "pos": [
+        -1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        -1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:campfire[facing=north,lit=true,signal_fire=false,waterlogged=false]"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        -1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "a": {
+       "position": [
+        0.5,
+        64.4375,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": false,
+       "health": 19.7,
+       "damageType": null,
+       "removed": false,
+       "fireTicks": 23,
+       "fireResistance": true,
+       "fireFlag": true
+      }
+     },
+     "drops": [],
+     "containers": [],
+     "entityEvents": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [
+      "minecraft:entity_damage 0,0,0 none"
+     ],
+     "particles": []
+    }
+   ],
+   "tickFire": true,
+   "recordFireResistance": true,
+   "nextRandom": -1155484576,
    "nextEntityRandom": {
     "a": -1188957731
    }

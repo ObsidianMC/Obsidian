@@ -13,8 +13,11 @@ public partial class Entity
 
     internal virtual int ContactFireTicks { get; set; }
 
-    internal bool IsContactBurning => (this.ContactFireTicks > 0 || this.Burning)
+    // A stand's shared Burning flag follows baseTick; extinguishing during contacts only changes its counter.
+    internal bool IsContactBurning => (this.ContactFireTicks > 0 || this is not ArmorStand && this.Burning)
         && this is not Living { IsFireImmune: true };
+
+    internal bool NeedsRainContact => this is ArmorStand { ContactFireTicks: > 0 } && this.Level.LevelData.Raining;
 
     /// <summary>The entity random used for contact effects; mobs share their ordinary AI random.</summary>
     internal Random ContactEffectRandom { get; set; } = Random.Shared;
@@ -64,6 +67,9 @@ public partial class Entity
                     new Net.Packets.Play.Clientbound.SetEntityDataPacket { EntityId = this.EntityId, Entity = this });
             }
         }
+
+        if (this.NeedsRainContact && new AI.MobTerrain(this.Level).IsRainingAt((Vector)this.Position.Floor()))
+            this.ContactFireTicks = 0;
 
         // Vanilla snapshots fire/freeze before visiting cells, but evaluates melting after all their hooks. An
         // ignition later in the pass can therefore melt earlier snow without an extinguish sound that pass.

@@ -3,13 +3,13 @@
 **Status:** the phase 3 inside, fallen-on and stepped-on behaviours, posed player boxes, block speed and jump factors,
 stuck-in-block and entity-dependent collision are implemented; broader movement and sculk parity remain open.
 
-`block_contact_scenarios.json` contains the original 16 live RCON cases and 180 controlled native movement cases.
+`block_contact_scenarios.json` contains the original 16 live RCON cases and 184 controlled native movement cases.
 `VanillaBlockContact.ScenariosMatchVanilla` compares every recorded checkpoint from the start, including ordered
 writes and flags, motion, health, accepted damage types, drops and effects. No case has a blanket skip, delayed
 comparison start, or ignored unexpected write. Sound playback seeds are deliberately outside the capture;
 categories, positions, volume, pitch and ordering are compared. The 51 `inside_*` cases also compare removal,
 remaining fire ticks, item counts, vehicle damage, hopper slots, snowflake packet fields, honey particle events,
-and the next entity random integer as well as the next level random integer. Twelve additional `review_*` cases
+and the next entity random integer as well as the next level random integer. Sixteen additional `review_*` cases
 cover stand break/drop boundaries, Frost Walker slot checks, fire ticking and expiry, minecart slide effects, and
 snow visited before a campfire. Fire-ticking cases invoke vanilla's `baseTick` before each controlled move and also
 compare the shared burning flag; the mixed snow/campfire cases compare frozen ticks. These cases have no pins.
@@ -56,11 +56,17 @@ Slime damps the horizontal movement of what walks on it. These original pose and
   Items lose one of their five health per contact, including netherite items. Boats and minecarts use their
   existing vehicle damage and drop paths.
 - **Campfires:** lit campfires deal one point of `campfire` damage, soul campfires two. They do not ignite ordinary
-  mobs or damage items. Fire-immune entities, Fire Resistance and Frost Walker in the feet slot prevent damage.
+  mobs or damage items. Fire immunity and Frost Walker in the feet slot prevent damage; Fire Resistance protects
+  ordinary living entities, but does not protect armor stands.
   Armor stands instead ignite for five seconds and lose 0.15 health on subsequent contacts. They break when the
   resulting health would be at most 0.5, without storing that last damage, play their break sound and drop equipment
-  in slot order (except vanishing-cursed equipment). Frost Walker protects stands too. Their remaining fire ticks
-  count down, update the burning flag and deal 4 health every 20 ticks; fire can break a stand away from the campfire.
+  in slot order (except vanishing-cursed equipment), unless `block_drops` is false. Suppressing the drops still
+  consumes the location draws, as vanilla's `popResource` does. Frost Walker protects stands too. Their remaining fire ticks
+  count down, update the burning flag and deal 4 health every 20 ticks, even with an active Fire Resistance effect;
+  fire can break a stand away from the campfire. Rain is applied after inside effects, so due burn damage can break
+  a stand before rain puts it out. Survivors clear their fire counter and play the extinguish sound that pass;
+  their shared Burning flag is updated by the next base tick. The rain cases explicitly supply open-sky skylight
+  in the replay's empty plains chunks.
 - **Honey:** side sliding resets fall distance, limits downward speed and damps a fast slide's horizontal speed.
   The level draws sound first and then event 53, which makes clients draw honey particles. Silent entities still
   consume both draws. Items slide without those effects; living entities, boats, all minecart types and primed TNT

@@ -266,6 +266,14 @@ internal sealed class EntityContactPass(IContactLevel level)
     private ValueTask InsideFromAsync(Entity entity, CellBox cells, int index)
     {
         var touched = index > 0;
+        // Rain runs after burn damage and inside hooks, even when every cell is air. Dry, unlit entities retain
+        // the empty pass: one flag read per cell, without a weather/terrain query or effect completion.
+        if (index == 0 && entity.NeedsRainContact)
+        {
+            entity.BeginInsideContact();
+            touched = true;
+        }
+
         var blocks = new ChunkCursor(level);
         for (; index < cells.Count; index++)
         {

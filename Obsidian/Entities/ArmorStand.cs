@@ -91,6 +91,7 @@ public sealed partial class ArmorStand : Living
         if (this.Level is WorldData.AbstractLevel world)
         {
             WorldData.LevelSounds.Play(world, this.Position, "minecraft:entity.armor_stand.break", SoundCategory.Neutral);
+            var dropEquipment = world.LevelData.GetBooleanRule("block_drops");
             foreach (var (slot, _) in savedSlots)
             {
                 ItemStack? item;
@@ -106,6 +107,10 @@ public sealed partial class ArmorStand : Living
                 var block = (Vector)this.Position.Floor() + Vector.Up;
                 var point = new VectorD(block.X + 0.25 + random.NextDouble() * 0.5,
                     block.Y + 0.125 + random.NextDouble() * 0.5, block.Z + 0.25 + random.NextDouble() * 0.5);
+                // popResource still makes those location draws when block_drops suppresses the item spawn.
+                if (!dropEquipment)
+                    continue;
+
                 world.DropItemAt(point, item,
                     new VectorD(Globals.Random.NextDouble() * 0.2 - 0.1, 0.2, Globals.Random.NextDouble() * 0.2 - 0.1));
             }
