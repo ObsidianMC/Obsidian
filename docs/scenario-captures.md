@@ -330,24 +330,34 @@ replaces only what vanilla produced.
   then stands its players (survival unless the case says otherwise, with vanilla's offline UUIDs, which it records)
   and a spectator that hears the area and tracks its chunk. It seeds the level's random and records the game time it
   starts from. Each tick is one task on the server thread: the case's mob actions (each mob the spawner spawned is
-  killed, as `/kill` does, or moved 60 blocks up, out of the 47 blocks a spawner tracks its mobs to, a number of ticks
-  after it appeared), the level's tick, then the chunk's changes sent. A frozen server still sends chunks' changes from
+  killed, as `/kill` does, discarded, or moved 60 blocks down, under the floor and out of the 47 blocks a spawner
+  tracks its mobs to, a number of ticks after it appeared; a mob with its AI never ticks in the area that way), the
+  level's tick, then the chunk's changes sent. A frozen server still sends chunks' changes from
   its own loop, so splitting a tick across tasks made a block entity's update land in one tick or the next by chance;
   vanilla sends a tick's changes at the start of the next tick, the probe at its end, as Obsidian does. After each tick
   it records the blocks the level stored (in order, with every flag, through the block use probe's observed jar), the
   changed blocks, the spawner's saved data, the block entity data the spectator got for it, the entities (type,
-  position, a mob's yaw, which the spawner draws, and its name, health, persistence, an item's stack), the sounds,
+  position, a mob's yaw, which the spawner draws, and its name, what it holds and wears, health, persistence, an
+  item's stack), the sounds,
   level events and particles the spectator received, the game events within 16 blocks, the level random's 48-bit
   state, and each item's id modulo 4. The saved data's UUID sets are written in a fixed order (vanilla saves them from
   a hash set whose order changes from run to run), and its tracked mobs as `mob N` by the order they spawned in (their
   UUIDs come from their own unseeded randoms). Natural spawning stays off, as it shuffles chunks with the level's
   random every tick; spawners use vanilla's own test override (`overridePeacefulAndMobSpawnRule`) to spawn anyway,
-  except in the cases that test the rules. Mobs spawn from spawn data with `NoAI` and `NoGravity`, so they stay where
-  they appear and finalizing their spawn (which only bare spawn data does) draws nothing. Each case ends by recording
-  the spawner's raw saved data (`finalSaved`). The cases cover one player's wave with a mob leaving and one dying, the
-  rewards, the cooldown and the next trial; a second player behind a wall joining once the first is seen and scaling
-  the wave and the rewards; weighted mobs and loot tables; players out of sight, out of range and in creative; nothing
-  to spawn; the `spawn_mobs` and `spawner_blocks_work` rules; and peaceful, where monsters never spawn. A `chamber`
+  except in the cases that test the rules. Most cases spawn from spawn data with `NoAI` and `NoGravity`, so their mobs
+  stay where they appear and get no spawn setup; the bare cases spawn from spawn data that only names the mob, which
+  gets vanilla's spawn setup from the level's random. Each case ends by recording the spawner's raw saved data
+  (`finalSaved`). The cases cover one player's wave with a mob leaving and one dying, the rewards, the cooldown and the
+  next trial; a second player behind a wall joining once the first is seen and scaling the wave and the rewards;
+  weighted mobs and loot tables; players out of sight, out of range and in creative; nothing to spawn; the `spawn_mobs`
+  and `spawner_blocks_work` rules; peaceful, where monsters never spawn; bare skeletons from the trial chambers' own
+  `trial_chamber/ranged/skeleton` config, each holding the bow its spawn setup gives it; bare silverfish, cave spiders
+  and breezes; a reward ejected into a block of water walled in with glass, rising, splashing back in and sinking; and
+  inline configs with fields that don't read, a list entry that doesn't read, values out of their ranges, and an
+  unknown registry id. Vanilla reads each config field on its own: one that doesn't read takes its default, and a list
+  drops its entries that don't. A case's `obsidianKeeps` names the saved fields Obsidian keeps where vanilla drops
+  them (a registry id it doesn't have, which may be a data pack's): the replay expects them as the case's data had
+  them and compares the rest with vanilla's. A `chamber`
   case forces the chunks around one far away, places `minecraft:trial_chambers` there as `/place structure` does, and
   records each trial spawner's and vault's id, state and saved data as placed, then after three ticks with the
   spawners' rules overridden, so that they pick their spawn data from their registry configs.
