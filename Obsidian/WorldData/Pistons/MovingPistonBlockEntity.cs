@@ -1,5 +1,6 @@
 using Obsidian.API;
 using Obsidian.API.BlockEntities;
+using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Registries;
 using Obsidian.WorldData.BlockNotifications;
@@ -161,10 +162,14 @@ internal sealed class MovingPistonBlockEntity : BlockEntity
         // Vanilla moveByPositionAndProgress: the cell is the destination, so the box lags it by the remaining progress.
         var moving = Shift(cell, direction, this.progress - 1);
 
+        var launches = this.movedState.Is(BlockIds.SlimeBlock);
         foreach (var entity in level.EntitiesIn(moving.Min, moving.Max).ToList())
         {
             if (entity is not Obsidian.Entities.Entity concrete)
                 continue;
+
+            if (launches)
+                Launch(concrete, direction);
 
             var needed = Distance(moving, direction, entity.BoundingBox);
             if (needed <= 0)
@@ -188,6 +193,24 @@ internal sealed class MovingPistonBlockEntity : BlockEntity
                     await Move(concrete, direction, delta);
             }
         }
+    }
+
+    // Vanilla moveCollidedEntities: a moving slime block sets the velocity of the entities it meets to one block a
+    // tick along its axis, keeping the other components. Players' clients move themselves (vanilla's
+    // canSimulateMovement), so only the server's own entities are launched here.
+    private static void Launch(Obsidian.Entities.Entity entity, BlockFace face)
+    {
+        if (entity is PlayerBase)
+            return;
+
+        var step = face.ToVector();
+        var motion = entity.Motion;
+        entity.Motion = face switch
+        {
+            BlockFace.East or BlockFace.West => new VectorD(step.X, motion.Y, motion.Z),
+            BlockFace.Up or BlockFace.Down => new VectorD(motion.X, step.Y, motion.Z),
+            _ => new VectorD(motion.X, motion.Y, step.Z)
+        };
     }
 
     private static BoundingBox Shift(BoundingBox box, BlockFace face, float amount)
