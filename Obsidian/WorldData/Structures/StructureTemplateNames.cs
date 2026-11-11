@@ -1,6 +1,6 @@
 namespace Obsidian.WorldData.Structures;
 
-/// <summary>Portable identifiers, checked before generated files or resources are looked up.</summary>
+/// <summary>Safe template identifiers, checked before generated files or resources are looked up.</summary>
 internal static class StructureTemplateNames
 {
     internal static bool IsValid(string name)
@@ -11,7 +11,9 @@ internal static class StructureTemplateNames
 
         var ns = name[..colon];
         var path = name[(colon + 1)..];
-        if (!ns.All(Allowed) || ns is "." or ".." || !Portable(ns))
+        // Vanilla resolves the namespace separately; only the converted resource path is portable-checked.
+        // Retain directory containment even for identifiers whose namespace would traverse to the parent.
+        if (!ns.All(Allowed) || ns == "..")
             return false;
 
         // 26.3's TemplatePathFactory validates the converter's filename, after appending .nbt. Thus an empty

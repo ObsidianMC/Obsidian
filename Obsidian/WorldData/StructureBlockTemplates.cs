@@ -72,11 +72,10 @@ internal sealed class StructureBlockTemplates
             .ConfigureAwait(false);
 
         // Entry identity is the eviction generation. Remove or SAVE replaces it, so a pending worker cannot
-        // repopulate an evicted name or overwrite a newer snapshot. Retry against the current generation.
-        if (this.cache.TryUpdate(name, new Entry(template), expected))
-            return template;
-
-        return await this.ReadAsync(name).ConfigureAwait(false);
+        // repopulate an evicted name or overwrite a newer snapshot. Complete this caller with its original
+        // read, ordered before the eviction, instead of retrying indefinitely under repeated evictions.
+        this.cache.TryUpdate(name, new Entry(template), expected);
+        return template;
     }
 
     private StructureTemplate? ReadFromSources(string name)

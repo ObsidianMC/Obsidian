@@ -166,6 +166,25 @@ public final class StructureBlockFixtures {
                     edit(player, edit);
                     if (!op)
                         server.getPlayerList().op(new NameAndId(player.getGameProfile()));
+                } else if (action.has("validatePath")) {
+                    // Path construction alone is observable even when a legal namespace cannot be opened on Windows.
+                    var result = checkpoint(level, heard, generated);
+                    boolean valid;
+                    try {
+                        var factory = new net.minecraft.world.level.levelgen.structure.templatesystem.loader
+                            .TemplatePathFactory(Path.of("generated"));
+                        var converter = new net.minecraft.resources.FileToIdConverter("structure", ".nbt");
+                        factory.createAndValidatePathToStructure(
+                            Identifier.parse(action.get("validatePath").getAsString()), converter);
+                        valid = true;
+                    } catch (RuntimeException exception) {
+                        valid = false;
+                    }
+
+                    result.addProperty("pathValid", valid);
+                    checkpoints.add(result);
+                    heard.clear();
+                    continue;
                 } else if (action.has("command")) {
                     server.getCommands().performPrefixedCommand(player.createCommandSourceStack(),
                         action.get("command").getAsString());

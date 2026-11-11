@@ -56,8 +56,12 @@ internal sealed class StructureBlockLevel(AbstractLevel level, bool strict) : IW
         level.BlockUpdates.SetBlock(position, BlocksRegistry.Barrier, flags);
     }
 
-    internal void NotifyNeighbors(Vector position) =>
+    internal void NotifyNeighbors(Vector position)
+    {
+        // The live level dispatches fluid/plugin and redstone reactions separately; vanilla runs both here.
+        level.BlockUpdates.UpdateNeighbors(position, this.GetBlock(position));
         ((IBlockChangeWorld)level).NotifyNeighborsAsync(position).GetAwaiter().GetResult();
+    }
 
     public int GetHeight(HeightmapType type, int x, int z) => this.reads.GetHeight(type, x, z);
 

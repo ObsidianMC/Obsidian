@@ -1,7 +1,7 @@
 # Structure blocks
 
 The structure editor, saved settings, SAVE/LOAD/CORNER/DATA, corner detection and rising-edge redstone triggers
-are implemented against the cached 26.3 server. `structure_blocks.json` has 29 cases and 82 checkpoints, replayed
+are implemented against the cached 26.3 server. `structure_blocks.json` has 33 cases and 95 checkpoints, replayed
 by `VanillaStructureBlocks.ReplayStructureBlockReference`. Jigsaw editors and generation are a separate task.
 
 ## Exact captured differences
@@ -36,22 +36,35 @@ The existing chunk-ticket generation waiter keeps the area resident until snapsh
 
 ## Review regressions covered
 
-Template names share a portable-file check before SAVE, LOAD, DETECT, redstone actions, `/place template` and
-resource fallback. Traversal and empty/dot directory segments cannot reach file or resource lookups. Windows
-reserved names (`con`, `nul`, `com1`, `lpt9` and their extensions) and directory names ending in a dot are rejected
-on every platform, matching 26.3's `FileUtil.isPathPartPortable`. `review_portable_paths` captures these rules.
-The converter appends `.nbt` before vanilla validates its segments: `test:` and `test:folder/` are valid filenames
-`.nbt` and `folder/.nbt`, so they remain accepted. Editor identifiers are retained for saved data and feedback;
-the shared portable-file check gates their use. Obsidian-only tests plant a real escaped resource outside the
+Template file/resource lookups share path validation before SAVE, LOAD, `/place template` and resource fallback.
+Traversal and empty/dot directory segments cannot reach those lookups. Windows reserved resource path parts
+(`con`, `nul`, `com1`, `lpt9` and their extensions) and directory names ending in a dot are rejected on every
+platform, matching 26.3's `FileUtil.isPathPartPortable`. `review_portable_paths` captures these rules. The converter
+appends `.nbt` before vanilla validates its segments: `test:` and `test:folder/` remain valid. Editor identifiers
+are retained for saved data and feedback. DATA and DETECT do no file lookup; `review_detect_reserved_resource`
+captures successful size detection with `test:con`. Obsidian-only tests plant a real escaped resource outside the
 resource root and require both the block's LOAD and `/place template` to reject it.
 
+Vanilla resolves the namespace separately and only portable-checks the converted resource path.
+`review_namespace_paths` captures acceptance of `con:example`, `example.:template`, `.:example` and
+`ns..:template`, plus invalid resource paths and namespace separators. Obsidian also rejects a `..` namespace
+for directory containment. On Windows, legal namespaces such as `con` cannot necessarily be created, and a
+trailing-dot namespace can alias another directory. These identifiers are accepted as in vanilla; native file IO
+may fail or alias directories, rather than validation silently rejecting them. The path-construction capture
+checks this rule independently of the host filesystem; it does not establish successful IO for those namespaces.
+
 Eviction removes the current cache entry identity. A pending read can publish only against that same identity;
-a worker completing after CORNER eviction retries in the current generation. An explicitly gated test covers
-both a pending template and a pending missing-file result, with no sleeps or timeouts.
+a worker completing after CORNER eviction returns its original result to its caller without caching or retrying.
+This orders that read before eviction without extending it under repeated evictions. The explicitly gated test
+covers templates and misses, with and without an overlapping refill, and uses no sleeps or timeouts.
 
 After every non-strict template placement's shape pass, placed positions notify their neighbors. The two
 `review_load_notifications_*` captures distinguish a neighboring lamp lighting normally from remaining unlit
-under strict placement. `review_place_command_strict` captures the command's trailing `strict` argument and the
+under strict placement. `review_load_fluid_notifications_*` additionally captures water hardening adjacent lava
+immediately only for non-strict LOAD. Final notifications run the normal fluid/plugin neighbor path and the
+separate redstone path. The Obsidian-only plugin regression checks that final dispatch independently: the existing
+shape-fluid helper also wakes fluids, so the simple water/lava capture alone cannot detect its removal.
+`review_place_command_strict` captures the command's trailing `strict` argument and the
 same distinction, including vanilla's success feedback. `/place template` checks the unrotated position through
 position+size chunk range, including the far endpoint, as 26.3 does; it returns "That position is not loaded"
 without loading or generating missing destination chunks. `review_place_command_unloaded` records that message,

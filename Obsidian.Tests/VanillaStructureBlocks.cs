@@ -148,6 +148,10 @@ public sealed class VanillaStructureBlocks(ITestOutputHelper output)
                 await Packet(harness.Origin, edit).HandleAsync(harness.Context.Server, harness.Operator);
                 SetPermission(harness, 4);
             }
+            else if (action.TryGetProperty("validatePath", out _))
+            {
+                // Compared below against the real 26.3 TemplatePathFactory, without opening a native path.
+            }
             else if (action.TryGetProperty("command", out var command))
             {
                 var text = "/" + command.GetString();
@@ -165,6 +169,8 @@ public sealed class VanillaStructureBlocks(ITestOutputHelper output)
 
             await world.RunQueuedEntityActionsAsync();
             var actual = Record(harness);
+            if (action.TryGetProperty("validatePath", out var path))
+                actual["pathValid"] = Obsidian.WorldData.Structures.StructureTemplateNames.IsValid(path.GetString()!);
             var expected = JsonNode.Parse(test.GetProperty("checkpoints")[index].GetRawText());
             CheckKnownGaps(test, index, expected!, actual, differences);
             Compare(expected, actual, $"action {index + 1}", differences);

@@ -86,13 +86,12 @@ internal static class StructureBlocks
         if (name.Length == 0)
             return $"Invalid structure name '{suppliedName}'";
 
-        if (!StructureTemplateNames.IsValid(name))
+        if (action is 1 or 2 && !StructureTemplateNames.IsValid(name))
         {
             return action switch
             {
                 1 => $"Unable to save structure '{name}'",
                 2 => $"Structure '{name}' is not available",
-                3 => "Unable to detect structure size. Add corners with matching structure names",
                 _ => null
             };
         }

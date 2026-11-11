@@ -61,12 +61,16 @@ public sealed class StructureBlockReviewTests
     }
 
     [Fact]
-    public async Task CornerEvictionDiscardsPendingTemplateAndMissingReads()
+    public async Task EvictedReadCompletesWithoutPublishingOrRetrying()
     {
         await using var context = await StartAsync();
         var old = Template(context.World, BlocksRegistry.Stone);
         var replacement = Template(context.World, BlocksRegistry.Dirt);
-        foreach (var first in new StructureTemplate?[] { old, null })
+        var cases = new (StructureTemplate? First, bool Overlap)[]
+        {
+            (old, false), (null, false), (old, true), (null, true)
+        };
+        foreach (var (first, overlap) in cases)
         {
             var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -83,7 +87,7 @@ public sealed class StructureBlockReviewTests
                     return first;
                 }
 
-                if (read == 2)
+                if (overlap && read == 2)
                 {
                     refillEntered.SetResult();
                     await refillRelease.Task;
@@ -95,17 +99,80 @@ public sealed class StructureBlockReviewTests
             var pending = templates.ReadAsync("test:evicted");
             await entered.Task;
             templates.Remove("test:evicted");
-            var refill = templates.ReadAsync("test:evicted");
-            await refillEntered.Task;
-            release.SetResult();
-            await pending;
-            refillRelease.SetResult();
-            await refill;
+            Task<StructureTemplate?>? refill = null;
+            try
+            {
+                if (overlap)
+                {
+                    refill = templates.ReadAsync("test:evicted");
+                    await refillEntered.Task;
+                }
 
-            var loaded = await templates.ReadAsync("test:evicted");
-            Assert.NotNull(loaded);
-            Assert.Single(loaded.FilterBlocks(Vector.Zero, new StructurePlaceSettings(), BlockIds.Dirt));
-            Assert.Empty(loaded.FilterBlocks(Vector.Zero, new StructurePlaceSettings(), BlockIds.Stone));
+                release.SetResult();
+                // Eviction cannot extend this caller's read, republish a miss or overwrite a pending refill.
+                Assert.Same(first, await pending);
+                Assert.Null(templates.Cached("test:evicted"));
+            }
+            finally
+            {
+                release.TrySetResult();
+                refillRelease.TrySetResult();
+                if (refill is not null)
+                    await refill;
+            }
+
+            Assert.Same(replacement, await templates.ReadAsync("test:evicted"));
+            Assert.Same(replacement, templates.Cached("test:evicted"));
+        }
+    }
+
+    [Fact]
+    public async Task StructureBlockLoadNotifiesPluginNeighborsOnlyWhenNonStrict()
+    {
+        await using var context = await StartAsync();
+        await using var manager = BlockUpdates.CreatePluginManager(context);
+        var archive = Path.Combine(context.World.WorldFolderPath, "probe.obby");
+        await File.WriteAllBytesAsync(archive, PluginLoading.ProbeArchive("1.0.0"));
+        Assert.NotNull(await manager.LoadPluginAsync(archive));
+        Assert.True(BlocksRegistry.TryGetPluginBlock("probe:relay", out var relay));
+
+        var world = context.World;
+        StructureBlockTemplates.For(world).Put("test:plugin", Template(world, BlocksRegistry.Stone));
+        var editor = new Vector(1, 64, 1);
+        var target = new Vector(3, 64, 3);
+        var neighbor = target + new Vector(1, 0, 0);
+        world.BlockUpdates.SetBlock(editor, BlocksRegistry.StructureBlock, Quiet);
+        world.BlockUpdates.SetBlock(neighbor, relay.DefaultState, Quiet);
+        var heard = new List<NeighborChangedContext>();
+        var previousHook = AppContext.GetData(ProbeRelay.NeighborHookKey);
+        AppContext.SetData(ProbeRelay.NeighborHookKey, (Action<NeighborChangedContext>)heard.Add);
+        try
+        {
+            foreach (var strict in new[] { true, false })
+            {
+                world.BlockUpdates.SetBlock(target, BlocksRegistry.Air, Quiet);
+                heard.Clear();
+                var settings = new StructureBlockSettings
+                {
+                    Name = "test:plugin",
+                    Mode = StructureBlockMode.Load,
+                    Offset = target - editor,
+                    Size = size,
+                    Strict = strict
+                };
+
+                var feedback = await StructureBlocks.EditAsync(world, editor, settings, 2, settings.Name);
+
+                Assert.Equal("Structure loaded from 'test:plugin'", feedback);
+                Assert.True(world.BlockUpdates.GetBlock(target).Is(BlockIds.Stone));
+                var notified = heard.Exists(change => change.Position == neighbor
+                    && change.SourcePosition == target && change.SourceBlock.Is(BlockIds.Stone));
+                Assert.Equal(!strict, notified);
+            }
+        }
+        finally
+        {
+            AppContext.SetData(ProbeRelay.NeighborHookKey, previousHook);
         }
     }
 
