@@ -294,7 +294,7 @@ internal sealed class FluidLevel
     private bool SetBlock(Vector position, IBlock block, BlockUpdateFlags flags, int updateLimit, VanillaShapes shapes)
     {
         var old = this.GetBlock(position);
-        if (old.IsSameState(block) || !this.access.SetBlock(position, block))
+        if (old.IsSameState(block) || !this.access.SetBlock(position, block, flags))
             return false;
 
         this.access.OnBlockStored(position, block, flags);

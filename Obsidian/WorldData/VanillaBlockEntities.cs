@@ -54,6 +54,7 @@ internal static class VanillaBlockEntities
         "minecraft:sculk_catalyst" => new SculkCatalystBlockEntity(),
         "minecraft:shelf" => new ShelfBlockEntity(position),
         CommandBlockEntity.TypeId => new CommandBlockEntity(),
+        StructureBlockEntity.TypeId => new StructureBlockEntity(),
         _ => null
     };
 
