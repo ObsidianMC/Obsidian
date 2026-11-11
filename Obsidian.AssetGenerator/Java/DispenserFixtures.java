@@ -183,6 +183,10 @@ public final class DispenserFixtures {
             var checkpoints = new JsonArray();
             var ticks = input.has("ticks") ? input.get("ticks").getAsInt() : root.get("ticks").getAsInt();
             for (int tick = 1; tick <= ticks; tick++) {
+                // Pin only the slot-selection draw for cases with several occupied slots.
+                if (tick == 4 && input.has("selectionSeed")) {
+                    server.submit(() -> level.getRandom().setSeed(input.get("selectionSeed").getAsLong())).join();
+                }
                 step(level);
                 var number = tick;
                 var checkpoint = server.submit(() -> checkpoint(level, input, number, before, heard, gameEvents))
@@ -369,6 +373,11 @@ public final class DispenserFixtures {
             }
 
             if (entity instanceof Mob mob) {
+                if (entity instanceof net.minecraft.world.entity.Bucketable bucket && bucket.fromBucket()) {
+                    var name = mob.hasCustomName() ? mob.getCustomName().getString() : "none";
+                    result.add(type + " bucket health=" + number(mob.getHealth())
+                        + " noAI=" + mob.isNoAi() + " noGravity=" + mob.isNoGravity() + " name=" + name);
+                }
                 for (var slot : Slots) {
                     if (!mob.getItemBySlot(slot).isEmpty())
                         result.add(type + " " + slot.getName() + "=" + detailedStack(level, mob.getItemBySlot(slot)));

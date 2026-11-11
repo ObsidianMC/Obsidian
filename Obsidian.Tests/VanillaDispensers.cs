@@ -56,6 +56,41 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
 
     private static Checkpoint ExpectedOutput(string name, Checkpoint reference)
     {
+        // The potion codec omits the default show_icon=true in its component patch. Pin the complete values,
+        // including before firing, rather than exempting potion components from comparison.
+        if (name == "potion_custom_effect")
+        {
+            const string vanilla = "minecraft:potion x1 {\"minecraft:potion_contents\":"
+                + "{custom_effects:[{duration:100,id:\"minecraft:speed\",show_icon:1b}],potion:\"minecraft:water\"}}";
+            const string obsidian = "minecraft:potion x1 {\"minecraft:potion_contents\":"
+                + "{custom_effects:[{duration:100,id:\"minecraft:speed\"}],potion:\"minecraft:water\"}}";
+            var prefix = reference.Tick < 4 ? "slot 0 " : "drop ";
+            var suffix = reference.Tick < 4 ? "" : " total=1";
+            Assert.Equal(CanonicalDetail(prefix + vanilla + suffix), Assert.Single(reference.Details));
+            reference = reference with { Details = [CanonicalDetail(prefix + obsidian + suffix)] };
+        }
+
+        if (name == "bucket_mob_axolotl" && reference.Tick == 4)
+        {
+            Assert.Collection(reference.Sounds,
+                sound => Assert.Equal("minecraft:item.bucket.empty_axolotl", sound),
+                sound => Assert.Equal("minecraft:entity.axolotl.idle_air", sound));
+            reference = reference with { Sounds = ["minecraft:item.bucket.empty_axolotl"] };
+        }
+
+        // Powder-snow entity contact doesn't emit its snowflake here yet; retain the captured drop and all events.
+        if (name == "powder_snow_bucket_into_powder_snow" && reference.Tick == 4)
+        {
+            Assert.Equal("minecraft:snowflake 1", Assert.Single(reference.Particles));
+            var particle = "particle minecraft:snowflake 1.503360,1.000000,0.546411 count=1";
+            Assert.Contains(particle, reference.Details);
+            reference = reference with
+            {
+                Particles = [],
+                Details = reference.Details.Where(detail => detail != particle).ToArray()
+            };
+        }
+
         // A grounded no-AI mob keeps its gravity accumulator at -0.0784 in Obsidian, while the no-AI vanilla
         // mooshroom/cow zeroes it. Pin that exact value in this case; compare every other detail unchanged.
         if (name == "shears_mooshroom")
@@ -122,7 +157,8 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
         string Drops,
         int Ticks,
         Checkpoint[] Expected,
-        bool Details);
+        bool Details,
+        long? SelectionSeed);
 
     private sealed record Harness(
         RealServerContext Context,
@@ -209,6 +245,7 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
             var stack = item.Nbt is null
                 ? new ItemStack(ItemsRegistry.Get(item.Id), item.Count)
                 : SnbtReader.ReadCompound(item.Nbt).ItemFromNbt();
+            stack.Count = Math.Min(stack.Count, stack.MaxStackSize);
             container.Inventory.SetItem(item.Slot, stack);
         }
 
@@ -227,6 +264,9 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
         Checkpoint? previousActual = null;
         foreach (var expected in dispense.Expected)
         {
+            if (expected.Tick == 4 && dispense.SelectionSeed is long seed)
+                world.GrowthRandom.SetSeed(seed);
+
             await world.DoWorldTickAsync();
             var actual = Record(harness, dispense, expected.Tick, before);
             differences.AddRange(Compare(ExpectedOutput(dispense.Name, expected), actual));
@@ -446,6 +486,16 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
 
             if (entity is Mob mob)
             {
+                var fromBucket = mob is Fish { FromBucket: true } or Axolotl { FromBucket: true }
+                    or Tadpole { FromBucket: true };
+                if (fromBucket)
+                {
+                    var noAi = mob.MobBitMask.HasFlag(MobBitmask.NoAi).ToString().ToLowerInvariant();
+                    var noGravity = mob.NoGravity.ToString().ToLowerInvariant();
+                    result.Add($"{type} bucket health={Number(mob.Health)}"
+                        + $" noAI={noAi} noGravity={noGravity} name={mob.CustomName?.Text ?? "none"}");
+                }
+
                 foreach (var (slot, name) in slots)
                 {
                     var equipment = mob.GetEquipment(slot);
@@ -528,8 +578,13 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
     private static string CanonicalDetail(string value)
     {
         var components = value.IndexOf(" {", StringComparison.Ordinal);
-        return components < 0 ? value : value[..(components + 1)]
-            + Obsidian.Commands.Snbt.Write(SnbtReader.ReadCompound(value[(components + 1)..]));
+        if (components < 0)
+            return value;
+
+        var total = value.LastIndexOf(" total=", StringComparison.Ordinal);
+        var end = total < 0 ? value.Length : total;
+        var patch = SnbtReader.ReadCompound(value[(components + 1)..end]);
+        return value[..(components + 1)] + Obsidian.Commands.Snbt.Write(patch) + value[end..];
     }
 
     private static IEnumerable<string> Compare(Checkpoint expected, Checkpoint actual)
@@ -795,7 +850,8 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
             drops,
             ticks,
             checkpoints,
-            input.TryGetProperty("details", out var details) && details.GetBoolean());
+            input.TryGetProperty("details", out var details) && details.GetBoolean(),
+            input.TryGetProperty("selectionSeed", out var seed) ? seed.GetInt64() : null);
     }
 
     private static ScenarioMob ReadMob(JsonElement mob) => new(

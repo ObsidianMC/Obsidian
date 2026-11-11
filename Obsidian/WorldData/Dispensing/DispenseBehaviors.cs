@@ -53,6 +53,8 @@ internal sealed record DispenseSource(AbstractLevel Level, Vector Position, IBlo
 {
     internal BlockPlacement.Prepared? Placement { get; init; }
 
+    internal BucketPreparation? Bucket { get; init; }
+
     /// <summary>The block in front of the dispenser.</summary>
     public Vector Target => this.Position + this.Facing.ToVector();
 
@@ -74,10 +76,6 @@ internal sealed record DispenseSource(AbstractLevel Level, Vector Position, IBlo
 /// The dispense behaviours of vanilla's items, by item, as vanilla's <c>DispenseItemBehavior.bootStrap</c> registers
 /// them, and the defaults it picks for the others (<c>DispenserBlock.getDefaultDispenseMethod</c>).
 /// </summary>
-/// <remarks>
-/// Buckets, bottles and honeycomb aren't here yet, so dispensers drop them (see
-/// <c>docs/known-gaps/dispenser-behaviours.md</c>).
-/// </remarks>
 internal static partial class DispenseBehaviors
 {
     /// <summary>Vanilla's <c>DefaultDispenseItemBehavior</c>: drops one of the stack.</summary>
@@ -123,6 +121,7 @@ internal static partial class DispenseBehaviors
         RegisterProjectiles(behaviors);
         RegisterBlocks(behaviors);
         RegisterEntities(behaviors);
+        RegisterFluids(behaviors);
         return behaviors.ToFrozenDictionary();
     }
 
