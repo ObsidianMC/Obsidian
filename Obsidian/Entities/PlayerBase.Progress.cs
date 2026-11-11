@@ -121,7 +121,8 @@ public partial class PlayerBase
             await this.FireProgressAsync("changed_dimension", from: previous, to: this.Level.DimensionName);
 
         this.progressDimension = this.Level.DimensionName;
-        if (this.Sleeping && !this.progressSleeping)
+        // Vanilla's SLEPT_IN_BED fires only for a bed that set the spawn: never for a straw bed.
+        if (this.Sleeping && !this.progressSleeping && this.SleepSetSpawn)
             await this.FireProgressAsync("slept_in_bed");
 
         this.progressSleeping = this.Sleeping;
