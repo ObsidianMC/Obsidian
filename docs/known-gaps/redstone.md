@@ -11,12 +11,12 @@ What follows is what still differs.
   honeycomb and a few other items they'd use (see [dispenser behaviours](dispenser-behaviours.md)). A moving slime
   block launches the server's own entities along its axis, as vanilla's `moveCollidedEntities` does; no capture
   covers entity motion off pistons yet.
-- **Sources.** Lightning rods give no power, though dust connects to them as to any signal source, and a jukebox
-  gives none while it plays, where vanilla's gives 15 (`JukeboxBlock.isSignalSource`). Observers, daylight
-  detectors, target blocks (hit by arrows, spectral arrows and tridents only), tripwire hooks, detector rails, sculk
-  sensors, lecterns and trapped chests do. A trapped chest's viewer count changes when the level reconciles
-  container lids, just before the tick's block events, where vanilla's changes as the player opens or closes it;
-  its neighbours hear of it then, after the lid's block event, as in vanilla.
+- **Sources.** A jukebox gives no power while it plays, where vanilla's gives 15 (`JukeboxBlock.isSignalSource`).
+  Observers, daylight detectors, target blocks (hit by arrows, spectral arrows and tridents only), tripwire hooks,
+  detector rails, sculk sensors, lecterns, trapped chests and lightning rods (struck by [lightning](lightning.md))
+  do. A trapped chest's viewer count changes when the level reconciles container lids, just before the tick's
+  block events, where vanilla's changes as the player opens or closes it; its neighbours hear of it then, after the
+  lid's block event, as in vanilla.
 - **Analog outputs.** Comparators read 0 from shelves (#736) and creaking hearts. A heart's output is how near its
   creaking is, and Obsidian's hearts don't tick: they neither spawn a creaking nor keep track of one, so they read 0
   as vanilla's do without a creaking. Command blocks give their saved `SuccessCount`, which nothing changes yet,

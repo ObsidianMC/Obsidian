@@ -1,3 +1,4 @@
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
@@ -7,18 +8,61 @@ public partial class PlayerBase
     public override ValueTask UpdateAsync(VectorD position, MovementFlags movementFlags) =>
         this.ApplyPlayerMovementAsync(position, null, null, movementFlags, false);
 
-    public override ValueTask UpdateAsync(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags) =>
+    public override ValueTask UpdateAsync(VectorD position, float yaw, float pitch, MovementFlags movementFlags) =>
         this.ApplyPlayerMovementAsync(position, yaw, pitch, movementFlags, false);
 
-    public override ValueTask UpdateAsync(Angle yaw, Angle pitch, MovementFlags movementFlags) =>
+    public override ValueTask UpdateAsync(float yaw, float pitch, MovementFlags movementFlags) =>
         this.ApplyPlayerMovementAsync(null, yaw, pitch, movementFlags, false);
 
+    /// <summary>
+    /// Applies a movement packet. The rotation, when it has one, is kept as the exact floats the client sent, after
+    /// <see cref="TryClientRotation"/>. Invalid movement disconnects the client before changing player state.
+    /// </summary>
     internal ValueTask HandleClientMovementAsync(
-        VectorD? position, Angle? yaw, Angle? pitch, MovementFlags flags) =>
-        this.ApplyPlayerMovementAsync(position, yaw, pitch, flags, true);
+        VectorD? position, float? yaw, float? pitch, MovementFlags flags)
+    {
+        if (position is VectorD requested)
+        {
+            if (double.IsNaN(requested.X) || double.IsNaN(requested.Y) || double.IsNaN(requested.Z))
+                return this.KickAsync(new ChatMessage { Translate = "multiplayer.disconnect.invalid_player_movement" });
+
+            position = ClientPosition(requested);
+        }
+
+        if (yaw is not float requestedYaw || pitch is not float requestedPitch)
+            return this.ApplyPlayerMovementAsync(position, null, null, flags, true);
+
+        if (!TryClientRotation(requestedYaw, requestedPitch, out var rotation))
+            return this.KickAsync(new ChatMessage { Translate = "multiplayer.disconnect.invalid_player_movement" });
+
+        return this.ApplyPlayerMovementAsync(position, rotation.Yaw, rotation.Pitch, flags, true);
+    }
+
+    // Vanilla clamps client coordinates, including infinities, before applying movement or a teleport confirmation.
+    private static VectorD ClientPosition(VectorD position) => new(
+        Math.Clamp(position.X, -3.0E7, 3.0E7),
+        Math.Clamp(position.Y, -2.0E7, 2.0E7),
+        Math.Clamp(position.Z, -3.0E7, 3.0E7));
+
+    /// <summary>
+    /// The rotation a player takes from a client's request, as vanilla's packet handler applies it: the yaw wrapped
+    /// into [-180, 180), and the pitch wrapped, then clamped to [-90, 90]. The arithmetic is vanilla's so the
+    /// stored floats, and every direction aimed by them, are bit for bit vanilla's.
+    /// </summary>
+    internal static bool TryClientRotation(float yaw, float pitch, out (float Yaw, float Pitch) rotation)
+    {
+        rotation = default;
+        if (!float.IsFinite(yaw) || !float.IsFinite(pitch))
+            return false;
+
+        var wrappedYaw = Mth.WrapDegrees(yaw) % 360f;
+        var clampedPitch = Math.Clamp(Mth.WrapDegrees(pitch), -90f, 90f) % 360f;
+        rotation = (wrappedYaw, clampedPitch);
+        return true;
+    }
 
     private async ValueTask ApplyPlayerMovementAsync(
-        VectorD? position, Angle? yaw, Angle? pitch, MovementFlags flags, bool updateChunks,
+        VectorD? position, float? yaw, float? pitch, MovementFlags flags, bool updateChunks,
         long? expectedGeneration = null)
     {
         ILevel level;
@@ -37,7 +81,7 @@ public partial class PlayerBase
             {
                 retry = this.RetryTeleportUnderLock();
                 // Vanilla still takes the requested rotation while waiting, but no ground/collision flags.
-                if (yaw is Angle waitingYaw && pitch is Angle waitingPitch)
+                if (yaw is float waitingYaw && pitch is float waitingPitch)
                     this.ApplyPlayerRotation(waitingYaw, waitingPitch, this.MovementFlags);
             }
 
@@ -82,7 +126,7 @@ public partial class PlayerBase
                 if (this.Vehicle is not null)
                     destination = this.Position;
 
-                if (yaw is Angle newYaw && pitch is Angle newPitch)
+                if (yaw is float newYaw && pitch is float newPitch)
                     this.BroadcastMovement(destination, newYaw, newPitch, flags);
                 else
                     this.BroadcastMovement(destination, flags);
@@ -93,12 +137,12 @@ public partial class PlayerBase
                 if (this.Dimension != EntityDimension.Zero)
                     this.BoundingBox = this.Dimension.CreateBBFromPosition(destination);
             }
-            else if (yaw is Angle newYaw && pitch is Angle newPitch)
+            else if (yaw is float newYaw && pitch is float newPitch)
             {
                 this.ApplyPlayerRotation(newYaw, newPitch, flags);
             }
 
-            if (yaw is Angle rotationYaw && pitch is Angle rotationPitch)
+            if (yaw is float rotationYaw && pitch is float rotationPitch)
             {
                 this.Yaw = rotationYaw;
                 this.Pitch = rotationPitch;
@@ -129,10 +173,14 @@ public partial class PlayerBase
             await this.UpdateChunksAsync();
     }
 
-    private void ApplyPlayerRotation(Angle yaw, Angle pitch, MovementFlags flags)
+    // Keeps the exact rotation, and tells watchers only when the turn shows in the 256ths of a turn they see.
+    private void ApplyPlayerRotation(float yaw, float pitch, MovementFlags flags)
     {
-        if (yaw == this.Yaw && pitch == this.Pitch)
+        if (!this.TurnsVisibly(yaw, pitch))
+        {
+            this.UpdatePosition(yaw, pitch, flags);
             return;
+        }
 
         this.SetRotation(yaw, pitch, flags);
         this.SetHeadRotation(yaw);

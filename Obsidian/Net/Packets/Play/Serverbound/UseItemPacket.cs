@@ -41,16 +41,15 @@ public partial class UseItemPacket
 
         user.QueueBlockAcknowledgement(this.Sequence);
         if (!user.Alive || user.Respawning || user.HasPendingTeleport
-            || !float.IsFinite(this.Yaw) || !float.IsFinite(this.Pitch))
+            || !PlayerBase.TryClientRotation(this.Yaw, this.Pitch, out var rotation))
         {
             var slot = this.Hand == InteractionHand.OffHand ? 45 : user.CurrentHeldItemSlot;
             await user.SyncInventorySlotAsync(slot);
             return UseResult.Fail;
         }
 
-        // Vanilla handleUseItem applies the packet's aim before an item's own POV ray trace.
-        user.Yaw = this.Yaw;
-        user.Pitch = Math.Clamp(this.Pitch, -90, 90);
+        // Vanilla handleUseItem applies the packet's aim, exactly, before an item's own POV ray trace.
+        (user.Yaw, user.Pitch) = rotation;
         var stack = this.Hand == InteractionHand.OffHand ? user.GetOffHandItem() : user.GetHeldItem();
         if (BucketItems.Handles(stack))
             return await BucketItems.UseAsync(server, user, this.Hand, this.Sequence);

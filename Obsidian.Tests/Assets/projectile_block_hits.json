@@ -1,5 +1,5 @@
 {
-  "_notes": "Vanilla projectile block hits, recorded by the asset generator's ProjectileHitFixtures.java on a headless dedicated server in a flat world of air (easy, mob griefing off, time, weather and spawning stopped). Each case sets up its blocks around the target without updates, spawns its projectile at target + from with its motion, owned by a player standing at target + owner (unless owner is none), and calls ServerLevel.tick ticks times. record holds each tick: the blocks of the 5x5x5 area that changed (dx,dy,dz=state), the best neighbor signal at the cell east of the target, the entities whose boxes reach within three blocks of it (sorted; the case's projectile as projectile, experience orbs by type alone), the sounds, level events and block events a bystander at target + bystander receives, the game events within 16 blocks, the ordered block writes with their flags, the blocks destroyed, and the criteria and statistics the owner gained. Fields with nothing to report are left out.",
+  "_notes": "Vanilla projectile block hits, recorded by the asset generator's ProjectileHitFixtures.java on a headless dedicated server in a flat world of air (easy, mob griefing off, time, weather and spawning stopped). Each case sets up its blocks around the target without updates, spawns its projectile at target + from with its motion, owned by a player standing at target + owner (unless owner is none), and calls ServerLevel.tick ticks times. record holds each tick: the blocks of the 5x5x5 area that changed (dx,dy,dz=state), the best neighbor signal at the cell east of the target, the entities whose boxes reach within three blocks of it (sorted; the case's projectile as projectile, experience orbs by type alone), the sounds, level events and block events a bystander at target + bystander receives, the game events within 16 blocks, the ordered block writes with their flags, the blocks destroyed, and the criteria and statistics the owner gained. Fields with nothing to report are left out. A case with boltSeed and levelSeed seeds a lightning bolt its hit summons after the tick it appeared in, before its first tick: the bolt's own random with boltSeed (its seed and flashes drawn again, as its constructor draws them), then the level's random with levelSeed.",
   "version": "26.3",
   "target": [0, 64, 0],
   "owner": [0.5, 0, 9.5],
@@ -4617,6 +4617,8 @@
     {
       "name": "channeling_trident_lightning_rod",
       "projectile": "minecraft:trident",
+      "boltSeed": 71,
+      "levelSeed": 72,
       "motion": [0, -1.5, 0],
       "from": [0.5, 1.8, 0.5],
       "setup": [
@@ -4656,7 +4658,6 @@
           ],
           "levelEvents": [
             "3002 0,0,0 1",
-            "3002 0,0,0 -1",
             "3002 0,0,0 -1"
           ],
           "gameEvents": [

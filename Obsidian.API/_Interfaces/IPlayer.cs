@@ -271,8 +271,8 @@ public interface IPlayer : ILiving
 
     // Travel: leaving a portal's countdown, and moving to another level, as the end of the dragon fight does.
     internal Task CancelPortalTravelAsync() => Task.CompletedTask;
-    internal Task TransferDimensionAsync(ILevel destination, VectorD? position = null, Angle? yaw = null,
-        Angle? pitch = null, VectorD? motion = null, bool portal = false, bool relativeMotion = false) =>
+    internal Task TransferDimensionAsync(ILevel destination, VectorD? position = null, float? yaw = null,
+        float? pitch = null, VectorD? motion = null, bool portal = false, bool relativeMotion = false) =>
         Task.CompletedTask;
 
     // Advancements: a vanilla trigger's event, a plugin trigger's criteria matched against their JSON conditions,

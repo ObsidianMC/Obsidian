@@ -240,6 +240,12 @@ internal static class FixtureDumper
             cases is null ? "" : string.Join('+', cases));
     }
 
+    // An on-request probe: lightning bolts on a dedicated server of its own, in a new flat world under the scratch
+    // directory. It shares block_use's observed copy of the vanilla jar for the ordered block writes.
+    internal static Task DumpLightningAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunObservedProbeAsync(server, fixture, "lightning", "LightningFixtures.java", cases);
+
     // An on-request probe of controlled entity contacts, on block_use's observed copy of the vanilla jar.
     internal static Task DumpBlockContactsAsync(VanillaServer server, string fixture,
         IReadOnlyCollection<string> cases) =>

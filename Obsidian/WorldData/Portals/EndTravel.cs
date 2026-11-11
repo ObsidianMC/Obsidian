@@ -78,7 +78,7 @@ internal static class EndTravel
             {
                 await BuildArrivalPlatformAsync(destination);
                 const float west = 90f;
-                var motion = TurnMotion(entity.Motion, entity.Yaw.Degrees - west);
+                var motion = TurnMotion(entity.Motion, entity.Yaw - west);
                 return new(destination, arrival, west, entity.Pitch, motion, area);
             }, canContinue);
         }
