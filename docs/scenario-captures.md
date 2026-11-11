@@ -362,6 +362,48 @@ replaces only what vanilla produced.
   vanilla's are players the level knows of but not entities of its sections, while the replay's are entities. The
   replay ticks a test server's world the same way and compares every field of every tick, with each known difference
   pinned by case and field ([projectile block hits](known-gaps/projectile-block-hits.md)).
+- `shelves.json` (`VanillaShelves.ReplayShelvesReference`) records 26.3's shelves, from `Java/ShelfFixtures.java`
+  (`CaptureFixtures=shelves`). Like the waxing probe it takes `block_use.json`'s inputs and runs on
+  `BlockUseFixtures.java`'s server, players, recorders and write observer by reflection. A case's `kind` is `use` (the
+  default: the hand's item used on the clicked face), `set` (`place` set with every update, which powers, unpowers and
+  connects shelves), `hopper` (the hopper at `hopper` runs `pushItemsTick` once) or `break` (the user breaks the
+  clicked block); a case may select a hotbar slot (`selected`) and fill hotbar slots (`hotbar`). Every case records
+  what a waxing case records, items' components among the entities, `blockEntities` (each setup block entity's saved
+  data), `inventory` with `checkInventory` and `comparatorSignal` for a `comparator`. The 70 cases cover putting,
+  taking and swapping in each slot, whole stacks, creative, adventure, spectator, the off hand, sneaking, faces that
+  pick no slot, a click on a slot's edge (with the float a client sends), spears' silent `use_effects`, comparators
+  behind, beside and in front, powered rows of one, two and three swapping with the end of the hotbar, power reaching
+  shelves alone, beside powered ones, at a row's ends and middle, past a full row and across woods and facings, hopper
+  insertion and extraction, and breaking (with drops and a row letting go). The replay drives the use-item-on packet,
+  `SetBlockAsync`, `Hoppers.TickAsync` and a finished dig, and compares every field from the start; three break cases
+  pin the shared player break effects ([player break effects](known-gaps/player-break-effects.md)).
+- `straw_bed_sleep.json` (`VanillaStrawBeds.ReplayStrawBedSleepReference`) records straw beds and beds over time, from
+  `Java/StrawBedFixtures.java` (`CaptureFixtures=straw_beds`), on `BlockUseFixtures.java`'s server in the overworld and
+  the nether, with a stone floor and a spectating bystander (who doesn't count towards sleepers). A case sets the time
+  of day, its blocks, the user's game mode, standing and respawn point, then runs steps: `use`, `tick` (that many server
+  ticks: `ServerLevel.tick`, then the user's `doTick`, as its connection runs it), `leave` (the leave-bed command),
+  `time` and `respawn` (`findRespawnPositionAndUseSpawnBlock`). Each step records the blocks, ordered writes and
+  destroyed blocks, entities, what the bystander heard, game events, statistics (but those every tick awards), the
+  user's own sounds and messages, whether it sleeps, its sleep timer, its position and its respawn point; a respawn
+  records whether its block was missing (the world spawn, whose spot is random, is recorded as such). The 21 cases
+  cover straw beds slept in from either half, breaking as the night passes, on leaving and as the morning comes, in
+  the day, occupied, obstructed, too far, in creative, without their other half, keeping an earlier spawn point, as
+  plain and forced respawn points, and breaking on use in the nether, with beds for comparison. The replay ticks the
+  test world and the user, confirms the user's teleports as its client would, and compares every step; a sleeper's
+  position while it lies through ticks is its own physics' and isn't compared, and one case pins the bounce vanilla's
+  player physics plays on a bed ([26.3 blocks](known-gaps/26-3-blocks.md)).
+- `golden_dandelions.json` (`VanillaGoldenDandelions.ReplayGoldenDandelionReference`) records golden dandelions locking
+  young mobs' age, from `Java/GoldenDandelionFixtures.java` (`CaptureFixtures=golden_dandelions`), on
+  `BlockUseFixtures.java`'s server over a stone floor. A case spawns its `entity` (a baby unless `baby` is false) with
+  `age` and `ageLocked` set as a save loads them, and gives the user its hands; steps are `interact`
+  (`Player.interactOn`) and `tick` (the mob's own ticks). Each step records an interaction's result and hand, the
+  bystander's sounds (`id source volume pitch`) and age particles (`pause_mob_growth`, `reset_mob_growth`,
+  `happy_villager`), game events, statistics and the mob's type with its saved `Age`, `ForcedAge`, `AgeLocked` and
+  `PersistenceRequired`. The 26 cases lock and unlock cows, sheep, horses, llamas, camels, pandas, axolotls, chickens
+  and tadpoles, refuse adults, creative's kept dandelion, the off hand, the last dandelion, the 40-tick cooldown,
+  locked growth, locked feeding and the mobs that can't be locked. The replay sends the interact packet and ticks the
+  mob; tick steps compare the particles and the mob only, since ambient sounds and steps are chance. Three cases pin
+  mob behaviour outside the age lock ([26.3 blocks](known-gaps/26-3-blocks.md)).
 - `turtle_eggs.json` (`VanillaTurtleEggs.ReplayTurtleEggReference`) records vanilla's turtle eggs, from
   `Java/HatchingFixtures.java` (`CaptureFixtures=turtle_eggs`). Each case is its input: the blocks of a small block
   view (air elsewhere), the origin, a seed, the overworld clock's time and the dimension, and either a random tick or
@@ -489,6 +531,12 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=waxing_bells_ore
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=projectile_hits
+
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=shelves
+
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=straw_beds
+
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=golden_dandelions
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=eyeblossom_ghast_portal
 
@@ -636,6 +684,10 @@ For `waxing_bells_ore`, `CaptureCases` likewise takes exact `+`-separated names 
 For `projectile_hits`, `CaptureCases` accepts exact `+`-separated names in `projectile_block_hits.json` and records
 only those cases; the others keep theirs. The capture takes about 15 seconds after the server starts.
 
+For `shelves`, `straw_beds` and `golden_dandelions`, `CaptureCases` likewise takes exact `+`-separated names in
+`shelves.json`, `straw_bed_sleep.json` and `golden_dandelions.json` and records only those cases. Each capture takes
+about 15 seconds after the server starts.
+
 The `turtle_eggs` and `frogspawn` captures run no server and re-record every case. To add one, add a case with its
 `name`, `seed`, `origin` and `setup` (and `time`, `dimension`, `place` or `tick`) and capture again; pick a seed whose
 first draw takes the branch the case is about. The `furnace_results` capture also runs no server and re-records every
@@ -663,7 +715,7 @@ The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft 
 <scratch directory> <test assets directory>
 [redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+heightmaps+saved_heightmaps+mining+placement+
 copper_weathering+fire+ticking_blocks+block_use+waxing_bells_ore+turtle_eggs+frogspawn+growing_plant_ticks+
-melting_weather+furnace_results+brushing+armor_stand_use+projectile_hits]
+melting_weather+furnace_results+brushing+armor_stand_use+projectile_hits+shelves+straw_beds+golden_dandelions]
 [case names]`.
 
 ## How it captures
