@@ -15,8 +15,11 @@ Bone meal grows saplings, azaleas, crops, grass blocks and short grass and ferns
 weeping and twisting vines, rooted dirt, mangrove leaves, netherrack, nylium, fungi, mushrooms and moss
 (`Growth.Plants.cs`), all checked against vanilla in `growing_plant_ticks.json`. The capture's features are stand-ins
 that record where they're placed, so the features these grow into are checked by world generation's own replays, not
-here; and since no stand-in is a tree, a sapling's room for its shortest tree's trunk is only checked where the trunk
-fits either way.
+here. Eighteen additional `bonemealTargetOnly` cases retain real vanilla tree features and capture the native target
+check at the minimum trunk height boundary and one block below it: oak, spruce, birch, jungle, acacia, cherry and
+poplar saplings, and both azaleas. These validate bone meal acceptance, not actual tree placement or room for a full
+crown. Dark oak and pale oak growers have no shortest-tree height check; mangrove propagules use their own target
+check, so these ordinary-sapling boundaries do not apply to them.
 
 Bone meal still does nothing to vanilla's other bonemealable blocks: bamboo and its shoot, glow lichen, sea pickles,
 seagrass, small and big dripleaf, flower beds (pink petals, wildflowers, leaf litter), tall flowers, hanging moss,

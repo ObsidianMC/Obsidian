@@ -19,6 +19,55 @@ namespace Obsidian.Tests;
 public sealed class SculkCatalysts
 {
     [Fact]
+    public async Task CatalystDeathFinishesWhileTheAttackersGrantGateIsHeld()
+    {
+        await using var context = TestServerFactory.CreateServer($"catalyst-grant-gate-{Guid.NewGuid():N}");
+        var world = context.World;
+        AddFloor(world);
+        world.BlockUpdates.SetBlock(new Vector(8, 64, 8), BlocksRegistry.SculkCatalyst);
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Attacker");
+        var pig = new Pig { Level = world, Position = new VectorD(10.5, 64, 8.5) };
+        pig.InitializeAi(false);
+        await pig.DamageAsync(player, 1);
+
+        var held = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var grant = player.GrantAdvancementAsync(async () =>
+        {
+            held.SetResult();
+            await release.Task;
+            return false;
+        }).AsTask();
+        await held.Task;
+
+        var observed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        world.EnqueueEntityAction(() =>
+        {
+            var death = pig.KillAsync(pig);
+            observed.SetResult(death.IsCompletedSuccessfully);
+            return death;
+        });
+        var tick = world.DoWorldTickAsync();
+        var finishedWithoutGate = await observed.Task;
+        try
+        {
+            // The signal is sent after KillAsync returns. No scheduling delay decides whether it waited.
+            Assert.True(finishedWithoutGate, "Catalyst death waited for the attacker's player gate.");
+            await tick;
+            Assert.False(grant.IsCompleted);
+            Assert.False(player.Advancements.IsDone("minecraft:adventure/kill_mob_near_sculk_catalyst"));
+        }
+        finally
+        {
+            release.SetResult();
+            await Task.WhenAll(grant, tick);
+        }
+
+        await context.Server.BackgroundWork.DrainAsync();
+        Assert.True(player.Advancements.IsDone("minecraft:adventure/kill_mob_near_sculk_catalyst"));
+    }
+
+    [Fact]
     public async Task MobDyingBesideACatalystFeedsItsCharge()
     {
         await using var context = TestServerFactory.CreateServer($"sculk-catalyst-{Guid.NewGuid():N}");

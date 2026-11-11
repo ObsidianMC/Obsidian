@@ -96,6 +96,15 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
 
         await AddEmptyChunksAsync(world);
 
+        if (probe.GetProperty("call").GetString() == "catalystCredit")
+        {
+            var creditDifferences = new List<string>();
+            await CatalystCreditAsync(creditDifferences, probe, world, context.Server,
+                Position(probe.GetProperty("origin")));
+            Assert.True(creditDifferences.Count == 0, string.Join("\n", creditDifferences));
+            return;
+        }
+
         // A player with the nine chunks, who gets the level events sent there.
         var listener = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Listener",
             new VectorD(8, 80, 8));
@@ -306,6 +315,35 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
         behavior.Tick(world.BlockUpdates, origin, block, random);
     }
 
+    // Replay real hits and a death against the native catalyst's captured last-attacker eligibility.
+    private static async Task CatalystCreditAsync(List<string> differences, JsonElement probe,
+        WorldData.World world, Server server, Vector origin)
+    {
+        var player = TestServerFactory.CreateConnectedPlayer(server, world, "Attacker", (VectorD)origin);
+        var victim = new Pig { Level = world, Position = (VectorD)origin + new VectorD(2, 0, 0) };
+        victim.InitializeAi(false);
+        var wolf = new Wolf { Level = world, Position = victim.Position };
+        wolf.InitializeAi(false);
+
+        foreach (var entry in probe.GetProperty("attackers").EnumerateArray())
+        {
+            IEntity attacker = entry.GetString() switch
+            {
+                "player" => player,
+                "wolf" => wolf,
+                _ => throw new InvalidOperationException($"Unknown attacker {entry}")
+            };
+            await victim.DamageMagicAsync(attacker, 1, ignoreHurtCooldown: true);
+        }
+
+        // Install the catalyst after the hits so only the death can feed it.
+        world.BlockUpdates.SetBlock(origin, BlocksRegistry.SculkCatalyst);
+        await victim.KillAsync(victim);
+        await server.BackgroundWork.DrainAsync();
+        Expect(differences, "player credit", probe.GetProperty("playerCredit").GetBoolean(),
+            player.Advancements.IsDone("minecraft:adventure/kill_mob_near_sculk_catalyst"));
+    }
+
     // The sculk catalyst at the origin takes each death as a mob dying there would offer it, then its block entity
     // ticks; its charge cursors must be vanilla's afterwards.
     private static void Catalyst(List<string> differences, JsonElement probe, WorldData.World world, Vector origin)
@@ -322,7 +360,8 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
             var position = new VectorD(at[0].GetDouble(), at[1].GetDouble(), at[2].GetDouble());
             var experience = death.GetProperty("experience").GetInt32();
             var taken = world.OfferDeathToSculkCatalysts(position, () => experience, out _);
-            Expect(differences, "death taken", true, taken);
+            var expectedTaken = !death.TryGetProperty("taken", out var captured) || captured.GetBoolean();
+            Expect(differences, "death taken", expectedTaken, taken);
         }
 
         var ticks = probe.GetProperty("catalystTicks").GetInt32();

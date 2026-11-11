@@ -729,8 +729,8 @@ public partial class Mob
             && catalysts.OfferDeathToSculkCatalysts(Position, GetExperienceReward, out var charged))
         {
             ExperienceConsumed = true;
-            if (charged && RecentPlayerAttacker is PlayerBase attacker)
-                await attacker.FireProgressAsync("kill_mob_near_sculk_catalyst", entity: this);
+            if (charged && LastAttacker is PlayerBase attacker)
+                attacker.QueueProgress("kill_mob_near_sculk_catalyst", entity: this);
         }
         goals.Cancel();
         TargetGoals.Cancel();

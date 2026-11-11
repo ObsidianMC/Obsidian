@@ -1,5 +1,5 @@
 {
-  "_notes": "Vanilla randomTick of the origin's state, recorded by the asset generator's GrowingPlantTickFixtures.java against a block view of the case's setup (air elsewhere, void air outside the build height of -64 to 319), with every raw brightness the case's light (15 by default), the spread_vines rule as spreadVines says (true by default), and a legacy random seeded with seed as both the tick's random and the level's. ticks is the state's isRandomlyTicking; a state that doesn't tick isn't ticked, and a case without an origin ticks nothing. After the tick, each of the case's actions sets its state with Level.setBlock and UPDATE_ALL, or without a state removes the block (Level.removeBlock). draws lists each draw in order with its bound and result, the shape updates' included. writes are the block changes in order with their update flags, including those of the neighbour shape updates they cause (neighbour notifications are not run). scheduled lists the block and fluid ticks scheduled. after holds the final state of every setup or written position. A case with bonemeal true uses bone meal on the origin instead of ticking it, as BoneMealItem.growCrop does (isValidBonemealTarget, recorded as valid, then isBonemealSuccess and performBonemeal with the level's random). The level's feature registry holds a stand-in for every feature in the jar's data/minecraft/worldgen/feature (a huge mushroom's with its foliage_radius, which bone meal reads; no tree's is a TreeFeature, so a sapling's minimum height reads 0): placing one draws nothing, returns the case's features entry for it (true by default) and is recorded in placed with its origin.",
+  "_notes": "Vanilla randomTick of the origin's state, recorded by the asset generator's GrowingPlantTickFixtures.java against a block view of the case's setup (air elsewhere, void air outside the build height of -64 to 319), with every raw brightness the case's light (15 by default), the spread_vines rule as spreadVines says (true by default), and a legacy random seeded with seed as both the tick's random and the level's. ticks is the state's isRandomlyTicking; a state that doesn't tick isn't ticked, and a case without an origin ticks nothing. After the tick, each of the case's actions sets its state with Level.setBlock and UPDATE_ALL, or without a state removes the block (Level.removeBlock). draws lists each draw in order with its bound and result, the shape updates' included. writes are the block changes in order with their update flags, including those of the neighbour shape updates they cause (neighbour notifications are not run). scheduled lists the block and fluid ticks scheduled. after holds the final state of every setup or written position. A case with bonemeal true uses bone meal on the origin instead of ticking it, as BoneMealItem.growCrop does (isValidBonemealTarget, recorded as valid, then isBonemealSuccess and performBonemeal with the level's random). The level's feature registry holds a stand-in for every feature in the jar's data/minecraft/worldgen/feature (a huge mushroom's with its foliage_radius, which bone meal reads; no tree's is a TreeFeature, so a sapling's minimum height reads 0): placing one draws nothing, returns the case's features entry for it (true by default) and is recorded in placed with its origin. bonemealTargetOnly cases instead retain real vanilla tree features and invoke only isValidBonemealTarget, so minimum-height checks are captured without placing a tree.",
   "version": "26.3",
   "cases": [
     {
@@ -14311,6 +14311,1028 @@
             8
           ],
           "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_oak_sapling_build_limit_refused",
+      "seed": 0,
+      "origin": [
+        8,
+        316,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            316,
+            8
+          ],
+          "state": "minecraft:oak_sapling"
+        }
+      ],
+      "valid": false,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 10,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            316,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_oak_sapling_build_limit_accepted",
+      "seed": 0,
+      "origin": [
+        8,
+        315,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:oak_sapling"
+        }
+      ],
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 10,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_spruce_sapling_build_limit_refused",
+      "seed": 0,
+      "origin": [
+        8,
+        315,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:spruce_sapling"
+        }
+      ],
+      "valid": false,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 2,
+          "value": 1
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:spruce_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_spruce_sapling_build_limit_accepted",
+      "seed": 0,
+      "origin": [
+        8,
+        314,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:spruce_sapling"
+        }
+      ],
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 2,
+          "value": 1
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:spruce_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_birch_sapling_build_limit_refused",
+      "seed": 0,
+      "origin": [
+        8,
+        315,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:birch_sapling"
+        }
+      ],
+      "valid": false,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:birch_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_birch_sapling_build_limit_accepted",
+      "seed": 0,
+      "origin": [
+        8,
+        314,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:birch_sapling"
+        }
+      ],
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:birch_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_jungle_sapling_build_limit_refused",
+      "seed": 0,
+      "origin": [
+        8,
+        316,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            316,
+            8
+          ],
+          "state": "minecraft:jungle_sapling"
+        }
+      ],
+      "valid": false,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            316,
+            8
+          ],
+          "state": "minecraft:jungle_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_jungle_sapling_build_limit_accepted",
+      "seed": 0,
+      "origin": [
+        8,
+        315,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:jungle_sapling"
+        }
+      ],
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:jungle_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_acacia_sapling_build_limit_refused",
+      "seed": 0,
+      "origin": [
+        8,
+        315,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:acacia_sapling"
+        }
+      ],
+      "valid": false,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:acacia_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_acacia_sapling_build_limit_accepted",
+      "seed": 0,
+      "origin": [
+        8,
+        314,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:acacia_sapling"
+        }
+      ],
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:acacia_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_cherry_sapling_build_limit_refused",
+      "seed": 0,
+      "origin": [
+        8,
+        313,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:cherry_sapling"
+        }
+      ],
+      "valid": false,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:cherry_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_cherry_sapling_build_limit_accepted",
+      "seed": 0,
+      "origin": [
+        8,
+        312,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            311,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:cherry_sapling"
+        }
+      ],
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            311,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:cherry_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_azalea_build_limit_refused",
+      "seed": 0,
+      "origin": [
+        8,
+        314,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:azalea"
+        }
+      ],
+      "valid": false,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:azalea"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_azalea_build_limit_accepted",
+      "seed": 0,
+      "origin": [
+        8,
+        313,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:azalea"
+        }
+      ],
+      "valid": true,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:azalea"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_flowering_azalea_build_limit_refused",
+      "seed": 0,
+      "origin": [
+        8,
+        314,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:flowering_azalea"
+        }
+      ],
+      "valid": false,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:flowering_azalea"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_flowering_azalea_build_limit_accepted",
+      "seed": 0,
+      "origin": [
+        8,
+        313,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:flowering_azalea"
+        }
+      ],
+      "valid": true,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:flowering_azalea"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_poplar_sapling_build_limit_refused",
+      "seed": 0,
+      "origin": [
+        8,
+        313,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:poplar_sapling"
+        }
+      ],
+      "valid": false,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 3,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:poplar_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_poplar_sapling_build_limit_accepted",
+      "seed": 0,
+      "origin": [
+        8,
+        312,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            311,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:poplar_sapling"
+        }
+      ],
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 3,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            311,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:poplar_sapling[stage=0]"
         }
       ]
     }

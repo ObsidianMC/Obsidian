@@ -19,7 +19,7 @@ namespace Obsidian.WorldData;
 internal sealed class SculkCatalystBlockEntity : BlockEntity
 {
     /// <summary>
-    /// How far from the catalyst's center a death reaches it (vanilla's listener radius).
+    /// How far a death reaches it, measured between floored block positions (vanilla's listener radius).
     /// </summary>
     public const int ListenerRadius = 8;
 
@@ -157,8 +157,7 @@ public abstract partial class AbstractLevel
         }
     }
 
-    // Vanilla delivers the game event to its listeners by distance, nearest first: the catalyst whose center is
-    // nearest the position, within its listener radius.
+    // Vanilla filters listeners by floored block positions, then orders those in range by exact center distance.
     private SculkCatalystBlockEntity? NearestSculkCatalyst(VectorD position)
     {
         const int Radius = SculkCatalystBlockEntity.ListenerRadius;
@@ -181,9 +180,15 @@ public abstract partial class AbstractLevel
                     if (blockEntity is not SculkCatalystBlockEntity { IsRemoved: false } catalyst)
                         continue;
 
+                    var blockOffset = (VectorD)catalyst.BlockPosition - position.Floor();
+                    var blockDistance = blockOffset.X * blockOffset.X + blockOffset.Y * blockOffset.Y
+                        + blockOffset.Z * blockOffset.Z;
+                    if (blockDistance > Radius * Radius)
+                        continue;
+
                     var offset = (VectorD)catalyst.BlockPosition + 0.5 - position;
                     var distance = offset.X * offset.X + offset.Y * offset.Y + offset.Z * offset.Z;
-                    if (distance <= Radius * Radius && distance < nearestDistance)
+                    if (distance < nearestDistance)
                     {
                         nearest = catalyst;
                         nearestDistance = distance;

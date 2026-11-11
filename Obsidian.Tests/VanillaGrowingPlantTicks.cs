@@ -67,7 +67,11 @@ public sealed class VanillaGrowingPlantTicks(ITestOutputHelper output)
 
         var bonemeal = probe.TryGetProperty("bonemeal", out var given) && given.GetBoolean();
         if (probe.TryGetProperty("origin", out var origin) && bonemeal)
-            UseBonemeal(differences, world, Position(origin), probe.GetProperty("valid").GetBoolean(), random);
+        {
+            var targetOnly = probe.TryGetProperty("bonemealTargetOnly", out var only) && only.GetBoolean();
+            UseBonemeal(differences, world, Position(origin), probe.GetProperty("valid").GetBoolean(), random,
+                targetOnly);
+        }
         else if (probe.TryGetProperty("origin", out origin))
             Tick(differences, world, Position(origin), probe.GetProperty("ticks").GetBoolean(), random);
 
@@ -146,12 +150,12 @@ public sealed class VanillaGrowingPlantTicks(ITestOutputHelper output)
     // BoneMealItem.growCrop: the check that decides the use, then the growth when it takes, both with the level's
     // random.
     private static void UseBonemeal(List<string> differences, WorldData.World world, Vector origin, bool vanillaValid,
-        IRandomSource random)
+        IRandomSource random, bool targetOnly)
     {
         var block = world.BlockUpdates.GetBlock(origin);
         var valid = Growth.IsValidBonemealTarget(world, origin, block, random);
         Expect(differences, "valid", vanillaValid, valid);
-        if (valid)
+        if (valid && !targetOnly)
             Growth.ApplyBonemeal(world, origin, block, random);
     }
 

@@ -19,6 +19,7 @@ import java.util.zip.ZipFile;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.MappedRegistry;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
@@ -78,7 +79,9 @@ public final class GrowingPlantTickFixtures {
         + "performBonemeal with the level's random). The level's feature registry holds a stand-in for every feature "
         + "in the jar's data/minecraft/worldgen/feature (a huge mushroom's with its foliage_radius, which bone meal "
         + "reads; no tree's is a TreeFeature, so a sapling's minimum height reads 0): placing one draws nothing, "
-        + "returns the case's features entry for it (true by default) and is recorded in placed with its origin.";
+        + "returns the case's features entry for it (true by default) and is recorded in placed with its origin. "
+        + "bonemealTargetOnly cases instead retain real vanilla tree features and invoke only isValidBonemealTarget, "
+        + "so minimum-height checks are captured without placing a tree.";
 
     public static void main(String[] arguments) throws Exception {
         var version = VanillaDumper.bootstrap();
@@ -101,7 +104,8 @@ public final class GrowingPlantTickFixtures {
         }
 
         var random = new RecordingRandom(input.get("seed").getAsLong());
-        var level = ProbeLevel.allocate(random);
+        var targetOnly = input.has("bonemealTargetOnly") && input.get("bonemealTargetOnly").getAsBoolean();
+        var level = ProbeLevel.allocate(random, targetOnly);
         if (input.has("features")) {
             for (var entry : input.getAsJsonObject("features").entrySet()) {
                 level.featureResults.put(entry.getKey(), entry.getValue().getAsBoolean());
@@ -126,7 +130,7 @@ public final class GrowingPlantTickFixtures {
 
         var bonemeal = input.has("bonemeal") && input.get("bonemeal").getAsBoolean();
         if (input.has("origin") && bonemeal) {
-            input.addProperty("valid", useBonemeal(level, position(input.getAsJsonArray("origin"))));
+            input.addProperty("valid", useBonemeal(level, position(input.getAsJsonArray("origin")), targetOnly));
         } else if (input.has("origin")) {
             var origin = position(input.getAsJsonArray("origin"));
             var state = level.getBlockState(origin);
@@ -179,14 +183,15 @@ public final class GrowingPlantTickFixtures {
 
     // BoneMealItem.growCrop as a player's use runs it on the server: a block that takes bone meal grows when its
     // chance comes up, both drawn from the level's random. Whether it took the bone meal is the result.
-    private static boolean useBonemeal(ProbeLevel level, BlockPos origin) {
+    private static boolean useBonemeal(ProbeLevel level, BlockPos origin, boolean targetOnly) {
         var state = level.getBlockState(origin);
         if (!(state.getBlock() instanceof BonemealableBlock block)
             || !block.isValidBonemealTarget(level, origin, state, BonemealSource.INTERACTION)) {
             return false;
         }
 
-        if (block.isBonemealSuccess(level, level.getRandom(), origin, state, BonemealSource.INTERACTION)) {
+        if (!targetOnly
+            && block.isBonemealSuccess(level, level.getRandom(), origin, state, BonemealSource.INTERACTION)) {
             block.performBonemeal(level, level.getRandom(), origin, state, BonemealSource.INTERACTION);
         }
 
@@ -340,7 +345,7 @@ public final class GrowingPlantTickFixtures {
             throw new UnsupportedOperationException();
         }
 
-        static ProbeLevel allocate(RandomSource random) throws Exception {
+        static ProbeLevel allocate(RandomSource random, boolean realTrees) throws Exception {
             var field = Class.forName("sun.misc.Unsafe").getDeclaredField("theUnsafe");
             field.setAccessible(true);
             var unsafe = field.get(null);
@@ -354,15 +359,16 @@ public final class GrowingPlantTickFixtures {
             level.light = 15;
             level.placed = new JsonArray();
             level.featureResults = new LinkedHashMap<>();
-            level.registries = new ProbeRegistries(stubFeatures(level));
+            level.registries = new ProbeRegistries(stubFeatures(level, realTrees));
             level.chunks = (ProbeChunks)unsafe.getClass().getMethod("allocateInstance", Class.class)
                 .invoke(unsafe, ProbeChunks.class);
             return level;
         }
 
         // A stand-in for every feature the jar defines, which records where it's placed and returns the case's result.
-        private static Registry<Feature> stubFeatures(ProbeLevel level) throws Exception {
+        private static Registry<Feature> stubFeatures(ProbeLevel level, boolean realTrees) throws Exception {
             var registry = new MappedRegistry<Feature>(Registries.FEATURE, Lifecycle.stable());
+            var vanilla = (HolderLookup.Provider)VanillaDumper.vanillaRegistries();
             var jar = Blocks.class.getProtectionDomain().getCodeSource().getLocation().toURI();
             var prefix = "data/minecraft/worldgen/feature/";
             try (var zip = new ZipFile(Path.of(jar).toFile())) {
@@ -381,7 +387,12 @@ public final class GrowingPlantTickFixtures {
 
                     var type = definition.get("type").getAsString();
                     Feature stub;
-                    if (type.equals("minecraft:huge_brown_mushroom") || type.equals("minecraft:huge_red_mushroom")) {
+                    if (realTrees && type.equals("minecraft:tree")) {
+                        // Validity-only cases retain the native tree type and its minimum trunk height.
+                        var key = ResourceKey.create(Registries.FEATURE, Identifier.parse(id));
+                        stub = vanilla.lookupOrThrow(Registries.FEATURE).getOrThrow(key).value();
+                    } else if (type.equals("minecraft:huge_brown_mushroom")
+                        || type.equals("minecraft:huge_red_mushroom")) {
                         var radius = definition.has("foliage_radius")
                             ? definition.get("foliage_radius").getAsInt()
                             : 2;

@@ -225,7 +225,12 @@ replaces only what vanilla produced.
   and connecting as their support and neighbours change; an oak door whose stone floor becomes soul sand (it stays)
   or oak leaves (both halves break); and a sculk catalyst taking deaths (with and without experience, two that merge,
   one in the air, one beside water, and more than a cursor holds) and ticking its block entity until the charge is
-  spent or mid-spread, recording its charge cursors afterwards (`cursors`). The catalyst probe hands its listener each
+  spent or mid-spread, recording its charge cursors afterwards (`cursors`). Two `listenerRange` cases use the native
+  Euclidean listener registry to capture the floored-position range boundary (`taken` per death), including a death
+  outside the exact center radius that reaches it and the reverse. Two `catalystCredit` cases invoke the native
+  catalyst advancement gate after setting its last living attacker to a player, or a player then a wolf; `playerCredit`
+  records whether the gate reaches its advancement damage-source read. This isolates eligibility without a vanilla
+  advancement manager. The catalyst probe hands its listener each
   death as `handleGameEvent` takes a mob's (charge, then the bloom), and the replay offers it through
   `AbstractLevel.OfferDeathToSculkCatalysts`. Its charge particles' level events follow vanilla's hash map order.
   The `completion_*` cases complete a stalactite, stalagmite, column, sulfur spike, kelp, kelp stem and vines with and
@@ -524,7 +529,11 @@ replaces only what vanilla produced.
   instead, as `BoneMealItem.growCrop` does, and records whether it took (`valid`). The probe's feature registry holds
   a stand-in for every feature in the jar, which records where it's placed (`placed`) and succeeds unless the case's
   `features` says otherwise; a huge mushroom's stand-in has its foliage radius, but no stand-in is a tree, so a
-  sapling's trunk room reads 0. Those cases cover saplings growing on random ticks and with bone meal (26.3's weighted
+  sapling's trunk room reads 0. The eighteen `bonemealTargetOnly` cases instead retain real vanilla tree features and
+  capture only `isValidBonemealTarget`: the native minimum trunk height boundary and the block immediately below it,
+  for seven sapling growers and both azaleas. Tree placement remains covered by the worldgen replays. Case selection
+  is supported with `CaptureCases` so adding these does not re-record the existing cases.
+  The other cases cover saplings growing on random ticks and with bone meal (26.3's weighted
   growers: oak, birch, spruce and jungle squares, dark and pale oak alone and in squares, cherry, the poplar's three
   trees, the azalea and the mangrove propagule, near flowers and with the tree failing), and bone meal on stems, the
   pitcher crop, sweet berries, cocoa, kelp and the vines (heads and bodies), rooted dirt, mangrove leaves, netherrack,

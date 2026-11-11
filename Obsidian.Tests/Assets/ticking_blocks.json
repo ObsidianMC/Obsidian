@@ -48097,7 +48097,193 @@
           "state": "minecraft:twisting_vines[age=3]"
         }
       ]
+    },
+    {
+      "name": "catalyst_range_accepts_floored_boundary",
+      "call": "catalyst",
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "seed": 0,
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:sculk_catalyst[bloom=false]"
+        }
+      ],
+      "listenerRange": true,
+      "deaths": [
+        {
+          "pos": [
+            0.1,
+            64.5,
+            8.5
+          ],
+          "experience": 1,
+          "taken": true
+        }
+      ],
+      "catalystTicks": 0,
+      "cursors": [
+        {
+          "pos": [
+            0,
+            65,
+            8
+          ],
+          "charge": 1,
+          "decayDelay": 1,
+          "updateDelay": 0,
+          "facings": null
+        }
+      ],
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.73096776
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:sculk_catalyst[bloom=true]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "type": "minecraft:sculk_catalyst",
+          "delay": 8
+        }
+      ],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:sculk_catalyst[bloom=true]"
+        }
+      ]
+    },
+    {
+      "name": "catalyst_range_rejects_exact_distance_inside",
+      "call": "catalyst",
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "seed": 0,
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:sculk_catalyst[bloom=false]"
+        }
+      ],
+      "listenerRange": true,
+      "deaths": [
+        {
+          "pos": [
+            16.4,
+            64.5,
+            9.5
+          ],
+          "experience": 1,
+          "taken": false
+        }
+      ],
+      "catalystTicks": 0,
+      "cursors": [],
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:sculk_catalyst[bloom=false]"
+        }
+      ]
+    },
+    {
+      "name": "catalyst_credits_last_player",
+      "call": "catalystCredit",
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "seed": 0,
+      "setup": [],
+      "attackers": [
+        "player"
+      ],
+      "playerCredit": true,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": []
+    },
+    {
+      "name": "catalyst_does_not_credit_player_before_wolf",
+      "call": "catalystCredit",
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "seed": 0,
+      "setup": [],
+      "attackers": [
+        "player",
+        "wolf"
+      ],
+      "playerCredit": false,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "events": [],
+      "gameEvents": [],
+      "entities": [],
+      "destroyed": [],
+      "after": []
     }
   ],
-  "_notes": "Vanilla block routines, recorded by the asset generator's TickingBlockFixtures.java against a block view of the case's setup (air elsewhere, void air outside the build height of -64 to 319) in the overworld, with a legacy random seeded with seed (0 by default) as both the routine's random and the level's. call is randomTick (the origin's state, only when its isRandomlyTicking holds, which ticks records), tick (the origin's scheduled tick), set (Level.setBlock of state at the origin with UPDATE_ALL) or landing (a falling block of state settling at the origin, with the entityDrops rule and silent flag). Writes store the block and, as Level.setBlock does, run the new state's onPlace and then, unless UPDATE_KNOWN_SHAPE is set, the neighbours' shape updates; neighbour notifications are not run. draws lists each draw in order; writes the block changes with their flags; scheduled the block and fluid ticks scheduled with their delays (a block tick counts as pending for hasScheduledTick); events the level events; gameEvents the game events with the state they carry; entities the entities added, with a falling block's state, position and damage; destroyed the blocks destroyed and whether they drop; items the items a landing dropped. after holds the final state of every setup or written position. Optional dimension uses that dimension type's environment attributes; actions are later UPDATE_ALL writes. call findTip invokes the native speleothem tip search with maxLength and includeMerged, recording tip as a position or null. call catalyst makes the sculk catalyst at the origin a block entity, hands its listener each of deaths as a mob's death would (SculkCatalystBlockEntity.CatalystListener.handleGameEvent for a mob not yet drained, that drops its experience: the charge, if any, at the death's position half a block up, then the bloom), then runs its block entity tick catalystTicks times; cursors holds its charge cursors afterwards. Chunks always tick, and the view holds no entities. call postProcess runs LevelChunk.postProcessGeneration for the origin as a marked position: its fluid ticks, then a liquid block ticks, and any other block takes Block.updateFromNeighbourShapes (its ticks scheduled in the level), written with flags 276 if it changed."
+  "_notes": "Vanilla block routines, recorded by the asset generator's TickingBlockFixtures.java against a block view of the case's setup (air elsewhere, void air outside the build height of -64 to 319) in the overworld, with a legacy random seeded with seed (0 by default) as both the routine's random and the level's. call is randomTick (the origin's state, only when its isRandomlyTicking holds, which ticks records), tick (the origin's scheduled tick), set (Level.setBlock of state at the origin with UPDATE_ALL) or landing (a falling block of state settling at the origin, with the entityDrops rule and silent flag). Writes store the block and, as Level.setBlock does, run the new state's onPlace and then, unless UPDATE_KNOWN_SHAPE is set, the neighbours' shape updates; neighbour notifications are not run. draws lists each draw in order; writes the block changes with their flags; scheduled the block and fluid ticks scheduled with their delays (a block tick counts as pending for hasScheduledTick); events the level events; gameEvents the game events with the state they carry; entities the entities added, with a falling block's state, position and damage; destroyed the blocks destroyed and whether they drop; items the items a landing dropped. after holds the final state of every setup or written position. Optional dimension uses that dimension type's environment attributes; actions are later UPDATE_ALL writes. call findTip invokes the native speleothem tip search with maxLength and includeMerged, recording tip as a position or null. call catalyst makes the sculk catalyst at the origin a block entity, hands its listener each of deaths as a mob's death would (SculkCatalystBlockEntity.CatalystListener.handleGameEvent for a mob not yet drained, that drops its experience: the charge, if any, at the death's position half a block up, then the bloom), then runs its block entity tick catalystTicks times; cursors holds its charge cursors afterwards. Chunks always tick, and the view holds no entities. call postProcess runs LevelChunk.postProcessGeneration for the origin as a marked position: its fluid ticks, then a liquid block ticks, and any other block takes Block.updateFromNeighbourShapes (its ticks scheduled in the level), written with flags 276 if it changed. listenerRange cases first run the native Euclidean listener registry's range filter and record taken per death. catalystCredit invokes the native catalyst advancement gate after setting the mob's last living attacker in attackers order; playerCredit records whether it reaches the advancement's damage-source read, without requiring an advancement manager."
 }
