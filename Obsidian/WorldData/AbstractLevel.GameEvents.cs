@@ -1,6 +1,7 @@
 using Obsidian.Entities;
 using Obsidian.Entities.AI;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Redstone;
 
 namespace Obsidian.WorldData;
@@ -38,7 +39,8 @@ internal readonly record struct MobVibration(
 
 public abstract partial class AbstractLevel
 {
-    private readonly ConcurrentQueue<MobVibration> mobGameEvents = new();
+    // Each event with the game time it was emitted at, which times its arrival at sculk.
+    private readonly ConcurrentQueue<(MobVibration Vibration, long EmittedAt)> mobGameEvents = new();
     private readonly Dictionary<int, PendingMobVibration> mobVibrations = [];
     private readonly Dictionary<Vector, PendingMobVibration> blockVibrations = [];
     private readonly Dictionary<Vector, int> activeSculk = [];
@@ -81,8 +83,8 @@ public abstract partial class AbstractLevel
     internal List<MobVibration> TakeGameEvents()
     {
         var taken = new List<MobVibration>();
-        while (this.mobGameEvents.TryDequeue(out var vibration))
-            taken.Add(vibration);
+        while (this.mobGameEvents.TryDequeue(out var queued))
+            taken.Add(queued.Vibration);
 
         return taken;
     }
@@ -108,7 +110,7 @@ public abstract partial class AbstractLevel
 
         var vibration = new MobVibration(kind, position, source, owner, affectedBlock);
         this.GameEventQueued?.Invoke(vibration);
-        mobGameEvents.Enqueue(vibration);
+        mobGameEvents.Enqueue((vibration, this.Fluids.Clock.GameTime));
     }
 
     internal async ValueTask TickMobGameEventsAsync()
@@ -116,10 +118,16 @@ public abstract partial class AbstractLevel
         gameEventTick++;
         TickJukeboxes();
         DeliverMobVibrations();
-        await DeliverBlockVibrationsAsync();
+
+        // Like vanilla's, active sculk settles (a scheduled block tick) before sculk hears vibrations (its block
+        // entity's tick), so a sensor activated this tick isn't counted down until the next.
         await TickActiveSculkAsync();
-        while (mobGameEvents.TryDequeue(out var vibration))
-            DispatchGameEvent(vibration);
+        await DeliverBlockVibrationsAsync();
+        while (mobGameEvents.TryDequeue(out var queued))
+            DispatchGameEvent(queued.Vibration, queued.EmittedAt);
+
+        // A vibration from before this tick that travels a single tick reaches sculk now, as vanilla's does.
+        await DeliverBlockVibrationsAsync();
     }
 
     /// <summary>Hands each warden and allay the vibration that has reached it this tick.</summary>
@@ -162,16 +170,21 @@ public abstract partial class AbstractLevel
         if (block.GetProperty("sculk_sensor_phase") != "inactive")
             return;
 
-        var sensorRange = block.Is(BlockIds.CalibratedSculkSensor) ? 16 : 8;
+        var calibrated = block.Is(BlockIds.CalibratedSculkSensor);
+        var sensorRange = calibrated ? 16 : 8;
         var sensorPower = Math.Max(1, 15 - (int)(pending.Distance / sensorRange * 15));
         var activeSensor = block.WithProperty("sculk_sensor_phase", "active")
             .WithProperty("power", sensorPower);
-        await SetBlockAsync(point, activeSensor, true);
+
+        // Vanilla stores the frequency before activating, so comparators the activation updates read it.
         var chunk = GetLoadedChunk(point.X >> 4, point.Z >> 4);
         if (chunk?.GetBlockEntity(point.X, point.Y, point.Z) is DataBlockEntity sensor)
             sensor.Set("last_vibration_frequency", GameEventFrequency(pending.Event.Kind));
 
-        activeSculk[point] = 30;
+        await SetBlockAsync(point, activeSensor, true);
+
+        // Vanilla's getActiveTicks: a calibrated sensor stays active for 10 ticks, a plain one for 30.
+        activeSculk[point] = calibrated ? 10 : 30;
         var center = (VectorD)point + new VectorD(0.5, 0.5, 0.5);
         EmitGameEvent(MobGameEvent.SculkSensorClick, center, pending.Event.Source, pending.Event.Owner);
     }
@@ -219,7 +232,7 @@ public abstract partial class AbstractLevel
         }
     }
 
-    private void DispatchGameEvent(MobVibration vibration)
+    private void DispatchGameEvent(MobVibration vibration, long emittedAt)
     {
         if (vibration.Kind is MobGameEvent.JukeboxPlay or MobGameEvent.JukeboxStop)
         {
@@ -231,7 +244,7 @@ public abstract partial class AbstractLevel
             return;
 
         OfferToMobListeners(vibration);
-        OfferToSculk(vibration);
+        OfferToSculk(vibration, emittedAt);
     }
 
     private void NotifyJukeboxListeners(MobVibration vibration)
@@ -273,7 +286,7 @@ public abstract partial class AbstractLevel
     /// Offers the vibration to the idle sculk sensors around it, or for a sensor's click caused by a player, to the
     /// idle shriekers.
     /// </summary>
-    private void OfferToSculk(MobVibration vibration)
+    private void OfferToSculk(MobVibration vibration, long emittedAt)
     {
         var origin = (Vector)vibration.Position.Floor();
         foreach (var point in NearbySculk(origin, 16))
@@ -291,13 +304,30 @@ public abstract partial class AbstractLevel
             if (activeSculk.ContainsKey(point) || IsBusySculk(block, shrieker))
                 continue;
 
+            if (!shrieker && !CalibrationAccepts(point, block, vibration.Kind))
+                continue;
+
             var receiver = (VectorD)point + new VectorD(0.5, 0.5, 0.5);
             var distance = (receiver - vibration.Position).Magnitude;
             if (distance > radius || WoolOccludes(vibration.Position, receiver))
                 continue;
 
-            SelectVibration(blockVibrations, point, vibration, distance);
+            SelectVibration(blockVibrations, point, vibration, distance, this.TicksSince(emittedAt));
         }
+    }
+
+    /// <summary>
+    /// Vanilla <c>CalibratedSculkSensorBlockEntity</c>'s <c>canReceiveVibration</c>: the signal behind a calibrated
+    /// sensor, when there is one, is the only frequency it hears. Plain sensors hear every frequency.
+    /// </summary>
+    internal bool CalibrationAccepts(Vector point, IBlock sensor, MobGameEvent kind)
+    {
+        if (!sensor.Is(BlockIds.CalibratedSculkSensor))
+            return true;
+
+        var back = FeatureHelpers.ParseFace(sensor.GetProperty("facing")).Opposite();
+        var signal = this.GetSignal(point.Offset(back), back);
+        return signal == 0 || signal == GameEventFrequency(kind);
     }
 
     private static bool IsBusySculk(IBlock block, bool shrieker)
@@ -308,11 +338,17 @@ public abstract partial class AbstractLevel
         return block.GetProperty("sculk_sensor_phase") != "inactive";
     }
 
+    /// <summary>
+    /// Makes the vibration the one <paramref name="key"/> hears, unless an earlier or nearer one this tick won. It
+    /// arrives a tick per whole block of <paramref name="distance"/> later, less the <paramref name="lag"/> since it
+    /// was emitted: vanilla's sculk choose a vibration from before the tick and count its travel from then.
+    /// </summary>
     private void SelectVibration<TKey>(
         Dictionary<TKey, PendingMobVibration> pending,
         TKey key,
         MobVibration vibration,
-        double distance)
+        double distance,
+        int lag = 0)
         where TKey : notnull
     {
         if (pending.TryGetValue(key, out var previous)
@@ -325,8 +361,13 @@ public abstract partial class AbstractLevel
         }
 
         var travelTicks = Math.Max(1, (int)Math.Floor(distance));
-        pending[key] = new(vibration, gameEventTick, gameEventTick + travelTicks, distance);
+        var arrival = gameEventTick + Math.Max(0, travelTicks - lag);
+        pending[key] = new(vibration, gameEventTick, arrival, distance);
     }
+
+    // Whole ticks since the game time an event was emitted at: 1 for one from between ticks, 0 for one this tick.
+    private int TicksSince(long emittedAt) =>
+        (int)Math.Clamp(this.Fluids.Clock.GameTime - emittedAt, 0, 1);
 
     internal IBlock? GameEventBlock(Vector point) =>
         IsOutsideBuildHeight(point.Y) ? null : GetLoadedChunk(point.X >> 4, point.Z >> 4)?.GetBlock(point);
@@ -459,11 +500,10 @@ public abstract partial class AbstractLevel
         return false;
     }
 
-    private static int GameEventFrequency(MobGameEvent kind) => kind switch
+    internal static int GameEventFrequency(MobGameEvent kind) => kind switch
     {
         MobGameEvent.Step or MobGameEvent.Swim => 1,
-        MobGameEvent.ProjectileLand => 2,
-        MobGameEvent.Land => 3,
+        MobGameEvent.ProjectileLand or MobGameEvent.Land or MobGameEvent.Bounce => 2,
         MobGameEvent.ItemInteractFinish => 3,
         MobGameEvent.Eat => 8,
         MobGameEvent.BlockClose or MobGameEvent.ContainerClose => 9,
@@ -472,7 +512,7 @@ public abstract partial class AbstractLevel
         MobGameEvent.BlockChange => 11,
         MobGameEvent.BlockActivate => 10,
         MobGameEvent.BlockDeactivate => 9,
-        MobGameEvent.BlockDestroy or MobGameEvent.EntityDie => 12,
+        MobGameEvent.BlockDestroy => 12,
         MobGameEvent.FluidPickup => 12,
         MobGameEvent.BlockPlace or MobGameEvent.FluidPlace => 13,
         MobGameEvent.EntityPlace or MobGameEvent.LightningStrike => 14,
@@ -481,8 +521,7 @@ public abstract partial class AbstractLevel
         MobGameEvent.Unequip => 4,
         MobGameEvent.EntityDamage => 7,
         MobGameEvent.ProjectileShoot => 3,
-        MobGameEvent.SculkSensorClick => 4,
-        MobGameEvent.Explode => 15,
+        MobGameEvent.EntityDie or MobGameEvent.Explode => 15,
         _ => 0
     };
 

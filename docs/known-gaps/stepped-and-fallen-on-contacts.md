@@ -101,5 +101,6 @@ What's still different:
 Remaining phase 3 follow-ups include swept inside contacts, player movement/negative fire-holdoff parity,
 spawn protection, honey-slide advancement criteria, and complete natural-shrieker response captures. Warning
 levels and a shrieker's response state are not persisted; warning suppression, warden reply sounds, summon placement
-and delayed darkness still need full lifecycle parity. The broader sculk work (sensor timers, calibrated filtering
-and event sources), scaffolding support and water-started bubble columns remain separate work.
+and delayed darkness still need full lifecycle parity. The broader sculk work (persisted sensor timers
+and more event sources), scaffolding support and water-started bubble columns remain separate work. Calibrated
+sensor filtering and vibration frequency/timing corrections were merged in #739.
