@@ -34,6 +34,15 @@ internal sealed class SculkCatalystBlockEntity : BlockEntity
     public SculkCharge Charge { get; } = new();
 
     /// <summary>
+    /// A new catalyst, whose saved data already holds its empty cursors list: vanilla saves the list even when it's
+    /// empty, and a catalyst decoration places is saved before any tick takes in a change.
+    /// </summary>
+    public SculkCatalystBlockEntity()
+    {
+        this.SavedData = BlockEntityNbt.SaveData(this);
+    }
+
+    /// <summary>
     /// Vanilla's <c>CatalystListener.handleGameEvent</c> for a mob's death whose experience no catalyst took yet:
     /// the mob's experience, if it has any, becomes charge half a block above where it died, and the catalyst blooms.
     /// </summary>
@@ -84,6 +93,9 @@ internal sealed class SculkCatalystBlockEntity : BlockEntity
         this.Charge.Load(copy.TryGetTag("cursors", out var cursors) ? cursors as NbtList : null);
         copy.Remove("cursors");
         Volatile.Write(ref this.retained, copy);
+
+        // What it loaded is what it saves until a tick takes in a change.
+        this.SavedData = BlockEntityNbt.SaveData(this);
     }
 
     protected internal override void Save(NbtCompound tag)

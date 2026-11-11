@@ -3,7 +3,8 @@ using Obsidian.Nbt;
 namespace Obsidian.WorldData.Generators.Features;
 
 /// <summary>
-/// Defaults of 26.3 decoration's data-backed sculk block entities. Vanilla creates these from pending protochunk
+/// Defaults of 26.3 decoration's data-backed sculk block entities (a catalyst gives its own; see
+/// <see cref="SculkCatalystBlockEntity"/>). Vanilla creates these from pending protochunk
 /// tags when read; materialize their initial saved data at the features boundary, before chunks can be persisted.
 /// </summary>
 internal static class DecorationBlockEntities
@@ -16,9 +17,6 @@ internal static class DecorationBlockEntities
             {
                 switch (entity.Id)
                 {
-                    case "minecraft:sculk_catalyst":
-                        Add(entity, new NbtList(NbtTagType.Compound, "cursors"));
-                        break;
                     case "minecraft:sculk_sensor":
                     case "minecraft:calibrated_sculk_sensor":
                         Add(entity, new NbtTag<int>("last_vibration_frequency", 0));
