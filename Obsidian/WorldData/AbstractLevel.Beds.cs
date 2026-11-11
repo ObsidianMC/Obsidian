@@ -287,7 +287,7 @@ public abstract partial class AbstractLevel
     /// Whether water poured at <paramref name="position"/> evaporates, like vanilla's <c>BucketItem.emptyContents</c>
     /// where <c>water_evaporates</c> is true (the nether): it isn't placed, and the players around hear it hiss.
     /// </summary>
-    internal bool Evaporates(IPlayer player, Vector position)
+    internal bool Evaporates(IPlayer? player, Vector position)
     {
         if (!this.Gameplay(LevelEnvironment.WaterEvaporates, position))
             return false;
@@ -302,7 +302,7 @@ public abstract partial class AbstractLevel
             Volume = 0.5f,
             Pitch = 2.6f + (Random.Shared.NextSingle() - Random.Shared.NextSingle()) * 0.8f,
             Seed = Random.Shared.NextInt64()
-        }, player.EntityId);
+        }, player?.EntityId ?? -1);
 
         PacketBroadcaster.QueuePacketToLevelInRange(this, center, new LevelParticlesPacket
         {

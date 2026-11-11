@@ -88,7 +88,8 @@ internal sealed class RedstoneDispenser(IRedstoneLevel level, RedstoneEngine eng
         var facing = FeatureHelpers.ParseFace(state.GetProperty("facing"));
         var source = new DispenseSource(level, position, state, facing, container.Inventory);
         using var prepared = snapshot is null ? null : DispenseBehaviors.Prepare(source, snapshot);
-        source = source with { Placement = prepared };
+        await using var bucket = snapshot is null ? null : await BucketPreparation.PrepareAsync(source, snapshot);
+        source = source with { Placement = prepared, Bucket = bucket };
 
         lock (level.Fluids.TickLock)
         {
@@ -113,6 +114,9 @@ internal sealed class RedstoneDispenser(IRedstoneLevel level, RedstoneEngine eng
                     {
                         return;
                     }
+
+                    if (bucket is not null && !bucket.IsCurrent(source))
+                        return;
 
                     using (effects = new BlockUseEffects(level))
                     {

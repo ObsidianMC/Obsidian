@@ -129,19 +129,16 @@ internal static class BucketItems
         var fluid = FluidState.Of(block);
         var powder = block.Is(BlockIds.PowderSnow);
         var waterlogged = block.GetProperty("waterlogged") == "true";
-        if (!powder && !waterlogged && !(block.IsLiquidBlock() && fluid.IsSource))
+        if (PickupItem(block) is not Item filled)
             return UseResult.Fail;
 
-        var filled = ItemsRegistry.WaterBucket;
         var sound = "minecraft:item.bucket.fill";
         if (powder)
         {
-            filled = ItemsRegistry.PowderSnowBucket;
             sound = "minecraft:item.bucket.fill_powder_snow";
         }
         else if (fluid.IsLava)
         {
-            filled = ItemsRegistry.LavaBucket;
             sound = "minecraft:item.bucket.fill_lava";
         }
 
@@ -327,10 +324,23 @@ internal static class BucketItems
     }
 
     // Bucket replacement uses BlockState.canBeReplaced(Fluid), broader than item placement's replaceable flag.
-    private static bool Accepts(IBlock block, FluidKind fluid, bool sneaking) => block.IsAir
+    internal static bool Accepts(IBlock block, FluidKind fluid, bool sneaking) => block.IsAir
         || !sneaking && (block.CanBeReplaced() || !block.IsSolid()
             || block.IsLiquidBlockContainer() && (block.CanHoldSpecificFluid(fluid)
                 || fluid == FluidKind.Water && block.GetProperty("waterlogged") == "true"));
+
+    /// <summary>The bucket a source or waterlogged block gives, shared by players and dispensers.</summary>
+    internal static Item? PickupItem(IBlock block)
+    {
+        if (block.Is(BlockIds.PowderSnow))
+            return ItemsRegistry.PowderSnowBucket;
+
+        var fluid = FluidState.Of(block);
+        if (block.GetProperty("waterlogged") != "true" && !(block.IsLiquidBlock() && fluid.IsSource))
+            return null;
+
+        return fluid.IsLava ? ItemsRegistry.LavaBucket : ItemsRegistry.WaterBucket;
+    }
 
     private static BlockShapeHit? Trace(AbstractLevel level, PlayerBase player, bool sources)
     {

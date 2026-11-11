@@ -1,13 +1,16 @@
 using Obsidian.API.BlockEntities;
 using Obsidian.API.Blocks;
 using Obsidian.API.World.Features.Trees;
+using Obsidian.Entities;
+using Obsidian.Nbt;
 using Obsidian.WorldData.Features;
 
 namespace Obsidian.WorldData.Redstone;
 
 /// <summary>
 /// What comparators read from vanilla's blocks, like their <c>getAnalogOutputSignal</c>: how full a container is,
-/// and the state of cakes, composters, cauldrons, beehives, end portal frames and respawn anchors.
+/// and the state of cakes, composters, cauldrons, beehives, end portal frames, respawn anchors, copper bulbs, copper
+/// golem statues, sculk sensors and command blocks.
 /// </summary>
 internal static class AnalogOutputs
 {
@@ -24,8 +27,8 @@ internal static class AnalogOutputs
     /// Vanilla <c>hasAnalogOutputSignal</c> for vanilla's blocks.
     /// </summary>
     /// <remarks>
-    /// Command blocks, sculk sensors, creaking hearts, copper bulbs and copper golem statues have one in vanilla too,
-    /// which reads as 0 here.
+    /// Creaking hearts have one in vanilla too, which reads as 0 here: a heart's is how near its creaking is, and
+    /// Obsidian's hearts don't tick, so they have none.
     /// </remarks>
     public static bool Has(IBlock state)
     {
@@ -80,8 +83,42 @@ internal static class AnalogOutputs
                 ? JukeboxSongsRegistry.ComparatorOutput(jukebox)
                 : 0,
             "DetectorRailBlock" => DetectorSignal(level, state, position),
+            "CopperBulbBlock" or "WeatheringCopperBulbBlock" => state.GetProperty("lit") == "true" ? 15 : 0,
+
+            // Vanilla's pose ordinal plus one: standing, sitting, running, star.
+            "CopperGolemStatueBlock" or "WeatheringCopperGolemStatueBlock" => StatuePose(state) + 1,
+            "SculkSensorBlock" or "CalibratedSculkSensorBlock" => SculkSignal(level, state, position),
+            "CommandBlock" => SavedNumber(level.GetBlockEntity(position), "SuccessCount"),
             _ => ContainerSignal(level, level.GetBlockEntity(position))
         };
+
+    // Vanilla CopperGolemStatueBlock.Pose, in declaration order.
+    private static int StatuePose(IBlock state) => state.GetProperty("copper_golem_pose") switch
+    {
+        "sitting" => 1,
+        "running" => 2,
+        "star" => 3,
+        _ => 0
+    };
+
+    // Vanilla SculkSensorBlock: an active sensor gives the frequency of the vibration it last heard.
+    private static int SculkSignal(LevelBlockUpdates level, IBlock state, Vector position)
+    {
+        if (state.GetProperty("sculk_sensor_phase") != "active")
+            return 0;
+
+        return SavedNumber(level.GetBlockEntity(position), "last_vibration_frequency");
+    }
+
+    // A whole number vanilla saves in the block entity's data (a command block's SuccessCount), 0 when missing.
+    private static int SavedNumber(IBlockEntity? blockEntity, string name)
+    {
+        if (blockEntity is not DataBlockEntity data)
+            return 0;
+
+        lock (data.Data)
+            return data.Data.TryGetNumber<int>(name, out var value) ? value : 0;
+    }
 
     // A detector rail's signal, from the minecarts in its box.
     private static int DetectorSignal(LevelBlockUpdates level, IBlock state, Vector position)
@@ -122,7 +159,7 @@ internal static class AnalogOutputs
         blockEntity is ContainerBlockEntity container ? ContainerSignal(level.ItemsOf(container)) : 0;
 
     // Vanilla ChestBlock.getContainer: both halves of a double chest, and nothing when either half is blocked by a
-    // conductor above it (vanilla's cats sitting on it aren't checked).
+    // conductor or a sitting cat above it.
     private static int ChestSignal(LevelBlockUpdates level, IBlock state, Vector position)
     {
         if (IsBlocked(level, position) || level.GetBlockEntity(position) is not ContainerBlockEntity chest)
@@ -157,8 +194,16 @@ internal static class AnalogOutputs
         };
     }
 
-    private static bool IsBlocked(LevelBlockUpdates level, Vector position) =>
-        level.GetBlock(position + Vector.Up).IsRedstoneConductor();
+    // Vanilla ChestBlock.isChestBlockedAt: a conductor above, or a cat sitting in the block above.
+    private static bool IsBlocked(LevelBlockUpdates level, Vector position)
+    {
+        if (level.GetBlock(position + Vector.Up).IsRedstoneConductor())
+            return true;
+
+        var min = (VectorD)(position + Vector.Up);
+        var max = min + new VectorD(1, 1, 1);
+        return level.EntitiesIn(min, max).Any(entity => entity is Cat { IsRemoved: false, IsSitting: true });
+    }
 
     private static int IntProperty(IBlock state, string name) =>
         int.TryParse(state.GetProperty(name), out var value) ? value : 0;

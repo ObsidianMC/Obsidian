@@ -1,4 +1,5 @@
 using Obsidian.API.BlockEntities;
+using Obsidian.API.Blocks;
 using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.Redstone;
 
@@ -15,6 +16,13 @@ internal static class PistonBehaviors
     private const int EventExtend = 0;
     private const int EventRetract = 1;
     private const int EventDrop = 2;
+
+    // Vanilla's moved-by-piston bit accompanies writes whose neighbours must see the intermediate move states.
+    private const BlockUpdateFlags MovedByPiston = (BlockUpdateFlags)64;
+    private const BlockUpdateFlags MovingPieceFlags =
+        MovedByPiston | BlockUpdateFlags.Invisible | BlockUpdateFlags.SkipBlockEntitySideEffects;
+    private const BlockUpdateFlags RetractingBaseFlags =
+        BlockUpdateFlags.Invisible | BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipBlockEntitySideEffects;
 
     /// <summary>Vanilla <c>PistonBaseBlock.getStateForPlacement</c>: faces away from the placer, retracted.</summary>
     public static IBlock DerivePlacement(IBlock state, BlockFace nearestLook) =>
@@ -93,7 +101,7 @@ internal static class PistonBehaviors
             var powered = Mover.NeighborSignal(mover.Engine, position, facing);
             if (powered && type != EventExtend)
             {
-                await level.WriteAsync(position, state.WithProperty("extended", "true"), notifyNeighbors: false);
+                await level.WriteAsync(position, state.WithProperty("extended", "true"), BlockUpdateFlags.Clients);
                 return false;
             }
 
@@ -105,14 +113,24 @@ internal static class PistonBehaviors
                 if (!await mover.MoveBlocksAsync(position, facing, extending: true, PistonRules.IsStickyPiston(state)))
                     return false;
 
-                await level.WriteAsync(position, state.WithProperty("extended", "true"), notifyNeighbors: true);
-                level.PlaySound(position, "minecraft:block.piston.extend");
+                await level.WriteAsync(position, state.WithProperty("extended", "true"),
+                    BlockUpdateFlags.All | MovedByPiston);
+                level.PlaySound(position, "minecraft:block.piston.extend", MoveVolume, MovePitch(0.25f));
+                level.EmitGameEvent(MobGameEvent.BlockActivate, position, null);
                 return true;
             }
 
             await this.RetractAsync(position, state, type, facing);
+            level.PlaySound(position, "minecraft:block.piston.contract", MoveVolume, MovePitch(0.15f));
+            level.EmitGameEvent(MobGameEvent.BlockDeactivate, position, null);
             return true;
         }
+
+        // Vanilla PistonBaseBlock.triggerEvent's sounds: half volume, and a pitch from 0.6 up by a random spread.
+        private const float MoveVolume = 0.5f;
+
+        // Pitch consumes the level random before PlaySound draws its packet seed, as in vanilla.
+        private float MovePitch(float spread) => level.Random.NextFloat() * spread + 0.6f;
 
         private async ValueTask RetractAsync(Vector position, IBlock state, int type, BlockFace facing)
         {
@@ -127,11 +145,15 @@ internal static class PistonBehaviors
             var moving = BlocksRegistry.GetDefault(BlockIds.MovingPiston)
                 .WithProperty("facing", facing.ToString().ToLowerInvariant())
                 .WithProperty("type", sticky ? "sticky" : "normal");
-            await level.WriteAsync(position, moving, notifyNeighbors: false);
+            await level.WriteAsync(position, moving, RetractingBaseFlags);
             var retracted = BlocksRegistry.GetDefault(sticky ? BlockIds.StickyPiston : BlockIds.Piston)
                 .WithProperty("facing", facing.ToString().ToLowerInvariant())
                 .WithProperty("extended", "false");
             mover.PlaceMoving(position, retracted, facing, extending: false, source: true);
+
+            // The base's moving entity must exist before neighbours react; shapes follow those notifications.
+            await level.NotifyNeighborsAsync(position);
+            await level.UpdateNeighborShapesAsync(position);
 
             // Vanilla: only a sticky piston pulls. A normal piston, or a dropping one, just removes its head.
             if (!sticky)
@@ -258,7 +280,7 @@ internal static class PistonBehaviors
                 // Vanilla leaves a pushed block's moving piston at its default type; only the head carries stickiness.
                 var moving = BlocksRegistry.GetDefault(BlockIds.MovingPiston)
                     .WithProperty("facing", facing.ToString().ToLowerInvariant());
-                await level.WriteAsync(target, moving, notifyNeighbors: false);
+                await level.WriteAsync(target, moving, MovingPieceFlags);
                 this.PlaceMoving(target, originals[i], facing, extending, source: false);
             }
 
@@ -272,7 +294,7 @@ internal static class PistonBehaviors
                     .WithProperty("facing", facing.ToString().ToLowerInvariant())
                     .WithProperty("type", pieceType);
                 vacated.Remove(headPosition);
-                await level.WriteAsync(headPosition, movingHead, notifyNeighbors: false);
+                await level.WriteAsync(headPosition, movingHead, MovingPieceFlags);
                 this.PlaceMoving(headPosition, head, facing, extending: true, source: true);
             }
 

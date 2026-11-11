@@ -149,7 +149,7 @@ public abstract partial class AbstractLevel
         Motion = motion
     }, hostOwned: true);
 
-    private void PopBlockResource(Vector position, ItemStack stack)
+    internal void PopBlockResource(Vector position, ItemStack stack)
     {
         lock (this.Fluids.TickLock)
         {
