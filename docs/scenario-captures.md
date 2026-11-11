@@ -325,10 +325,9 @@ replaces only what vanilla produced.
   it and, through the block below, the dust beside that; clicking a comparator into subtract mode reads a chest
   under a sitting and a standing cat, a command block's `SuccessCount`, an active, a cooling and a calibrated sculk
   sensor's last frequency, a lit copper bulb and a copper golem statue's pose; and a lever rings a bell, flips a
-  copper bulb, and extends and retracts a piston, with their sounds and game events. Their write flags differ from
-  vanilla's on Obsidian's redstone paths, pinned as `RedstoneWriteFlags` (see
-  [redstone](known-gaps/redstone.md)). These cases observe all writes, including positions absent from their setup; an unexpected position
-  fails the replay. The older 92 cases compare final block states only. Extending ordered-write checks to those
+  copper bulb, and extends and retracts a piston, with their sounds and game events. Their ordered writes now
+  compare every flag bit directly with vanilla. These cases observe all writes, including positions absent from
+  their setup; an unexpected position fails the replay. The older 92 cases compare final block states only. Extending ordered-write checks to those
   cases remains an open follow-up. The replay uses the capture's absolute coordinates: translating plant
   outlines changes their position-dependent offsets and can change a bucket ray hit. It also checks whether
   closing effects exist, rather than comparing them only when both sides happened to open a menu.
