@@ -457,9 +457,10 @@ public abstract partial class AbstractLevel
     /// <summary>
     /// Sends the updates block entities asked for since the last tick (see <see cref="BlockEntity.SendUpdate"/>), like
     /// vanilla's <c>ClientboundBlockEntityDataPacket</c>, to the players who have the chunk: what
-    /// <see cref="BlockEntity.GetUpdateData"/> returns now, copied, which chunk packets send from then on too.
+    /// <see cref="BlockEntity.GetUpdateData"/> returns now, copied, which chunk packets send from then on too. The end of
+    /// the block entity pass calls it; replays call it to send what their setup placed before anyone listens.
     /// </summary>
-    private void SendBlockEntityUpdates()
+    internal void SendBlockEntityUpdates()
     {
         if (this.blockEntityHost is not LevelBlockEntityHost host)
             return;

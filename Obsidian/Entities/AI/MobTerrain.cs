@@ -367,6 +367,40 @@ internal sealed class MobTerrain(ILevel level) : IPathTerrain
         return null;
     }
 
+    /// <summary>
+    /// Like vanilla's <c>Level.clip</c> with visual shapes and no fluids, which is what decides whether something can
+    /// be seen: the first visual box the segment from <paramref name="start"/> to <paramref name="end"/> crosses, or
+    /// <c>null</c> when it crosses none before it ends or reaches an unloaded chunk. Glass and leaves, say, have none.
+    /// </summary>
+    public API.Blocks.BlockShapeHit? RaycastVisual(VectorD start, VectorD end)
+    {
+        var direction = end - start;
+        if (!double.IsFinite(direction.X + direction.Y + direction.Z + start.X + start.Y + start.Z)
+            || direction.MagnitudeSquared() < 1e-12)
+        {
+            return null;
+        }
+
+        foreach (var cell in CellsAlong(start, end))
+        {
+            if (GetBlock(cell) is not IBlock block)
+                return null;
+
+            var state = block.GetHashCode();
+            var (offsetX, offsetY, offsetZ) = BlockPhysics.ShapeOffset(state, cell.X, cell.Z);
+            var boxes = BlockPhysics.ShapeBoxes(state, visual: true)
+                .Select(box => new BoundingBox(
+                    new VectorD(box[0], box[1], box[2]),
+                    new VectorD(box[3], box[4], box[5])))
+                .ToArray();
+            var hit = BlockShapeRaycast.Clip(boxes, cell, new VectorD(offsetX, offsetY, offsetZ), start, direction);
+            if (hit is not null)
+                return hit.Value.Hit;
+        }
+
+        return null;
+    }
+
     // The cells the segment from start to end passes through, in order, from start's to end's: a voxel walk that
     // skips none.
     internal static IEnumerable<Vector> CellsAlong(VectorD start, VectorD end)
