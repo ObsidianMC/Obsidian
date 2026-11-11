@@ -515,12 +515,13 @@ public partial class Living : Entity, ILiving
     public bool HasPotionEffect(int effectId) => activePotionEffects.ContainsKey(effectId);
 
     /// <summary>
-    /// Vanilla's <c>LivingEntity.updateInvisibilityStatus</c>, run as the effects change: the entity is invisible
-    /// while it has the invisibility effect, and a spectator player always is. Vanilla runs it in the tick before the
-    /// entity's data is synced; running it at the change leaves the same synced state, and spawn data and the wandering
-    /// trader's night check read the flag straight away.
+    /// Vanilla's <c>LivingEntity.updateInvisibilityStatus</c>, run as the effects change and as a player's game mode
+    /// changes: the entity is invisible while it has the invisibility effect, and a spectator player always is. Vanilla
+    /// runs it in the tick before the entity's data is synced; running it at the change leaves the same synced state,
+    /// and spawn data and the wandering trader's night check read the flag straight away. Entities whose invisibility
+    /// is not the effect's (an armor stand's saved flag) override it.
     /// </summary>
-    private void UpdateInvisibilityStatus()
+    internal virtual void UpdateInvisibilityStatus()
     {
         var spectator = this is IPlayer { GameMode: GameMode.Spectator };
         Invisible = spectator || HasPotionEffect((int)PotionEffect.Invisibility - 1);

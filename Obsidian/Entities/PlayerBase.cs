@@ -197,6 +197,8 @@ public abstract partial class PlayerBase : Avatar, IPlayer
             };
             Abilities |= this.GrantedFlight;
             field = value;
+            // Vanilla's setGameMode runs onUpdateAbilities, which makes a spectator invisible and shows others again.
+            UpdateInvisibilityStatus();
         }
     }
 
