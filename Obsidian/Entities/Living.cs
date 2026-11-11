@@ -449,6 +449,7 @@ public partial class Living : Entity, ILiving
                     activePotionEffects[potion] = new() { EffectData = hidden, CurrentDuration = hidden.Duration };
                     if (potion == (int)PotionEffect.JumpBoost - 1)
                         this.RefreshJumpBoostFallProtection();
+                    this.UpdateInvisibilityStatus();
                     if (this is Mob && potion == (int)PotionEffect.Absorption - 1)
                         AbsorptionHealth = Math.Min(AbsorptionHealth, 4 * (hidden.Amplifier + 1));
                     SendPotionEffect(hidden);
@@ -513,6 +514,18 @@ public partial class Living : Entity, ILiving
 
     public bool HasPotionEffect(int effectId) => activePotionEffects.ContainsKey(effectId);
 
+    /// <summary>
+    /// Vanilla's <c>LivingEntity.updateInvisibilityStatus</c>, run as the effects change: the entity is invisible
+    /// while it has the invisibility effect, and a spectator player always is. Vanilla runs it in the tick before the
+    /// entity's data is synced; running it at the change leaves the same synced state, and spawn data and the wandering
+    /// trader's night check read the flag straight away.
+    /// </summary>
+    private void UpdateInvisibilityStatus()
+    {
+        var spectator = this is IPlayer { GameMode: GameMode.Spectator };
+        Invisible = spectator || HasPotionEffect((int)PotionEffect.Invisibility - 1);
+    }
+
     internal void RestorePotionEffect(int id, int duration, int amplifier)
     {
         if (duration == -1 || duration > 0)
@@ -524,6 +537,7 @@ public partial class Living : Entity, ILiving
             };
             if (id == (int)PotionEffect.JumpBoost - 1)
                 this.RefreshJumpBoostFallProtection();
+            this.UpdateInvisibilityStatus();
         }
     }
 
@@ -567,6 +581,7 @@ public partial class Living : Entity, ILiving
         });
         if (effectId == (int)PotionEffect.JumpBoost - 1)
             this.RefreshJumpBoostFallProtection();
+        this.UpdateInvisibilityStatus();
 
         if (this is Mob && effectId == (int)PotionEffect.Absorption - 1)
             AbsorptionHealth = Math.Min(4 * (updated.EffectData.Amplifier + 1), Math.Max(AbsorptionHealth, 4 * (amplifier + 1)));
@@ -603,6 +618,7 @@ public partial class Living : Entity, ILiving
         activePotionEffects.TryRemove(effectId, out _);
         if (effectId == (int)PotionEffect.JumpBoost - 1)
             this.RefreshJumpBoostFallProtection();
+        this.UpdateInvisibilityStatus();
         if (this is Mob && effectId == (int)PotionEffect.Absorption - 1)
             AbsorptionHealth = 0;
     }

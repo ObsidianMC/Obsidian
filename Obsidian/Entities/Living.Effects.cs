@@ -94,6 +94,7 @@ public partial class Living
             activePotionEffects[effect.Id] = new() { EffectData = effect, CurrentDuration = effect.Duration };
             if (effect.Id == (int)PotionEffect.JumpBoost - 1)
                 this.RefreshJumpBoostFallProtection();
+            this.UpdateInvisibilityStatus();
         }
     }
 }

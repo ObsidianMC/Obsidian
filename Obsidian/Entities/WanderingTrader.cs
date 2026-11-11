@@ -63,7 +63,6 @@ public sealed partial class WanderingTrader : AgeableMob
         var night = Level.DayTime is >= 12000 and < 24000;
         if (Invisible == night)
             return;
-        Invisible = night;
         if (night)
             AddPotionEffect((int)PotionEffect.Invisibility - 1, 24000);
         else
