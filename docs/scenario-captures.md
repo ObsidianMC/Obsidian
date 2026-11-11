@@ -429,7 +429,7 @@ replaces only what vanilla produced.
   events and tadpoles.
 
 - `growing_plant_ticks.json` (`VanillaGrowingPlantTicks.ReplayGrowingPlantTickReference`) records vanilla's
-  `randomTick` of growing plants, and the shape updates of kelp and the vines, from
+  `randomTick` of growing plants and saplings, bone meal on plants, and the shape updates of kelp and the vines, from
   `Java/GrowingPlantTickFixtures.java` (`CaptureFixtures=growing_plant_ticks`). Each case is its input: the blocks of
   a small block view (air elsewhere), an optional ticked origin, optional actions after the tick (a state set with
   `UPDATE_ALL`, or a block removed), a seed, and optionally the raw light everywhere (`light`) and the `spread_vines`
@@ -440,11 +440,20 @@ replaces only what vanilla produced.
   state of every position it set up or wrote. The cases cover kelp and the cave, weeping and twisting vines, melon and
   pumpkin stems, wall vines and the pitcher crop: growing, a missed draw, being blocked, the last age, light, the
   build height limits, each way a vine spreads, a tip broken off after growing, a head growing into a one-block gap
-  below its plant, and support placed or removed under a head. The replay builds each case in a fresh world with the
+  below its plant, and support placed or removed under a head. A `bonemeal` case uses bone meal on the origin
+  instead, as `BoneMealItem.growCrop` does, and records whether it took (`valid`). The probe's feature registry holds
+  a stand-in for every feature in the jar, which records where it's placed (`placed`) and succeeds unless the case's
+  `features` says otherwise; a huge mushroom's stand-in has its foliage radius, but no stand-in is a tree, so a
+  sapling's trunk room reads 0. Those cases cover saplings growing on random ticks and with bone meal (26.3's weighted
+  growers: oak, birch, spruce and jungle squares, dark and pale oak alone and in squares, cherry, the poplar's three
+  trees, the azalea and the mangrove propagule, near flowers and with the tree failing), and bone meal on stems, the
+  pitcher crop, sweet berries, cocoa, kelp and the vines (heads and bodies), rooted dirt, mangrove leaves, netherrack,
+  nylium, fungi, mushrooms (near the build limit too) and moss. The replay builds each case in a fresh world with the
   recording random as the level's, dispatches the state as `AbstractLevel.TickChunkBlocks` does (its
   `isRandomlyTicking`, then its generated owner), runs the actions, and compares the draws, the ordered writes and
-  their neighbour, client and known-shape flags, the final blocks, that nothing else in the chunk around them changed,
-  and the ticks pending in the chunk with their delays. Six cases list exactly where the block notification pipeline
+  their neighbour, client and known-shape flags, the features asked for, the final blocks, that nothing else in the
+  chunk around them changed, and the ticks pending in the chunk with their delays. The replay lights the area around
+  the case with the probe's one brightness, and records features through the level's `GrowthFeatures`. Six cases list exactly where the block notification pipeline
   still parts from vanilla (see
   [reactions to block updates](known-gaps/vanilla-blocks-reactions-to-block-updates.md)).
 

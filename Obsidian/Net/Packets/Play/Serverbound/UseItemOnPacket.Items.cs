@@ -145,8 +145,10 @@ public partial class UseItemOnPacket
                 lock (use.Level.Fluids.TickLock)
                 {
                     execution = use.ForQueuedAction();
+                    // The check that decides the use draws from the level's random, as vanilla's does.
                     committed = execution.TryCommit(() =>
-                        Growth.IsValidBonemealTarget(execution.Level, execution.Position, execution.Block),
+                        Growth.IsValidBonemealTarget(execution.Level, execution.Position, execution.Block,
+                            execution.Level.GrowthRandom),
                         consumeItem: true);
                     if (committed)
                     {

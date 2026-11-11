@@ -84,13 +84,6 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
                 LevelEvents = reference.Tick == 4 ? ["1000 0,0,0 0", "2000 0,0,0 5"] : [],
                 GameEvents = []
             },
-            "bone_meal_cocoa" => reference with
-            {
-                Changes = "-1,0,0=minecraft:redstone_block;"
-                    + "0,0,0=minecraft:dispenser[facing=east,triggered=true]",
-                Items = ["0 minecraft:bone_meal x2"],
-                LevelEvents = reference.Tick == 4 ? ["1001 0,0,0 0", "2000 0,0,0 5"] : []
-            },
             _ => reference
         };
     }

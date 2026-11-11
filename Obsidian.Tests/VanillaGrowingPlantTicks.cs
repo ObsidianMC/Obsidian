@@ -13,14 +13,16 @@ using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.Tests.Utilities;
 using Obsidian.WorldData;
+using Obsidian.WorldData.Features;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Replays <c>growing_plant_ticks.json</c>: vanilla's <c>randomTick</c> of growing plants, from
-/// <c>Java/GrowingPlantTickFixtures.java</c> (<c>CaptureFixtures=growing_plant_ticks</c>).
+/// Replays <c>growing_plant_ticks.json</c>: vanilla's <c>randomTick</c> of growing plants and saplings, and bone meal
+/// on plants (<c>BoneMealItem.growCrop</c>), from <c>Java/GrowingPlantTickFixtures.java</c>
+/// (<c>CaptureFixtures=growing_plant_ticks</c>).
 /// </summary>
 public sealed class VanillaGrowingPlantTicks(ITestOutputHelper output)
 {
@@ -28,8 +30,10 @@ public sealed class VanillaGrowingPlantTicks(ITestOutputHelper output)
 
     /// <summary>
     /// Each case's state goes through Obsidian's random-tick dispatch (whether the state ticks, then the owner the
-    /// generator binds it to) in a fresh world holding only the case's blocks, with the case's seed (the level's random
-    /// too) and light, and then the case's actions. The draws, the ordered writes with their flags, the final blocks
+    /// generator binds it to), or takes bone meal (<see cref="Growth"/>), in a fresh world holding only the case's
+    /// blocks, with the case's seed (the level's random too) and light, and then the case's actions. Features the plant
+    /// grows into are only recorded, as the probe's stand-ins record them, and placed or not as the case says. The
+    /// draws, whether bone meal took, the ordered writes with their flags, the features asked for, the final blocks
     /// and the scheduled ticks with their delays must be vanilla's, and nothing else around may change.
     /// </summary>
     [Fact]
@@ -54,12 +58,17 @@ public sealed class VanillaGrowingPlantTicks(ITestOutputHelper output)
         var before = Snapshot(world, probe);
         var random = new RecordingRandom(probe.GetProperty("seed").GetInt64());
         world.GrowthRandom = random;
+        var features = new RecordingFeatures(probe);
+        world.GrowthFeatures = features;
         var writes = new List<Write>();
         world.Fluids.BlockStored = (position, block, flags) =>
             writes.Add(new Write(position, block, flags));
         var differences = new List<string>();
 
-        if (probe.TryGetProperty("origin", out var origin))
+        var bonemeal = probe.TryGetProperty("bonemeal", out var given) && given.GetBoolean();
+        if (probe.TryGetProperty("origin", out var origin) && bonemeal)
+            UseBonemeal(differences, world, Position(origin), probe.GetProperty("valid").GetBoolean(), random);
+        else if (probe.TryGetProperty("origin", out origin))
             Tick(differences, world, Position(origin), probe.GetProperty("ticks").GetBoolean(), random);
 
         // Then what the player or the world does next, as Level.setBlock or removeBlock would.
@@ -79,6 +88,7 @@ public sealed class VanillaGrowingPlantTicks(ITestOutputHelper output)
 
         CompareDraws(differences, probe.GetProperty("draws"), random.Draws);
         CompareWrites(differences, probe.GetProperty("writes"), writes);
+        ComparePlaced(differences, probe, features.Placed);
         CompareBlocks(differences, probe.GetProperty("after"), world, before);
         CompareTicks(differences, probe.GetProperty("scheduled"), world);
 
@@ -86,8 +96,9 @@ public sealed class VanillaGrowingPlantTicks(ITestOutputHelper output)
             throw new Xunit.Sdk.XunitException(string.Join("\n", differences));
     }
 
-    // The case's rules and blocks, written without updates as vanilla's block view holds them, and its light at the
-    // origin, the only light read. The light comes after the blocks, since writing them relights.
+    // The case's rules and blocks, written without updates as vanilla's block view holds them, and its light around
+    // them, as the probe's one brightness everywhere (a sapling reads the light above it, a pitcher crop's upper half
+    // its lower half's). The light comes after the blocks, since writing them relights.
     private static async Task SetUpAsync(WorldData.World world, JsonElement probe)
     {
         world.LevelData.GameRules["random_tick_speed"] = "0";
@@ -107,11 +118,13 @@ public sealed class VanillaGrowingPlantTicks(ITestOutputHelper output)
         if (!probe.TryGetProperty("origin", out var given))
             return;
 
-        var origin = Position(given);
         var light = probe.TryGetProperty("light", out var level) ? level.GetInt32() : 15;
-        var chunk = world.GetLoadedChunk(origin.X >> 4, origin.Z >> 4)!;
-        chunk.SetLightLevel(origin.X, origin.Y, origin.Z, LightType.Sky, light);
-        chunk.SetLightLevel(origin.X, origin.Y, origin.Z, LightType.Block, 0);
+        var chunk = world.GetLoadedChunk(0, 0)!;
+        foreach (var position in Snapshot(world, probe).Keys)
+        {
+            chunk.SetLightLevel(position.X, position.Y, position.Z, LightType.Sky, light);
+            chunk.SetLightLevel(position.X, position.Y, position.Z, LightType.Block, 0);
+        }
     }
 
     // AbstractLevel.TickChunkBlocks: only a randomly ticking state ticks, through its generated owner.
@@ -128,6 +141,32 @@ public sealed class VanillaGrowingPlantTicks(ITestOutputHelper output)
             behavior.RandomTick(world, origin, block, random);
         else
             differences.Add($"{block.UnlocalizedName} has no random tick owner");
+    }
+
+    // BoneMealItem.growCrop: the check that decides the use, then the growth when it takes, both with the level's
+    // random.
+    private static void UseBonemeal(List<string> differences, WorldData.World world, Vector origin, bool vanillaValid,
+        IRandomSource random)
+    {
+        var block = world.BlockUpdates.GetBlock(origin);
+        var valid = Growth.IsValidBonemealTarget(world, origin, block, random);
+        Expect(differences, "valid", vanillaValid, valid);
+        if (valid)
+            Growth.ApplyBonemeal(world, origin, block, random);
+    }
+
+    // The features the plant asked to place, in order, with their origins.
+    private static void ComparePlaced(List<string> differences, JsonElement probe, List<string> actual)
+    {
+        var vanilla = probe.TryGetProperty("placed", out var placed)
+            ? placed.EnumerateArray()
+                .Select(feature =>
+                    $"{feature.GetProperty("feature").GetString()} {Position(feature.GetProperty("pos"))}")
+                .ToList()
+            : [];
+
+        if (!vanilla.SequenceEqual(actual))
+            differences.Add($"placed: vanilla [{string.Join(", ", vanilla)}], Obsidian [{string.Join(", ", actual)}]");
     }
 
     private static void CompareDraws(List<string> differences, JsonElement expected, List<Draw> actual)
@@ -303,6 +342,28 @@ public sealed class VanillaGrowingPlantTicks(ITestOutputHelper output)
         }
 
         public override string ToString() => Bound is int bound ? $"{Call}({bound})={Value}" : $"{Call}={Value}";
+    }
+
+    /// <summary>
+    /// The probe's stand-in features: each one placed draws nothing and is recorded, and placing it succeeds unless
+    /// the case's <c>features</c> says otherwise. Plants still read the real features (a tree's trunk, a huge
+    /// mushroom's cap).
+    /// </summary>
+    private sealed class RecordingFeatures(JsonElement probe) : GrowthFeatures
+    {
+        public List<string> Placed { get; } = [];
+
+        public override bool Place(string identifier, LiveFeatureLevel level, Vector origin, IRandomSource random)
+        {
+            this.Placed.Add($"{identifier} {origin}");
+            if (probe.TryGetProperty("features", out var results)
+                && results.TryGetProperty(identifier, out var result))
+            {
+                return result.GetBoolean();
+            }
+
+            return true;
+        }
     }
 
     /// <summary>A legacy random that records each draw the way the probe does.</summary>

@@ -63,7 +63,7 @@ internal static partial class DispenseBehaviors
             lock (level.Fluids.TickLock)
             {
                 var block = level.BlockUpdates.GetBlock(target);
-                used = Growth.IsValidBonemealTarget(level, target, block);
+                used = Growth.IsValidBonemealTarget(level, target, block, level.GrowthRandom);
                 if (used)
                 {
                     var effects = level.ActiveBlockUse

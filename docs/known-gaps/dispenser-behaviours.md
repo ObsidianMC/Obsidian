@@ -31,9 +31,9 @@ Droppers are unchanged: they still put an item into the container they face or d
   `projectile_shoot` game event is emitted on the projectile's first tick, through the shared projectile path,
   with no source for a dispenser's shot. An arrow hitting the wall on that tick emits `projectile_land` at the hit
   block before `projectile_shoot` at its retreated position (`review_arrow_hits_wall`).
-- **Bone meal** grows what a player's bone meal grows here (see [plant growth](plant-growth-beyond-saplings.md)); cocoa
-  isn't one of them (`bone_meal_cocoa`, pinned to keeping both bone meal), and water plants (vanilla's `growWaterPlant`: seagrass and coral
-  spreading on water) aren't grown either, so the dispenser fails on those and keeps the bone meal.
+- **Bone meal** grows what a player's bone meal grows here (see [plant growth](plant-growth-beyond-saplings.md)); water
+  plants (vanilla's `growWaterPlant`: seagrass and coral spreading on water) aren't grown, so the dispenser fails on
+  those and keeps the bone meal.
 - **Flint and steel and TNT** don't prime sulfur cubes or feed TNT to one, and fire is placed only where it survives,
   without vanilla's exception for the inside of a nether portal frame.
 - **Shears** don't cut leads, and harvesting a full beehive doesn't release the bees inside it.
