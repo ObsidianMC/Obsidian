@@ -13,6 +13,10 @@ internal sealed class RequirePermissionLevelAttribute(int level) : BaseExecution
 
     public override Task<bool> RunChecksAsync(CommandContext context)
     {
+        // A command block's level is its own, whatever its issuer.
+        if (context.Sender is IPermissionLevelSender leveled)
+            return Task.FromResult(leveled.PermissionLevel >= this.Level);
+
         if (context.Sender.Issuer is CommandIssuers.Console or CommandIssuers.RemoteConsole)
             return Task.FromResult(true);
 

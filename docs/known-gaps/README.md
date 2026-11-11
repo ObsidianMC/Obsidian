@@ -22,6 +22,7 @@ and where to start.
 - [Brushing and armor stands](brushing-and-armor-stands.md)
 - [Bubble columns started by water](bubble-columns-started-by-water.md)
 - [Cauldrons](cauldrons.md)
+- [Command blocks](command-blocks.md)
 - [Comparators reading unopened loot containers](comparators-reading-unopened-loot-containers.md)
 - [Dispenser behaviours](dispenser-behaviours.md)
 - [Eyeblossoms, dried ghasts and portal piglins](eyeblossoms-dried-ghasts-and-portal-piglins.md)

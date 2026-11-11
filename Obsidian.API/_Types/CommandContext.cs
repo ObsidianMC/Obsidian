@@ -20,11 +20,25 @@ public sealed class CommandContext(string message, ICommandSender commandSender,
 
     public int Result { get; private set; }
 
+    /// <summary>
+    /// How many results of the last command succeeded, apart from their values: one for a command that succeeded, and
+    /// for <c>/execute … run</c> the sum over its branches, as vanilla's result callbacks count them (a command
+    /// block's success count).
+    /// </summary>
+    internal int SuccessCount { get; private set; }
+
     /// <summary>Records the value consumed by command composition, independently of feedback messages.</summary>
-    public void SetResult(bool succeeded, int result = 0)
+    public void SetResult(bool succeeded, int result = 0) => this.SetResult(succeeded, result, succeeded ? 1 : 0);
+
+    /// <summary>
+    /// Records the value and how many results succeeded (see <see cref="SuccessCount"/>), for a command that ran
+    /// others.
+    /// </summary>
+    internal void SetResult(bool succeeded, int result, int successes)
     {
         this.Succeeded = succeeded;
         this.Result = succeeded ? result : 0;
+        this.SuccessCount = succeeded ? successes : 0;
     }
 
     public PluginBase? Plugin { get; internal set; }

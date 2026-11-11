@@ -430,6 +430,29 @@ internal static partial class UseBehaviors
     }
 
     /// <summary>
+    /// Vanilla's <c>CommandBlock.useWithoutItem</c>: an operator in creative mode (see
+    /// <see cref="CommandBlockMinecart.CanEdit"/>) opens the block's editor, which their client draws itself, and is
+    /// sent the block's data for it (vanilla's <c>openCommandBlock</c>); anyone else's use passes.
+    /// </summary>
+    private sealed class CommandBlockUse : IBlockUseBehavior
+    {
+        public ValueTask<UseResult> UseWithoutItemAsync(BlockUse use)
+        {
+            if (use.BlockEntity is not CommandBlockEntity entity || !CommandBlockMinecart.CanEdit(use.Player))
+                return ValueTask.FromResult(UseResult.Pass);
+
+            use.Player.SendPacket(new BlockEntityDataPacket
+            {
+                Position = use.Position,
+                Type = BlockEntityTypesRegistry.NetworkId(CommandBlockEntity.TypeId),
+                NBTData = entity.EditorData()
+            });
+
+            return ValueTask.FromResult(UseResult.Success);
+        }
+    }
+
+    /// <summary>
     /// Vanilla's <c>LecternBlock</c>: an empty lectern takes the written or writable book the player holds; one with
     /// a book opens it.
     /// </summary>

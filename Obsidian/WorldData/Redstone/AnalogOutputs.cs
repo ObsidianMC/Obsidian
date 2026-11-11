@@ -88,7 +88,9 @@ internal static class AnalogOutputs
             // Vanilla's pose ordinal plus one: standing, sitting, running, star.
             "CopperGolemStatueBlock" or "WeatheringCopperGolemStatueBlock" => StatuePose(state) + 1,
             "SculkSensorBlock" or "CalibratedSculkSensorBlock" => SculkSignal(level, state, position),
-            "CommandBlock" => SavedNumber(level.GetBlockEntity(position), "SuccessCount"),
+            "CommandBlock" => level.GetBlockEntity(position) is CommandBlockEntity commandBlock
+                ? commandBlock.Command.SuccessCount
+                : 0,
             _ => ContainerSignal(level, level.GetBlockEntity(position))
         };
 

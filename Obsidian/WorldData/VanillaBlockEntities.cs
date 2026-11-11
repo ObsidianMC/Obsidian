@@ -53,6 +53,7 @@ internal static class VanillaBlockEntities
         "minecraft:decorated_pot" => new DecoratedPotBlockEntity(position),
         "minecraft:sculk_catalyst" => new SculkCatalystBlockEntity(),
         "minecraft:shelf" => new ShelfBlockEntity(position),
+        CommandBlockEntity.TypeId => new CommandBlockEntity(),
         _ => null
     };
 
