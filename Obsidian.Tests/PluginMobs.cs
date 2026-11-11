@@ -418,6 +418,84 @@ public sealed class PluginMobs
         Assert.Equal("minecraft:generic_kill", behavior.Death!.Type);
     }
 
+    [Fact]
+    public async Task PluginMobDeathKeepsItsOwnHitsSourceWhenHitsOverlap()
+    {
+        await using var context = TestServerFactory.CreateServer($"overlapping-damage-{Guid.NewGuid():N}");
+        await BlockUpdates.AddChunksAsync(context.World);
+        var owner = new PluginContainer
+        {
+            Info = new PluginInfo("overlappingdamage"),
+            Archive = PluginArchive.Open("overlappingdamage.obby", PluginArchives.Zip(new Dictionary<string, byte[]>
+            {
+                [PluginMetadata.FileName] = PluginArchives.Metadata("overlappingdamage", "1.0.0", "Overlapping damage")
+            }))
+        };
+        var behavior = new GatedHurtBehavior();
+        var definition = EntityDefinitionsRegistry.Register("overlappingdamage:mob", EntityKind.Mob);
+        Assert.True(EntityDefinitionsRegistry.TryBind(definition, new EntityProperties { Behavior = behavior },
+            owner, () => false));
+        var mob = Assert.IsType<PluginMob>(PluginEntity.Create(definition, context.World));
+        mob.EntityId = Server.GetNextEntityId();
+        mob.Position = new VectorD(8.5, 71, 8.5);
+        context.World.SpawnEntity(mob);
+        var attacker = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Attacker");
+        var arrow = new Arrow { Level = context.World };
+
+        // A melee hit waits in the hook, then a lethal arrow hit waits there too.
+        var melee = new GatedHurtBehavior.Call(cancel: true);
+        var shot = new GatedHurtBehavior.Call(cancel: false);
+        behavior.Calls.Enqueue(melee);
+        behavior.Calls.Enqueue(shot);
+        var first = mob.DamageCombatAsync(attacker, 1, CombatDamageKind.Melee).AsTask();
+        await melee.Reached.Task;
+        var second = mob.DamageCombatAsync(attacker, 100, CombatDamageKind.Projectile, directSource: arrow).AsTask();
+        await shot.Reached.Task;
+
+        // The melee hit is cancelled and finishes first; then the arrow's hit commits and kills the mob.
+        melee.Release.SetResult();
+        await first;
+        shot.Release.SetResult();
+        await second;
+
+        Assert.False(mob.Alive);
+        Assert.Equal("minecraft:arrow", behavior.Death!.Type);
+        Assert.Same(attacker, behavior.Death.Attacker);
+        Assert.Same(arrow, behavior.Death.DirectEntity);
+        Assert.Equal(CombatDamageKind.Projectile, mob.LastDamageKind);
+    }
+
+    // A damage hook that holds each hit until the test lets it go on, then cancels it or lets it through.
+    private sealed class GatedHurtBehavior : IEntityBehavior
+    {
+        public Queue<Call> Calls { get; } = new();
+
+        public DamageSource? Death { get; private set; }
+
+        public async ValueTask HurtAsync(IEntity entity, EntityDamage damage)
+        {
+            var call = this.Calls.Dequeue();
+            call.Reached.SetResult();
+            await call.Release.Task;
+            damage.Cancelled = call.Cancel;
+        }
+
+        public ValueTask DiedAsync(IEntity entity, DamageSource source)
+        {
+            this.Death = source;
+            return ValueTask.CompletedTask;
+        }
+
+        internal sealed class Call(bool cancel)
+        {
+            public bool Cancel { get; } = cancel;
+
+            public TaskCompletionSource Reached { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        }
+    }
+
     private sealed class DamageSourceRecorder : IEntityBehavior
     {
         public DamageSource? Last { get; private set; }

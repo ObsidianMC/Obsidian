@@ -574,16 +574,21 @@ public partial class Mob
     /// <summary>
     /// Lets a mob change damage it's about to take, after its immunities: the amount it takes, or null for none.
     /// </summary>
+    /// <param name="hit">
+    /// The hit <see cref="Living.DamageCombatAsync"/> is dealing, captured when this one began; null for damage dealt
+    /// outright.
+    /// </param>
     private protected virtual ValueTask<float?> FilterIncomingDamageAsync(
         IEntity source,
         float amount,
-        CombatDamageKind kind) => ValueTask.FromResult<float?>(amount);
+        CombatDamageKind kind,
+        IncomingHit? hit) => ValueTask.FromResult<float?>(amount);
 
     /// <summary>
     /// Called once a hit the mob took has committed (see <see cref="Living.TryCommitDamage"/>), before its effects and
     /// any death it causes: a hit that a hook cancelled, or that the mob travelled away from, never gets here.
     /// </summary>
-    private protected virtual void OnDamageCommitted(IEntity source, CombatDamageKind kind)
+    private protected virtual void OnDamageCommitted(IEntity source, CombatDamageKind kind, IncomingHit? hit)
     {
     }
 
@@ -597,8 +602,11 @@ public partial class Mob
 
     private async ValueTask ApplyDamageAsync(IEntity source, float amount, bool applyArmor, bool ignoreHurtCooldown = false)
     {
-        var attacker = IncomingDamageKind.HasValue ? IncomingAttacker : source;
-        var kind = IncomingDamageKind ?? (applyArmor ? CombatDamageKind.Melee : CombatDamageKind.Magic);
+        // This hit's own scoped attacker, kind and weapon, read once: another hit on the mob may overlap this one's
+        // awaits.
+        var hit = Incoming;
+        var attacker = hit is IncomingHit scoped ? scoped.Attacker : source;
+        var kind = hit?.Kind ?? (applyArmor ? CombatDamageKind.Melee : CombatDamageKind.Magic);
         applyArmor &= kind is CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion
             or CombatDamageKind.FireContact or CombatDamageKind.Campfire or CombatDamageKind.HotFloor
             or CombatDamageKind.Cactus or CombatDamageKind.SweetBerryBush
@@ -623,7 +631,7 @@ public partial class Mob
             return;
         }
 
-        if (await FilterIncomingDamageAsync(source, amount, kind) is not float filtered)
+        if (await FilterIncomingDamageAsync(source, amount, kind, hit) is not float filtered)
             return;
 
         amount = filtered;
@@ -657,7 +665,7 @@ public partial class Mob
             var armor = GetAttributeValue("minecraft:generic.armor") + EquipmentArmor;
             var toughness = GetAttributeValue("minecraft:generic.armor_toughness") + EquipmentToughness;
             amount = CombatItems.ReduceArmor(amount, armor, toughness,
-                1 - 0.15f * CombatItems.EnchantmentLevel(IncomingWeapon, EnchantmentsRegistry.Breach));
+                1 - 0.15f * CombatItems.EnchantmentLevel(hit?.Weapon, EnchantmentsRegistry.Breach));
             foreach (var slot in armorSlots)
                 DamageEquipment(slot, Math.Max(1, (int)(incoming / 4)));
             DamageEquipment(EquipmentSlot.Body, Math.Max(1, (int)(incoming / 4)));
@@ -689,7 +697,9 @@ public partial class Mob
         if (!recentlyHurt)
             lastDamageTick = AiTick;
         AbsorptionHealth -= absorbed;
-        OnDamageCommitted(source, kind);
+        if (hit is not null)
+            LastDamageKind = kind;
+        OnDamageCommitted(source, kind, hit);
 
         if (healthTaken)
             await ShowDamageAsync(level, source);

@@ -10,14 +10,48 @@ public partial class Living : Entity, ILiving
 {
     protected const byte LivingMetadataCount = 15;
 
-    internal CombatDamageKind? IncomingDamageKind { get; private set; }
+    /// <summary>
+    /// A hit <see cref="DamageCombatAsync"/> is dealing: who dealt it (null for none, or for the entity itself), its
+    /// kind, the weapon and the direct source (a projectile, say).
+    /// </summary>
+    internal readonly record struct IncomingHit(
+        IEntity? Attacker,
+        CombatDamageKind Kind,
+        ItemStack? Weapon,
+        IEntity? DirectSource);
+
+    // The hits DamageCombatAsync is dealing in the current async flow, innermost first. Hits can await (plugin hooks,
+    // armour wear) and overlap on one entity, so each must read its own hit, never another's: fields on the entity
+    // would be restored by whichever hit finished first.
+    private static readonly System.Threading.AsyncLocal<IncomingScope?> incomingHits = new();
+
+    private sealed record IncomingScope(Living Target, IncomingHit Hit, IncomingScope? Outer);
+
+    /// <summary>
+    /// The hit being dealt to this entity in the current flow, if any (see <see cref="DamageCombatAsync"/>).
+    /// </summary>
+    internal IncomingHit? Incoming
+    {
+        get
+        {
+            for (var scope = incomingHits.Value; scope is not null; scope = scope.Outer)
+            {
+                if (ReferenceEquals(scope.Target, this))
+                    return scope.Hit;
+            }
+
+            return null;
+        }
+    }
+
+    internal CombatDamageKind? IncomingDamageKind => this.Incoming?.Kind;
 
     // The last accepted source, retained after the scoped incoming source has been restored.
     internal CombatDamageKind? LastDamageKind { get; set; }
 
-    internal ItemStack? IncomingWeapon { get; private set; }
-    internal IEntity? IncomingAttacker { get; private set; }
-    internal IEntity? IncomingDirectSource { get; private set; }
+    internal ItemStack? IncomingWeapon => this.Incoming?.Weapon;
+    internal IEntity? IncomingAttacker => this.Incoming?.Attacker;
+    internal IEntity? IncomingDirectSource => this.Incoming?.DirectSource;
     internal int AcceptedDamageCount { get; set; }
 
     /// <summary>
@@ -37,27 +71,17 @@ public partial class Living : Entity, ILiving
         IEntity? directSource = null,
         VectorD? sourcePosition = null)
     {
-        var previousAttacker = IncomingAttacker;
-        var previousKind = IncomingDamageKind;
-        var previousWeapon = IncomingWeapon;
-        var previousDirectSource = IncomingDirectSource;
-        IncomingAttacker = ReferenceEquals(source, this) ? null : source;
-        IncomingDamageKind = kind;
-        IncomingWeapon = weapon;
-        IncomingDirectSource = directSource;
-        var acceptedBefore = this.AcceptedDamageCount;
+        var hit = new IncomingHit(ReferenceEquals(source, this) ? null : source, kind, weapon, directSource);
+        var outer = incomingHits.Value;
+        incomingHits.Value = new IncomingScope(this, hit, outer);
         try
         {
+            // A mob records the hit's kind when the hit commits (see Mob.ApplyDamageAsync).
             await DamageAsync(source ?? this, amount);
-            if (this.AcceptedDamageCount != acceptedBefore)
-                this.LastDamageKind = kind;
         }
         finally
         {
-            IncomingAttacker = previousAttacker;
-            IncomingDamageKind = previousKind;
-            IncomingWeapon = previousWeapon;
-            IncomingDirectSource = previousDirectSource;
+            incomingHits.Value = outer;
         }
     }
 
