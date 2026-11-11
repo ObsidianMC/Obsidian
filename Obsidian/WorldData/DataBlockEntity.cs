@@ -5,7 +5,7 @@ using Obsidian.Net;
 namespace Obsidian.WorldData;
 
 /// <summary>
-/// A block entity kept as vanilla's saved data: spawners, end gateways, beehives and the like, which the server reads
+/// A block entity kept as vanilla's saved data: spawners, beehives and the like, which the server reads
 /// and changes as data, and block entities of types the server can't create now, like a plugin's while the plugin is
 /// gone, which are saved again as they were loaded.
 /// </summary>
@@ -19,7 +19,7 @@ public sealed class DataBlockEntity : BlockEntity
     private static readonly HashSet<string> clientDataTypes =
     [
         "minecraft:banner", "minecraft:beacon", "minecraft:campfire",
-        "minecraft:conduit", "minecraft:creaking_heart", "minecraft:end_gateway",
+        "minecraft:creaking_heart",
         "minecraft:hanging_sign", "minecraft:jigsaw", "minecraft:mob_spawner", "minecraft:shelf", "minecraft:sign",
         "minecraft:skull", "minecraft:structure_block", "minecraft:test_block", "minecraft:test_instance_block",
         "minecraft:trial_spawner", "minecraft:vault"

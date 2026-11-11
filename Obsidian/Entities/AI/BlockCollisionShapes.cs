@@ -9,7 +9,7 @@ internal static class BlockCollisionShapes
     private static readonly Dictionary<int, BoundingBox[]> shapes = Load();
 
     public static IReadOnlyList<BoundingBox> Get(ILevel level, Vector position, IBlock block) =>
-        WorldData.BlockEntityShapes.Get(level, position, block)?.Collision ?? Get(block);
+        WorldData.BlockEntityShapes.GetCollision(level, position, block) ?? Get(block);
 
     public static IReadOnlyList<BoundingBox> Get(IBlock block) => Get(block.State?.Id ?? block.DefaultId);
 

@@ -43,6 +43,8 @@ internal static class VanillaBlockEntities
         "minecraft:comparator" => new Redstone.ComparatorBlockEntity(),
         "minecraft:potent_sulfur" => new PotentSulfurBlockEntity(),
         "minecraft:beacon" => new BeaconBlockEntity(),
+        "minecraft:conduit" => new ConduitBlockEntity(),
+        "minecraft:end_gateway" => new EndGatewayBlockEntity(),
         "minecraft:lectern" => new LecternBlockEntity(position),
         "minecraft:crafter" => new CrafterBlockEntity(position),
         "minecraft:brushable_block" => new BrushableBlockEntity(),
