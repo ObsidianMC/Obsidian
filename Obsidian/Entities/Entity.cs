@@ -662,6 +662,13 @@ public partial class Entity : IEquatable<Entity>, IEntity
         }
     }
 
+    /// <summary>
+    /// What a lightning bolt does to the entity when it strikes it, every tick the bolt is lit, like vanilla's
+    /// <c>Entity.thunderHit</c>. Nothing for entities Obsidian doesn't model lightning for; living things burn and are
+    /// hurt (see <see cref="Living"/>), and some turn into others.
+    /// </summary>
+    internal virtual ValueTask ThunderHitAsync(LightningBolt bolt) => default;
+
     public virtual ValueTask KillAsync(IEntity source) => default;
     public virtual ValueTask KillAsync(IEntity source, ChatMessage message) => default;
 

@@ -27,6 +27,24 @@ public sealed partial class Pig : Animal, IItemSteerable
         }
     }
 
+    // Vanilla's Pig.thunderHit: unless the difficulty is peaceful, the pig becomes a zombified piglin that never
+    // despawns, holding a golden sword, or a golden spear by a 1 in 20 chance of the pig's own random; on peaceful
+    // it's struck like anything living.
+    internal override async ValueTask ThunderHitAsync(LightningBolt bolt)
+    {
+        if (Level.LevelData.Difficulty == Difficulty.Peaceful)
+        {
+            await base.ThunderHitAsync(bolt);
+            return;
+        }
+
+        var weapon = Random.Next(20) == 0 ? ItemsRegistry.GoldenSpear : ItemsRegistry.GoldenSword;
+        if (await ConvertToAsync(EntityType.ZombifiedPiglin, keepHealth: false) is not Mob piglin)
+            return;
+        piglin.SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(weapon));
+        piglin.PersistenceRequired = true;
+    }
+
     protected override IEntity CreateOffspring(Animal mate)
     {
         var child = (Pig)base.CreateOffspring(mate);

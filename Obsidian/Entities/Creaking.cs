@@ -37,7 +37,7 @@ public sealed partial class Creaking : PathfinderMob
         targets.AddGoal(2, new NearestAttackableTargetGoal(this, entity => Active && entity is IPlayer));
     }
 
-    protected override bool CanTakeDamage(IEntity source)
+    protected override bool CanTakeDamage(IEntity? source)
     {
         if (HomePosition == null)
             return true;

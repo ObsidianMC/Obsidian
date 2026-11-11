@@ -155,9 +155,13 @@ public sealed partial class Wither : BossMob
             PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new LevelEventPacket(1022, position, 0));
     }
 
-    protected override bool CanTakeDamage(IEntity source) => invulnerableTicks == 0 && source.Type != EntityType.Wither &&
-        !IsIn(source, TagsRegistry.EntityType.WitherFriends) &&
-        (!Armored || (IncomingDirectSource ?? source).Type is not (EntityType.Arrow or EntityType.SpectralArrow or EntityType.Trident or EntityType.WindCharge or EntityType.BreezeWindCharge));
+    protected override bool CanTakeDamage(IEntity? source) =>
+        invulnerableTicks == 0
+        && source?.Type != EntityType.Wither
+        && (source is null || !IsIn(source, TagsRegistry.EntityType.WitherFriends))
+        && (!Armored || (IncomingDirectSource ?? source)?.Type is not
+            (EntityType.Arrow or EntityType.SpectralArrow or EntityType.Trident
+                or EntityType.WindCharge or EntityType.BreezeWindCharge));
 
     protected override ValueTask OnHurtAsync(IEntity source)
     {

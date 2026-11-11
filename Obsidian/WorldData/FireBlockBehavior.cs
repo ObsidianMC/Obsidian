@@ -24,6 +24,9 @@ internal sealed partial class FireBlockBehavior : IScheduledTickBehavior, IShape
     // Vanilla's FireBlock.MAX_AGE.
     private const int MaxAge = 15;
 
+    // Vanilla's flags for fire ageing (260): clients aren't told, and neighbours still get shape updates.
+    private const BlockUpdateFlags AgeFlags = BlockUpdateFlags.Invisible | BlockUpdateFlags.SkipBlockEntitySideEffects;
+
     // Vanilla's FireBlock.checkBurnOut chances: a side neighbour burns at 300, those above and below at 250.
     private const int SideOdds = 300;
     private const int VerticalOdds = 250;
@@ -81,7 +84,7 @@ internal sealed partial class FireBlockBehavior : IScheduledTickBehavior, IShape
 
         var newAge = Math.Min(MaxAge, age + random.NextInt(3) / 2);
         if (newAge != age)
-            level.SetBlock(position, block.WithProperty("age", newAge.ToString()), BlockUpdateFlags.None);
+            level.SetBlock(position, block.WithProperty("age", newAge.ToString()), AgeFlags);
 
         if (!infiniburn)
         {

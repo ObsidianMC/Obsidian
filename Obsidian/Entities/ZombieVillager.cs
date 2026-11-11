@@ -73,7 +73,8 @@ public sealed partial class ZombieVillager : Zombie
         ConversionTime -= progress;
         if (ConversionTime > 0)
             return;
-        var villager = (Villager)await ConvertToAsync(EntityType.Villager);
+        if (await ConvertToAsync(EntityType.Villager) is not Villager villager)
+            return;
         villager.VillagerType = VillagerType;
         villager.VillagerProfession = VillagerProfession;
         villager.VillagerLevel = VillagerLevel;
