@@ -9,6 +9,7 @@ using Obsidian.API;
 using Obsidian.API.Blocks;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
+using Obsidian.API.Utilities;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.ChunkData;
 using Obsidian.Commands;
@@ -16,6 +17,7 @@ using Obsidian.Entities;
 using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.Tests.Utilities;
@@ -89,6 +91,89 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
             item => Replay(replay, item.Probe, item.Origin));
 
         output.WriteLine($"Replayed {cases.Length} trial spawner cases.");
+    }
+
+    /// <summary>
+    /// Vaults have their own capture and loot sequences; no trial-spawner case is re-recorded with them.
+    /// </summary>
+    [Fact]
+    public async Task ReplayVaultReference()
+    {
+        var vaults = LoadFixture("vaults");
+        Assert.Equal(ServerConstants.ProtocolDescription, vaults.GetProperty("version").GetString());
+        var cases = vaults.GetProperty("cases").EnumerateArray()
+            .Select((probe, index) => (Probe: probe, Origin: new Vector(index * Spacing + 8, 64, 8)))
+            .ToArray();
+        await using var replay = await TrialWorld.CreateAsync(cases.Length);
+
+        await FixtureCases.AssertAllAsync(
+            cases,
+            item => Name(item.Probe),
+            item => Replay(replay, item.Probe, item.Origin));
+
+        output.WriteLine($"Replayed {cases.Length} vault cases.");
+    }
+
+    /// <summary>Obsidian-only risk: competing claims prepared against the same state must pay for one queue.</summary>
+    [Fact]
+    public async Task VaultClaimsCommitOneRewardWithOnePayment()
+    {
+        var vaults = LoadFixture("vaults");
+        var probe = vaults.GetProperty("cases").EnumerateArray()
+            .Single(probe => Name(probe) == "two_players_take_turns");
+        await using var replay = await TrialWorld.CreateAsync(1);
+        var origin = new Vector(8, 64, 8);
+        var level = replay.Level;
+        var vault = PlaceVault(level, probe, origin);
+        var block = level.BlockUpdates.GetBlock(origin).WithProperty("vault_state", "active");
+        level.BlockUpdates.SetBlock(origin, block, Quiet);
+        var players = replay.AddPlayers(probe, origin);
+
+        // Both requests capture the active state before either commits. Gates release their contenders together.
+        var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var ready = players.Select(_ => new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously)).ToArray();
+        var requests = players.Select(player => VaultRequest(replay, player, origin, block, vault)).ToArray();
+        var attempts = requests.Select((use, index) => Task.Run(async () =>
+        {
+            ready[index].SetResult();
+            await start.Task;
+            return await UseBehaviors.VaultBlock.UseItemOnAsync(use);
+        })).ToArray();
+
+        await Task.WhenAll(ready.Select(gate => gate.Task));
+        start.SetResult();
+        var results = await Task.WhenAll(attempts);
+
+        Assert.Single(results, result => result == UseResult.SuccessServer);
+        Assert.Single(results, result => result == UseResult.Fail);
+        Assert.Equal(3, players.Sum(player => player.Inventory.GetItem(player.CurrentHeldItemSlot)!.Count));
+        Assert.Single(vault.Data.Server.RewardedPlayers);
+        Assert.Single(vault.Data.Server.ItemsToEject);
+        Assert.Equal("unlocking", level.BlockUpdates.GetBlock(origin).GetProperty("vault_state"));
+    }
+
+    private static BlockUse VaultRequest(TrialWorld replay, Entities.Player player, Vector position,
+        IBlock block, VaultBlockEntity vault)
+    {
+        var key = new ItemStack(ItemsRegistry.Get("minecraft:trial_key"), 2);
+        player.Inventory.SetItem(player.CurrentHeldItemSlot, key);
+        return new BlockUse
+        {
+            Server = replay.Server,
+            Level = replay.Level,
+            Player = player,
+            Position = position,
+            Block = block,
+            BlockEntity = vault,
+            Face = BlockFace.North,
+            Cursor = new VectorD(0.5, 0.5, 0.5),
+            Hand = InteractionHand.MainHand,
+            HandSlot = player.CurrentHeldItemSlot,
+            Item = key,
+            UsedItem = new ItemStack(key, key.Count),
+            Sequence = 0
+        };
     }
 
     /// <summary>
@@ -257,7 +342,8 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
         var level = replay.Level;
         ApplyRules(level, probe);
         Setup(level, probe, origin);
-        var spawner = PlaceSpawner(level, probe, origin);
+        var isVault = probe.TryGetProperty("vault", out _);
+        var spawner = isVault ? PlaceVault(level, probe, origin) : (IBlockEntity)PlaceSpawner(level, probe, origin);
         var players = replay.AddPlayers(probe, origin);
         var listener = replay.Listen(origin + ListenerOffset, Name(probe));
 
@@ -278,6 +364,8 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
         level.LevelData.GameTime = probe.GetProperty("startTime").GetInt64();
         var random = new LegacyRandomSource(probe.GetProperty("seed").GetInt64());
         level.GrowthRandom = random;
+        if (isVault)
+            level.SoundSeedRandom = new LegacyRandomSource(probe.GetProperty("seed").GetInt64());
 
         var differences = new List<string>();
         var mobs = new MobLog();
@@ -288,6 +376,9 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
         for (var tick = 1; tick <= checkpoints.Length; tick++)
         {
             var checkpoint = checkpoints[tick - 1];
+            if (isVault)
+                await ActVaultAsync(replay, probe, players, origin, tick, differences);
+
             await ActAsync(probe, mobs, tick);
             await level.DoWorldTickAsync();
             mobs.Observe(level, origin, tick);
@@ -298,7 +389,7 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
                 ["writes"] = [.. writes],
                 ["changes"] = Changes(level, origin, blocks),
                 ["entities"] = Entities(level, origin, mobs),
-                ["sounds"] = Sounds(level, listener.Client, origin),
+                ["sounds"] = Sounds(level, listener.Client, origin, isVault),
                 ["levelEvents"] = LevelEvents(listener.Client, origin),
                 ["particles"] = Particles(listener.Client, origin),
                 ["gameEvents"] = [.. gameEvents]
@@ -307,7 +398,7 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
                 Compare(differences, $"tick {tick} {field}", Strings(checkpoint.GetProperty(field)), obsidian);
 
             var saved = Canonical(checkpoint.GetProperty("saved").GetString()!);
-            var ours = NormalizedSave(spawner, mobs);
+            var ours = spawner is TrialSpawnerBlockEntity trial ? NormalizedSave(trial, mobs) : Saved(spawner);
             ExpectKept(differences, $"tick {tick}", probe, ours);
             BlockProbes.Expect(differences, $"tick {tick} saved", saved, Snbt.Write(ours));
             BlockProbes.Expect(differences, $"tick {tick} random", checkpoint.GetProperty("random").GetInt64(),
@@ -315,6 +406,13 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
 
             var vanillaSent = Strings(checkpoint.GetProperty("client")).Select(Canonical).ToList();
             Compare(differences, $"tick {tick} client", vanillaSent, ClientData(listener.Client, origin));
+
+            if (spawner is VaultBlockEntity vault)
+            {
+                var update = Canonical(checkpoint.GetProperty("updateTag").GetString()!);
+                BlockProbes.Expect(differences, $"tick {tick} update tag", update, Snbt.Write(vault.GetUpdateData()!));
+                CompareItemMotion(differences, tick, level, origin, checkpoint.GetProperty("itemMotion"));
+            }
 
             writes.Clear();
             gameEvents.Clear();
@@ -374,6 +472,68 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
         level.AttachBlockEntity(spawner);
         level.SendBlockEntityUpdates();
         return spawner;
+    }
+
+    private static VaultBlockEntity PlaceVault(AbstractLevel level, JsonElement probe, Vector origin)
+    {
+        var spec = probe.GetProperty("vault");
+        level.BlockUpdates.SetBlock(origin, BlockProbes.ParseState(spec.GetProperty("state").GetString()!), Quiet);
+        var vault = Assert.IsType<VaultBlockEntity>(level.GetResidentBlockEntity(origin));
+        BlockEntityNbt.LoadInto(vault, SnbtReader.ReadCompound(spec.GetProperty("nbt").GetString()!));
+        level.AttachBlockEntity(vault);
+        level.SendBlockEntityUpdates();
+        return vault;
+    }
+
+    private static async Task ActVaultAsync(TrialWorld replay, JsonElement probe, List<Entities.Player> players,
+        Vector origin, int tick, List<string> differences)
+    {
+        foreach (var action in probe.GetProperty("events").EnumerateArray())
+        {
+            if (action.GetProperty("tick").GetInt32() != tick)
+                continue;
+
+            var player = players.Single(player => player.Username == action.GetProperty("player").GetString());
+            if (action.TryGetProperty("pos", out var position))
+                player.Position = (VectorD)origin + BlockProbes.Point(position);
+
+            if (action.TryGetProperty("gameMode", out var mode))
+                player.GameMode = Enum.Parse<GameMode>(mode.GetString()!, ignoreCase: true);
+
+            if (!action.TryGetProperty("use", out var use))
+                continue;
+
+            var stack = SnbtReader.ReadCompound(use.GetString()!).ItemFromNbt();
+            player.Inventory.SetItem(player.CurrentHeldItemSlot, stack);
+            var packet = new UseItemOnPacket();
+            typeof(UseItemOnPacket).GetProperty(nameof(UseItemOnPacket.Position))!.SetValue(packet, origin);
+            typeof(UseItemOnPacket).GetProperty(nameof(UseItemOnPacket.Face))!.SetValue(packet, BlockFace.North);
+            typeof(UseItemOnPacket).GetProperty(nameof(UseItemOnPacket.Cursor))!
+                .SetValue(packet, new VectorD(0.5, 0.5, 0.5));
+            var result = await packet.UseAsync(replay.Server, player);
+            var expected = action.GetProperty("output");
+            BlockProbes.Expect(differences, $"tick {tick} use consumed",
+                expected.GetProperty("consumesAction").GetBoolean(), result?.ConsumesAction() ?? false);
+            var held = player.Inventory.GetItem(player.CurrentHeldItemSlot);
+            var hand = held is { IsAir: false, Count: > 0 } ? held.ToNbt() : new NbtCompound();
+            BlockProbes.Expect(differences, $"tick {tick} hand",
+                Canonical(expected.GetProperty("hand").GetString()!), Snbt.Write(hand));
+        }
+    }
+
+    private static void CompareItemMotion(List<string> differences, int tick, AbstractLevel level, Vector origin,
+        JsonElement expected)
+    {
+        var items = ItemsInArea(level, origin);
+        BlockProbes.Expect(differences, $"tick {tick} item motion count", expected.GetArrayLength(), items.Count);
+        for (var index = 0; index < items.Count && index < expected.GetArrayLength(); index++)
+        {
+            var motion = BlockProbes.Point(expected[index]);
+            var actual = items[index].Motion;
+            var error = Math.Abs(motion.X - actual.X) + Math.Abs(motion.Y - actual.Y) + Math.Abs(motion.Z - actual.Z);
+            if (!double.IsFinite(error) || error > 1e-12)
+                differences.Add($"tick {tick} item {index} motion: vanilla {motion}, Obsidian {actual}");
+        }
     }
 
     // What happens before the tick: each mob the spawner spawned is killed or moved out of its range once it has been
@@ -611,7 +771,7 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
 
     // The sounds the listener heard, at the entity's position for those that follow one. Mobs' ambient sounds are left
     // out, as the probe leaves them out (their own randoms decide them).
-    private static List<string> Sounds(AbstractLevel level, TestClient client, Vector origin)
+    private static List<string> Sounds(AbstractLevel level, TestClient client, Vector origin, bool exact = false)
     {
         var sounds = new List<string>();
         foreach (var packet in client.SentPackets)
@@ -627,7 +787,11 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
                 continue;
 
             var at = position is VectorD point ? point - (VectorD)origin : new VectorD(double.NaN, 0, 0);
-            sounds.Add($"{id} {Number(at.X, 3)},{Number(at.Y, 3)},{Number(at.Z, 3)} volume {Number(volume, 2)}");
+            var description = $"{id} {Number(at.X, 3)},{Number(at.Y, 3)},{Number(at.Z, 3)} volume {Number(volume, 2)}";
+            if (exact && packet is SoundPacket positioned)
+                description += $" pitchBits {BitConverter.SingleToInt32Bits(positioned.Pitch)} seed {positioned.Seed}";
+
+            sounds.Add(description);
         }
 
         return sounds;
@@ -710,10 +874,10 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
 
     private static string Name(JsonElement probe) => probe.GetProperty("name").GetString()!;
 
-    private static JsonElement LoadFixture()
+    private static JsonElement LoadFixture(string name = "trial_spawners")
     {
         using var stream = Assembly.GetExecutingAssembly()
-            .GetManifestResourceStream("Obsidian.Tests.Assets.trial_spawners.json")!;
+            .GetManifestResourceStream($"Obsidian.Tests.Assets.{name}.json")!;
         using var document = JsonDocument.Parse(stream);
         return document.RootElement.Clone();
     }
@@ -769,6 +933,8 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
         }
 
         public AbstractLevel Level => this.context.World;
+
+        public IServer Server => this.context.Server;
 
         public static async Task<TrialWorld> CreateAsync(int caseCount)
         {

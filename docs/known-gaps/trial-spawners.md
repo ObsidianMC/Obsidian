@@ -6,13 +6,14 @@ its mobs, ejects rewards and cools down. Checked against vanilla by `trial_spawn
 [scenario captures](../scenario-captures.md)), whose 19 trial cases match every tick without pins, and whose
 trial chamber's 51 trial spawners and vaults load and save back unchanged. Obsidian keeps a config naming a
 `trial_spawner` registry entry it doesn't have (perhaps a data pack's), and saves it again, where vanilla drops it; the
-spawner uses the default config meanwhile, as vanilla does. What's left:
+spawner uses the default config meanwhile, as vanilla does. Vaults connect nearby eligible players, cycle their
+display loot, accept the configured key once per player and eject rewards, including ominous vaults. The separate
+`vaults.json` capture checks their block changes, saved and client data, loot, timings, item motion, sounds and level
+events every tick. Vanilla's client draws the connection, activation and idle particles from those updates; the
+server sends no particle packets. What's left:
 
 ## Left for later trial work
 
-- **Vaults do nothing yet.** `VaultBlockEntity` keeps and saves `config`, `shared_data` and `server_data` and sends
-  clients the shared data, but doesn't tick: no players connect, no display item cycles, no key opens it and nothing
-  is ejected. Its data types hold what that needs (items as stacks, players as ordered sets).
 - **Ominous trials.** A spawner never becomes ominous: Bad Omen isn't turned into Trial Omen, a Trial Omen doesn't
   make the spawner ominous (level event 3020, mobs removed with their preserved equipment), and no ominous item
   spawners drop `items_to_drop_when_ominous`. A spawner whose block is already ominous does use its ominous config, its

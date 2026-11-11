@@ -8,14 +8,14 @@ namespace Obsidian.WorldData.TrialSpawners;
 
 /// <summary>
 /// A vault's block entity, like vanilla's <c>VaultBlockEntity</c>: its config, what it shares with clients, and what
-/// only the server knows. It keeps and saves them; unlocking and ejecting come with the vault's own behaviour.
+/// only the server knows. Its tick connects players, cycles the display and ejects an unlocked reward.
 /// </summary>
 /// <remarks>
 /// Saved as vanilla saves it: <c>config</c>, <c>shared_data</c> and <c>server_data</c>, always written, each field in
 /// them left out at its default. A <c>config</c> that doesn't read (activation beyond deactivation range, say) is kept
 /// as loaded, and the vault uses the default config. Other fields are kept as loaded.
 /// </remarks>
-internal sealed class VaultBlockEntity : BlockEntity
+internal sealed partial class VaultBlockEntity : BlockEntity
 {
     private const string ConfigField = "config";
     private const string SharedField = "shared_data";
@@ -56,6 +56,10 @@ internal sealed class VaultBlockEntity : BlockEntity
         var serverData = tag.TryGetTag<NbtCompound>(ServerField, out var server)
             ? VaultServerData.Read(server)
             : new VaultServerData();
+
+        // Vanilla's VaultServerData.set restores the queue and timer but retains the live ejection total. On a
+        // fresh load it is zero, which also changes the pitch progression of an interrupted ejection.
+        serverData = serverData with { TotalEjectionsNeeded = this.Data.Server.TotalEjectionsNeeded };
         this.Data = new VaultData(config, sharedData, serverData, others);
     }
 
@@ -169,7 +173,7 @@ internal sealed record VaultConfig(
 /// What a vault shows its players, like vanilla's <c>VaultSharedData</c>, which clients get.
 /// </summary>
 /// <param name="DisplayItem">The item cycling inside, or null.</param>
-/// <param name="ConnectedPlayers">The players near enough to see it active, in the order they came.</param>
+/// <param name="ConnectedPlayers">The nearby eligible players, in their saved set's iteration order.</param>
 /// <param name="ConnectedParticlesRange">How far its particles reach for them.</param>
 internal sealed record VaultSharedData(
     ItemStack? DisplayItem,
