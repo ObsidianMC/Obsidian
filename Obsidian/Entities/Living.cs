@@ -41,8 +41,18 @@ public partial class Living : Entity, ILiving
     // by whichever hit finished first.
     private static readonly System.Threading.AsyncLocal<IncomingScope?> incomingHits = new();
 
-    // A null Hit is damage dealt outright, which hides any hit on the same entity further out.
-    private protected sealed record IncomingScope(Living Target, IncomingHit? Hit, IncomingScope? Outer);
+    // A null Hit is damage dealt outright, which hides any hit on the same entity further out. A scope that hands its
+    // hit off (see HandOff) gives it to the first DamageAsync or KillAsync on the entity that claims it.
+    private protected sealed class IncomingScope(Living target, IncomingHit? hit, IncomingScope? outer, bool handOff)
+    {
+        private int unclaimed = handOff ? 1 : 0;
+
+        public Living Target { get; } = target;
+        public IncomingHit? Hit { get; } = hit;
+        public IncomingScope? Outer { get; } = outer;
+
+        public bool TryClaim() => System.Threading.Interlocked.Exchange(ref this.unclaimed, 0) == 1;
+    }
 
     /// <summary>
     /// The hit being dealt to this entity in the current flow, if any (see <see cref="DamageCombatAsync"/>).
@@ -66,19 +76,43 @@ public partial class Living : Entity, ILiving
     /// damage dealt outright, which must never read a hit that the flow it was called from is dealing. Every way in
     /// to damage opens one, so no damage inherits another's.
     /// </summary>
-    private protected HitScope BeginHit(IncomingHit? hit)
+    private protected HitScope BeginHit(IncomingHit? hit) => this.Push(hit, false, hit);
+
+    /// <summary>
+    /// Opens a scope that hands <paramref name="hit"/> to the entity's <see cref="Entity.DamageAsync"/> or
+    /// <see cref="Entity.KillAsync(IEntity)"/>, called next: they're public and virtual, so a plugin's override may
+    /// run first, and only the base implementation, through <see cref="EnterDispatched"/>, takes the hit.
+    /// </summary>
+    /// <param name="endsHit">Whether the hit ends with the scope: not for a death, within the hit that caused it.</param>
+    private protected HitScope HandOff(IncomingHit? hit, bool endsHit) => this.Push(hit, true, endsHit ? hit : null);
+
+    /// <summary>
+    /// Opens the scope that <see cref="Entity.DamageAsync"/> or <see cref="Entity.KillAsync(IEntity)"/> takes effect
+    /// in: the hit handed to it (see <see cref="HandOff"/>), only the first time, or else an empty one. So a call from
+    /// a plugin's damage hook, or from a task it started, inherits no hit, even while that hit is still being dealt.
+    /// </summary>
+    private protected HitScope EnterDispatched()
     {
-        var outer = incomingHits.Value;
-        incomingHits.Value = new IncomingScope(this, hit, outer);
-        return new HitScope(hit, outer);
+        var current = incomingHits.Value;
+        if (current is not null && ReferenceEquals(current.Target, this) && current.TryClaim())
+            return new HitScope(null, current);
+
+        return this.BeginHit(null);
     }
 
-    private protected readonly struct HitScope(IncomingHit? hit, IncomingScope? outer) : IDisposable
+    private HitScope Push(IncomingHit? hit, bool handOff, IncomingHit? ending)
     {
-        // Ends the hit too, for any task it started, whose flow still holds its scope.
+        var outer = incomingHits.Value;
+        incomingHits.Value = new IncomingScope(this, hit, outer, handOff);
+        return new HitScope(ending, outer);
+    }
+
+    private protected readonly struct HitScope(IncomingHit? ending, IncomingScope? outer) : IDisposable
+    {
+        // Ends the hit it opened too, for any task the hit started, whose flow still holds its scope.
         public void Dispose()
         {
-            hit?.End();
+            ending?.End();
             incomingHits.Value = outer;
         }
     }
@@ -112,27 +146,27 @@ public partial class Living : Entity, ILiving
     {
         var hit = new IncomingHit(ReferenceEquals(source, this) ? null : source, kind, weapon, directSource);
 
-        // A mob records the hit's kind when the hit commits (see Mob.ApplyDamageAsync).
-        using (this.BeginHit(hit))
-            await this.TakeDamageAsync(source ?? this, amount);
+        // Through DamageAsync, which plugins may override, so they see every hit. A mob records the hit's kind when
+        // the hit commits (see Mob.ApplyDamageAsync).
+        using (this.HandOff(hit, endsHit: true))
+            await this.DamageAsync(source ?? this, amount);
     }
 
     /// <summary>
-    /// Damages the entity outright, like <see cref="Entity.DamageAsync"/>: as no hit, even when called while one is
-    /// being dealt (from a plugin's damage hook, say). Entities take damage in <see cref="TakeDamageAsync"/>.
+    /// Damages a living entity outright, like <see cref="Entity.DamageAsync"/>, or as the hit
+    /// <see cref="DamageCombatAsync"/> deals, which it hands to this (see <see cref="EnterDispatched"/>).
     /// </summary>
-    public sealed override async ValueTask DamageAsync(IEntity source, float amount = 1.0f)
+    public override async ValueTask DamageAsync(IEntity source, float amount = 1.0f)
     {
-        using (this.BeginHit(null))
-            await this.TakeDamageAsync(source, amount);
+        using (this.EnterDispatched())
+            await this.DamageOutrightAsync(source, amount);
     }
 
     /// <summary>
-    /// Takes damage, in the scope of the hit dealing it, if any (see <see cref="Incoming"/>), with its health write as
-    /// the commit point (see <see cref="TryCommitDamage"/>). Mobs and players take damage through their own paths,
-    /// which commit the same way.
+    /// Takes damage in the current hit's scope, with its health write as the commit point (see
+    /// <see cref="TryCommitDamage"/>). Mobs and players take damage through their own paths, which commit the same way.
     /// </summary>
-    private protected virtual async ValueTask TakeDamageAsync(IEntity source, float amount)
+    private protected async ValueTask DamageOutrightAsync(IEntity source, float amount)
     {
         var level = this.Level;
         if (!float.IsFinite(amount) || amount <= 0 || this.Health <= 0 || source.Level != level)

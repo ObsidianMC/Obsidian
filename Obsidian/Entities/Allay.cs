@@ -59,8 +59,7 @@ public sealed partial class Allay : PathfinderMob
         actions.AddGoal(3, new LookAtPlayerGoal(this, 6));
     }
 
-    private protected override ValueTask TakeDamageAsync(IEntity source, float amount) =>
-        source.Uuid == likedPlayer ? default : base.TakeDamageAsync(source, amount);
+    public override ValueTask DamageAsync(IEntity source, float amount = 1) => source.Uuid == likedPlayer ? default : base.DamageAsync(source, amount);
 
     internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {

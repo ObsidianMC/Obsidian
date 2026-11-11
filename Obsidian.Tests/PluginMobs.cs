@@ -542,6 +542,119 @@ public sealed class PluginMobs
         Assert.Null(mob.LastDamageKind);
     }
 
+    [Fact]
+    public async Task MobSubclassKilledFromATaskItsHurtHookStartedIsNotKilledByTheHit()
+    {
+        await using var context = TestServerFactory.CreateServer($"background-kill-{Guid.NewGuid():N}");
+        await BlockUpdates.AddChunksAsync(context.World);
+        var zombie = SpawnRecordingZombie(context.World);
+        var shooter = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Shooter");
+        var other = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Other");
+        var arrow = new Arrow { Level = context.World };
+
+        // The arrow's hit waits in OnHurtAsync, which first starts work that waits too, then kills the zombie outright.
+        var go = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task? background = null;
+        var hurt = new RecordingZombie.Gate
+        {
+            Started = () => background = Task.Run(async () =>
+            {
+                await go.Task;
+                await zombie.KillAsync(other);
+            })
+        };
+        zombie.HurtGate = hurt;
+        var hit = zombie.DamageCombatAsync(shooter, 1, CombatDamageKind.Projectile, directSource: arrow).AsTask();
+        await hurt.Reached.Task;
+
+        // The kill lands while the arrow's hit still waits; then the arrow's hit goes on.
+        go.SetResult();
+        await background!;
+        hurt.Release.SetResult();
+        await hit;
+
+        // What the zombie's loot reads (see Mob.DropVanillaLoot): the kill's source, not the arrow or its shooter.
+        Assert.False(zombie.Alive);
+        Assert.Same(other, zombie.DeathSource);
+        Assert.Same(other, zombie.DeathDirect);
+    }
+
+    [Fact]
+    public async Task MobSubclassDamageOverrideSeesEachHitAndItsDeathKeepsTheHit()
+    {
+        await using var context = TestServerFactory.CreateServer($"subclass-damage-{Guid.NewGuid():N}");
+        await BlockUpdates.AddChunksAsync(context.World);
+        var zombie = SpawnRecordingZombie(context.World);
+        var shooter = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Shooter");
+        var arrow = new Arrow { Level = context.World };
+
+        // A plugin's DamageAsync override sees combat hits, and a lethal arrow's death keeps the arrow for its loot.
+        await zombie.DamageCombatAsync(shooter, 100, CombatDamageKind.Projectile, directSource: arrow);
+
+        Assert.Equal(1, zombie.DamageCalls);
+        Assert.False(zombie.Alive);
+        Assert.Same(shooter, zombie.DeathSource);
+        Assert.Same(arrow, zombie.DeathDirect);
+        Assert.Equal(CombatDamageKind.Projectile, zombie.LastDamageKind);
+    }
+
+    private static RecordingZombie SpawnRecordingZombie(WorldData.World world)
+    {
+        var zombie = new RecordingZombie
+        {
+            EntityId = Server.GetNextEntityId(),
+            Level = world,
+            Position = new VectorD(8.5, 71, 8.5),
+            NoGravity = true
+        };
+        world.SpawnEntity(zombie);
+        return zombie;
+    }
+
+    // A zombie subclassed the way a plugin may: it overrides DamageAsync, can hold a hit in OnHurtAsync, and records
+    // what its death's loot would read.
+    private sealed class RecordingZombie : Zombie
+    {
+        public Gate? HurtGate { get; set; }
+        public int DamageCalls { get; private set; }
+        public IEntity? DeathSource { get; private set; }
+        public IEntity? DeathDirect { get; private set; }
+
+        public override ValueTask DamageAsync(IEntity source, float amount = 1)
+        {
+            this.DamageCalls++;
+            return base.DamageAsync(source, amount);
+        }
+
+        protected override async ValueTask OnHurtAsync(IEntity source)
+        {
+            await base.OnHurtAsync(source);
+            if (this.HurtGate is not { } gate)
+                return;
+
+            this.HurtGate = null;
+            gate.Started?.Invoke();
+            gate.Reached.SetResult();
+            await gate.Release.Task;
+        }
+
+        protected override ValueTask OnDeathAsync(IEntity source)
+        {
+            this.DeathSource = source;
+            this.DeathDirect = this.IncomingDirectSource ?? source;
+            return base.OnDeathAsync(source);
+        }
+
+        internal sealed class Gate
+        {
+            public Action? Started { get; init; }
+
+            public TaskCompletionSource Reached { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        }
+    }
+
     // A damage hook that holds each hit until the test lets it go on, then cancels it or lets it through.
     private sealed class GatedHurtBehavior : IEntityBehavior
     {

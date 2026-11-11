@@ -583,8 +583,11 @@ public sealed partial class EnderDragon : BossMob
             contactTicks.Remove(id);
     }
 
-    private protected override ValueTask TakeDamageAsync(IEntity source, float amount) =>
-        DamagePartAsync(source, amount, 2);
+    public override async ValueTask DamageAsync(IEntity source, float amount = 1)
+    {
+        using (EnterDispatched())
+            await DamagePartAsync(source, amount, 2);
+    }
 
     internal async ValueTask DamagePartAsync(IEntity source, float amount, int part, bool projectile = false)
     {

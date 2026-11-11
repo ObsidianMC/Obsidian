@@ -565,8 +565,11 @@ public partial class Mob
     internal void SynchronizeMetadata() => PacketBroadcaster.QueuePacketToLevelInRange(Level, Position,
         new SetEntityDataPacket { EntityId = EntityId, Entity = this }, EntityId);
 
-    private protected override ValueTask TakeDamageAsync(IEntity source, float amount) =>
-        ApplyDamageAsync(source, amount, true);
+    public override async ValueTask DamageAsync(IEntity source, float amount = 1)
+    {
+        using (EnterDispatched())
+            await ApplyDamageAsync(source, amount, true);
+    }
 
     // Like DamageAsync, these deal damage outright, as no hit.
     internal async ValueTask DamageEnvironmentAsync(float amount)
@@ -624,7 +627,7 @@ public partial class Mob
             or CombatDamageKind.Lightning or CombatDamageKind.Thorns or CombatDamageKind.FallingStalactite;
         if (!UsesAi)
         {
-            await base.TakeDamageAsync(source, amount);
+            await DamageOutrightAsync(source, amount);
             return;
         }
 
@@ -724,7 +727,11 @@ public partial class Mob
         if (Alive && !absorbedByEquipment)
             PlayMobSound("hurt");
         SynchronizeMetadata();
-        if (!Alive)
+        if (Alive)
+            return;
+
+        // The death keeps the hit, through KillAsync, which plugins may override.
+        using (HandOff(hit, endsHit: false))
             await KillAsync(source);
     }
 
@@ -771,7 +778,17 @@ public partial class Mob
     internal void SendEntityEvent(byte entityEvent) => PacketBroadcaster.QueuePacketToLevelInRange(Level, Position,
         new EntityEventPacket { EntityId = EntityId, Event = entityEvent }, EntityId);
 
+    /// <summary>
+    /// Kills the mob: outright, in no hit's scope, or for the hit that caused its death, which hands itself to this
+    /// (see <see cref="Living.EnterDispatched"/>), and its death and loot keep that hit.
+    /// </summary>
     public override async ValueTask KillAsync(IEntity source)
+    {
+        using (EnterDispatched())
+            await DieAsync(source);
+    }
+
+    private async ValueTask DieAsync(IEntity source)
     {
         if (!UsesAi)
         {
