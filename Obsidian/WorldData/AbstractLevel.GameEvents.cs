@@ -10,7 +10,7 @@ internal enum MobGameEvent
     Step, Land, Bounce, Swim, ProjectileShoot, ProjectileLand, BlockPlace, BlockDestroy, BlockChange,
     EntityDamage, EntityDie, EntityInteract, NoteBlockPlay, JukeboxPlay, JukeboxStop, SculkSensorClick,
     BlockActivate, BlockDeactivate, BlockOpen, BlockClose, ContainerOpen, ContainerClose, Eat, FluidPickup,
-    FluidPlace, PrimeFuse, EntityPlace, ItemInteractFinish, ItemInteractStart, Equip, Unequip, Explode
+    FluidPlace, PrimeFuse, EntityPlace, ItemInteractFinish, ItemInteractStart, Shear, Equip, Unequip, Explode
 }
 
 internal static class MobGameEvents
@@ -489,7 +489,7 @@ public abstract partial class AbstractLevel
         MobGameEvent.FluidPickup => 12,
         MobGameEvent.BlockPlace or MobGameEvent.FluidPlace => 13,
         MobGameEvent.EntityPlace => 14,
-        MobGameEvent.EntityInteract => 6,
+        MobGameEvent.EntityInteract or MobGameEvent.Shear => 6,
         MobGameEvent.Equip => 5,
         MobGameEvent.Unequip => 4,
         MobGameEvent.EntityDamage => 7,

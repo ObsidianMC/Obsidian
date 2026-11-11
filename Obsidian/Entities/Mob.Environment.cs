@@ -7,6 +7,9 @@ public partial class Mob
     private int ambientSoundTime;
     protected virtual string? SoundName => null;
     protected virtual SoundCategory MobSoundCategory => SoundCategory.Neutral;
+
+    /// <summary>Vanilla's <c>getSoundSource</c>: the category of the sounds the mob makes.</summary>
+    internal SoundCategory SoundSource => MobSoundCategory;
     protected internal float EffectiveDifficulty
     {
         get

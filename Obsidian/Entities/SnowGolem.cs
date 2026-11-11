@@ -4,7 +4,7 @@ using Obsidian.WorldData;
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:snow_golem")]
-public sealed partial class SnowGolem : PathfinderMob
+public sealed partial class SnowGolem : PathfinderMob, IShearable
 {
     public bool Pumpkin { get; set; } = true;
 
@@ -18,6 +18,19 @@ public sealed partial class SnowGolem : PathfinderMob
     protected override bool WaterSensitive => true;
     protected override bool TakesFallDamage => false;
     protected override string? SoundName => "snow_golem";
+
+    /// <inheritdoc/>
+    public bool ReadyForShearing => Alive && Pumpkin;
+
+    /// <summary>Vanilla's <c>SnowGolem.shear</c>: its shearing sound, then its pumpkin.</summary>
+    public ValueTask ShearAsync(SoundCategory category)
+    {
+        Shearing.PlaySound(this, "minecraft:entity.snow_golem.shear", category);
+        Pumpkin = false;
+        DropItem(ItemsRegistry.CarvedPumpkin, 1);
+        SynchronizeMetadata();
+        return default;
+    }
 
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {

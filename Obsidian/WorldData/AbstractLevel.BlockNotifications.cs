@@ -216,7 +216,7 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IRedstoneLevel,
     }
 
     void IRedstoneLevel.FireDispenser(Vector position, IBlock state, bool dropper) =>
-        this.EnqueueEntityAction(() => RedstoneDispenser.Fire(this, position, state, dropper));
+        this.EnqueueEntityAction(() => RedstoneDispenser.FireAsync(this, position, state, dropper));
 
     void IRedstoneLevel.CraftCrafter(Vector position) =>
         this.EnqueueEntityAction(() => RedstoneCrafter.CraftAsync(this, position));

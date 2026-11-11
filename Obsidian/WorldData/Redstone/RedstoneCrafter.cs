@@ -124,7 +124,7 @@ internal sealed class RedstoneCrafter(IRedstoneLevel level, RedstoneEngine engin
         if (left is not { Count: > 0 })
             return;
 
-        RedstoneDispenser.DropItem(level, position, front, left);
+        Dispensing.DispenseBehaviors.DropItem(level, position, front, left);
         level.BroadcastLevelEvent(CraftEvent, position, 0);
         level.BroadcastLevelEvent(ParticlesEvent, position, (int)front);
     }

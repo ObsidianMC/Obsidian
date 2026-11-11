@@ -65,6 +65,23 @@ internal sealed class MobProjectile : Entity
         NoGravity = type is not (EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion);
     }
 
+    /// <summary>
+    /// A projectile nothing shot, like a dispenser's: it moves by <paramref name="motion"/> from
+    /// <paramref name="position"/>, and a fireball keeps speeding up along it.
+    /// </summary>
+    [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
+    internal MobProjectile(ILevel level, EntityType type, VectorD position, VectorD motion)
+        : this(level, type)
+    {
+        EntityId = Server.GetNextEntityId();
+        Position = position;
+        BoundingBox = Dimension.CreateBBFromPosition(Position);
+        Motion = motion;
+
+        var thrown = type is EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion;
+        acceleration = thrown || motion.Magnitude < 0.0001f ? VectorD.Zero : motion / motion.Magnitude * 0.1f;
+    }
+
     public override void SpawnEntity(Velocity? velocity = null, int additionalData = 0) =>
         base.SpawnEntity(velocity ?? new Velocity(Motion.X, Motion.Y, Motion.Z), Owner?.EntityId ?? 0);
 
@@ -134,8 +151,9 @@ internal sealed class MobProjectile : Entity
 
         if (Type is EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion)
         {
-            var gravity = Type == EntityType.SplashPotion ? 0.05f : 0.03f;
-            Motion = Motion * 0.99f - new VectorD(0, gravity, 0);
+            // Vanilla throwable flight applies gravity before air drag; arrows use the opposite order.
+            var gravity = Type == EntityType.SplashPotion ? 0.05 : 0.03;
+            Motion = (Motion - new VectorD(0, gravity, 0)) * 0.99;
         }
         else
         {
