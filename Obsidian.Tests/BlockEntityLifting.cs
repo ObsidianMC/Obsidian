@@ -39,7 +39,7 @@ public sealed class BlockEntityLifting
             world.LiftEntitiesForSurfaceRise(new Vector(8, 64, 8), 0.875, 1);
         }
 
-        await correction.Task;
+        Assert.True(correction.Task.IsCompletedSuccessfully, "The synchronous lift did not queue a correction.");
         client.AfterQueue = null;
         Assert.Equal(new VectorD(8.5, 65, 8.5), player.Position);
         Assert.Equal(65, player.BoundingBox.Min.Y);
@@ -76,7 +76,7 @@ public sealed class BlockEntityLifting
             source.World.LiftEntitiesForSurfaceRise(new Vector(8, 64, 8), 0.875, 1);
         }
 
-        await travelled.Task;
+        Assert.True(travelled.Task.IsCompletedSuccessfully, "The synchronous lift did not prepare the entity's box.");
         Assert.Same(destination.World, pig.Level);
         Assert.Equal(arrival, pig.Position);
         var expectedBox = pig.Dimension.CreateBBFromPosition(arrival);
