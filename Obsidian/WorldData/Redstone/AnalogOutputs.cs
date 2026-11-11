@@ -27,8 +27,8 @@ internal static class AnalogOutputs
     /// Vanilla <c>hasAnalogOutputSignal</c> for vanilla's blocks.
     /// </summary>
     /// <remarks>
-    /// Shelves and creaking hearts have one in vanilla too, which reads as 0 here: a heart's is how near its creaking
-    /// is, and Obsidian's hearts don't tick, so they have none.
+    /// Creaking hearts have one in vanilla too, which reads as 0 here: a heart's is how near its creaking is, and
+    /// Obsidian's hearts don't tick, so they have none.
     /// </remarks>
     public static bool Has(IBlock state)
     {
@@ -53,39 +53,44 @@ internal static class AnalogOutputs
     };
 
     /// <summary>
-    /// Vanilla <c>getAnalogOutputSignal</c> of a vanilla block that has one.
+    /// Vanilla <c>getAnalogOutputSignal</c> of a vanilla block that has one, read towards <paramref name="direction"/>
+    /// (from the block to the comparator reading it), which only shelves care about.
     /// </summary>
-    public static int Get(LevelBlockUpdates level, IBlock state, Vector position) => state.BlockClass() switch
-    {
-        "CakeBlock" => (7 - IntProperty(state, "bites")) * 2,
-        "CandleCakeBlock" => 14,
-        "ComposterBlock" => IntProperty(state, "level"),
-        "LayeredCauldronBlock" => IntProperty(state, "level"),
-        "LavaCauldronBlock" => 3,
-        "BeehiveBlock" => IntProperty(state, "honey_level"),
-        "EndPortalFrameBlock" => state.GetProperty("eye") == "true" ? 15 : 0,
+    public static int Get(LevelBlockUpdates level, IBlock state, Vector position, BlockFace direction) =>
+        state.BlockClass() switch
+        {
+            "CakeBlock" => (7 - IntProperty(state, "bites")) * 2,
+            "CandleCakeBlock" => 14,
+            "ComposterBlock" => IntProperty(state, "level"),
+            "LayeredCauldronBlock" => IntProperty(state, "level"),
+            "LavaCauldronBlock" => 3,
+            "BeehiveBlock" => IntProperty(state, "honey_level"),
+            "EndPortalFrameBlock" => state.GetProperty("eye") == "true" ? 15 : 0,
 
-        // Vanilla's getScaledChargeLevel: the charges' share of 4, of 15, rounded down.
-        "RespawnAnchorBlock" => (int)MathF.Floor(IntProperty(state, "charges") / 4f * 15f),
-        "ChestBlock" or "TrappedChestBlock" or "CopperChestBlock" or "WeatheringCopperChestBlock" =>
-            ChestSignal(level, state, position),
-        "LecternBlock" => level.GetBlockEntity(position) is LecternBlockEntity lectern ? lectern.AnalogSignal() : 0,
-        "CrafterBlock" => level.GetBlockEntity(position) is CrafterBlockEntity crafter ? crafter.AnalogSignal() : 0,
-        "ChiseledBookShelfBlock" => level.GetBlockEntity(position) is ChiseledBookshelfBlockEntity shelf
-            ? shelf.AnalogSignal()
-            : 0,
-        "JukeboxBlock" => level.GetBlockEntity(position) is DataBlockEntity jukebox
-            ? JukeboxSongsRegistry.ComparatorOutput(jukebox)
-            : 0,
-        "DetectorRailBlock" => DetectorSignal(level, state, position),
-        "CopperBulbBlock" or "WeatheringCopperBulbBlock" => state.GetProperty("lit") == "true" ? 15 : 0,
+            // Vanilla's getScaledChargeLevel: the charges' share of 4, of 15, rounded down.
+            "RespawnAnchorBlock" => (int)MathF.Floor(IntProperty(state, "charges") / 4f * 15f),
+            "ChestBlock" or "TrappedChestBlock" or "CopperChestBlock" or "WeatheringCopperChestBlock" =>
+                ChestSignal(level, state, position),
+            "LecternBlock" => level.GetBlockEntity(position) is LecternBlockEntity lectern ? lectern.AnalogSignal() : 0,
+            "CrafterBlock" => level.GetBlockEntity(position) is CrafterBlockEntity crafter ? crafter.AnalogSignal() : 0,
+            "ChiseledBookShelfBlock" => level.GetBlockEntity(position) is ChiseledBookshelfBlockEntity shelf
+                ? shelf.AnalogSignal()
+                : 0,
+            "ShelfBlock" => level.GetBlockEntity(position) is ShelfBlockEntity row
+                ? row.AnalogSignal(direction, state.GetProperty("facing"))
+                : 0,
+            "JukeboxBlock" => level.GetBlockEntity(position) is DataBlockEntity jukebox
+                ? JukeboxSongsRegistry.ComparatorOutput(jukebox)
+                : 0,
+            "DetectorRailBlock" => DetectorSignal(level, state, position),
+            "CopperBulbBlock" or "WeatheringCopperBulbBlock" => state.GetProperty("lit") == "true" ? 15 : 0,
 
-        // Vanilla's pose ordinal plus one: standing, sitting, running, star.
-        "CopperGolemStatueBlock" or "WeatheringCopperGolemStatueBlock" => StatuePose(state) + 1,
-        "SculkSensorBlock" or "CalibratedSculkSensorBlock" => SculkSignal(level, state, position),
-        "CommandBlock" => SavedNumber(level.GetBlockEntity(position), "SuccessCount"),
-        _ => ContainerSignal(level, level.GetBlockEntity(position))
-    };
+            // Vanilla's pose ordinal plus one: standing, sitting, running, star.
+            "CopperGolemStatueBlock" or "WeatheringCopperGolemStatueBlock" => StatuePose(state) + 1,
+            "SculkSensorBlock" or "CalibratedSculkSensorBlock" => SculkSignal(level, state, position),
+            "CommandBlock" => SavedNumber(level.GetBlockEntity(position), "SuccessCount"),
+            _ => ContainerSignal(level, level.GetBlockEntity(position))
+        };
 
     // Vanilla CopperGolemStatueBlock.Pose, in declaration order.
     private static int StatuePose(IBlock state) => state.GetProperty("copper_golem_pose") switch

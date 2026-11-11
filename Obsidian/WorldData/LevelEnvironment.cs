@@ -96,6 +96,12 @@ internal static class LevelEnvironment
     /// </summary>
     public const string BedRuleAttribute = "minecraft:gameplay/bed_rule";
 
+    /// <summary>
+    /// Vanilla's <c>minecraft:gameplay/straw_bed_rule</c>: the same for straw beds, which by default never set the
+    /// spawn and break when their sleeper wakes.
+    /// </summary>
+    public const string StrawBedRuleAttribute = "minecraft:gameplay/straw_bed_rule";
+
     private const string MonstersBurnAttribute = "minecraft:gameplay/monsters_burn";
 
     private const string TurtleEggHatchChanceAttribute = "minecraft:gameplay/turtle_egg_hatch_chance";
@@ -166,12 +172,10 @@ internal static class LevelEnvironment
     private static readonly FrozenSet<string> vanillaFixedTime =
         new[] { "minecraft:the_nether", "minecraft:the_end" }.ToFrozenSet();
 
-    // Vanilla's types' bed rules: the overworld's is the default, and beds explode in the nether and the end.
-    private static readonly FrozenDictionary<string, BedRule> vanillaBedRules = new Dictionary<string, BedRule>
-    {
-        ["minecraft:the_nether"] = BedRule.Explodes,
-        ["minecraft:the_end"] = BedRule.Explodes
-    }.ToFrozenDictionary();
+    // Vanilla's types where beds and straw beds are destroyed on use (beds explode, straw beds break); elsewhere their
+    // attributes' defaults apply.
+    private static readonly FrozenSet<string> vanillaBedsDestroyedOnUse =
+        new[] { "minecraft:the_nether", "minecraft:the_end" }.ToFrozenSet();
 
     // The attribute maps of plugins' and data packs' dimension types and biomes, by their elements.
     private static readonly ConditionalWeakTable<object, EnvironmentAttributeMap> attributeMaps = new();
@@ -228,18 +232,24 @@ internal static class LevelEnvironment
     }
 
     /// <summary>
-    /// The bed rule at <paramref name="position"/>: vanilla's default (sleep when it's dark, always set the spawn),
-    /// then the dimension type's, then the biome's there.
+    /// The rule of the bed <paramref name="bed"/> at <paramref name="position"/>, like vanilla's
+    /// <c>AbstractBedBlock.getBedRule</c>: a straw bed's <c>straw_bed_rule</c>, another bed's <c>bed_rule</c>. Each
+    /// starts from vanilla's default, then the dimension type's and the biome's there apply.
     /// </summary>
-    public static BedRule BedRuleAt(this ILevel level, Vector position)
+    public static BedRule BedRuleAt(this ILevel level, Vector position, IBlock bed)
     {
+        var straw = bed.Is(BlockIds.StrawBed);
+        var attribute = straw ? StrawBedRuleAttribute : BedRuleAttribute;
+        var fallback = straw ? BedRule.StrawDefault : BedRule.Default;
         var type = level.DimensionType;
-        var rule = attributeMaps.TryGetValue(type.Element, out var typeMap)
-            ? BedRule.From(typeMap.Find(BedRuleAttribute)) ?? BedRule.Default
-            : vanillaBedRules.GetValueOrDefault(type.Name, BedRule.Default);
+        BedRule rule;
+        if (attributeMaps.TryGetValue(type.Element, out var typeMap))
+            rule = BedRule.From(typeMap.Find(attribute)) ?? fallback;
+        else
+            rule = vanillaBedsDestroyedOnUse.Contains(type.Name) ? BedRule.DestroyedOnUse : fallback;
 
         if (BiomeAt(level, position) is BiomeCodec biome && attributeMaps.TryGetValue(biome.Element, out var biomeMap))
-            rule = BedRule.From(biomeMap.Find(BedRuleAttribute)) ?? rule;
+            rule = BedRule.From(biomeMap.Find(attribute)) ?? rule;
 
         return rule;
     }
@@ -439,9 +449,15 @@ internal static class LevelEnvironment
 
 /// <summary>
 /// Vanilla's <c>BedRule</c>: when a bed lets players sleep and set their spawn (<c>always</c>, <c>when_dark</c> or
-/// <c>never</c>), whether it explodes instead, and what players are told when it doesn't let them sleep.
+/// <c>never</c>), whether it's destroyed when used instead (a bed explodes, a straw bed breaks) or when its sleeper
+/// wakes, and what players are told when it doesn't let them sleep.
 /// </summary>
-internal sealed record BedRule(string CanSleep, string CanSetSpawn, bool Explode, ChatMessage? ErrorMessage)
+internal sealed record BedRule(
+    string CanSleep,
+    string CanSetSpawn,
+    bool DestroyOnUse,
+    ChatMessage? ErrorMessage,
+    bool DestroyOnLeave = false)
 {
     /// <summary>
     /// Vanilla's default and the overworld's: sleep when it's dark, always set the spawn.
@@ -453,9 +469,20 @@ internal sealed record BedRule(string CanSleep, string CanSetSpawn, bool Explode
         new ChatMessage { Translate = "block.minecraft.bed.no_sleep" });
 
     /// <summary>
-    /// The nether's and the end's: beds explode.
+    /// The nether's and the end's, for beds and straw beds: they're destroyed when used.
     /// </summary>
-    public static BedRule Explodes { get; } = new("never", "never", true, null);
+    public static BedRule DestroyedOnUse { get; } = new("never", "never", true, null);
+
+    /// <summary>
+    /// Vanilla's <c>DESTROY_ON_LEAVE</c>, the straw bed's default and the overworld's: sleep when it's dark, never set
+    /// the spawn, and break when the sleeper wakes.
+    /// </summary>
+    public static BedRule StrawDefault { get; } = new(
+        "when_dark",
+        "never",
+        false,
+        new ChatMessage { Translate = "block.minecraft.bed.no_sleep" },
+        DestroyOnLeave: true);
 
     /// <summary>
     /// Whether the rule lets a player sleep in <paramref name="level"/> now.
@@ -489,10 +516,11 @@ internal sealed record BedRule(string CanSleep, string CanSetSpawn, bool Explode
             return null;
         }
 
-        var explodes = rule.TryGetTag<NbtTag<byte>>("destroy_on_use", out var flag) && flag.Value != 0;
+        var onUse = rule.TryGetTag<NbtTag<byte>>("destroy_on_use", out var useFlag) && useFlag.Value != 0;
+        var onLeave = rule.TryGetTag<NbtTag<byte>>("destroy_on_leave", out var leaveFlag) && leaveFlag.Value != 0;
         var message = rule.TryGetTag<NbtTag<string>>("error_message", out var json) ? Message(json.Value) : null;
 
-        return new BedRule(canSleep.Value, canSetSpawn.Value, explodes, message);
+        return new BedRule(canSleep.Value, canSetSpawn.Value, onUse, message, onLeave);
     }
 
     // A text component's JSON, as far as ChatMessage models it: a string, an object, or a list of them, the rest of

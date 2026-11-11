@@ -118,8 +118,7 @@ public sealed partial class Sheep : FarmAnimal, IShearable
     internal void EatGrass()
     {
         Sheared = false;
-        if (IsBaby)
-            Age = Math.Min(0, Age + 1200);
+        Grow(1200);
         SynchronizeMetadata();
     }
 

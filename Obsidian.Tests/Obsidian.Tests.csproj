@@ -39,6 +39,9 @@
 		<EmbeddedResource Include="Assets\food_and_harvest.json" />
 
 		<EmbeddedResource Include="Assets\cauldrons.json" />
+		<EmbeddedResource Include="Assets\shelves.json" />
+		<EmbeddedResource Include="Assets\straw_bed_sleep.json" />
+		<EmbeddedResource Include="Assets\golden_dandelions.json" />
 		<EmbeddedResource Include="Assets\turtle_eggs.json" />
 		<EmbeddedResource Include="Assets\frogspawn.json" />
 		<EmbeddedResource Include="Assets\eyeblossom_ghast_portal_ticks.json" />

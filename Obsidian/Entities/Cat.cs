@@ -117,6 +117,9 @@ public sealed partial class Cat : Animal
                 return true;
             }
         }
+        if (await AgeLocks.TryToggleAsync(this, player, hand))
+            return true;
+
         OrderedToSit = !OrderedToSit;
         if (OrderedToSit)
             (Navigator as Navigator)?.Stop();

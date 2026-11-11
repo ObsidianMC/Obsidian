@@ -94,7 +94,8 @@ public sealed class BlockUseTransactions
         Assert.True(BlocksRegistry.TryGetPluginBlock("probe:sapling", out var sapling));
         world.BlockUpdates.SetBlock(target + Vector.Down, BlocksRegistry.Dirt, Quiet);
         world.BlockUpdates.SetBlock(target, sapling.DefaultState.WithProperty("stage", "1"), Quiet);
-        world.GrowthRandom = new LegacyRandomSource(4096);
+        // The sapling's check draws its tree first; the chance after it comes up with this seed.
+        world.GrowthRandom = new LegacyRandomSource(1);
         var player = Player(context, "User");
         var boneMeal = new ItemStack(ItemsRegistry.BoneMeal, 2);
         player.Inventory.SetItem(player.CurrentHeldItemSlot, boneMeal);

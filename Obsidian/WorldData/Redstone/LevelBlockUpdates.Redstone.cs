@@ -181,7 +181,7 @@ internal sealed partial class LevelBlockUpdates
     internal int AnalogOutputOf(IBlock state, Vector position, BlockFace direction)
     {
         if (!BlocksRegistry.TryGetPluginBlock(state.GetHashCode(), out _))
-            return AnalogOutputs.Get(this, state, position);
+            return AnalogOutputs.Get(this, state, position, direction);
 
         var context = this.SignalContext(state, position, direction);
         var output = this.AskPlugin(state, nameof(IBlockBehavior.GetAnalogOutput), 0, b => b.GetAnalogOutput(context));

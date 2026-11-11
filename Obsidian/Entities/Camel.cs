@@ -76,9 +76,9 @@ public partial class Camel : AbstractHorse, IRideableJumping
             if (Health >= GetAttributeValue("minecraft:generic.max_health") && !IsBaby && (Age != 0 || LoveTicks > 0))
                 return false;
             Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + 2);
-            if (IsBaby)
+            if (CanAgeUp)
             {
-                Age = Math.Min(0, Age + 200);
+                Grow(200);
             }
             else if (Age == 0 && LoveTicks == 0)
             {

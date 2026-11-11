@@ -31,7 +31,7 @@ public partial class PlayerCommandPacket
         {
             case PlayerCommand.LeaveBed:
                 if (player is PlayerBase sleeper)
-                    await sleeper.StopSleepingAsync();
+                    await sleeper.StopSleepingAsync(forceful: false);
                 return;
             case PlayerCommand.StartSprinting:
                 if (player.FoodLevel <= 6 && player.GameMode is not GameMode.Creative and not GameMode.Spectator) break;

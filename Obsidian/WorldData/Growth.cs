@@ -12,14 +12,15 @@ namespace Obsidian.WorldData;
 /// <summary>
 /// How plants grow on random ticks and with bone meal, like vanilla's <c>SaplingBlock</c>, <c>TreeGrower</c>,
 /// <c>BonemealableBlock</c>s and <c>BoneMealItem</c>: saplings (a plugin's too) and the mangrove propagule, azaleas,
-/// crops, grass blocks and short grass and ferns.
+/// crops, grass blocks and short grass and ferns here, and the other plants bone meal grows in
+/// <c>Growth.Plants.cs</c>. Checked against the <c>growing_plant_ticks</c> capture.
 /// </summary>
 /// <remarks>
 /// Growing a plant draws from the random it's given in vanilla's order (the chance, then which tree, then the tree's
 /// own draws), and places the features vanilla places, found by identifier like vanilla's registry lookups, so that
-/// plugins' and data packs' overrides apply. Call it on the level's tick, holding the level's
-/// <see cref="Fluids.LevelFluids.TickLock"/> from reading the block to growing it, which places the features in the
-/// level's chunks (see <see cref="LiveFeatureLevel"/>).
+/// plugins' and data packs' overrides apply (see <see cref="GrowthFeatures"/>). Call it on the level's tick, holding
+/// the level's <see cref="Fluids.LevelFluids.TickLock"/> from reading the block to growing it, which places the
+/// features in the level's chunks (see <see cref="LiveFeatureLevel"/>).
 /// </remarks>
 internal static partial class Growth
 {
@@ -33,6 +34,20 @@ internal static partial class Growth
 
     private const string GrassBonemeal = "minecraft:grass_bonemeal";
 
+    // Vanilla's setBlock flags for a sapling turning to stage 1, or put back where its tree failed (260), and for
+    // clearing it for its tree (818).
+    private const BlockUpdateFlags SaplingResetFlags =
+        BlockUpdateFlags.Invisible | BlockUpdateFlags.SkipBlockEntitySideEffects;
+
+    private const BlockUpdateFlags SaplingRemovalFlags = BlockUpdateFlags.Clients
+        | BlockUpdateFlags.KnownShape
+        | BlockUpdateFlags.SuppressDrops
+        | BlockUpdateFlags.SkipBlockEntitySideEffects
+        | BlockUpdateFlags.SkipOnPlace;
+
+    // The tree of vanilla's azalea TreeGrower (AzaleaBlock grows TreeGrower.AZALEA, which no sapling holds).
+    private const string AzaleaTree = "minecraft:azalea_tree";
+
     private enum Kind
     {
         None,
@@ -44,7 +59,11 @@ internal static partial class Growth
         TallGrass
     }
 
-    private static readonly TreeGrower azalea = new() { Tree = "minecraft:azalea_tree" };
+    private static readonly TreeGrower azalea = new()
+    {
+        Trees = [new WeightedFeature(AzaleaTree, 1)],
+        ShortestTree = AzaleaTree
+    };
 
     /// <summary>
     /// Whether random ticks grow <paramref name="block"/>: saplings and the mangrove propagule.
@@ -77,7 +96,8 @@ internal static partial class Growth
 
                 break;
             case Kind.Propagule when Age(block) < 4:
-                SetAndShow(level, position, block.WithProperty("age", Age(block) + 1));
+                var aged = block.WithProperty("age", Age(block) + 1);
+                level.BlockUpdates.SetBlock(position, aged, BlockUpdateFlags.Clients);
                 break;
         }
     }
@@ -86,16 +106,21 @@ internal static partial class Growth
     /// Whether bone meal does something to <paramref name="block"/>, which uses it up (vanilla's
     /// <c>isValidBonemealTarget</c>).
     /// </summary>
-    public static bool IsValidBonemealTarget(AbstractLevel level, Vector position, IBlock block) =>
-        KindOf(block, out _) switch
+    /// <param name="random">
+    /// The level's random, when this is the check that decides the use, which a sapling draws from as vanilla's
+    /// does; null for an early check, which draws nothing (the draws never change the answer).
+    /// </param>
+    public static bool IsValidBonemealTarget(AbstractLevel level, Vector position, IBlock block,
+        IRandomSource? random = null) =>
+        KindOf(block, out var grower) switch
         {
-            Kind.Sapling => true,
+            Kind.Sapling => SaplingTakesBonemeal(level, position, block, grower!, random),
             Kind.Propagule => !IsHanging(block) || Age(block) < 4,
-            Kind.Azalea => !BlockAt(level, position + Vector.Up).HasFluid(),
+            Kind.Azalea => AzaleaTakesBonemeal(level, position),
             Kind.Crop => Age(block) < MaxAge(block),
             Kind.GrassBlock => BlockAt(level, position + Vector.Up).IsAir,
             Kind.TallGrass => BlockAt(level, position + Vector.Up).IsAir,
-            _ => false
+            _ => PlantFor(block) is BonemealPlant plant && plant.IsValidTarget(level, position, block)
         };
 
     /// <summary>
@@ -105,6 +130,13 @@ internal static partial class Growth
     public static void ApplyBonemeal(AbstractLevel level, Vector position, IBlock block, IRandomSource random)
     {
         var kind = KindOf(block, out var grower);
+        if (kind == Kind.None)
+        {
+            if (PlantFor(block) is BonemealPlant plant && plant.IsSuccess(random))
+                plant.Grow(level, position, block, random);
+
+            return;
+        }
 
         // Vanilla's isBonemealSuccess: saplings, standing propagules and azaleas 45% of the time.
         var success = kind switch
@@ -123,7 +155,8 @@ internal static partial class Growth
                 AdvanceTree(level, position, block, grower!, random);
                 break;
             case Kind.Propagule when IsHanging(block):
-                SetAndShow(level, position, block.WithProperty("age", Age(block) + 1));
+                level.BlockUpdates.SetBlock(position, block.WithProperty("age", Age(block) + 1),
+                    BlockUpdateFlags.Clients);
                 break;
             case Kind.Propagule:
                 AdvanceTree(level, position, block, grower!, random);
@@ -185,7 +218,7 @@ internal static partial class Growth
     {
         if (block.GetProperty("stage") == "0")
         {
-            level.GetLoadedChunk(position.X >> 4, position.Z >> 4)?.SetBlock(position, block.WithProperty("stage", 1));
+            level.BlockUpdates.SetBlock(position, block.WithProperty("stage", 1), SaplingResetFlags);
             return;
         }
 
@@ -193,13 +226,14 @@ internal static partial class Growth
     }
 
     /// <summary>
-    /// Vanilla's <c>TreeGrower.growTree</c>: four saplings in a square grow the mega tree from their north-west
-    /// corner, else the sapling grows its tree, or the flowers' tree with a flower nearby. The saplings make way for
-    /// the tree, and come back when it can't grow.
+    /// Vanilla 26.3's <c>TreeGrower.growTree</c>: four saplings in a square grow a mega tree from their north-west
+    /// corner, else the sapling grows a tree, or a flowers' tree with a flower nearby, each picked by weight. The
+    /// saplings make way for the tree, and come back when it can't grow.
     /// </summary>
     /// <remarks>
-    /// A tree that reaches a chunk that isn't loaded and complete doesn't grow, rather than grow cut off there: vanilla
-    /// would have loaded the chunk.
+    /// The draws are vanilla's, in its order: the mega tree's pick whenever the grower has mega trees, square or not,
+    /// then the tree's, then the tree's own. A tree that reaches a chunk that isn't loaded and complete doesn't grow,
+    /// rather than grow cut off there: vanilla would have loaded the chunk.
     /// </remarks>
     /// <returns>Whether a tree grew.</returns>
     private static bool GrowTree(
@@ -209,142 +243,193 @@ internal static partial class Growth
         TreeGrower grower,
         IRandomSource random)
     {
+        var lists = Lists(grower);
+        var features = level.GrowthFeatures;
+
+        if (Pick(lists.Mega, random) is string mega
+            && features.Find(mega) is not null
+            && FindSquare(level, block, position) is Vector corner)
+        {
+            Vector[] square =
+            [
+                corner,
+                corner + Vector.East,
+                corner + Vector.South,
+                corner + new Vector(1, 0, 1)
+            ];
+
+            // Each sapling comes back as it was, stage and all.
+            var saplings = Array.ConvertAll(square, sapling => BlockAt(level, sapling));
+            foreach (var sapling in square)
+                RemoveSapling(level, sapling);
+
+            if (PlaceFeature(level, mega, corner, random))
+                return true;
+
+            for (var index = 0; index < square.Length; index++)
+                level.BlockUpdates.SetBlock(square[index], saplings[index], SaplingResetFlags);
+
+            return false;
+        }
+
+        var tree = Pick(TreeList(lists, HasFlowers(level, position)), random);
+        if (tree is null || features.Find(tree) is null)
+            return false;
+
+        RemoveSapling(level, position);
+        if (PlaceFeature(level, tree, position, random))
+            return true;
+
+        level.BlockUpdates.SetBlock(position, block, SaplingResetFlags);
+        return false;
+    }
+
+    /// <summary>
+    /// Places a configured feature a plant grows into, through a <see cref="LiveFeatureLevel"/> on the level. One that
+    /// reaches a chunk that isn't loaded and complete is taken back and counts as not placed.
+    /// </summary>
+    internal static bool PlaceFeature(AbstractLevel level, string identifier, Vector origin, IRandomSource random)
+    {
         var live = new LiveFeatureLevel(level);
-        var grew = PlaceTree(live, position, block, grower, random);
+        var placed = level.GrowthFeatures.Place(identifier, live, origin, random);
 
         if (live.ReachedUnloaded)
         {
             live.Rollback();
-            grew = false;
+            placed = false;
         }
 
         live.Commit();
-        return grew;
+        return placed;
     }
 
-    private static bool PlaceTree(
-        LiveFeatureLevel live,
+    // Vanilla's removeSapling: the sapling's fluid stays where the tree grows, as a waterlogged propagule's water does.
+    private static void RemoveSapling(AbstractLevel level, Vector position)
+    {
+        var sapling = BlockAt(level, position);
+        var fluid = sapling.GetProperty("waterlogged") == "true" ? BlocksRegistry.Water : BlocksRegistry.Air;
+        level.BlockUpdates.SetBlock(position, fluid, SaplingRemovalFlags);
+    }
+
+    // Vanilla's SaplingBlock.isValidBonemealTarget: TreeGrower.canGrow, then room for the shortest tree's trunk.
+    // canGrow picks a tree, then a mega tree, from the level's random; only whether the lists are empty decides it,
+    // but the draws are vanilla's and the bone meal's chance comes after them.
+    private static bool SaplingTakesBonemeal(
+        AbstractLevel level,
         Vector position,
         IBlock block,
         TreeGrower grower,
-        IRandomSource random)
+        IRandomSource? random)
     {
-        var features = PluginFeatures.CurrentRegistry.FeatureSet!;
+        var lists = Lists(grower);
+        var tree = Pick(TreeList(lists, HasFlowers(level, position)), random);
+        var mega = Pick(lists.Mega, random);
+        if (tree is null && mega is not null && FindSquare(level, block, position) is null)
+            return false;
 
-        if (MegaTree(grower, random) is string mega && features.FindConfigured(mega) is not null)
+        return !level.IsOutsideBuildHeight(position.Y + MinimumHeight(level, grower));
+    }
+
+    // Vanilla's AzaleaBlock.isValidBonemealTarget: room for the azalea tree's trunk and two more, and no fluid above.
+    private static bool AzaleaTakesBonemeal(AbstractLevel level, Vector position)
+    {
+        var top = position.Y + MinimumHeight(level, azalea) + 2;
+        return !level.IsOutsideBuildHeight(top) && !BlockAt(level, position + Vector.Up).HasFluid();
+    }
+
+    // Vanilla's TreeGrower.getMinimumHeight: the shortest tree's trunk base height, or 0 when it isn't a tree.
+    private static int MinimumHeight(AbstractLevel level, TreeGrower grower) =>
+        grower.ShortestTree is string shortest ? level.GrowthFeatures.TrunkBaseHeight(shortest) ?? 0 : 0;
+
+    // A grower's weighted lists: its own, or the older shape's (see TreeGrower) when it has none.
+    private static GrowerLists Lists(TreeGrower grower)
+    {
+        if (grower.Trees.Count > 0 || grower.MegaTrees.Count > 0 || grower.FlowerTrees.Count > 0)
+            return new GrowerLists(grower.Trees, grower.MegaTrees, grower.FlowerTrees);
+
+        var chance = Math.Clamp(grower.SecondaryChance, 0f, 1f);
+        return new GrowerLists(
+            OlderShape(grower.Tree, grower.SecondaryTree, chance),
+            OlderShape(grower.MegaTree, grower.SecondaryMegaTree, chance),
+            OlderShape(grower.Flowers, grower.SecondaryFlowers, chance));
+    }
+
+    // A feature and its secondary as a weighted list: the secondary takes the chance's share of a thousand, and a
+    // feature alone weighs 1, like vanilla's one-tree lists.
+    private static IReadOnlyList<WeightedFeature> OlderShape(string? feature, string? secondary, float chance)
+    {
+        const int Total = 1000;
+        var secondaryWeight = secondary is null ? 0 : (int)MathF.Round(chance * Total);
+        if (secondaryWeight == 0)
+            return feature is null ? [] : [new WeightedFeature(feature, 1)];
+
+        var list = new List<WeightedFeature>();
+        if (feature is not null && secondaryWeight < Total)
+            list.Add(new WeightedFeature(feature, Total - secondaryWeight));
+
+        list.Add(new WeightedFeature(secondary!, secondaryWeight));
+        return list;
+    }
+
+    // Vanilla's getConfiguredFeature: the flowers' trees near flowers, when the grower has any.
+    private static IReadOnlyList<WeightedFeature> TreeList(GrowerLists lists, bool flowers) =>
+        flowers && lists.Flowers.Count > 0 ? lists.Flowers : lists.Trees;
+
+    /// <summary>
+    /// Vanilla's <c>WeightedList.getRandom</c>: one <c>nextInt</c> of the total weight, which picks the entry it falls
+    /// in, in the list's order. An empty list picks nothing and draws nothing.
+    /// </summary>
+    /// <param name="list">The weighted features.</param>
+    /// <param name="random">The random to draw from, or null to pick the first entry without drawing.</param>
+    internal static string? Pick(IReadOnlyList<WeightedFeature> list, IRandomSource? random)
+    {
+        var total = 0;
+        foreach (var entry in list)
+            total += entry.Weight;
+
+        if (total <= 0)
+            return null;
+
+        if (random is null)
+            return list[0].Feature;
+
+        var selection = random.NextInt(total);
+        foreach (var entry in list)
         {
-            for (var dx = 0; dx >= -1; dx--)
+            selection -= entry.Weight;
+            if (selection < 0)
+                return entry.Feature;
+        }
+
+        return null;
+    }
+
+    // Vanilla's findTwoByTwoSaplingPos: the north-west corner of a square of the same block (any stage) holding the
+    // sapling, tried from the sapling's own corner outwards.
+    private static Vector? FindSquare(AbstractLevel level, IBlock block, Vector position)
+    {
+        for (var dx = 0; dx >= -1; dx--)
+        {
+            for (var dz = 0; dz >= -1; dz--)
             {
-                for (var dz = 0; dz >= -1; dz--)
+                var corner = position + new Vector(dx, 0, dz);
+                if (Same(corner)
+                    && Same(corner + Vector.East)
+                    && Same(corner + Vector.South)
+                    && Same(corner + new Vector(1, 0, 1)))
                 {
-                    if (!IsTwoByTwo(live, block, position, dx, dz))
-                        continue;
-
-                    var corner = position + new Vector(dx, 0, dz);
-                    Vector[] saplings =
-                    [
-                        corner,
-                        corner + Vector.East,
-                        corner + Vector.South,
-                        corner + new Vector(1, 0, 1)
-                    ];
-
-                    foreach (var sapling in saplings)
-                        live.SetBlock(sapling, BlocksRegistry.Air);
-
-                    if (Place(features, mega, live, corner, random))
-                        return true;
-
-                    foreach (var sapling in saplings)
-                        live.SetBlock(sapling, block);
-
-                    return false;
+                    return corner;
                 }
             }
         }
 
-        if (Tree(grower, random, HasFlowers(live, position)) is not string tree
-            || features.FindConfigured(tree) is null)
-        {
-            return false;
-        }
+        return null;
 
-        // The sapling's fluid stays where the tree grows, as a waterlogged propagule's water does.
-        var fluid = block.GetProperty("waterlogged") == "true" ? BlocksRegistry.Water : BlocksRegistry.Air;
-        live.SetBlock(position, fluid);
-
-        if (Place(features, tree, live, position, random))
-            return true;
-
-        live.SetBlock(position, block);
-        return false;
-    }
-
-    // Places a tree, which fails rather than stopping the level when a plugin's feature throws.
-    private static bool Place(
-        WorldgenFeatureSet features,
-        string identifier,
-        LiveFeatureLevel level,
-        Vector origin,
-        IRandomSource random)
-    {
-        try
-        {
-            return features.PlaceConfigured(identifier, new FeatureContext
-            {
-                Level = level,
-                Origin = origin,
-                Random = random,
-                Generation = level.Generation
-            });
-        }
-        catch (PluginGenerationException exception)
-        {
-            Log.TreeFailed(level.Logger, exception, identifier);
-            return false;
-        }
-    }
-
-    // Vanilla's getConfiguredMegaFeature: the secondary mega tree's chance is only drawn when there's one.
-    private static string? MegaTree(TreeGrower grower, IRandomSource random)
-    {
-        if (grower.SecondaryMegaTree is not null && random.NextFloat() < grower.SecondaryChance)
-            return grower.SecondaryMegaTree;
-
-        return grower.MegaTree;
-    }
-
-    // Vanilla's getConfiguredFeature: the secondary chance is always drawn, even for growers without a secondary
-    // tree, since it decides the draws the tree itself gets.
-    private static string? Tree(TreeGrower grower, IRandomSource random, bool flowers)
-    {
-        if (random.NextFloat() < grower.SecondaryChance)
-        {
-            if (flowers && grower.SecondaryFlowers is not null)
-                return grower.SecondaryFlowers;
-
-            if (grower.SecondaryTree is not null)
-                return grower.SecondaryTree;
-        }
-
-        return flowers && grower.Flowers is not null ? grower.Flowers : grower.Tree;
-    }
-
-    // Vanilla's isTwoByTwoSapling: the square at the offset holds the same block, at any stage.
-    private static bool IsTwoByTwo(LiveFeatureLevel level, IBlock block, Vector position, int dx, int dz)
-    {
-        var corner = position + new Vector(dx, 0, dz);
-
-        return Same(corner)
-            && Same(corner + Vector.East)
-            && Same(corner + Vector.South)
-            && Same(corner + new Vector(1, 0, 1));
-
-        bool Same(Vector at) => level.GetBlock(at).RegistryId == block.RegistryId;
+        bool Same(Vector at) => BlockAt(level, at).RegistryId == block.RegistryId;
     }
 
     // Vanilla's hasFlowers: a flower from a block below to a block above, two blocks around.
-    private static bool HasFlowers(LiveFeatureLevel level, Vector position)
+    private static bool HasFlowers(AbstractLevel level, Vector position)
     {
         for (var y = -1; y <= 1; y++)
         {
@@ -352,7 +437,7 @@ internal static partial class Growth
             {
                 for (var z = -2; z <= 2; z++)
                 {
-                    var block = level.GetBlock(position + new Vector(x, y, z));
+                    var block = BlockAt(level, position + new Vector(x, y, z));
                     if (TagsRegistry.Block.Flowers.Entries.Contains(block.RegistryId))
                         return true;
                 }
@@ -361,6 +446,14 @@ internal static partial class Growth
 
         return false;
     }
+
+    /// <summary>
+    /// A grower's three weighted lists, as vanilla's <c>TreeGrower</c> holds them.
+    /// </summary>
+    private readonly record struct GrowerLists(
+        IReadOnlyList<WeightedFeature> Trees,
+        IReadOnlyList<WeightedFeature> Mega,
+        IReadOnlyList<WeightedFeature> Flowers);
 
     // Vanilla's CropBlock.growCrops: two to five ages (a third of that for beetroots, one for torchflowers), capped
     // at the crop's last age; a torchflower crop's last age is the torchflower.
@@ -547,9 +640,6 @@ internal static partial class Growth
 
     private static partial class Log
     {
-        [LoggerMessage(Level = LogLevel.Warning, Message = "A sapling's tree {Feature} failed to grow.")]
-        public static partial void TreeFailed(ILogger logger, Exception exception, string feature);
-
         [LoggerMessage(Level = LogLevel.Warning, Message = "A plant bone meal grows failed to grow.")]
         public static partial void PlantFailed(ILogger logger, Exception exception);
     }

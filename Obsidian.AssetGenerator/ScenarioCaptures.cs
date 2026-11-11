@@ -44,6 +44,9 @@ internal static class ScenarioCaptures
     public const string Dispenser = "dispenser";
     public const string Brushing = "brushing";
     public const string ArmorStandUse = "armor_stand_use";
+    public const string Shelves = "shelves";
+    public const string StrawBeds = "straw_beds";
+    public const string GoldenDandelions = "golden_dandelions";
     public const string Lightning = "lightning";
     public const string SpecialBlocks = "special_blocks";
 
@@ -76,15 +79,16 @@ internal static class ScenarioCaptures
 
     // The fixtures whose probes record only the cases asked for.
     private static readonly string[] SelectableCases =
-        [Redstone, Sulfur, MoreBlocks, StructurePieces, Fire, TickingBlocks, BlockUse, MeltingWeather,
+        [Redstone, Sulfur, MoreBlocks, StructurePieces, Fire, TickingBlocks, BlockUse, MeltingWeather, GrowingPlantTicks,
             EyeblossomGhastPortal, Brushing, ArmorStandUse, WaxingBellsOre, FoodHarvest, Cauldrons,
-            ProjectileHits, Dispenser, Lightning, SpecialBlocks];
+            ProjectileHits, Dispenser, Shelves, StrawBeds, GoldenDandelions, Lightning, SpecialBlocks];
 
     public static readonly string[] All =
         [Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps, SavedHeightmaps, Mining,
             Placement, CopperWeathering, Fire, TickingBlocks, BlockUse, TurtleEggs, Frogspawn,
             GrowingPlantTicks, MeltingWeather, FurnaceResults, EyeblossomGhastPortal, Brushing, ArmorStandUse,
-            WaxingBellsOre, FoodHarvest, Cauldrons, ProjectileHits, Dispenser, Lightning, SpecialBlocks];
+            WaxingBellsOre, FoodHarvest, Cauldrons, ProjectileHits, Dispenser, Shelves, StrawBeds,
+            GoldenDandelions, Lightning, SpecialBlocks];
 
     private const string RedstoneNotes = """
         Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a
@@ -142,7 +146,7 @@ internal static class ScenarioCaptures
                 "Case selection requires CaptureFixtures=redstone, sulfur, more_blocks, structure_pieces, "
                 + "fire, ticking_blocks, block_use, melting_weather, eyeblossom_ghast_portal, brushing, "
                 + "armor_stand_use, waxing_bells_ore, food_and_harvest, cauldrons, projectile_hits, dispenser, "
-                + "lightning or special_blocks.");
+                + "shelves, straw_beds, golden_dandelions, lightning, growing_plant_ticks or special_blocks.");
         }
 
         if (fixtures.Contains(CopperWeathering))
@@ -211,6 +215,29 @@ internal static class ScenarioCaptures
         {
             var path = Path.Combine(assetsDirectory, "cauldrons.json");
             await FixtureDumper.DumpCauldronsAsync(server, path, cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(Shelves))
+        {
+            await FixtureDumper.DumpShelvesAsync(server, Path.Combine(assetsDirectory, "shelves.json"), cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(StrawBeds))
+        {
+            var path = Path.Combine(assetsDirectory, "straw_bed_sleep.json");
+            await FixtureDumper.DumpStrawBedsAsync(server, path, cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(GoldenDandelions))
+        {
+            var path = Path.Combine(assetsDirectory, "golden_dandelions.json");
+            await FixtureDumper.DumpGoldenDandelionsAsync(server, path, cases);
             if (fixtures.Count == 1)
                 return;
         }
@@ -293,7 +320,7 @@ internal static class ScenarioCaptures
         if (fixtures.Contains(GrowingPlantTicks))
         {
             var path = Path.Combine(assetsDirectory, "growing_plant_ticks.json");
-            await FixtureDumper.DumpGrowingPlantTicksAsync(server, path);
+            await FixtureDumper.DumpGrowingPlantTicksAsync(server, path, cases);
             if (fixtures.Count == 1)
                 return;
         }
