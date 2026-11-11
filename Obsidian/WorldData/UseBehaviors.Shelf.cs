@@ -81,17 +81,16 @@ internal static partial class UseBehaviors
         // shelf's inventory and the player's are held together, so that no item is in two places at once.
         private static async ValueTask<UseResult> SwapRowsAsync(BlockUse use)
         {
-            var row = ShelfConnections.ConnectedTo(use.Level, use.Position)
-                .Select(position => use.Level.GetResidentBlockEntity(position) as ShelfBlockEntity)
-                .ToArray();
-            if (row.Length == 0)
-                return UseResult.Consume;
-
             var held = use.Player.Inventory.GetItem(use.HandSlot);
             var clicked = (ShelfBlockEntity)use.BlockEntity!;
+            ShelfBlockEntity?[] row = [];
             var swapped = false;
+
+            // The row is read inside the commit, under the tick lock, once the clicked shelf was found as it was read.
             var committed = use.TryCommit(() =>
             {
+                row = [.. ShelfConnections.ConnectedTo(use.Level, use.Position)
+                    .Select(position => use.Level.GetResidentBlockEntity(position) as ShelfBlockEntity)];
                 if (!TryLockOthers(use, row, out var others))
                     return false;
 
@@ -103,6 +102,9 @@ internal static partial class UseBehaviors
 
             if (!committed)
                 return UseResult.Fail;
+
+            if (row.Length == 0)
+                return UseResult.Consume;
 
             foreach (var shelf in row.OfType<ShelfBlockEntity>())
                 shelf.Changed(MobGameEvent.EntityInteract);
