@@ -1,4 +1,5 @@
 using Obsidian.API.BlockEntities;
+using Obsidian.API.Blocks;
 using Obsidian.WorldData.BlockNotifications;
 
 namespace Obsidian.WorldData.Redstone;
@@ -30,6 +31,12 @@ internal interface IRedstoneLevel : IBlockChangeWorld
     /// notifying neighbors.
     /// </summary>
     ValueTask WriteAsync(Vector position, IBlock block, bool notifyNeighbors);
+
+    /// <summary>
+    /// Commits a block state with exactly vanilla's <paramref name="flags"/>, for a block whose vanilla write passes
+    /// them itself (a pressure plate's flag 2, after which it notifies its neighbours on its own).
+    /// </summary>
+    ValueTask WriteAsync(Vector position, IBlock block, BlockUpdateFlags flags);
 
     /// <summary>Restores a block internally, without client, neighbor, shape or placement notifications.</summary>
     ValueTask RestoreBlockSilentlyAsync(Vector position, IBlock block);
