@@ -72,7 +72,10 @@ public partial class PlayerBase
         VectorD? sourcePosition = null)
     {
         source ??= this;
-        if (!float.IsFinite(amount) || amount <= 0 || !Alive || Respawning || source.Level != Level ||
+
+        // The level the hit is dealt in: it lands there or nowhere, as the player may travel while the hit awaits.
+        var level = Level;
+        if (!float.IsFinite(amount) || amount <= 0 || !Alive || Respawning || source.Level != level ||
             GameMode is GameMode.Creative or GameMode.Spectator || Abilities.HasFlag(PlayerAbility.Invulnerable))
         {
             return;
@@ -86,14 +89,50 @@ public partial class PlayerBase
         if (await TryBlockDamageAsync(source, amount, kind, weapon, incomingFrom))
             return;
 
+        // A hit the player travelled away from while it was being blocked changes nothing.
+        if (!IsStillHitIn(level, source))
+            return;
+
         var incoming = amount;
-        if (damageCooldown > 0)
+        if (PastHurtCooldown(incoming) is null)
+            return;
+
+        var armored = kind is CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion
+            or CombatDamageKind.FireContact or CombatDamageKind.HotFloor or CombatDamageKind.SweetBerryBush
+            or CombatDamageKind.Lightning or CombatDamageKind.Thorns or CombatDamageKind.FallingStalactite;
+        var armor = 0f;
+        var toughness = 0f;
+        if (armored)
         {
-            if (incoming <= lastIncomingDamage)
-                return;
-            amount -= lastIncomingDamage;
+            // Worn items' armour is in the attributes' modifiers. Like vanilla, the armour wears before protection
+            // reduces the hit, so the wear comes before the commit; the rest of the hit follows it.
+            UpdateEquipmentAttributes();
+            armor = GetAttributeValue("minecraft:armor");
+            toughness = GetAttributeValue("minecraft:armor_toughness");
+            for (var slot = 5; slot <= 8; slot++)
+                await DamageInventoryItemAsync(slot, Math.Max(1, (int)(incoming / 4)), true);
         }
-        else
+
+        // Another hit may have landed while the armour wore.
+        var freshHit = damageCooldown <= 0;
+        if (PastHurtCooldown(incoming) is not float cooled)
+            return;
+
+        amount = cooled;
+        if (armored)
+        {
+            amount = CombatItems.ReduceArmor(amount, armor, toughness,
+                1 - 0.15f * CombatItems.EnchantmentLevel(weapon, EnchantmentsRegistry.Breach));
+        }
+        amount = CombatEffects.Protect(this, amount, kind);
+        var absorbed = Math.Min(Absorption, amount);
+        amount -= absorbed;
+
+        var previousHealth = Health;
+        if (!TryCommitDamage(level, source, amount, out var healthTaken))
+            return;
+
+        if (freshHit)
         {
             damageCooldown = 10;
             HurtTime = 10;
@@ -101,34 +140,27 @@ public partial class PlayerBase
         lastIncomingDamage = incoming;
         AcceptedDamageCount++;
         LastDamageKind = kind;
-        if (kind is CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion
-            or CombatDamageKind.FireContact or CombatDamageKind.HotFloor or CombatDamageKind.SweetBerryBush
-            or CombatDamageKind.Lightning or CombatDamageKind.Thorns or CombatDamageKind.FallingStalactite)
-        {
-            // Worn items' armour is in the attributes' modifiers.
-            UpdateEquipmentAttributes();
-            var armor = GetAttributeValue("minecraft:armor");
-            var toughness = GetAttributeValue("minecraft:armor_toughness");
-            amount = CombatItems.ReduceArmor(amount, armor, toughness,
-                1 - 0.15f * CombatItems.EnchantmentLevel(weapon, EnchantmentsRegistry.Breach));
-            for (var slot = 5; slot <= 8; slot++)
-                await DamageInventoryItemAsync(slot, Math.Max(1, (int)(incoming / 4)), true);
-        }
-        amount = CombatEffects.Protect(this, amount, kind);
-        var absorbed = Math.Min(Absorption, amount);
         Absorption -= absorbed;
-        amount -= absorbed;
         if (absorbed > 0)
             SyncFoodMetadata();
         if (kind is CombatDamageKind.Melee or CombatDamageKind.Projectile && !ReferenceEquals(source, this))
             CombatEffects.Knockback(this, Position - source.Position, 0.4f);
-        this.RecordProgressDamage(source, amount);
-        var previousHealth = Health;
+        this.RecordProgressDamage(source, amount, previousHealth);
         var previousAbsorption = Absorption;
-        await base.DamageAsync(source, amount);
+        if (healthTaken)
+            await ShowDamageAsync(level, source);
         // Vanilla broadcasts the damage event for an accepted hit even when absorption takes all of it.
         if (Health < previousHealth || Absorption < previousAbsorption)
             this.QueueDamageEvent(source, directSource, kind, sourcePosition);
+    }
+
+    // What's left of a hit of incoming damage after the hurt cooldown, or null when the cooldown takes all of it.
+    private float? PastHurtCooldown(float incoming)
+    {
+        if (damageCooldown <= 0)
+            return incoming;
+
+        return incoming > lastIncomingDamage ? incoming - lastIncomingDamage : null;
     }
 
     // Vanilla's damage types for each kind, so clients play the hurt sound of the damage the player took.

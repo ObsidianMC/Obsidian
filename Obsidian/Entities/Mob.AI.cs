@@ -599,7 +599,10 @@ public partial class Mob
             await base.DamageAsync(source, amount);
             return;
         }
-        if (IsRemoved || !Alive || source.Level != Level || !float.IsFinite(amount) || amount <= 0
+
+        // The level the hit is dealt in: it lands there or nowhere, as the mob may travel while a hook suspends it.
+        var level = Level;
+        if (IsRemoved || !Alive || source.Level != level || !float.IsFinite(amount) || amount <= 0
             || kind != CombatDamageKind.Void && !CanTakeDamage(attacker))
         {
             return;
@@ -617,8 +620,13 @@ public partial class Mob
         if (!float.IsFinite(amount) || amount <= 0 || IsRemoved || !Alive)
             return;
 
+        // A plugin's hook may have suspended the hit while the mob travelled: then it changes nothing.
+        if (!IsStillHitIn(level, source))
+            return;
+
         var incoming = amount;
         var recentlyHurt = !ignoreHurtCooldown && AiTick - lastDamageTick < 10;
+        VectorD? knockback = null;
         if (recentlyHurt)
         {
             if (amount <= lastDamage)
@@ -627,17 +635,33 @@ public partial class Mob
         }
         else if (!ignoreHurtCooldown && kind != CombatDamageKind.SonicBoom && attacker is not null)
         {
-            var direction = Position - attacker.Position;
-            var horizontal = Math.Sqrt(direction.X * direction.X + direction.Z * direction.Z);
-            var strength = 0.4f * (1 - Math.Clamp(GetAttributeValue("minecraft:generic.knockback_resistance"), 0, 1));
-            if (horizontal > 0.0001f && strength > 0)
-            {
-                // Vanilla only knocks a mob upwards while it's on the ground, so hits can't juggle it in the air.
-                Motion = new VectorD(Motion.X / 2 + direction.X / horizontal * strength,
-                    MovementFlags.HasFlag(MovementFlags.OnGround) ? Math.Min(0.4f, Motion.Y / 2 + strength) : Motion.Y,
-                    Motion.Z / 2 + direction.Z / horizontal * strength);
-            }
+            knockback = KnockbackFrom(attacker);
         }
+
+        // Like vanilla, wolf armour takes the hit, or worn armour wears, before protection reduces what's left, so
+        // these come before the commit; the rest of the hit follows it.
+        var absorbedByEquipment = TryAbsorbDamage(amount, kind);
+        if (absorbedByEquipment) amount = 0;
+        if (applyArmor && !absorbedByEquipment)
+        {
+            var armor = GetAttributeValue("minecraft:generic.armor") + EquipmentArmor;
+            var toughness = GetAttributeValue("minecraft:generic.armor_toughness") + EquipmentToughness;
+            amount = CombatItems.ReduceArmor(amount, armor, toughness,
+                1 - 0.15f * CombatItems.EnchantmentLevel(IncomingWeapon, EnchantmentsRegistry.Breach));
+            foreach (var slot in armorSlots)
+                DamageEquipment(slot, Math.Max(1, (int)(incoming / 4)));
+            DamageEquipment(EquipmentSlot.Body, Math.Max(1, (int)(incoming / 4)));
+        }
+        amount = CombatEffects.Protect(this, amount, kind);
+        var absorbed = Math.Min(AbsorptionHealth, amount);
+        amount -= absorbed;
+
+        var previousHealth = Health;
+        if (!TryCommitDamage(level, source, amount, out var healthTaken))
+            return;
+
+        if (knockback is VectorD motion)
+            Motion = motion;
 
         lastDamage = incoming;
         AcceptedDamageCount++;
@@ -654,24 +678,10 @@ public partial class Mob
         }
         if (!recentlyHurt)
             lastDamageTick = AiTick;
-        var absorbedByEquipment = TryAbsorbDamage(amount, kind);
-        if (absorbedByEquipment) amount = 0;
-        if (applyArmor && !absorbedByEquipment)
-        {
-            var armor = GetAttributeValue("minecraft:generic.armor") + EquipmentArmor;
-            var toughness = GetAttributeValue("minecraft:generic.armor_toughness") + EquipmentToughness;
-            amount = CombatItems.ReduceArmor(amount, armor, toughness,
-                1 - 0.15f * CombatItems.EnchantmentLevel(IncomingWeapon, EnchantmentsRegistry.Breach));
-            foreach (var slot in armorSlots)
-                DamageEquipment(slot, Math.Max(1, (int)(incoming / 4)));
-            DamageEquipment(EquipmentSlot.Body, Math.Max(1, (int)(incoming / 4)));
-        }
-        amount = CombatEffects.Protect(this, amount, kind);
-        var absorbed = Math.Min(AbsorptionHealth, amount);
         AbsorptionHealth -= absorbed;
-        amount -= absorbed;
-        var previousHealth = Health;
-        await base.DamageAsync(source, amount);
+
+        if (healthTaken)
+            await ShowDamageAsync(level, source);
         if (source is IPlayer attackingPlayer && Health < previousHealth)
         {
             attackingPlayer.Statistics.Increment("minecraft:damage_dealt",
@@ -684,6 +694,26 @@ public partial class Mob
         SynchronizeMetadata();
         if (!Alive)
             await KillAsync(source);
+    }
+
+    // The motion a hit from attacker knocks the mob back with, or null for none.
+    private VectorD? KnockbackFrom(IEntity attacker)
+    {
+        var direction = Position - attacker.Position;
+        var horizontal = Math.Sqrt(direction.X * direction.X + direction.Z * direction.Z);
+        var strength = 0.4f * (1 - Math.Clamp(GetAttributeValue("minecraft:generic.knockback_resistance"), 0, 1));
+        var knocked = horizontal > 0.0001f && strength > 0;
+        if (!knocked)
+            return null;
+
+        // Vanilla only knocks a mob upwards while it's on the ground, so hits can't juggle it in the air.
+        var vertical = MovementFlags.HasFlag(MovementFlags.OnGround)
+            ? Math.Min(0.4f, Motion.Y / 2 + strength)
+            : Motion.Y;
+        return new VectorD(
+            Motion.X / 2 + direction.X / horizontal * strength,
+            vertical,
+            Motion.Z / 2 + direction.Z / horizontal * strength);
     }
 
     public override async ValueTask RemoveAsync()

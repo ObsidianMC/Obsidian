@@ -62,6 +62,108 @@ public partial class Living : Entity, ILiving
     }
 
     /// <summary>
+    /// Damages a living entity outright, like <see cref="Entity.DamageAsync"/>, with its health write as the commit
+    /// point (see <see cref="TryCommitDamage"/>). Mobs and players take damage through their own paths, which commit
+    /// the same way.
+    /// </summary>
+    public override async ValueTask DamageAsync(IEntity source, float amount = 1.0f)
+    {
+        var level = this.Level;
+        if (!float.IsFinite(amount) || amount <= 0 || this.Health <= 0 || source.Level != level)
+            return;
+
+        if (this is IPlayer immune && immune.GameMode is GameMode.Creative or GameMode.Spectator)
+            return;
+
+        if (this.TryCommitDamage(level, source, amount, out var healthTaken) && healthTaken)
+            await this.ShowDamageAsync(level, source);
+    }
+
+    /// <summary>
+    /// Whether the entity, and <paramref name="source"/>, are still in <paramref name="level"/>, the level it was hit
+    /// in. A hit checks this again after each await before it changes anything: plugin hooks and item wear may suspend
+    /// it, and the entity may travel meanwhile. Only <see cref="TryCommitDamage"/> keeps it so until the health write.
+    /// </summary>
+    private protected bool IsStillHitIn(ILevel level, IEntity source)
+    {
+        using (TransferLockOf(level).Enter())
+            return this.StillIn(level, source);
+    }
+
+    /// <summary>
+    /// A hit's commit point: under the transfer lock of <paramref name="level"/>, the level the entity was hit in,
+    /// takes <paramref name="amount"/> off its health, unless it or <paramref name="source"/> left that level or it was
+    /// removed. Travel commits under the same lock, so a hit that commits lands in the level it was dealt in.
+    /// </summary>
+    /// <remarks>
+    /// Nothing but the health write happens under the lock: knockback, events, packets, death and drops follow once
+    /// it's released, and only for a committed hit. A hit that isn't committed must change nothing.
+    /// </remarks>
+    /// <param name="healthTaken">
+    /// Whether health was written: not for a hit absorbed entirely, or for an entity that died meanwhile.
+    /// </param>
+    /// <returns>Whether the hit was committed.</returns>
+    private protected bool TryCommitDamage(ILevel level, IEntity source, float amount, out bool healthTaken)
+    {
+        healthTaken = false;
+        using (TransferLockOf(level).Enter())
+        {
+            if (!this.StillIn(level, source))
+                return false;
+
+            if (!float.IsFinite(amount) || amount <= 0 || this.Health <= 0)
+                return true;
+
+            this.Health -= amount;
+            healthTaken = true;
+            return true;
+        }
+    }
+
+    // Call under level's transfer lock. Travel names the new level under the old one's lock, so the entity's level is
+    // what tells a hit it travelled. Not region membership: that lags the position while the entity moves, and a hit
+    // that lands mid-move (stepping onto magma, say) is still a hit in its level.
+    private bool StillIn(ILevel level, IEntity source) =>
+        ReferenceEquals(this.Level, level)
+        && ReferenceEquals(source.Level, level)
+        && this is not Mob { IsRemoved: true };
+
+    /// <summary>
+    /// What a hit that took health shows, once committed (see <see cref="TryCommitDamage"/>) in
+    /// <paramref name="level"/>: its game events, the hurt animation and, for a player, its exhaustion, health and
+    /// death.
+    /// </summary>
+    private protected async ValueTask ShowDamageAsync(ILevel level, IEntity source)
+    {
+        if (level is WorldData.AbstractLevel events)
+        {
+            events.EmitGameEvent(WorldData.MobGameEvent.EntityDamage, this.Position, this);
+            if (this.Health <= 0)
+                events.EmitGameEvent(WorldData.MobGameEvent.EntityDie, this.Position, this);
+        }
+
+        if (this is IPlayer attackedPlayer && !ReferenceEquals(source, this))
+            Wolf.AlertOwnedWolves(attackedPlayer, source);
+
+        var towardSource = Math.Atan2(source.Position.Z - this.Position.Z, source.Position.X - this.Position.X);
+        this.PacketBroadcaster.QueuePacketToLevel(level, new HurtAnimationPacket
+        {
+            EntityId = this.EntityId,
+            Yaw = (float)(towardSource * 180 / Math.PI - this.Yaw)
+        });
+
+        if (this is not IPlayer player)
+            return;
+
+        player.AddExhaustion(0.1f);
+        var health = new SetHealthPacket(Math.Max(0, this.Health), player.FoodLevel, player.FoodSaturationLevel);
+        await player.QueuePacketAsync(health);
+
+        if (!player.Alive)
+            await player.KillAsync(source, ChatMessage.Simple("You died xd"));
+    }
+
+    /// <summary>
     /// Vanilla's <c>Entity.thunderHit</c>: one more tick of fire (eight seconds of it when that brings the count to
     /// zero, which only an entity holding off fire reaches) and five lightning damage.
     /// </summary>
