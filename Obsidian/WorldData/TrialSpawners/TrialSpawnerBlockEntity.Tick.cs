@@ -384,7 +384,7 @@ internal sealed partial class TrialSpawnerBlockEntity
     /// <remarks>
     /// Draws from the level's random in vanilla's order, as the draws decide where mobs appear and what comes next:
     /// the spawn data (when none is picked yet), the position (two doubles for x, an int for y, two doubles for z),
-    /// then the yaw once the position passed its checks.
+    /// the yaw once the position passed its checks, then a bare mob's spawn setup.
     /// </remarks>
     /// <returns>The mob's UUID, or null when it didn't spawn.</returns>
     private Guid? SpawnMob(Trial trial)
@@ -434,9 +434,12 @@ internal sealed partial class TrialSpawnerBlockEntity
             if (!TrialSpawnRules.IsUnobstructed(level, mob))
                 return null;
 
-            // Spawn data that only names the mob gets its natural spawn setup; any more and it's taken as given.
-            var configured = entityData.Count != 1;
-            mob.InitializeAi(finalizeSpawn: !configured);
+            // Spawn data that only names the mob gets its natural spawn setup, from the level's random as vanilla's
+            // finalizeSpawn draws it; any more and it's taken as given. Loading the mob already set up its AI.
+            var bare = entityData.Count == 1;
+            if (bare)
+                mob.FinalizeBareSpawn(level, random);
+
             mob.PersistenceRequired = true;
         }
 

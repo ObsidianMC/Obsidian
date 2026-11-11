@@ -1,4 +1,5 @@
 using Obsidian.API.Inventory;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Entities.AI;
 using Obsidian.WorldData;
 
@@ -33,6 +34,29 @@ public partial class Skeleton : PathfinderMob
         targets.AddGoal(3, new NearestAttackableTargetGoal(this, entity => entity.Type == EntityType.IronGolem));
         targets.AddGoal(3, new NearestAttackableTargetGoal(this, entity => entity.Type == EntityType.Turtle &&
             entity is IAgeable { IsBaby: true } && entity.MovementFlags.HasFlag(MovementFlags.OnGround)));
+    }
+
+    /// <summary>
+    /// Vanilla's <c>AbstractSkeleton.finalizeSpawn</c> with the level's random, in vanilla's order: the base spawn
+    /// setup, armour, the bow, their enchantments, picking up loot and, on Halloween, a pumpkin.
+    /// </summary>
+    internal override void FinalizeBareSpawn(AbstractLevel level, IRandomSource random)
+    {
+        var special = SpecialDifficulty;
+        FinalizeMobSpawnFromLevel(random);
+        PopulateDefaultArmor(random.NextFloat, random.NextInt, special);
+        SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(ItemsRegistry.Bow));
+        PopulateEquipmentEnchantmentsFromLevel(random, special);
+        CanPickUpLoot = random.NextFloat() < 0.55f * special;
+
+        var bareHead = GetEquipment(EquipmentSlot.Helmet).IsAir;
+        var today = level.TimeProvider.GetLocalNow().DateTime;
+        if (bareHead && MobSpawner.IsHalloween(today) && random.NextFloat() < 0.25f)
+        {
+            var head = random.NextFloat() < 0.1f ? ItemsRegistry.JackOLantern : ItemsRegistry.CarvedPumpkin;
+            SetEquipment(EquipmentSlot.Helmet, ItemsRegistry.GetSingleItem(head));
+            SetEquipmentDropChance(EquipmentSlot.Helmet, 0);
+        }
     }
 
     protected override void FinalizeSpawn()

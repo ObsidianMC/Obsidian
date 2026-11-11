@@ -67,8 +67,7 @@ public sealed partial class ZombifiedPiglin : Zombie
         SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(weapon));
 
         // Mob.populateDefaultEquipmentEnchantments: the weapon's chance; the empty armour slots draw nothing.
-        if (random.NextFloat() < 0.25f * special)
-            EnchantSpawnedWeapon(random, special);
+        this.EnchantSpawnedEquipmentFromLevel(random, special);
 
         var bareHead = GetEquipment(EquipmentSlot.Helmet).IsAir;
         var today = level.TimeProvider.GetLocalNow().DateTime;
@@ -130,32 +129,6 @@ public sealed partial class ZombifiedPiglin : Zombie
         chicken.IsChickenJockey = true;
         return chicken;
     }
-
-    // Vanilla's enchantSpawnedEquipment through the mob_spawn_equipment provider (EnchantmentsByCostWithDifficulty,
-    // costs 5 to 5 + 17 x the special multiplier): a cost drawn between them, then the enchantments vanilla's
-    // selectEnchantment picks for it from the on_mob_spawn_equipment tag, in the tag's order.
-    private void EnchantSpawnedWeapon(IRandomSource random, float special)
-    {
-        const int MinimumCost = 5;
-        const int CostSpan = 17;
-
-        var maximumCost = MinimumCost + (int)(special * CostSpan);
-        var cost = random.NextInt(maximumCost - MinimumCost + 1) + MinimumCost;
-        var weapon = GetEquipment(EquipmentSlot.MainHand);
-        foreach (var (enchantment, enchantmentLevel) in EnchantmentHelper.SelectEnchantments(random, weapon, cost,
-            spawnEquipmentEnchantments.Value))
-        {
-            EnchantmentHelper.Enchant(weapon, enchantment, enchantmentLevel);
-        }
-
-        SetEquipment(EquipmentSlot.MainHand, weapon);
-    }
-
-    // The on_mob_spawn_equipment tag's enchantments, in the tag's order, which the weighted picks depend on.
-    private static readonly Lazy<EnchantmentDefinition[]> spawnEquipmentEnchantments = new(() =>
-        TagsRegistry.Enchantment.OnMobSpawnEquipment.Entries
-            .Select(id => EnchantmentsRegistry.All.First(enchantment => enchantment.Id == id))
-            .ToArray());
 
     /// <summary>
     /// The ambient sound vanilla's <c>EntityType.spawn</c> plays for a new mob: at its position, with its voice's

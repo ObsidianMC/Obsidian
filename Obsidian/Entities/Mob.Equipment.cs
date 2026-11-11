@@ -53,25 +53,45 @@ public partial class Mob
     private float EquipmentArmor => armorSlots.Sum(slot => GetArmorStats(GetEquipment(slot), slot).Armor) + GetArmorStats(GetEquipment(EquipmentSlot.Body), EquipmentSlot.Body).Armor;
     private float EquipmentToughness => armorSlots.Sum(slot => GetArmorStats(GetEquipment(slot), slot).Toughness);
 
-    protected void PopulateDefaultArmor()
+    protected void PopulateDefaultArmor() =>
+        this.PopulateDefaultArmor(this.Random.NextSingle, this.Random.Next, this.SpecialDifficulty);
+
+    /// <summary>
+    /// Vanilla's <c>Mob.populateDefaultEquipmentSlots</c>: a chance of armour, of a tier that may go up three times,
+    /// from the helmet down, each piece after the first a chance to stop. Its draws, in vanilla's order, come from
+    /// <paramref name="nextFloat"/> and <paramref name="nextInt"/>.
+    /// </summary>
+    protected void PopulateDefaultArmor(Func<float> nextFloat, Func<int, int> nextInt, float special)
     {
-        if (Random.NextSingle() >= 0.15f * SpecialDifficulty)
+        if (nextFloat() >= 0.15f * special)
             return;
-        var tier = Random.Next(3);
+
+        var tier = nextInt(3);
         for (var attempt = 0; attempt < 3; attempt++)
         {
-            if (Random.NextSingle() < 0.1087f)
+            if (nextFloat() < 0.1087f)
                 tier++;
         }
-        ReadOnlySpan<string> materials = ["leather", "golden", "copper", "chainmail", "iron", "diamond"];
+
+        // Vanilla's getEquipmentForSlot, by tier.
+        ReadOnlySpan<string> materials = ["leather", "copper", "golden", "chainmail", "iron", "diamond"];
+        var stopChance = Level.LevelData.Difficulty == Difficulty.Hard ? 0.1f : 0.25f;
         for (var index = 0; index < armorSlots.Length; index++)
         {
-            if (index > 0 && Random.NextSingle() < (Level.LevelData.Difficulty == Difficulty.Hard ? 0.1f : 0.25f))
+            if (index > 0 && nextFloat() < stopChance)
                 break;
+
             var slot = armorSlots[index];
             if (!GetEquipment(slot).IsAir)
                 continue;
-            var name = slot switch { EquipmentSlot.Helmet => "helmet", EquipmentSlot.Chestplate => "chestplate", EquipmentSlot.Leggings => "leggings", _ => "boots" };
+
+            var name = slot switch
+            {
+                EquipmentSlot.Helmet => "helmet",
+                EquipmentSlot.Chestplate => "chestplate",
+                EquipmentSlot.Leggings => "leggings",
+                _ => "boots"
+            };
             SetEquipment(slot, ItemsRegistry.GetSingleItem($"minecraft:{materials[tier]}_{name}"));
         }
     }
