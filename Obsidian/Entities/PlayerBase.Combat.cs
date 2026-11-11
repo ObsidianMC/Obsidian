@@ -240,7 +240,7 @@ public partial class PlayerBase
     {
         if (!Alive || Respawning || GameMode == GameMode.Spectator || target.Level != Level || ReferenceEquals(target, this))
             return false;
-        var eye = Position + new VectorD(0, 1.62, 0);
+        var eye = EyePosition(this);
         var range = CombatItems.Component(item ?? GetHeldItem(), "attack_range");
         var reach = range.ValueKind == System.Text.Json.JsonValueKind.Object
             ? CombatItems.Number(range, GameMode == GameMode.Creative ? "max_creative_reach" : "max_reach", 4.5f)

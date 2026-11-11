@@ -129,7 +129,21 @@ public partial class Entity : IEquatable<Entity>, IEntity
     // Whether ReadNbt takes the UUID a save holds; a player keeps their profile's.
     private protected virtual bool ReadsSavedUuid => true;
 
-    public Pose Pose { get; set; } = Pose.Standing;
+    public Pose Pose
+    {
+        get;
+        set
+        {
+            if (field == value)
+                return;
+
+            field = value;
+            // Players' dimensions depend on their pose. Refresh even without movement, including plugin changes,
+            // so stored-box readers such as pistons see the same box as collision and block contacts.
+            if (this is PlayerBase)
+                this.BoundingBox = this.Dimension.CreateBBFromPosition(this.Position);
+        }
+    } = Pose.Standing;
 
     public virtual BoundingBox BoundingBox { get; protected set; } = new(VectorD.Zero, VectorD.Zero);
     public virtual EntityDimension Dimension { get; protected set; } = EntityDimension.Zero;

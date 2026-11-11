@@ -152,7 +152,8 @@ public final class BlockContactFixtures {
                     event(level, event, entities);
                 }
             }
-            if (tick > 0) {
+            // Pose refreshes must be observed without Entity.move refreshing the box for them.
+            if (tick > 0 && !input.has("stationaryPlayer")) {
                 for (var entity : entities.values()) {
                     if (entity.isRemoved()) {
                         continue;
@@ -163,6 +164,9 @@ public final class BlockContactFixtures {
                 }
             }
             var checkpoint = checkpoint(level, min, max, tick, entities);
+            if (input.has("stationaryPlayer")) {
+                recordPlayerState(checkpoint, entities);
+            }
             if (input.has("recordSafeFallDistance")) {
                 for (var entry : entities.entrySet()) {
                     var living = (net.minecraft.world.entity.LivingEntity)entry.getValue();
@@ -253,6 +257,15 @@ public final class BlockContactFixtures {
                 level.addFreshEntity(entity);
             }
             entities.put(event.get("summon").getAsString(), entity);
+        } else if (event.has("updatePose")) {
+            var player = (ServerPlayer)entities.get(event.get("updatePose").getAsString());
+            player.setShiftKeyDown(event.get("sneaking").getAsBoolean());
+            var update = net.minecraft.world.entity.player.Player.class.getDeclaredMethod("updatePlayerPose");
+            update.setAccessible(true);
+            update.invoke(player);
+            if (event.has("tickAir")) {
+                player.baseTick();
+            }
         } else if (event.has("removeJumpBoost")) {
             var living = (net.minecraft.world.entity.LivingEntity)entities.get(
                 event.get("removeJumpBoost").getAsString());
@@ -263,6 +276,20 @@ public final class BlockContactFixtures {
             entities.get(event.get("velocity").getAsString()).setDeltaMovement(vec(event.getAsJsonArray("motion")));
         } else {
             throw new IllegalArgumentException("Unknown contact event " + event);
+        }
+    }
+
+    private static void recordPlayerState(JsonObject checkpoint, Map<String, Entity> entities) {
+        for (var entry : entities.entrySet()) {
+            var player = (ServerPlayer)entry.getValue();
+            var observation = checkpoint.getAsJsonObject("observations").getAsJsonObject(entry.getKey());
+            var box = player.getBoundingBox();
+            observation.addProperty("pose", player.getPose().name());
+            observation.add("boxMin", vector(new Vec3(box.minX, box.minY, box.minZ)));
+            observation.add("boxMax", vector(new Vec3(box.maxX, box.maxY, box.maxZ)));
+            observation.add("eyePosition", vector(player.getEyePosition()));
+            observation.addProperty("swimming", player.isSwimming());
+            observation.addProperty("air", player.getAirSupply());
         }
     }
 

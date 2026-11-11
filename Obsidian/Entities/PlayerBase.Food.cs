@@ -213,14 +213,7 @@ public partial class PlayerBase
     private async ValueTask TickAirSupplyAsync()
     {
         var previous = Air;
-        var eyeHeight = (Swimming, Sneaking) switch
-        {
-            (true, _) => 0.4,
-            (_, true) => 1.27,
-            _ => 1.62,
-        };
-
-        var eye = Position + new VectorD(0, eyeHeight, 0);
+        var eye = EyePosition(this);
         var terrain = new Obsidian.Entities.AI.MobTerrain(Level);
         // Vanilla's LivingEntity.baseTick: a bubble column at the eye refills air like open air, though it is water.
         if (GameMode is GameMode.Survival or GameMode.Adventure

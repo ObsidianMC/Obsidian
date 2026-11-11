@@ -608,7 +608,7 @@ scenarios keep what they hold.
 gives its number of `ticks` and starts with empty `checkpoints`; `CaptureCases` records only the exact names supplied,
 and the other cases keep their recordings.
 
-The 115 `contactMoves` scenarios use `Java/BlockContactFixtures.java` on a real dedicated server, with the same
+The 117 `contactMoves` scenarios use `Java/BlockContactFixtures.java` on a real dedicated server, with the same
 scratch-only block-write instrumentation as block uses. They drive native `Entity.move` and
 `applyEffectsFromBlocks` with controlled velocities: falls, stationary contacts, walking and external pushes.
 This boundary exercises native collision, fall accounting, restitution and block hooks without AI or travel forces.
@@ -630,6 +630,14 @@ summoned; the replay sets the same start position. The `speed_*`, `jump_*`, `cob
 an entity is in and the one below its support), being stuck in cobwebs, berry bushes and powder snow, berry bush
 damage, powder snow and scaffolding collision for the entity moving, slime's step damping, and posed player boxes on
 tripwires and plates. Their boxes are one row of three cells, the smallest that holds each setup.
+
+`stationaryPlayer: true` skips movement entirely so that it cannot hide a stale stored bounding box. An
+`updatePose` event names a player, sets its `sneaking` flag and asks vanilla to choose its pose; `tickAir: true`
+also runs its base tick (the replay runs the player's ordinary tick). These cases record and compare pose,
+both box corners, eye position, the swimming flag and air supply alongside the usual observations. The replay
+checks both the stored and current box, and both eye-position readers. `pose_stationary_crouch_stand` checks
+shrinking and growing without movement. `pose_stationary_auto_crawl_water` checks a non-swimming player forced
+to crawl beneath a ceiling in water: air drops to 299 and then 298 at the crawling eye height.
 
 From checkpoint zero onwards, the replay compares every recorded block, position, velocity, fall distance,
 grounded flag, health and last accepted damage type; ordered block writes with their exact flags; unexpected

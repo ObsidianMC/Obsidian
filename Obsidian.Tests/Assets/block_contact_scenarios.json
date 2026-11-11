@@ -65136,6 +65136,511 @@
     }
    ],
    "nextRandom": -1155484576
+  },
+  {
+   "name": "pose_stationary_crouch_stand",
+   "contactMoves": true,
+   "stationaryPlayer": true,
+   "min": [
+    0,
+    64,
+    0
+   ],
+   "max": [
+    0,
+    65,
+    0
+   ],
+   "setup": [],
+   "seed": 1,
+   "ticks": 2,
+   "entities": [
+    {
+     "tick": 0,
+     "summon": "player",
+     "type": "minecraft:player",
+     "pos": [
+      0.5,
+      64,
+      0.5
+     ],
+     "motion": [
+      0,
+      0,
+      0
+     ],
+     "noGravity": true,
+     "pose": "STANDING",
+     "entitySeed": 1
+    },
+    {
+     "tick": 1,
+     "updatePose": "player",
+     "sneaking": true
+    },
+    {
+     "tick": 2,
+     "updatePose": "player",
+     "sneaking": false
+    }
+   ],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "player": {
+       "position": [
+        0.5,
+        64.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": false,
+       "health": 20.0,
+       "damageType": null,
+       "pose": "STANDING",
+       "boxMin": [
+        0.19999998807907104,
+        64.0,
+        0.19999998807907104
+       ],
+       "boxMax": [
+        0.800000011920929,
+        65.79999995231628,
+        0.800000011920929
+       ],
+       "eyePosition": [
+        0.5,
+        65.62000000476837,
+        0.5
+       ],
+       "swimming": false,
+       "air": 300
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": []
+    },
+    {
+     "tick": 1,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "player": {
+       "position": [
+        0.5,
+        64.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": false,
+       "health": 20.0,
+       "damageType": null,
+       "pose": "CROUCHING",
+       "boxMin": [
+        0.19999998807907104,
+        64.0,
+        0.19999998807907104
+       ],
+       "boxMax": [
+        0.800000011920929,
+        65.5,
+        0.800000011920929
+       ],
+       "eyePosition": [
+        0.5,
+        65.26999998092651,
+        0.5
+       ],
+       "swimming": false,
+       "air": 300
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": []
+    },
+    {
+     "tick": 2,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "player": {
+       "position": [
+        0.5,
+        64.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": false,
+       "health": 20.0,
+       "damageType": null,
+       "pose": "STANDING",
+       "boxMin": [
+        0.19999998807907104,
+        64.0,
+        0.19999998807907104
+       ],
+       "boxMax": [
+        0.800000011920929,
+        65.79999995231628,
+        0.800000011920929
+       ],
+       "eyePosition": [
+        0.5,
+        65.62000000476837,
+        0.5
+       ],
+       "swimming": false,
+       "air": 300
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": []
+    }
+   ],
+   "nextRandom": -1155869325
+  },
+  {
+   "name": "pose_stationary_auto_crawl_water",
+   "contactMoves": true,
+   "stationaryPlayer": true,
+   "min": [
+    0,
+    64,
+    0
+   ],
+   "max": [
+    0,
+    65,
+    0
+   ],
+   "setup": [
+    {
+     "pos": [
+      0,
+      64,
+      0
+     ],
+     "state": "minecraft:water[level=0]"
+    },
+    {
+     "pos": [
+      0,
+      65,
+      0
+     ],
+     "state": "minecraft:stone"
+    }
+   ],
+   "seed": 1,
+   "ticks": 2,
+   "entities": [
+    {
+     "tick": 0,
+     "summon": "player",
+     "type": "minecraft:player",
+     "pos": [
+      0.5,
+      64,
+      0.5
+     ],
+     "motion": [
+      0,
+      0,
+      0
+     ],
+     "noGravity": true,
+     "pose": "STANDING",
+     "entitySeed": 1
+    },
+    {
+     "tick": 1,
+     "updatePose": "player",
+     "sneaking": false,
+     "tickAir": true
+    },
+    {
+     "tick": 2,
+     "updatePose": "player",
+     "sneaking": false,
+     "tickAir": true
+    }
+   ],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:water[level=0]"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:stone"
+      }
+     ],
+     "observations": {
+      "player": {
+       "position": [
+        0.5,
+        64.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": false,
+       "health": 20.0,
+       "damageType": null,
+       "pose": "STANDING",
+       "boxMin": [
+        0.19999998807907104,
+        64.0,
+        0.19999998807907104
+       ],
+       "boxMax": [
+        0.800000011920929,
+        65.79999995231628,
+        0.800000011920929
+       ],
+       "eyePosition": [
+        0.5,
+        65.62000000476837,
+        0.5
+       ],
+       "swimming": false,
+       "air": 300
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": []
+    },
+    {
+     "tick": 1,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:water[level=0]"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:stone"
+      }
+     ],
+     "observations": {
+      "player": {
+       "position": [
+        0.5,
+        64.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": false,
+       "health": 20.0,
+       "damageType": null,
+       "pose": "SWIMMING",
+       "boxMin": [
+        0.19999998807907104,
+        64.0,
+        0.19999998807907104
+       ],
+       "boxMax": [
+        0.800000011920929,
+        64.60000002384186,
+        0.800000011920929
+       ],
+       "eyePosition": [
+        0.5,
+        64.40000000596046,
+        0.5
+       ],
+       "swimming": false,
+       "air": 299
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": []
+    },
+    {
+     "tick": 2,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:water[level=0]"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:stone"
+      }
+     ],
+     "observations": {
+      "player": {
+       "position": [
+        0.5,
+        64.0,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": false,
+       "health": 20.0,
+       "damageType": null,
+       "pose": "SWIMMING",
+       "boxMin": [
+        0.19999998807907104,
+        64.0,
+        0.19999998807907104
+       ],
+       "boxMax": [
+        0.800000011920929,
+        64.60000002384186,
+        0.800000011920929
+       ],
+       "eyePosition": [
+        0.5,
+        64.40000000596046,
+        0.5
+       ],
+       "swimming": false,
+       "air": 298
+      }
+     },
+     "drops": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": []
+    }
+   ],
+   "nextRandom": -1155869325
   }
  ]
 }
