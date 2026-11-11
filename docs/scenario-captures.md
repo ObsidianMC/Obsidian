@@ -201,8 +201,8 @@ replaces only what vanilla produced.
 - `ticking_blocks.json` (`VanillaTickingBlocks.ReplayTickingBlockReference`) records single block routines from
   `Java/TickingBlockFixtures.java`, against a bounded block view of the case's setup with a seeded, recording random
   as both the routine's and the level's: a random tick (only of a state that random-ticks), a scheduled tick, a
-  `Level.setBlock` with its on-place and neighbour shape updates (not neighbour notifications), or a falling block's
-  landing. Each case records the draws, block writes, scheduled block and fluid ticks with their delays, level events,
+  `Level.setBlock` with its on-place and neighbour shape updates (not neighbour notifications), a falling block's
+  landing, or a sculk catalyst taking mobs' deaths and spreading their charge (`catalyst`). Each case records the draws, block writes, scheduled block and fluid ticks with their delays, level events,
   game events, the entities added (a falling block's state and stalactite damage) and the blocks destroyed. The cases
   cover pointed dripstone growing (the block and water source above, column length, stalagmite search), dripping
   water and lava into each kind of cauldron or drying mud into clay, a waterlogged block counting as water (above
@@ -213,7 +213,12 @@ replaces only what vanilla produced.
   beside them schedule that; coral blocks, plants, fans and wall fans dying dry or staying by water, scheduling their
   death when placed or when a neighbour changes, and breaking when their support goes; chorus plants staying, breaking
   and connecting as their support and neighbours change; an oak door whose stone floor becomes soul sand (it stays)
-  or oak leaves (both halves break). The replay runs each case through Obsidian's generated
+  or oak leaves (both halves break); and a sculk catalyst taking deaths (with and without experience, two that merge,
+  one in the air, one beside water, and more than a cursor holds) and ticking its block entity until the charge is
+  spent or mid-spread, recording its charge cursors afterwards (`cursors`). The catalyst probe hands its listener each
+  death as `handleGameEvent` takes a mob's (charge, then the bloom), and the replay offers it through
+  `AbstractLevel.OfferDeathToSculkCatalysts`. Its charge particles' level events follow vanilla's hash map order. The
+  replay runs each case through Obsidian's generated
   owners, or a live block change, in its own world, and compares everything but the game events. Obsidian destroys
   blocks in the tick's entity phase, so a case that destroys one runs the world tick before comparing, keeping the
   recording random active. Ordered writes compare every flag bit; destruction compares state and drops intent;

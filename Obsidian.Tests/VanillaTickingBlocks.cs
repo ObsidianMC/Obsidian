@@ -138,6 +138,9 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
             case "landing":
                 await LandAsync(differences, probe, world, origin);
                 break;
+            case "catalyst":
+                Catalyst(differences, probe, world, origin);
+                break;
             case "findTip":
                 var tip = SulfurSpikeBehavior.FindTip(world.BlockUpdates, origin, world.BlockUpdates.GetBlock(origin),
                     probe.GetProperty("maxLength").GetInt32(), probe.GetProperty("includeMerged").GetBoolean());
@@ -234,6 +237,58 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
         }
 
         behavior.Tick(world.BlockUpdates, origin, block, random);
+    }
+
+    // The sculk catalyst at the origin takes each death as a mob dying there would offer it, then its block entity
+    // ticks; its charge cursors must be vanilla's afterwards.
+    private static void Catalyst(List<string> differences, JsonElement probe, WorldData.World world, Vector origin)
+    {
+        if (world.GetResidentBlockEntity(origin) is not SculkCatalystBlockEntity catalyst)
+        {
+            differences.Add("The catalyst has no block entity");
+            return;
+        }
+
+        foreach (var death in probe.GetProperty("deaths").EnumerateArray())
+        {
+            var at = death.GetProperty("pos");
+            var position = new VectorD(at[0].GetDouble(), at[1].GetDouble(), at[2].GetDouble());
+            var experience = death.GetProperty("experience").GetInt32();
+            var taken = world.OfferDeathToSculkCatalysts(position, () => experience, out _);
+            Expect(differences, "death taken", true, taken);
+        }
+
+        var ticks = probe.GetProperty("catalystTicks").GetInt32();
+        for (var tick = 0; tick < ticks; tick++)
+            catalyst.Tick(world);
+
+        var vanilla = probe.GetProperty("cursors").EnumerateArray().Select(VanillaCursor);
+        var obsidian = catalyst.Charge.Cursors.Select(ObsidianCursor);
+        ExpectSequence(differences, "cursors", vanilla, obsidian);
+    }
+
+    private static string VanillaCursor(JsonElement cursor)
+    {
+        var facings = cursor.GetProperty("facings");
+        var faces = facings.ValueKind == JsonValueKind.Null
+            ? "null"
+            : string.Join(",", facings.EnumerateArray().Select(face => face.GetString()));
+
+        return $"{Position(cursor.GetProperty("pos"))} charge {cursor.GetProperty("charge").GetInt32()} "
+            + $"decay {cursor.GetProperty("decayDelay").GetInt32()} update {cursor.GetProperty("updateDelay").GetInt32()} "
+            + $"facings {faces}";
+    }
+
+    private static string ObsidianCursor(SculkCharge.Cursor cursor)
+    {
+        var faces = cursor.Facings is int packed
+            ? string.Join(",", Enum.GetValues<BlockFace>()
+                .Where(face => (packed >> (int)face & 1) != 0)
+                .Select(face => face.ToString().ToLowerInvariant()))
+            : "null";
+
+        return $"{cursor.Position} charge {cursor.Charge} decay {cursor.DecayDelay} update {cursor.UpdateDelay} "
+            + $"facings {faces}";
     }
 
     // A falling block of the case's state dropped onto the origin from a few blocks up, ticked until it lands, and

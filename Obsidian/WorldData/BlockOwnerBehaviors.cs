@@ -139,6 +139,8 @@ internal static class TickBehaviors
     internal static IScheduledTickBehavior DriedGhastBlock { get; } = new DriedGhastBehavior();
 
     internal static IScheduledTickBehavior FrostedIceBlock { get; } = new FrostedIceBlockBehavior();
+
+    internal static IScheduledTickBehavior SculkCatalystBlock { get; } = new SculkCatalystBlockBehavior();
 }
 
 /// <summary>

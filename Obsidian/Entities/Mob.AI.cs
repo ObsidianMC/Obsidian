@@ -349,8 +349,11 @@ public partial class Mob
             if (IsRemoved) return;
             if (++deathTicks >= DeathDuration)
             {
-                if (AiTick - lastPlayerHurtTick <= 120 && Level.LevelData.GetBooleanRule("mob_drops"))
+                if (!ExperienceConsumed && AiTick - lastPlayerHurtTick <= 120
+                    && Level.LevelData.GetBooleanRule("mob_drops"))
+                {
                     Level.SpawnExperienceOrbs(Position, (short)GetExperienceReward());
+                }
                 await RemoveAsync();
             }
             return;
@@ -661,6 +664,12 @@ public partial class Mob
     protected virtual ValueTask OnDeathAsync(IEntity source) => default;
     protected virtual int GetExperienceReward() => 0;
 
+    /// <summary>
+    /// Whether a sculk catalyst took this mob's experience when it died, so it drops none (vanilla's
+    /// <c>wasExperienceConsumed</c>).
+    /// </summary>
+    internal bool ExperienceConsumed { get; private set; }
+
     internal void SendEntityEvent(byte entityEvent) => PacketBroadcaster.QueuePacketToLevelInRange(Level, Position,
         new EntityEventPacket { EntityId = EntityId, Event = entityEvent }, EntityId);
 
@@ -677,6 +686,16 @@ public partial class Mob
         deathStarted = true;
         if (source is IPlayer killingPlayer)
             await killingPlayer.RecordProgressKillAsync(this);
+
+        // Vanilla's entity_die reaches sculk catalysts before the mob drops its loot: one may take its experience,
+        // and the player who last hurt the mob earns kill_mob_near_sculk_catalyst when it becomes charge.
+        if (Level is AbstractLevel catalysts
+            && catalysts.OfferDeathToSculkCatalysts(Position, GetExperienceReward, out var charged))
+        {
+            ExperienceConsumed = true;
+            if (charged && RecentPlayerAttacker is PlayerBase attacker)
+                await attacker.FireProgressAsync("kill_mob_near_sculk_catalyst", entity: this);
+        }
         goals.Cancel();
         TargetGoals.Cancel();
         (Navigator as Navigator)?.Stop();
