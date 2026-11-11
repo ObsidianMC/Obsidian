@@ -4,9 +4,14 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.authlib.GameProfile;
 import io.netty.channel.ChannelFutureListener;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.Month;
+import java.time.MonthDay;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -43,6 +48,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.server.players.PlayerList;
 import net.minecraft.util.ProblemReporter;
+import net.minecraft.util.SpecialDates;
 import net.minecraft.util.profiling.Profiler;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.Difficulty;
@@ -86,6 +92,9 @@ import net.minecraft.world.phys.Vec3;
  * order: vanilla saves them from a hash set whose order changes between runs. Tracked mobs are named by the order they
  * spawned in, as their UUIDs come from their own unseeded randoms.
  *
+ * <p>The captures are taken as on {@link #CapturedOn}, which isn't Halloween: a bare skeleton or zombie draws once
+ * more for a pumpkin on Halloween, and the replay sets its clock to the same day.
+ *
  * <p>Natural spawning would shuffle chunks with the level's random every tick, so the game rule stays off; the
  * spawner uses its test override (vanilla's own) to spawn anyway, except in the cases that test the rules.
  *
@@ -113,6 +122,9 @@ public final class TrialSpawnerFixtures {
     // floor, out of the sun, so that a mob with its AI never burns there by its own random.
     private static final int LeaveDepth = 60;
 
+    // The day vanilla's SpecialDates take today to be, which the replay's clock reads too.
+    private static final LocalDate CapturedOn = LocalDate.of(2026, 6, 1);
+
     // The listener floats this far above the origin: a spectator, which spawners never detect.
     private static final Vec3 ListenerOffset = new Vec3(0.5, 10, 0.5);
 
@@ -127,6 +139,7 @@ public final class TrialSpawnerFixtures {
         var selected = args.length > 1 && !args[1].isBlank() ? Set.of(args[1].split("\\+")) : Set.<String>of();
 
         try {
+            runOn(CapturedOn);
             startServer();
             level = server.overworld();
             serverThread = server.submit(Thread::currentThread).join();
@@ -1032,6 +1045,28 @@ public final class TrialSpawnerFixtures {
                 ? "none" : BuiltInRegistries.ENTITY_TYPE.getKey(context.sourceEntity().getType()).toString();
             events.add(name + " " + block.getX() + "," + block.getY() + "," + block.getZ() + " " + source);
             return true;
+        }
+    }
+
+    // Makes vanilla's SpecialDates.isHalloween answer as it would on date: it compares today's local date with its
+    // HALLOWEEN constant, so the probe moves the constant by as many days as date is from today. The comparison, and
+    // the code reading it, stay vanilla's. (As EyeblossomGhastPortalFixtures does.)
+    private static void runOn(LocalDate date) throws Exception {
+        SpecialDates.isHalloween();
+        var today = LocalDate.now();
+        var halloween = LocalDate.of(date.getYear(), Month.OCTOBER, 31);
+        var shifted = today.plusDays(ChronoUnit.DAYS.between(date, halloween));
+        var field = SpecialDates.class.getField("HALLOWEEN");
+        var unsafeField = Class.forName("sun.misc.Unsafe").getDeclaredField("theUnsafe");
+        unsafeField.setAccessible(true);
+        var unsafe = unsafeField.get(null);
+        var type = unsafe.getClass();
+        var base = type.getMethod("staticFieldBase", Field.class).invoke(unsafe, field);
+        var offset = (long)type.getMethod("staticFieldOffset", Field.class).invoke(unsafe, field);
+        type.getMethod("putObject", Object.class, long.class, Object.class)
+            .invoke(unsafe, base, offset, MonthDay.from(shifted));
+        if (SpecialDates.isHalloween() != MonthDay.from(date).equals(MonthDay.of(Month.OCTOBER, 31))) {
+            throw new IllegalStateException("Could not move vanilla's Halloween to " + date);
         }
     }
 }

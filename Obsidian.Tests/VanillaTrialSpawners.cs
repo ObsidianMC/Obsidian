@@ -13,6 +13,7 @@ using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.ChunkData;
 using Obsidian.Commands;
 using Obsidian.Entities;
+using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
@@ -43,6 +44,10 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
 
     // How far a mob that leaves is moved down, as the probe moves it.
     private const int LeaveDepth = 60;
+
+    // The day the probe tells vanilla it is (TrialSpawnerFixtures.CapturedOn), which isn't Halloween: a bare skeleton
+    // or zombie draws for a pumpkin on Halloween, so the replay's clock must read the same day.
+    private static readonly DateOnly CapturedOn = new(2026, 6, 1);
 
     // Quiet writes, as the probe's setup: no neighbour or shape updates and no on-place.
     private const BlockUpdateFlags Quiet = BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace;
@@ -96,7 +101,7 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
     {
         await using var context = TestServerFactory.CreateServer($"bare-wither-{Guid.NewGuid():N}");
         var level = context.World;
-        level.TimeProvider = new NoonUtc(new DateOnly(2026, 6, 1));
+        level.TimeProvider = new NoonUtc(CapturedOn);
         var wither = new WitherSkeleton { Level = level };
         var random = new LegacyRandomSource(9009);
 
@@ -113,6 +118,39 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
         new WitherSkeleton { Level = level }.FinalizeMobSpawnFromLevel(expected);
         expected.NextFloat();
         Assert.Equal(expected.State, random.State);
+    }
+
+    /// <summary>
+    /// Obsidian-only risk: a trial spawner's sight line is a visual clip, which vanilla runs through a chunk it loads
+    /// on the way. Obsidian can't wait for one under the tick's locks, so a line that reaches a chunk that isn't
+    /// loaded says so, and the spawner counts it as blocked; one through the void air above the level goes on, as
+    /// vanilla's does.
+    /// </summary>
+    [Fact]
+    public async Task SightLinesStopAtUnloadedChunksAndPassThroughTheVoid()
+    {
+        await using var context = TestServerFactory.CreateServer($"trial-sight-{Guid.NewGuid():N}");
+        var level = context.World;
+        WorldBlockEntities.AddEmptyChunk(level);
+        Assert.Null(level.GetLoadedChunk(40, 0));
+        var terrain = new MobTerrain(level);
+        var spawner = new VectorD(8.5, 70.5, 8.5);
+
+        Assert.Null(terrain.RaycastVisual(new VectorD(3.5, 70.5, 12.5), spawner, out var unloaded));
+        Assert.False(unloaded);
+
+        Assert.Null(terrain.RaycastVisual(new VectorD(648.5, 70.5, 8.5), spawner, out unloaded));
+        Assert.True(unloaded);
+
+        var aboveTheLevel = new VectorD(8.5, level.MinY + level.Height + 3.5, 8.5);
+        Assert.Null(terrain.RaycastVisual(aboveTheLevel, spawner, out unloaded));
+        Assert.False(unloaded);
+
+        await level.SetBlockAsync(new Vector(8, 100, 8), BlocksRegistry.Stone);
+        var hit = terrain.RaycastVisual(aboveTheLevel, spawner, out unloaded);
+        Assert.False(unloaded);
+        Assert.NotNull(hit);
+        Assert.Equal(new Vector(8, 100, 8), hit.Value.Position);
     }
 
     /// <summary>A clock that reads noon of <paramref name="date"/>, in a local time zone of UTC.</summary>
@@ -714,6 +752,7 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
             world.LevelData.GameRules["advance_weather"] = "false";
             world.LevelData.Raining = false;
             world.LevelData.Thundering = false;
+            world.TimeProvider = new NoonUtc(CapturedOn);
 
             Assert.True(CodecRegistry.TryGetBiome("minecraft:plains", out var plains));
             var replay = new TrialWorld(context, caseCount);

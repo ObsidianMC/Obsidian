@@ -3,7 +3,7 @@
 **Status:** partial. Trial spawners and vaults are typed block entities that load and save vanilla 26.3's data
 exactly, and a trial spawner runs vanilla's trial: it detects players, spawns its waves from its normal config, tracks
 its mobs, ejects rewards and cools down. Checked against vanilla by `trial_spawners.json` (see
-[scenario captures](../scenario-captures.md)), whose 13 trial cases match every tick without pins, and whose
+[scenario captures](../scenario-captures.md)), whose 19 trial cases match every tick without pins, and whose
 trial chamber's 51 trial spawners and vaults load and save back unchanged. Obsidian keeps a config naming a
 `trial_spawner` registry entry it doesn't have (perhaps a data pack's), and saves it again, where vanilla drops it; the
 spawner uses the default config meanwhile, as vanilla does. What's left:
@@ -23,11 +23,17 @@ spawner uses the default config meanwhile, as vanilla does. What's left:
 
 ## Spawning
 
-- **Bare spawn data's spawn setup for other mobs.** Spawn data that only names its mob (as the trial chambers' do)
-  gets vanilla's spawn setup from the level's random for skeletons, strays, bogged and parched
-  (`AbstractSkeleton.finalizeSpawn`: armour, a bow, enchantments, picking up loot, a Halloween pumpkin), silverfish and
-  breezes (`Mob.finalizeSpawn` only) and cave spiders (none). Zombies, husks, spiders, slimes and other mobs still set
-  themselves up from their own random, so the level random goes its own way after one of them spawns.
+- **Bare spawn data's spawn setup for other mobs.** Spawn data that only names its mob gets vanilla's spawn setup
+  from the level's random for every mob the trial chambers spawn that way: skeletons, strays, bogged and parched
+  (`AbstractSkeleton.finalizeSpawn`: armour, a bow, enchantments, picking up loot, a Halloween pumpkin), wither
+  skeletons, zombies and husks (`Zombie.finalizeSpawn`: picking up loot, a baby and its chicken jockey, breaking doors,
+  armour, a weapon, enchantments, a pumpkin; a husk draws for loot again), spiders (a skeleton jockey, and an effect on
+  hard), silverfish and breezes (`Mob.finalizeSpawn` only) and cave spiders (none), as do zombified piglins. The
+  chambers' baby zombies and slimes aren't bare and get no setup. Drowned, zombie villagers and other mobs a data
+  pack's config could name still set themselves up from their own random, so the level random goes its own way after
+  one of them spawns. The captures follow the draws through 43 zombies and husks and 36 spiders, but none of them was
+  a baby with a chicken jockey, a spider jockey or a spider with an effect, so those branches are checked against
+  vanilla's code only.
 - **Spawn data equipment and passengers.** A spawn data's `equipment` loot table (the ominous ranged configs') isn't
   rolled onto the mob, and its entity's passengers aren't spawned with it.
 - **Other mobs' spawn rules.** A monster may spawn anywhere it fits in sight but in peaceful, as every monster's rule
@@ -38,6 +44,9 @@ spawner uses the default config meanwhile, as vanilla does. What's left:
 - **Data pack configs.** `normal_config` and `ominous_config` read `trial_spawner` registry entries from vanilla's own
   data only. An id the server doesn't know leaves all four config fields at their defaults, as vanilla does, and is
   saved again as it was.
+- **Sight lines through unloaded chunks.** Vanilla's sight line (a visual clip) loads a chunk it crosses that isn't
+  loaded, and looks through it. Obsidian can't wait for a chunk under the tick's locks, so a line through one counts as
+  blocked: no mob spawns, and no player is detected, through it until something else loads it.
 - **Players found in the same scan.** They join the spawner's set in the order of the level's player dictionary rather
   than vanilla's player list, which only matters when two of them share a bucket of vanilla's hash set.
 
