@@ -10,11 +10,9 @@ differs or isn't there yet.
 
 These items have a behaviour in vanilla but are dropped like any other here:
 
-- **Buckets** of every kind, filled and empty, were left for a follow-up on #720, which changed how a result item
-  goes back into a container.
-- **Glass bottles** (water and full beehives) and **honey bottles** wait for phase 2's cauldrons and hives, and
-  **water potions** turning dirt into mud for the same bottle hand-back.
-- **Honeycomb** was left for a follow-up on #725's waxing.
+- **Glass bottles at full beehives** remain a follow-up; player hive harvesting is now available from #731.
+- **Sulfur cube buckets** still drop their item; their mob placement is outside this phase's fluid, fish and
+  axolotl bucket scope.
 - **Wind charges**: Obsidian has no flight for a wind charge outside the breeze's. The capture keeps vanilla's shot
   (`wind_charge`, pinned).
 - **Lingering potions**: Obsidian throws no lingering potion yet.
@@ -22,6 +20,26 @@ These items have a behaviour in vanilla but are dropped like any other here:
   armadillos.
 
 Droppers are unchanged: they still put an item into the container they face or drop it.
+
+## Buckets, bottles and waxing
+
+Water, lava and powder snow buckets place their contents; fish, axolotl and tadpole buckets also spawn their mob,
+with saved bucket data, species components and the item's custom name. Species components take precedence over
+older variant NBT. Empty buckets pick up sources, waterlogged blocks and powder
+snow. Glass bottles fill from water, including flowing and waterlogged water, without removing it. Water potions
+turn blocks in `convertible_to_mud` into mud, and honeycomb waxes the copper block in front with its properties.
+
+A result replaces the selected slot when its last item is used. With a custom stack size on a filled bucket or
+water potion, only one item is consumed and the other originals stay in that slot. When originals remain, vanilla's
+`addToInventory` path scans slots in order, using an empty slot or merging a compatible stack with room, and
+dispenses the result when neither fits. Components and maximum stack sizes are respected when merging.
+The captures include those paths and vanilla's extra click/smoke events for nested drop fallbacks. Cauldrons are
+unchanged: vanilla dispensers don't fill or empty them with buckets, bottles or water potions.
+
+Powder snow buckets place only into air; supported grass and other occupied blocks cause the filled bucket to
+drop. A failed fluid/block write, including an unavailable target chunk, keeps the filled bucket, with no
+empty-bucket remainder or mob spawned. Pouring into an identical fluid source or already-waterlogged container
+still succeeds.
 
 ## Differences in what is there
 
@@ -48,11 +66,21 @@ Droppers are unchanged: they still put an item into the container they face or d
 - **Spawn eggs** spawn the egg's mob only: its other entity data and the stack's custom name aren't applied.
 - **A grounded no-AI mob's motion.** The cow a sheared mooshroom turns into keeps a downward motion of -0.0784 in
   Obsidian where vanilla's is zero (`shears_mooshroom`, pinned).
+- **Bucketed axolotl ambience.** The captured `bucket_mob_axolotl` emits `entity.axolotl.idle_air` after the empty-bucket
+  sound at tick 4. Obsidian emits only the bucket sound; that exact sound list is pinned.
+- **Powder snow contact particles.** The dropped bucket touching powder snow in
+  `powder_snow_bucket_into_powder_snow` emits one snowflake in vanilla at tick 4. Obsidian omits it; the particle and
+  its exact captured position (`1.503360,1.000000,0.546411`) are pinned, with the drop and events still compared.
+- **Potion component serialization.** Vanilla writes the default `show_icon:1b` on the speed effect in
+  `potion_custom_effect`; Obsidian omits it. The complete slot/drop component values are pinned from tick 1,
+  including the overflow count suffix. Both keep the custom-effect water potion from making mud.
 
 ## Atomicity and locks
 
 A dispenser snapshots its selected stack under its inventory lock outside the tick, transfer and chunk locks,
-then releases it before preparing a shulker box's components or waiting for tick. The commit takes tick first and
+then releases it before preparing a shulker box's components, bucket loot or mob data, or waiting for tick.
+Bucket preparation snapshots the target and resident block entity under tick, then evaluates loot and reads
+components outside both locks. The commit revalidates that target as well as the inventory. It takes tick first and
 only **tries** the inventory. It revalidates the resident dispenser, inventory revision and exact selected stack,
 then commits the slot and synchronous world/entity state together. A busy or changed inventory refuses the attempt
 without spending or firing. There is no inventory-to-tick wait edge. Block notifications and spawn effects use the
@@ -60,26 +88,33 @@ same deferred effects scope as `BlockUse.TryCommit`, publishing after the invent
 placement factories and asynchronous preparation stay outside the commit. Growth features also run in the
 post-inventory effects phase, and plugin shearables/equipment callbacks are not invoked inside the commit.
 
-`DispenserAtomicity.FiringAndRegionSaveCannotDeadlockEachOther` starts `DoWorldTickAsync` with firing waiting behind
-a held click, pauses a real `Region.FlushAsync` inside its tick-locked snapshot, then releases the click. The old
-firing path times out with both operations unfinished; the fixed path saves and spends exactly one glowstone to
-charge the anchor. The uninterruptible regression runs in an isolated testhost, which is killed and joined if it
-hangs. This does not depend on the save-side repair in #719. The other `DispenserAtomicity` tests guard clicks and
-concurrent hopper-like takes against item duplication/loss.
+`DispenserAtomicity.BusyCommitKeepsTheBucketAndRetryDeliversItsResultOnce` holds tick until an observed inventory
+snapshot lets a click acquire inventory, then releases tick while keeping the click held. Firing must refuse the
+busy inventory without changing the source or the stack; a retry delivers one result. Explicit signals and gates
+force this interleaving, without sleeps or timeouts. The other tests guard a click taking the selected arrow and
+bottle conservation across selected-slot, empty-slot and overflow delivery.
+`FailedBucketWriteKeepsTheFilledItemWithoutSpawningItsContents` uses a resident dispenser at a chunk edge with
+its neighbour unavailable from the start. It checks item conservation for water, lava, powder snow and an axolotl
+bucket without relying on an unload race.
 
 ## Replay comparisons
 
-The four known-gap cases pin exact values for the affected fields and still compare every other captured value.
+The known-gap cases pin exact values for the affected fields and still compare every other captured value.
 They cannot pass merely because the same field names differ. The mooshroom/cow grounding gap also pins its exact
 vertical gravity accumulator (`-0.0784` instead of vanilla's zero).
 
 Cases with `details: true` additionally compare complete item component patches in slots, projectile pickup/items,
 equipment and dropped stacks, shulker contents, rocket angled state, deterministic sound category/volume/pitch and
 position, particle positions, mob velocities and vertical TNT velocity. Dropped component payloads are summed by
-identical stack rather than entity count. Projectile motion is recorded: the initial velocity comparison allows
+identical stack rather than entity count. Bucket data cases also compare the mob's health, NoAI, gravity flag and
+custom name. The phase's original 60 additions and 10 review regressions compare from their first tick; seeded
+cases pin slot selection and splash positions. The review cases cover custom stacked buckets/potions, compatible
+and incompatible remainder stacks, overflow, occupied powder-snow targets, and axolotl/tropical-fish variant
+components. Their `variants: true` opt-in compares the mob's variant metadata too. The original 59 cases are unchanged.
+Projectile motion is recorded: the initial velocity comparison allows
 only the two shots' spread radius; following ticks must have the captured drag and vertical acceleration. Exact
 random flight coordinates, TNT's random horizontal impulse, sound seeds and the arrow hit's random pitch are not
 compared. Only selected added/changed cases are re-recorded with `CaptureCases`.
 
 **Where to start:** a new behaviour is an `IDispenseBehavior` registered in one of `DispenseBehaviors`'s partial
-files (`Projectiles`, `Blocks`, `Entities`), with a case added to `dispenser.json` and captured on its own.
+files (`Projectiles`, `Blocks`, `Entities`, `Fluids`), with a case added to `dispenser.json` and captured on its own.
