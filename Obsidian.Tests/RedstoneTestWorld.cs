@@ -446,6 +446,14 @@ internal sealed class RedstoneTestWorld : IRedstoneLevel, IBlockTickLevel, IBloc
             this.Commit(position, block);
     }
 
+    async ValueTask IRedstoneLevel.WriteAsync(Vector position, IBlock block, BlockUpdateFlags flags)
+    {
+        if ((flags & BlockUpdateFlags.Neighbors) != 0)
+            await this.Place(position, block);
+        else
+            this.Commit(position, block);
+    }
+
     ValueTask IRedstoneLevel.RestoreBlockSilentlyAsync(Vector position, IBlock block)
     {
         this.Commit(position, block);

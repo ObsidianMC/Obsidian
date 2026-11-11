@@ -111,6 +111,25 @@ internal sealed class TurtleEggContactBehavior : IFallOnBehavior, IStepOnBehavio
     }
 }
 
+/// <summary>
+/// Vanilla's <c>SlimeBlock.stepOn</c>: walking on slime, with little vertical movement and not sneaking, damps the
+/// entity's horizontal velocity, the more so the flatter it moves.
+/// </summary>
+internal sealed class SlimeStepBehavior : IStepOnBehavior
+{
+    public ValueTask SteppedOnAsync(IContactLevel level, Vector position, IBlock block, Entity entity)
+    {
+        var motion = entity.Motion;
+        var vertical = Math.Abs(motion.Y);
+        if (vertical >= 0.1 || entity.Sneaking)
+            return default;
+
+        var damping = 0.4 + vertical * 0.2;
+        entity.Motion = new VectorD(motion.X * damping, motion.Y, motion.Z * damping);
+        return default;
+    }
+}
+
 internal sealed class SoftLandingBehavior(float multiplier, bool honey = false, float distanceScale = 1)
     : IFallOnBehavior
 {
@@ -139,5 +158,106 @@ internal sealed class SoftLandingBehavior(float multiplier, bool honey = false, 
             LevelSounds.Play(honeyLevel, impactPosition, sounds.Fall.ResourceLocation, category,
                 sounds.Volume * 0.5f, sounds.Pitch * 0.75f);
         }
+    }
+}
+
+/// <summary>
+/// Vanilla's <c>WebBlock.entityInside</c>: anything in a cobweb moves a quarter as fast across it and a twentieth as
+/// fast up or down, or half and a quarter with Weaving.
+/// </summary>
+internal sealed class CobwebContactBehavior : IEntityInsideBehavior
+{
+    private static readonly VectorD stuck = new(0.25, 0.05f, 0.25);
+
+    private static readonly VectorD weaving = new(0.5, 0.25, 0.5);
+
+    public ValueTask EntityInsideAsync(IContactLevel level, Vector position, IBlock block, Entity entity)
+    {
+        var weaves = entity is Living living && living.HasPotionEffect((int)PotionEffect.Weaving - 1);
+        entity.MakeStuckInBlock(weaves ? weaving : stuck);
+        return default;
+    }
+}
+
+/// <summary>
+/// Vanilla's <c>SweetBerryBushBlock.entityInside</c>: a bush slows anything living but foxes and bees, and once it has
+/// grown past its first stage it pricks them while they move through it.
+/// </summary>
+internal sealed class SweetBerryBushContactBehavior : IEntityInsideBehavior
+{
+    private static readonly VectorD stuck = new(0.8f, 0.75, 0.8f);
+
+    // How far across the entity must have moved on one axis this tick to be pricked.
+    private const double PrickingMovement = 0.003f;
+
+    public ValueTask EntityInsideAsync(IContactLevel level, Vector position, IBlock block, Entity entity)
+    {
+        if (entity is not Living living || entity.Type is EntityType.Fox or EntityType.Bee)
+            return default;
+
+        entity.MakeStuckInBlock(stuck);
+        if (block.GetProperty("age") == "0")
+            return default;
+
+        var movement = entity.TickMovement;
+        var moved = movement.X * movement.X + movement.Z * movement.Z > 0;
+        var far = Math.Abs(movement.X) >= PrickingMovement || Math.Abs(movement.Z) >= PrickingMovement;
+        if (!moved || !far)
+            return default;
+
+        return living.DamageCombatAsync(living, 1, CombatDamageKind.SweetBerryBush);
+    }
+}
+
+/// <summary>
+/// Vanilla's <c>PowderSnowBlock</c> touching entities: whatever is in it sinks slowly (something living only while its
+/// feet are in it), and a fall into it hurts nothing, though a long one is heard.
+/// </summary>
+/// <remarks>
+/// What it stands on is its collision (see <c>EntityCollisionShapes</c>); freezing is the entity's own tick.
+/// </remarks>
+internal sealed class PowderSnowContactBehavior : IEntityInsideBehavior, IFallOnBehavior
+{
+    /// <summary>The one instance, which powder snow's inside and fall hooks share.</summary>
+    public static PowderSnowContactBehavior Instance { get; } = new();
+
+    private static readonly VectorD stuck = new(0.9f, 1.5, 0.9f);
+
+    public ValueTask EntityInsideAsync(IContactLevel level, Vector position, IBlock block, Entity entity)
+    {
+        var feet = level.Blocks.GetBlock((Vector)entity.Position.Floor());
+        if (entity is Living && feet.RegistryId != BlockIds.PowderSnow)
+            return default;
+
+        entity.MakeStuckInBlock(stuck);
+
+        // Vanilla draws the snowflakes a moving entity kicks up from the level's random, which later draws depend on,
+        // so they're drawn here too; the particles aren't sent yet.
+        var movement = entity is PlayerBase ? entity.TickMovement : entity.Motion;
+        if (movement.X != 0 || movement.Z != 0)
+        {
+            var random = level.Blocks.Random;
+            if (random.NextBoolean())
+            {
+                random.NextFloat();
+                random.NextFloat();
+            }
+        }
+
+        return default;
+    }
+
+    public ValueTask FallenOnAsync(
+        IContactLevel level, Vector position, IBlock block, Entity entity,
+        double fallDistance, VectorD impactPosition)
+    {
+        // It replaces the fall's damage: only something living that fell at least four blocks is heard landing.
+        if (fallDistance < 4 || entity is not Living || entity.Silent || level.Level is not AbstractLevel world)
+            return default;
+
+        var sound = fallDistance < 7 ? "small_fall" : "big_fall";
+        var category = entity is Mob mob ? mob.ContactSoundCategory : SoundCategory.Players;
+        LevelSounds.Play(world, impactPosition, $"minecraft:entity.generic.{sound}", category);
+        return default;
     }
 }

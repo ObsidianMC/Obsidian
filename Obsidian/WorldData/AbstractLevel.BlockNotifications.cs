@@ -228,6 +228,9 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IRedstoneLevel,
             return ValueTask.CompletedTask;
         });
 
+    ValueTask IRedstoneLevel.WriteAsync(Vector position, IBlock block, BlockUpdateFlags flags) =>
+        this.WriteAsync(position, block, flags);
+
     ValueTask IRedstoneLevel.WriteAsync(Vector position, IBlock block, bool notifyNeighbors) =>
         this.WriteAsync(position, block, notifyNeighbors ? BlockUpdateFlags.All : ClientsOnly);
 

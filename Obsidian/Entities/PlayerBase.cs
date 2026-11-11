@@ -256,8 +256,8 @@ public abstract partial class PlayerBase : Avatar, IPlayer
     public float XpP { get; set; }
 
     // Worked out from the position, so that it's right from the moment the player is placed (a player who has just
-    // logged in hasn't sent a movement yet). Standing eye height; poses and scale use EyePosition.
-    public double HeadY => this.Position.Y + 1.62;
+    // logged in hasn't sent a movement yet). All eye readers share the pose and scale calculation.
+    public double HeadY => EyePosition(this).Y;
 
     public float Absorption { get; set; }
     public float FallDistance { get; set; }

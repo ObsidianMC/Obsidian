@@ -20,9 +20,10 @@ namespace Obsidian.Tests;
 
 /// <summary>
 /// Entities touching blocks, against <c>Assets/block_contact_scenarios.json</c>: pressure plates, tripwires,
-/// farmland, eggs, magma and soft landing surfaces. Items, armor stands and mobs are dropped, pushed, walked,
-/// removed and killed. References come from headless vanilla servers (<c>ScenarioContactCaptures.cs</c> and
-/// <c>Java/BlockContactFixtures.java</c>), using
+/// farmland, eggs, magma and soft landing surfaces, the blocks that slow entities or hold them (soul sand, honey,
+/// cobwebs, berry bushes, powder snow, scaffolding, slime), and players' posed boxes. Items, armor stands, mobs and
+/// players are dropped, pushed, walked, jumped, removed and killed. References come from headless vanilla servers
+/// (<c>ScenarioContactCaptures.cs</c> and <c>Java/BlockContactFixtures.java</c>), using
 /// <c>dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=block_contact</c>.
 /// </summary>
 /// <remarks>

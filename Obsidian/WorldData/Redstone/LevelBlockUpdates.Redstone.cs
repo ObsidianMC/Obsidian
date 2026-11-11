@@ -285,7 +285,8 @@ internal sealed partial class LevelBlockUpdates
             Category = SoundCategory.Blocks,
             Volume = volume,
             Pitch = pitch,
-            Seed = this.Random.NextLong()
+            // Vanilla seeds a sound from its own thread-safe random, never the level's, whose draws stay as they are.
+            Seed = System.Random.Shared.NextInt64()
         };
 
         level.PacketBroadcaster.BroadcastToLevelInRange(level, (VectorD)position + 0.5, packet, excluded);
