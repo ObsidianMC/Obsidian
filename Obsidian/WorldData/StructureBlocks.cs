@@ -86,6 +86,17 @@ internal static class StructureBlocks
         if (name.Length == 0)
             return $"Invalid structure name '{suppliedName}'";
 
+        if (!StructureTemplateNames.IsValid(name))
+        {
+            return action switch
+            {
+                1 => $"Unable to save structure '{name}'",
+                2 => $"Structure '{name}' is not available",
+                3 => "Unable to detect structure size. Add corners with matching structure names",
+                _ => null
+            };
+        }
+
         if (action == 0)
             return null;
 
@@ -327,7 +338,7 @@ internal static class StructureBlocks
             settings = settings with { Powered = powered };
             entity.Settings = settings;
             entity.SetChanged();
-            if (!powered || settings.Name.Length == 0)
+            if (!powered || !StructureTemplateNames.IsValid(settings.Name))
                 return ValueTask.CompletedTask;
 
             var templates = StructureBlockTemplates.For(level);

@@ -7,13 +7,16 @@ namespace Obsidian.Commands.Modules;
 
 public sealed partial class PlaceCommandModule
 {
-    // Shares the world's generated-template cache with structure blocks. Reads are worker work; placement is a
-    // short, synchronous mutation under the tick lock, after the affected chunks have loaded.
+    // Shares the generated-template cache with structure blocks. File IO stays on workers; only an already
+    // loaded destination is mutated, synchronously under the tick lock.
     private async Task<int> PlaceTemplateAsync(CommandInput input)
     {
         var name = StructureBlocks.NormalizeName(input.Read());
         if (name.Length == 0)
             throw new FormatException("Invalid template name");
+
+        if (!StructureTemplateNames.IsValid(name))
+            throw new FormatException($"Invalid template '{name}'");
 
         if (CommandFeedback.LevelOf(this.CommandContext) is not AbstractLevel level)
             throw new FormatException("This level cannot place templates");
@@ -27,6 +30,10 @@ public sealed partial class PlaceCommandModule
         var mirror = input.End ? 0 : Array.IndexOf(StructureBlockEntity.MirrorNames, input.Read().ToUpperInvariant());
         var integrity = input.End ? 1 : CommandInput.Float(input.Read());
         var seed = input.End ? 0 : int.Parse(input.Read(), CultureInfo.InvariantCulture);
+        var strict = !input.End;
+        if (strict)
+            input.Expect("strict");
+
         input.ExpectEnd();
         if (rotation < 0 || mirror < 0 || !float.IsFinite(integrity) || integrity is < 0 or > 1)
             throw new FormatException("Invalid template placement settings");
@@ -39,20 +46,34 @@ public sealed partial class PlaceCommandModule
             Mirror = (StructureMirror)mirror,
             Integrity = integrity,
             Seed = seed,
-            IgnoreEntities = false
+            IgnoreEntities = false,
+            Strict = strict
         });
         var position = (Vector)origin.Floor();
-        var box = template.GetBoundingBox(settings, position);
-        using var area = await StructureBlocks.LoadAreaAsync(level, new Vector(box.MinX, box.MinY, box.MinZ),
-            new Vector(box.MaxX - box.MinX + 1, box.MaxY - box.MinY + 1, box.MaxZ - box.MinZ + 1));
         lock (level.Fluids.TickLock)
         {
-            var view = new StructureBlockLevel(level, strict: false);
+            RequireLoadedTemplateArea(level, position, template.Size);
+            var view = new StructureBlockLevel(level, strict);
             if (!template.PlaceInWorld(view, position, position, settings, StructureBlocks.Random(seed)))
                 throw new FormatException("Template placement failed");
         }
 
-        await this.CommandContext.SuccessAsync($"Placed template {name} at {CommandFeedback.Format(position)}");
+        await this.CommandContext.SuccessAsync($"Loaded template \"{name}\" at {CommandFeedback.Format(position)}");
         return 1;
+    }
+
+    private static void RequireLoadedTemplateArea(AbstractLevel level, Vector position, Vector size)
+    {
+        // 26.3 checks the unrotated position..position+size chunk range, including the far endpoint.
+        // Reads here never load a region or enqueue generation, unlike the structure block's LOAD action.
+        var end = position + size;
+        for (var x = position.X >> 4; x <= end.X >> 4; x++)
+        {
+            for (var z = position.Z >> 4; z <= end.Z >> 4; z++)
+            {
+                if (level.GetLoadedChunk(x, z) is not { IsGenerated: true })
+                    throw new FormatException("That position is not loaded");
+            }
+        }
     }
 }

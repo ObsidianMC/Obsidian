@@ -4,6 +4,7 @@ using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Entities;
 using Obsidian.WorldData.Features;
+using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.Redstone;
 
 namespace Obsidian.WorldData;
@@ -54,6 +55,9 @@ internal sealed class StructureBlockLevel(AbstractLevel level, bool strict) : IW
             | BlockUpdateFlags.SkipBlockEntitySideEffects | BlockUpdateFlags.SkipOnPlace;
         level.BlockUpdates.SetBlock(position, BlocksRegistry.Barrier, flags);
     }
+
+    internal void NotifyNeighbors(Vector position) =>
+        ((IBlockChangeWorld)level).NotifyNeighborsAsync(position).GetAwaiter().GetResult();
 
     public int GetHeight(HeightmapType type, int x, int z) => this.reads.GetHeight(type, x, z);
 

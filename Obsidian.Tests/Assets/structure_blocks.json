@@ -10940,6 +10940,1546 @@
           "items": {}
         }
       ]
+    },
+    {
+      "name": "review_load_notifications_false",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:structure_block"
+        },
+        {
+          "offset": [1, 1, 1],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "offset": [-3, 1, -4],
+          "state": "minecraft:redstone_lamp"
+        }
+      ],
+      "actions": [
+        {
+          "edit": {
+            "offset": [0, 0, 0],
+            "action": 1,
+            "mode": 0,
+            "name": "test:roundtrip",
+            "pos": [1, 1, 1],
+            "size": [1, 1, 1],
+            "mirror": 0,
+            "rotation": 0,
+            "metadata": "",
+            "ignoreEntities": true,
+            "strict": false,
+            "showAir": false,
+            "showBox": true,
+            "integrity": 1,
+            "seed": 42
+          }
+        },
+        {
+          "edit": {
+            "offset": [0, 0, 0],
+            "action": 2,
+            "mode": 1,
+            "name": "test:roundtrip",
+            "pos": [-4, 1, -4],
+            "size": [1, 1, 1],
+            "mirror": 0,
+            "rotation": 0,
+            "metadata": "",
+            "ignoreEntities": true,
+            "strict": false,
+            "showAir": false,
+            "showBox": true,
+            "integrity": 1,
+            "seed": 42
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "blocks": [
+            "0,0,0=minecraft:structure_block[mode=save]",
+            "-3,1,-4=minecraft:redstone_lamp",
+            "1,1,1=minecraft:redstone_block"
+          ],
+          "saved": {
+            "0,0,0": {
+              "author": "",
+              "ignoreEntities": "1:1b",
+              "integrity": "5:1f",
+              "metadata": "",
+              "mirror": "NONE",
+              "mode": "SAVE",
+              "name": "test:roundtrip",
+              "posX": "3:1",
+              "posY": "3:1",
+              "posZ": "3:1",
+              "powered": "1:0b",
+              "rotation": "NONE",
+              "seed": "4:42l",
+              "showair": "1:0b",
+              "showboundingbox": "1:1b",
+              "sizeX": "3:1",
+              "sizeY": "3:1",
+              "sizeZ": "3:1",
+              "strict": "1:0b"
+            }
+          },
+          "blockEntities": {},
+          "chat": [
+            "Structure saved as 'test:roundtrip'"
+          ],
+          "files": {
+            "test/structure/roundtrip.nbt": {
+              "DataVersion": "3:5023",
+              "blocks": [
+                {
+                  "pos": [
+                    "3:0",
+                    "3:0",
+                    "3:0"
+                  ],
+                  "state": "3:0"
+                }
+              ],
+              "entities": [],
+              "palette": [
+                {
+                  "id": "minecraft:redstone_block"
+                }
+              ],
+              "size": [
+                "3:1",
+                "3:1",
+                "3:1"
+              ]
+            }
+          },
+          "entities": [],
+          "items": {}
+        },
+        {
+          "blocks": [
+            "0,0,0=minecraft:structure_block",
+            "-4,1,-4=minecraft:redstone_block",
+            "-3,1,-4=minecraft:redstone_lamp[lit=true]",
+            "1,1,1=minecraft:redstone_block"
+          ],
+          "saved": {
+            "0,0,0": {
+              "author": "",
+              "ignoreEntities": "1:1b",
+              "integrity": "5:1f",
+              "metadata": "",
+              "mirror": "NONE",
+              "mode": "LOAD",
+              "name": "test:roundtrip",
+              "posX": "3:-4",
+              "posY": "3:1",
+              "posZ": "3:-4",
+              "powered": "1:0b",
+              "rotation": "NONE",
+              "seed": "4:42l",
+              "showair": "1:0b",
+              "showboundingbox": "1:1b",
+              "sizeX": "3:1",
+              "sizeY": "3:1",
+              "sizeZ": "3:1",
+              "strict": "1:0b"
+            }
+          },
+          "blockEntities": {},
+          "chat": [
+            "Structure loaded from 'test:roundtrip'"
+          ],
+          "files": {
+            "test/structure/roundtrip.nbt": {
+              "DataVersion": "3:5023",
+              "blocks": [
+                {
+                  "pos": [
+                    "3:0",
+                    "3:0",
+                    "3:0"
+                  ],
+                  "state": "3:0"
+                }
+              ],
+              "entities": [],
+              "palette": [
+                {
+                  "id": "minecraft:redstone_block"
+                }
+              ],
+              "size": [
+                "3:1",
+                "3:1",
+                "3:1"
+              ]
+            }
+          },
+          "entities": [],
+          "items": {}
+        }
+      ]
+    },
+    {
+      "name": "review_load_notifications_true",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:structure_block"
+        },
+        {
+          "offset": [1, 1, 1],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "offset": [-3, 1, -4],
+          "state": "minecraft:redstone_lamp"
+        }
+      ],
+      "actions": [
+        {
+          "edit": {
+            "offset": [0, 0, 0],
+            "action": 1,
+            "mode": 0,
+            "name": "test:roundtrip",
+            "pos": [1, 1, 1],
+            "size": [1, 1, 1],
+            "mirror": 0,
+            "rotation": 0,
+            "metadata": "",
+            "ignoreEntities": true,
+            "strict": false,
+            "showAir": false,
+            "showBox": true,
+            "integrity": 1,
+            "seed": 42
+          }
+        },
+        {
+          "edit": {
+            "offset": [0, 0, 0],
+            "action": 2,
+            "mode": 1,
+            "name": "test:roundtrip",
+            "pos": [-4, 1, -4],
+            "size": [1, 1, 1],
+            "mirror": 0,
+            "rotation": 0,
+            "metadata": "",
+            "ignoreEntities": true,
+            "strict": true,
+            "showAir": false,
+            "showBox": true,
+            "integrity": 1,
+            "seed": 42
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "blocks": [
+            "0,0,0=minecraft:structure_block[mode=save]",
+            "-3,1,-4=minecraft:redstone_lamp",
+            "1,1,1=minecraft:redstone_block"
+          ],
+          "saved": {
+            "0,0,0": {
+              "author": "",
+              "ignoreEntities": "1:1b",
+              "integrity": "5:1f",
+              "metadata": "",
+              "mirror": "NONE",
+              "mode": "SAVE",
+              "name": "test:roundtrip",
+              "posX": "3:1",
+              "posY": "3:1",
+              "posZ": "3:1",
+              "powered": "1:0b",
+              "rotation": "NONE",
+              "seed": "4:42l",
+              "showair": "1:0b",
+              "showboundingbox": "1:1b",
+              "sizeX": "3:1",
+              "sizeY": "3:1",
+              "sizeZ": "3:1",
+              "strict": "1:0b"
+            }
+          },
+          "blockEntities": {},
+          "chat": [
+            "Structure saved as 'test:roundtrip'"
+          ],
+          "files": {
+            "test/structure/roundtrip.nbt": {
+              "DataVersion": "3:5023",
+              "blocks": [
+                {
+                  "pos": [
+                    "3:0",
+                    "3:0",
+                    "3:0"
+                  ],
+                  "state": "3:0"
+                }
+              ],
+              "entities": [],
+              "palette": [
+                {
+                  "id": "minecraft:redstone_block"
+                }
+              ],
+              "size": [
+                "3:1",
+                "3:1",
+                "3:1"
+              ]
+            }
+          },
+          "entities": [],
+          "items": {}
+        },
+        {
+          "blocks": [
+            "0,0,0=minecraft:structure_block",
+            "-4,1,-4=minecraft:redstone_block",
+            "-3,1,-4=minecraft:redstone_lamp",
+            "1,1,1=minecraft:redstone_block"
+          ],
+          "saved": {
+            "0,0,0": {
+              "author": "",
+              "ignoreEntities": "1:1b",
+              "integrity": "5:1f",
+              "metadata": "",
+              "mirror": "NONE",
+              "mode": "LOAD",
+              "name": "test:roundtrip",
+              "posX": "3:-4",
+              "posY": "3:1",
+              "posZ": "3:-4",
+              "powered": "1:0b",
+              "rotation": "NONE",
+              "seed": "4:42l",
+              "showair": "1:0b",
+              "showboundingbox": "1:1b",
+              "sizeX": "3:1",
+              "sizeY": "3:1",
+              "sizeZ": "3:1",
+              "strict": "1:1b"
+            }
+          },
+          "blockEntities": {},
+          "chat": [
+            "Structure loaded from 'test:roundtrip'"
+          ],
+          "files": {
+            "test/structure/roundtrip.nbt": {
+              "DataVersion": "3:5023",
+              "blocks": [
+                {
+                  "pos": [
+                    "3:0",
+                    "3:0",
+                    "3:0"
+                  ],
+                  "state": "3:0"
+                }
+              ],
+              "entities": [],
+              "palette": [
+                {
+                  "id": "minecraft:redstone_block"
+                }
+              ],
+              "size": [
+                "3:1",
+                "3:1",
+                "3:1"
+              ]
+            }
+          },
+          "entities": [],
+          "items": {}
+        }
+      ]
+    },
+    {
+      "name": "review_place_command_strict",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:structure_block"
+        },
+        {
+          "offset": [1, 1, 1],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "offset": [4, 1, 3],
+          "state": "minecraft:redstone_lamp"
+        },
+        {
+          "offset": [4, 1, 5],
+          "state": "minecraft:redstone_lamp"
+        }
+      ],
+      "actions": [
+        {
+          "edit": {
+            "offset": [0, 0, 0],
+            "action": 1,
+            "mode": 0,
+            "name": "test:roundtrip",
+            "pos": [1, 1, 1],
+            "size": [1, 1, 1],
+            "mirror": 0,
+            "rotation": 0,
+            "metadata": "",
+            "ignoreEntities": true,
+            "strict": false,
+            "showAir": false,
+            "showBox": true,
+            "integrity": 1,
+            "seed": 42
+          }
+        },
+        {
+          "command": "place template test:roundtrip 3 81 3 none none 1 42 strict"
+        },
+        {
+          "command": "place template test:roundtrip 3 81 5 none none 1 42"
+        }
+      ],
+      "checkpoints": [
+        {
+          "blocks": [
+            "0,0,0=minecraft:structure_block[mode=save]",
+            "1,1,1=minecraft:redstone_block",
+            "4,1,3=minecraft:redstone_lamp",
+            "4,1,5=minecraft:redstone_lamp"
+          ],
+          "saved": {
+            "0,0,0": {
+              "author": "",
+              "ignoreEntities": "1:1b",
+              "integrity": "5:1f",
+              "metadata": "",
+              "mirror": "NONE",
+              "mode": "SAVE",
+              "name": "test:roundtrip",
+              "posX": "3:1",
+              "posY": "3:1",
+              "posZ": "3:1",
+              "powered": "1:0b",
+              "rotation": "NONE",
+              "seed": "4:42l",
+              "showair": "1:0b",
+              "showboundingbox": "1:1b",
+              "sizeX": "3:1",
+              "sizeY": "3:1",
+              "sizeZ": "3:1",
+              "strict": "1:0b"
+            }
+          },
+          "blockEntities": {},
+          "chat": [
+            "Structure saved as 'test:roundtrip'"
+          ],
+          "files": {
+            "test/structure/roundtrip.nbt": {
+              "DataVersion": "3:5023",
+              "blocks": [
+                {
+                  "pos": [
+                    "3:0",
+                    "3:0",
+                    "3:0"
+                  ],
+                  "state": "3:0"
+                }
+              ],
+              "entities": [],
+              "palette": [
+                {
+                  "id": "minecraft:redstone_block"
+                }
+              ],
+              "size": [
+                "3:1",
+                "3:1",
+                "3:1"
+              ]
+            }
+          },
+          "entities": [],
+          "items": {}
+        },
+        {
+          "blocks": [
+            "0,0,0=minecraft:structure_block[mode=save]",
+            "1,1,1=minecraft:redstone_block",
+            "3,1,3=minecraft:redstone_block",
+            "4,1,3=minecraft:redstone_lamp",
+            "4,1,5=minecraft:redstone_lamp"
+          ],
+          "saved": {
+            "0,0,0": {
+              "author": "",
+              "ignoreEntities": "1:1b",
+              "integrity": "5:1f",
+              "metadata": "",
+              "mirror": "NONE",
+              "mode": "SAVE",
+              "name": "test:roundtrip",
+              "posX": "3:1",
+              "posY": "3:1",
+              "posZ": "3:1",
+              "powered": "1:0b",
+              "rotation": "NONE",
+              "seed": "4:42l",
+              "showair": "1:0b",
+              "showboundingbox": "1:1b",
+              "sizeX": "3:1",
+              "sizeY": "3:1",
+              "sizeZ": "3:1",
+              "strict": "1:0b"
+            }
+          },
+          "blockEntities": {},
+          "chat": [
+            "Loaded template \"test:roundtrip\" at 3, 81, 3"
+          ],
+          "files": {
+            "test/structure/roundtrip.nbt": {
+              "DataVersion": "3:5023",
+              "blocks": [
+                {
+                  "pos": [
+                    "3:0",
+                    "3:0",
+                    "3:0"
+                  ],
+                  "state": "3:0"
+                }
+              ],
+              "entities": [],
+              "palette": [
+                {
+                  "id": "minecraft:redstone_block"
+                }
+              ],
+              "size": [
+                "3:1",
+                "3:1",
+                "3:1"
+              ]
+            }
+          },
+          "entities": [],
+          "items": {}
+        },
+        {
+          "blocks": [
+            "0,0,0=minecraft:structure_block[mode=save]",
+            "1,1,1=minecraft:redstone_block",
+            "3,1,3=minecraft:redstone_block",
+            "4,1,3=minecraft:redstone_lamp",
+            "3,1,5=minecraft:redstone_block",
+            "4,1,5=minecraft:redstone_lamp[lit=true]"
+          ],
+          "saved": {
+            "0,0,0": {
+              "author": "",
+              "ignoreEntities": "1:1b",
+              "integrity": "5:1f",
+              "metadata": "",
+              "mirror": "NONE",
+              "mode": "SAVE",
+              "name": "test:roundtrip",
+              "posX": "3:1",
+              "posY": "3:1",
+              "posZ": "3:1",
+              "powered": "1:0b",
+              "rotation": "NONE",
+              "seed": "4:42l",
+              "showair": "1:0b",
+              "showboundingbox": "1:1b",
+              "sizeX": "3:1",
+              "sizeY": "3:1",
+              "sizeZ": "3:1",
+              "strict": "1:0b"
+            }
+          },
+          "blockEntities": {},
+          "chat": [
+            "Loaded template \"test:roundtrip\" at 3, 81, 5"
+          ],
+          "files": {
+            "test/structure/roundtrip.nbt": {
+              "DataVersion": "3:5023",
+              "blocks": [
+                {
+                  "pos": [
+                    "3:0",
+                    "3:0",
+                    "3:0"
+                  ],
+                  "state": "3:0"
+                }
+              ],
+              "entities": [],
+              "palette": [
+                {
+                  "id": "minecraft:redstone_block"
+                }
+              ],
+              "size": [
+                "3:1",
+                "3:1",
+                "3:1"
+              ]
+            }
+          },
+          "entities": [],
+          "items": {}
+        }
+      ]
+    },
+    {
+      "name": "review_place_command_unloaded",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:structure_block"
+        },
+        {
+          "offset": [1, 1, 1],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "actions": [
+        {
+          "edit": {
+            "offset": [0, 0, 0],
+            "action": 1,
+            "mode": 0,
+            "name": "test:roundtrip",
+            "pos": [1, 1, 1],
+            "size": [1, 1, 1],
+            "mirror": 0,
+            "rotation": 0,
+            "metadata": "",
+            "ignoreEntities": true,
+            "strict": false,
+            "showAir": false,
+            "showBox": true,
+            "integrity": 1,
+            "seed": 42
+          }
+        },
+        {
+          "command": "place template test:roundtrip 1000000 81 1000000 none none 1 42 strict"
+        }
+      ],
+      "checkpoints": [
+        {
+          "blocks": [
+            "0,0,0=minecraft:structure_block[mode=save]",
+            "1,1,1=minecraft:redstone_block"
+          ],
+          "saved": {
+            "0,0,0": {
+              "author": "",
+              "ignoreEntities": "1:1b",
+              "integrity": "5:1f",
+              "metadata": "",
+              "mirror": "NONE",
+              "mode": "SAVE",
+              "name": "test:roundtrip",
+              "posX": "3:1",
+              "posY": "3:1",
+              "posZ": "3:1",
+              "powered": "1:0b",
+              "rotation": "NONE",
+              "seed": "4:42l",
+              "showair": "1:0b",
+              "showboundingbox": "1:1b",
+              "sizeX": "3:1",
+              "sizeY": "3:1",
+              "sizeZ": "3:1",
+              "strict": "1:0b"
+            }
+          },
+          "blockEntities": {},
+          "chat": [
+            "Structure saved as 'test:roundtrip'"
+          ],
+          "files": {
+            "test/structure/roundtrip.nbt": {
+              "DataVersion": "3:5023",
+              "blocks": [
+                {
+                  "pos": [
+                    "3:0",
+                    "3:0",
+                    "3:0"
+                  ],
+                  "state": "3:0"
+                }
+              ],
+              "entities": [],
+              "palette": [
+                {
+                  "id": "minecraft:redstone_block"
+                }
+              ],
+              "size": [
+                "3:1",
+                "3:1",
+                "3:1"
+              ]
+            }
+          },
+          "entities": [],
+          "items": {}
+        },
+        {
+          "blocks": [
+            "0,0,0=minecraft:structure_block[mode=save]",
+            "1,1,1=minecraft:redstone_block"
+          ],
+          "saved": {
+            "0,0,0": {
+              "author": "",
+              "ignoreEntities": "1:1b",
+              "integrity": "5:1f",
+              "metadata": "",
+              "mirror": "NONE",
+              "mode": "SAVE",
+              "name": "test:roundtrip",
+              "posX": "3:1",
+              "posY": "3:1",
+              "posZ": "3:1",
+              "powered": "1:0b",
+              "rotation": "NONE",
+              "seed": "4:42l",
+              "showair": "1:0b",
+              "showboundingbox": "1:1b",
+              "sizeX": "3:1",
+              "sizeY": "3:1",
+              "sizeZ": "3:1",
+              "strict": "1:0b"
+            }
+          },
+          "blockEntities": {},
+          "chat": [
+            "That position is not loaded"
+          ],
+          "files": {
+            "test/structure/roundtrip.nbt": {
+              "DataVersion": "3:5023",
+              "blocks": [
+                {
+                  "pos": [
+                    "3:0",
+                    "3:0",
+                    "3:0"
+                  ],
+                  "state": "3:0"
+                }
+              ],
+              "entities": [],
+              "palette": [
+                {
+                  "id": "minecraft:redstone_block"
+                }
+              ],
+              "size": [
+                "3:1",
+                "3:1",
+                "3:1"
+              ]
+            }
+          },
+          "entities": [],
+          "items": {}
+        }
+      ]
+    },
+    {
+      "name": "review_portable_paths",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:structure_block"
+        },
+        {
+          "offset": [1, 1, 1],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "actions": [
+        {
+          "edit": {
+            "offset": [0, 0, 0],
+            "action": 1,
+            "mode": 0,
+            "name": "test:a//b",
+            "pos": [1, 1, 1],
+            "size": [1, 1, 1],
+            "mirror": 0,
+            "rotation": 0,
+            "metadata": "",
+            "ignoreEntities": true,
+            "strict": false,
+            "showAir": false,
+            "showBox": true,
+            "integrity": 1,
+            "seed": 42
+          }
+        },
+        {
+          "edit": {
+            "offset": [0, 0, 0],
+            "action": 1,
+            "mode": 0,
+            "name": "test:../escape",
+            "pos": [1, 1, 1],
+            "size": [1, 1, 1],
+            "mirror": 0,
+            "rotation": 0,
+            "metadata": "",
+            "ignoreEntities": true,
+            "strict": false,
+            "showAir": false,
+            "showBox": true,
+            "integrity": 1,
+            "seed": 42
+          }
+        },
+        {
+          "edit": {
+            "offset": [0, 0, 0],
+            "action": 1,
+            "mode": 0,
+            "name": "test:folder/./escape",
+            "pos": [1, 1, 1],
+            "size": [1, 1, 1],
+            "mirror": 0,
+            "rotation": 0,
+            "metadata": "",
+            "ignoreEntities": true,
+            "strict": false,
+            "showAir": false,
+            "showBox": true,
+            "integrity": 1,
+            "seed": 42
+          }
+        },
+        {
+          "edit": {
+            "offset": [0, 0, 0],
+            "action": 1,
+            "mode": 0,
+            "name": "test:con",
+            "pos": [1, 1, 1],
+            "size": [1, 1, 1],
+            "mirror": 0,
+            "rotation": 0,
+            "metadata": "",
+            "ignoreEntities": true,
+            "strict": false,
+            "showAir": false,
+            "showBox": true,
+            "integrity": 1,
+            "seed": 42
+          }
+        },
+        {
+          "edit": {
+            "offset": [0, 0, 0],
+            "action": 1,
+            "mode": 0,
+            "name": "test:folder/nul",
+            "pos": [1, 1, 1],
+            "size": [1, 1, 1],
+            "mirror": 0,
+            "rotation": 0,
+            "metadata": "",
+            "ignoreEntities": true,
+            "strict": false,
+            "showAir": false,
+            "showBox": true,
+            "integrity": 1,
+            "seed": 42
+          }
+        },
+        {
+          "edit": {
+            "offset": [0, 0, 0],
+            "action": 1,
+            "mode": 0,
+            "name": "test:com1.nbt",
+            "pos": [1, 1, 1],
+            "size": [1, 1, 1],
+            "mirror": 0,
+            "rotation": 0,
+            "metadata": "",
+            "ignoreEntities": true,
+            "strict": false,
+            "showAir": false,
+            "showBox": true,
+            "integrity": 1,
+            "seed": 42
+          }
+        },
+        {
+          "edit": {
+            "offset": [0, 0, 0],
+            "action": 1,
+            "mode": 0,
+            "name": "test:lpt9",
+            "pos": [1, 1, 1],
+            "size": [1, 1, 1],
+            "mirror": 0,
+            "rotation": 0,
+            "metadata": "",
+            "ignoreEntities": true,
+            "strict": false,
+            "showAir": false,
+            "showBox": true,
+            "integrity": 1,
+            "seed": 42
+          }
+        },
+        {
+          "edit": {
+            "offset": [0, 0, 0],
+            "action": 1,
+            "mode": 0,
+            "name": "test:folder./part",
+            "pos": [1, 1, 1],
+            "size": [1, 1, 1],
+            "mirror": 0,
+            "rotation": 0,
+            "metadata": "",
+            "ignoreEntities": true,
+            "strict": false,
+            "showAir": false,
+            "showBox": true,
+            "integrity": 1,
+            "seed": 42
+          }
+        },
+        {
+          "edit": {
+            "offset": [0, 0, 0],
+            "action": 1,
+            "mode": 0,
+            "name": "test:com0",
+            "pos": [1, 1, 1],
+            "size": [1, 1, 1],
+            "mirror": 0,
+            "rotation": 0,
+            "metadata": "",
+            "ignoreEntities": true,
+            "strict": false,
+            "showAir": false,
+            "showBox": true,
+            "integrity": 1,
+            "seed": 42
+          }
+        },
+        {
+          "edit": {
+            "offset": [0, 0, 0],
+            "action": 1,
+            "mode": 0,
+            "name": "test:",
+            "pos": [1, 1, 1],
+            "size": [1, 1, 1],
+            "mirror": 0,
+            "rotation": 0,
+            "metadata": "",
+            "ignoreEntities": true,
+            "strict": false,
+            "showAir": false,
+            "showBox": true,
+            "integrity": 1,
+            "seed": 42
+          }
+        },
+        {
+          "edit": {
+            "offset": [0, 0, 0],
+            "action": 1,
+            "mode": 0,
+            "name": "test:folder/",
+            "pos": [1, 1, 1],
+            "size": [1, 1, 1],
+            "mirror": 0,
+            "rotation": 0,
+            "metadata": "",
+            "ignoreEntities": true,
+            "strict": false,
+            "showAir": false,
+            "showBox": true,
+            "integrity": 1,
+            "seed": 42
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "blocks": [
+            "0,0,0=minecraft:structure_block[mode=save]",
+            "1,1,1=minecraft:redstone_block"
+          ],
+          "saved": {
+            "0,0,0": {
+              "author": "",
+              "ignoreEntities": "1:1b",
+              "integrity": "5:1f",
+              "metadata": "",
+              "mirror": "NONE",
+              "mode": "SAVE",
+              "name": "test:a//b",
+              "posX": "3:1",
+              "posY": "3:1",
+              "posZ": "3:1",
+              "powered": "1:0b",
+              "rotation": "NONE",
+              "seed": "4:42l",
+              "showair": "1:0b",
+              "showboundingbox": "1:1b",
+              "sizeX": "3:1",
+              "sizeY": "3:1",
+              "sizeZ": "3:1",
+              "strict": "1:0b"
+            }
+          },
+          "blockEntities": {},
+          "chat": [
+            "Unable to save structure 'test:a//b'"
+          ],
+          "files": {},
+          "entities": [],
+          "items": {}
+        },
+        {
+          "blocks": [
+            "0,0,0=minecraft:structure_block[mode=save]",
+            "1,1,1=minecraft:redstone_block"
+          ],
+          "saved": {
+            "0,0,0": {
+              "author": "",
+              "ignoreEntities": "1:1b",
+              "integrity": "5:1f",
+              "metadata": "",
+              "mirror": "NONE",
+              "mode": "SAVE",
+              "name": "test:../escape",
+              "posX": "3:1",
+              "posY": "3:1",
+              "posZ": "3:1",
+              "powered": "1:0b",
+              "rotation": "NONE",
+              "seed": "4:42l",
+              "showair": "1:0b",
+              "showboundingbox": "1:1b",
+              "sizeX": "3:1",
+              "sizeY": "3:1",
+              "sizeZ": "3:1",
+              "strict": "1:0b"
+            }
+          },
+          "blockEntities": {},
+          "chat": [
+            "Unable to save structure 'test:../escape'"
+          ],
+          "files": {},
+          "entities": [],
+          "items": {}
+        },
+        {
+          "blocks": [
+            "0,0,0=minecraft:structure_block[mode=save]",
+            "1,1,1=minecraft:redstone_block"
+          ],
+          "saved": {
+            "0,0,0": {
+              "author": "",
+              "ignoreEntities": "1:1b",
+              "integrity": "5:1f",
+              "metadata": "",
+              "mirror": "NONE",
+              "mode": "SAVE",
+              "name": "test:folder/./escape",
+              "posX": "3:1",
+              "posY": "3:1",
+              "posZ": "3:1",
+              "powered": "1:0b",
+              "rotation": "NONE",
+              "seed": "4:42l",
+              "showair": "1:0b",
+              "showboundingbox": "1:1b",
+              "sizeX": "3:1",
+              "sizeY": "3:1",
+              "sizeZ": "3:1",
+              "strict": "1:0b"
+            }
+          },
+          "blockEntities": {},
+          "chat": [
+            "Unable to save structure 'test:folder/./escape'"
+          ],
+          "files": {},
+          "entities": [],
+          "items": {}
+        },
+        {
+          "blocks": [
+            "0,0,0=minecraft:structure_block[mode=save]",
+            "1,1,1=minecraft:redstone_block"
+          ],
+          "saved": {
+            "0,0,0": {
+              "author": "",
+              "ignoreEntities": "1:1b",
+              "integrity": "5:1f",
+              "metadata": "",
+              "mirror": "NONE",
+              "mode": "SAVE",
+              "name": "test:con",
+              "posX": "3:1",
+              "posY": "3:1",
+              "posZ": "3:1",
+              "powered": "1:0b",
+              "rotation": "NONE",
+              "seed": "4:42l",
+              "showair": "1:0b",
+              "showboundingbox": "1:1b",
+              "sizeX": "3:1",
+              "sizeY": "3:1",
+              "sizeZ": "3:1",
+              "strict": "1:0b"
+            }
+          },
+          "blockEntities": {},
+          "chat": [
+            "Unable to save structure 'test:con'"
+          ],
+          "files": {},
+          "entities": [],
+          "items": {}
+        },
+        {
+          "blocks": [
+            "0,0,0=minecraft:structure_block[mode=save]",
+            "1,1,1=minecraft:redstone_block"
+          ],
+          "saved": {
+            "0,0,0": {
+              "author": "",
+              "ignoreEntities": "1:1b",
+              "integrity": "5:1f",
+              "metadata": "",
+              "mirror": "NONE",
+              "mode": "SAVE",
+              "name": "test:folder/nul",
+              "posX": "3:1",
+              "posY": "3:1",
+              "posZ": "3:1",
+              "powered": "1:0b",
+              "rotation": "NONE",
+              "seed": "4:42l",
+              "showair": "1:0b",
+              "showboundingbox": "1:1b",
+              "sizeX": "3:1",
+              "sizeY": "3:1",
+              "sizeZ": "3:1",
+              "strict": "1:0b"
+            }
+          },
+          "blockEntities": {},
+          "chat": [
+            "Unable to save structure 'test:folder/nul'"
+          ],
+          "files": {},
+          "entities": [],
+          "items": {}
+        },
+        {
+          "blocks": [
+            "0,0,0=minecraft:structure_block[mode=save]",
+            "1,1,1=minecraft:redstone_block"
+          ],
+          "saved": {
+            "0,0,0": {
+              "author": "",
+              "ignoreEntities": "1:1b",
+              "integrity": "5:1f",
+              "metadata": "",
+              "mirror": "NONE",
+              "mode": "SAVE",
+              "name": "test:com1.nbt",
+              "posX": "3:1",
+              "posY": "3:1",
+              "posZ": "3:1",
+              "powered": "1:0b",
+              "rotation": "NONE",
+              "seed": "4:42l",
+              "showair": "1:0b",
+              "showboundingbox": "1:1b",
+              "sizeX": "3:1",
+              "sizeY": "3:1",
+              "sizeZ": "3:1",
+              "strict": "1:0b"
+            }
+          },
+          "blockEntities": {},
+          "chat": [
+            "Unable to save structure 'test:com1.nbt'"
+          ],
+          "files": {},
+          "entities": [],
+          "items": {}
+        },
+        {
+          "blocks": [
+            "0,0,0=minecraft:structure_block[mode=save]",
+            "1,1,1=minecraft:redstone_block"
+          ],
+          "saved": {
+            "0,0,0": {
+              "author": "",
+              "ignoreEntities": "1:1b",
+              "integrity": "5:1f",
+              "metadata": "",
+              "mirror": "NONE",
+              "mode": "SAVE",
+              "name": "test:lpt9",
+              "posX": "3:1",
+              "posY": "3:1",
+              "posZ": "3:1",
+              "powered": "1:0b",
+              "rotation": "NONE",
+              "seed": "4:42l",
+              "showair": "1:0b",
+              "showboundingbox": "1:1b",
+              "sizeX": "3:1",
+              "sizeY": "3:1",
+              "sizeZ": "3:1",
+              "strict": "1:0b"
+            }
+          },
+          "blockEntities": {},
+          "chat": [
+            "Unable to save structure 'test:lpt9'"
+          ],
+          "files": {},
+          "entities": [],
+          "items": {}
+        },
+        {
+          "blocks": [
+            "0,0,0=minecraft:structure_block[mode=save]",
+            "1,1,1=minecraft:redstone_block"
+          ],
+          "saved": {
+            "0,0,0": {
+              "author": "",
+              "ignoreEntities": "1:1b",
+              "integrity": "5:1f",
+              "metadata": "",
+              "mirror": "NONE",
+              "mode": "SAVE",
+              "name": "test:folder./part",
+              "posX": "3:1",
+              "posY": "3:1",
+              "posZ": "3:1",
+              "powered": "1:0b",
+              "rotation": "NONE",
+              "seed": "4:42l",
+              "showair": "1:0b",
+              "showboundingbox": "1:1b",
+              "sizeX": "3:1",
+              "sizeY": "3:1",
+              "sizeZ": "3:1",
+              "strict": "1:0b"
+            }
+          },
+          "blockEntities": {},
+          "chat": [
+            "Unable to save structure 'test:folder./part'"
+          ],
+          "files": {},
+          "entities": [],
+          "items": {}
+        },
+        {
+          "blocks": [
+            "0,0,0=minecraft:structure_block[mode=save]",
+            "1,1,1=minecraft:redstone_block"
+          ],
+          "saved": {
+            "0,0,0": {
+              "author": "",
+              "ignoreEntities": "1:1b",
+              "integrity": "5:1f",
+              "metadata": "",
+              "mirror": "NONE",
+              "mode": "SAVE",
+              "name": "test:com0",
+              "posX": "3:1",
+              "posY": "3:1",
+              "posZ": "3:1",
+              "powered": "1:0b",
+              "rotation": "NONE",
+              "seed": "4:42l",
+              "showair": "1:0b",
+              "showboundingbox": "1:1b",
+              "sizeX": "3:1",
+              "sizeY": "3:1",
+              "sizeZ": "3:1",
+              "strict": "1:0b"
+            }
+          },
+          "blockEntities": {},
+          "chat": [
+            "Structure saved as 'test:com0'"
+          ],
+          "files": {
+            "test/structure/com0.nbt": {
+              "DataVersion": "3:5023",
+              "blocks": [
+                {
+                  "pos": [
+                    "3:0",
+                    "3:0",
+                    "3:0"
+                  ],
+                  "state": "3:0"
+                }
+              ],
+              "entities": [],
+              "palette": [
+                {
+                  "id": "minecraft:redstone_block"
+                }
+              ],
+              "size": [
+                "3:1",
+                "3:1",
+                "3:1"
+              ]
+            }
+          },
+          "entities": [],
+          "items": {}
+        },
+        {
+          "blocks": [
+            "0,0,0=minecraft:structure_block[mode=save]",
+            "1,1,1=minecraft:redstone_block"
+          ],
+          "saved": {
+            "0,0,0": {
+              "author": "",
+              "ignoreEntities": "1:1b",
+              "integrity": "5:1f",
+              "metadata": "",
+              "mirror": "NONE",
+              "mode": "SAVE",
+              "name": "test:",
+              "posX": "3:1",
+              "posY": "3:1",
+              "posZ": "3:1",
+              "powered": "1:0b",
+              "rotation": "NONE",
+              "seed": "4:42l",
+              "showair": "1:0b",
+              "showboundingbox": "1:1b",
+              "sizeX": "3:1",
+              "sizeY": "3:1",
+              "sizeZ": "3:1",
+              "strict": "1:0b"
+            }
+          },
+          "blockEntities": {},
+          "chat": [
+            "Structure saved as 'test:'"
+          ],
+          "files": {
+            "test/structure/.nbt": {
+              "DataVersion": "3:5023",
+              "blocks": [
+                {
+                  "pos": [
+                    "3:0",
+                    "3:0",
+                    "3:0"
+                  ],
+                  "state": "3:0"
+                }
+              ],
+              "entities": [],
+              "palette": [
+                {
+                  "id": "minecraft:redstone_block"
+                }
+              ],
+              "size": [
+                "3:1",
+                "3:1",
+                "3:1"
+              ]
+            },
+            "test/structure/com0.nbt": {
+              "DataVersion": "3:5023",
+              "blocks": [
+                {
+                  "pos": [
+                    "3:0",
+                    "3:0",
+                    "3:0"
+                  ],
+                  "state": "3:0"
+                }
+              ],
+              "entities": [],
+              "palette": [
+                {
+                  "id": "minecraft:redstone_block"
+                }
+              ],
+              "size": [
+                "3:1",
+                "3:1",
+                "3:1"
+              ]
+            }
+          },
+          "entities": [],
+          "items": {}
+        },
+        {
+          "blocks": [
+            "0,0,0=minecraft:structure_block[mode=save]",
+            "1,1,1=minecraft:redstone_block"
+          ],
+          "saved": {
+            "0,0,0": {
+              "author": "",
+              "ignoreEntities": "1:1b",
+              "integrity": "5:1f",
+              "metadata": "",
+              "mirror": "NONE",
+              "mode": "SAVE",
+              "name": "test:folder/",
+              "posX": "3:1",
+              "posY": "3:1",
+              "posZ": "3:1",
+              "powered": "1:0b",
+              "rotation": "NONE",
+              "seed": "4:42l",
+              "showair": "1:0b",
+              "showboundingbox": "1:1b",
+              "sizeX": "3:1",
+              "sizeY": "3:1",
+              "sizeZ": "3:1",
+              "strict": "1:0b"
+            }
+          },
+          "blockEntities": {},
+          "chat": [
+            "Structure saved as 'test:folder/'"
+          ],
+          "files": {
+            "test/structure/.nbt": {
+              "DataVersion": "3:5023",
+              "blocks": [
+                {
+                  "pos": [
+                    "3:0",
+                    "3:0",
+                    "3:0"
+                  ],
+                  "state": "3:0"
+                }
+              ],
+              "entities": [],
+              "palette": [
+                {
+                  "id": "minecraft:redstone_block"
+                }
+              ],
+              "size": [
+                "3:1",
+                "3:1",
+                "3:1"
+              ]
+            },
+            "test/structure/com0.nbt": {
+              "DataVersion": "3:5023",
+              "blocks": [
+                {
+                  "pos": [
+                    "3:0",
+                    "3:0",
+                    "3:0"
+                  ],
+                  "state": "3:0"
+                }
+              ],
+              "entities": [],
+              "palette": [
+                {
+                  "id": "minecraft:redstone_block"
+                }
+              ],
+              "size": [
+                "3:1",
+                "3:1",
+                "3:1"
+              ]
+            },
+            "test/structure/folder/.nbt": {
+              "DataVersion": "3:5023",
+              "blocks": [
+                {
+                  "pos": [
+                    "3:0",
+                    "3:0",
+                    "3:0"
+                  ],
+                  "state": "3:0"
+                }
+              ],
+              "entities": [],
+              "palette": [
+                {
+                  "id": "minecraft:redstone_block"
+                }
+              ],
+              "size": [
+                "3:1",
+                "3:1",
+                "3:1"
+              ]
+            }
+          },
+          "entities": [],
+          "items": {}
+        }
+      ]
     }
   ]
 }

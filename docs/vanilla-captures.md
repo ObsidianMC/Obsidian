@@ -495,8 +495,8 @@ reconstructed threshold reads changing blocks rather than vanilla's stored pre-F
 `Obsidian.Tests/Assets/structure_blocks.json` is a gameplay capture of the real 26.3 structure editor, block entity
 saves, generated template files and redstone triggers. It uses the scenario probe route, independently of worldgen
 captures: `dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=structure_blocks`.
-`CaptureCases` accepts exact `+`-separated names. The 24 cases cover modes/actions, validation, corner detection,
+`CaptureCases` accepts exact `+`-separated names. The 29 cases cover modes/actions, validation, corner detection,
 strict placement, rotation/mirror/integrity, entity and chest round trips, author and file reloads, and redstone.
-`VanillaStructureBlocks` compares all 62 checkpoints from the start, with the exact generic entity-save and unsupported wire-drop
+`VanillaStructureBlocks` compares all 82 checkpoints from the start, with the exact generic entity-save and unsupported wire-drop
 exceptions described in [structure blocks](known-gaps/structure-blocks.md). See
 [scenario captures](scenario-captures.md) for the input/output schema and focused re-recording command.

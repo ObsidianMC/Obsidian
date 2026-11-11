@@ -82,6 +82,8 @@ public sealed class VanillaStructureBlocks(ITestOutputHelper output)
             (VectorD)origin + new VectorD(.5, 0, -8.5));
         await TestServerFactory.JoinConnectedPlayerAsync(context.Server, player);
         MakeOperator(context.Server, player);
+        ((CommandHandler)context.Server.CommandHandler)
+            .RegisterCommandClass<Obsidian.Commands.Modules.PlaceCommandModule>(null);
         player.GameMode = GameMode.Creative;
         return new Harness(context, origin, player);
     }
@@ -145,6 +147,13 @@ public sealed class VanillaStructureBlocks(ITestOutputHelper output)
                 SetPermission(harness, action.TryGetProperty("nonOp", out _) ? 0 : 4);
                 await Packet(harness.Origin, edit).HandleAsync(harness.Context.Server, harness.Operator);
                 SetPermission(harness, 4);
+            }
+            else if (action.TryGetProperty("command", out var command))
+            {
+                var text = "/" + command.GetString();
+                var sender = new Obsidian.API.Commands.CommandSender(CommandIssuers.Client, harness.Operator);
+                var commandContext = new CommandContext(text, sender, harness.Operator, harness.Context.Server);
+                await ((CommandHandler)harness.Context.Server.CommandHandler).ProcessCommand(commandContext);
             }
             else
             {

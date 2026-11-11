@@ -346,6 +346,9 @@ public sealed partial class StructureTemplate
                     var updated = ShapeUpdater.UpdateFromNeighbourShapes(level, current, target);
                     if (!updated.IsSameState(current))
                         level.SetBlock(target, updated);
+
+                    if (level is StructureBlockLevel live)
+                        live.NotifyNeighbors(target);
                 }
             }
         }

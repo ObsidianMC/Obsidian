@@ -1,7 +1,7 @@
 # Structure blocks
 
 The structure editor, saved settings, SAVE/LOAD/CORNER/DATA, corner detection and rising-edge redstone triggers
-are implemented against the cached 26.3 server. `structure_blocks.json` has 24 cases and 62 checkpoints, replayed
+are implemented against the cached 26.3 server. `structure_blocks.json` has 29 cases and 82 checkpoints, replayed
 by `VanillaStructureBlocks.ReplayStructureBlockReference`. Jigsaw editors and generation are a separate task.
 
 ## Exact captured differences
@@ -33,6 +33,29 @@ miss or missing destination chunks is queued to the entity action path, so its p
 vanilla's synchronous neighbor reaction. A SAVE whose area needs generation similarly snapshots after that area
 is ready. The fixture compares completed actions by draining that queue, without advancing unrelated game ticks.
 The existing chunk-ticket generation waiter keeps the area resident until snapshotting/placement finishes.
+
+## Review regressions covered
+
+Template names share a portable-file check before SAVE, LOAD, DETECT, redstone actions, `/place template` and
+resource fallback. Traversal and empty/dot directory segments cannot reach file or resource lookups. Windows
+reserved names (`con`, `nul`, `com1`, `lpt9` and their extensions) and directory names ending in a dot are rejected
+on every platform, matching 26.3's `FileUtil.isPathPartPortable`. `review_portable_paths` captures these rules.
+The converter appends `.nbt` before vanilla validates its segments: `test:` and `test:folder/` are valid filenames
+`.nbt` and `folder/.nbt`, so they remain accepted. Editor identifiers are retained for saved data and feedback;
+the shared portable-file check gates their use. Obsidian-only tests plant a real escaped resource outside the
+resource root and require both the block's LOAD and `/place template` to reject it.
+
+Eviction removes the current cache entry identity. A pending read can publish only against that same identity;
+a worker completing after CORNER eviction retries in the current generation. An explicitly gated test covers
+both a pending template and a pending missing-file result, with no sleeps or timeouts.
+
+After every non-strict template placement's shape pass, placed positions notify their neighbors. The two
+`review_load_notifications_*` captures distinguish a neighboring lamp lighting normally from remaining unlit
+under strict placement. `review_place_command_strict` captures the command's trailing `strict` argument and the
+same distinction, including vanilla's success feedback. `/place template` checks the unrotated position through
+position+size chunk range, including the far endpoint, as 26.3 does; it returns "That position is not loaded"
+without loading or generating missing destination chunks. `review_place_command_unloaded` records that message,
+and an Obsidian-only test covers the inclusive endpoint chunk and verifies no chunks were generated.
 
 ## Limits of the evidence
 

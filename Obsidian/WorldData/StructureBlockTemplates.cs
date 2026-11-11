@@ -10,7 +10,13 @@ namespace Obsidian.WorldData;
 /// </summary>
 internal sealed class StructureBlockTemplates
 {
-    private sealed record Entry(StructureTemplate? Template);
+    // Generations need reference equality: two unloaded entries must not compare equal after eviction.
+    private sealed class Entry(StructureTemplate? template, bool loaded = true)
+    {
+        public StructureTemplate? Template { get; } = template;
+
+        public bool Loaded { get; } = loaded;
+    }
 
     private static readonly ConditionalWeakTable<World, StructureBlockTemplates> worlds = new();
 
@@ -18,8 +24,18 @@ internal sealed class StructureBlockTemplates
     private readonly object writesLock = new();
     private Task pendingWrites = Task.CompletedTask;
     private readonly string generated;
+    private readonly Func<string, Task<StructureTemplate?>>? readSource;
 
-    private StructureBlockTemplates(World world) => this.generated = Path.Combine(world.WorldFolderPath, "generated");
+    private StructureBlockTemplates(World world) : this(Path.Combine(world.WorldFolderPath, "generated"))
+    {
+    }
+
+    /// <summary>A generated-file store, optionally supplied an asynchronous source reader.</summary>
+    internal StructureBlockTemplates(string generated, Func<string, Task<StructureTemplate?>>? readSource = null)
+    {
+        this.generated = generated;
+        this.readSource = readSource;
+    }
 
     internal static StructureBlockTemplates For(AbstractLevel level)
     {
@@ -31,43 +47,64 @@ internal sealed class StructureBlockTemplates
 
     internal void Remove(string name) => this.cache.TryRemove(name, out _);
 
-    internal StructureTemplate? Cached(string name) => this.cache.GetValueOrDefault(name)?.Template;
+    internal StructureTemplate? Cached(string name) =>
+        StructureTemplateNames.IsValid(name) ? this.cache.GetValueOrDefault(name)?.Template : null;
 
-    internal void Put(string name, StructureTemplate template) => this.cache[name] = new Entry(template);
+    internal void Put(string name, StructureTemplate template)
+    {
+        if (StructureTemplateNames.IsValid(name))
+            this.cache[name] = new Entry(template);
+    }
 
     internal Task<StructureTemplate?> ReadAsync(string name)
     {
-        if (this.cache.TryGetValue(name, out var cached))
-            return Task.FromResult(cached.Template);
+        // A rejected generated path must never reach the resource fallback, even if no file was opened.
+        if (!StructureTemplateNames.IsValid(name))
+            return Task.FromResult<StructureTemplate?>(null);
 
-        return Task.Run(() =>
+        var entry = this.cache.GetOrAdd(name, static _ => new Entry(null, loaded: false));
+        return entry.Loaded ? Task.FromResult(entry.Template) : this.ReadAndPublishAsync(name, entry);
+    }
+
+    private async Task<StructureTemplate?> ReadAndPublishAsync(string name, Entry expected)
+    {
+        var template = await (this.readSource?.Invoke(name) ?? Task.Run(() => this.ReadFromSources(name)))
+            .ConfigureAwait(false);
+
+        // Entry identity is the eviction generation. Remove or SAVE replaces it, so a pending worker cannot
+        // repopulate an evicted name or overwrite a newer snapshot. Retry against the current generation.
+        if (this.cache.TryUpdate(name, new Entry(template), expected))
+            return template;
+
+        return await this.ReadAsync(name).ConfigureAwait(false);
+    }
+
+    private StructureTemplate? ReadFromSources(string name)
+    {
+        StructureTemplate? template = null;
+        try
         {
-            StructureTemplate? template = null;
-            try
+            var path = this.PathFor(name);
+            if (File.Exists(path))
             {
-                var path = this.PathFor(name);
-                if (File.Exists(path))
-                {
-                    using var stream = File.OpenRead(path);
-                    template = StructureTemplate.Load(stream);
-                }
+                using var stream = File.OpenRead(path);
+                template = StructureTemplate.Load(stream);
             }
-            catch (Exception exception) when (exception is not OutOfMemoryException)
-            {
-                // Vanilla tries resource templates after an unreadable generated file.
-            }
+        }
+        catch (Exception exception) when (exception is not OutOfMemoryException)
+        {
+            // Vanilla tries resource templates after an unreadable generated file, only for a valid name.
+        }
 
-            if (template is null)
-            {
-                template = PluginStructures.CurrentRegistry.Templates.GetValueOrDefault(name)
-                    ?? StructureRegistry.GetCurrent(name);
-                if (template.Size == Vector.Zero)
-                    template = null;
-            }
+        if (template is null)
+        {
+            template = PluginStructures.CurrentRegistry.Templates.GetValueOrDefault(name)
+                ?? StructureRegistry.GetCurrent(name);
+            if (template.Size == Vector.Zero)
+                template = null;
+        }
 
-            // A redstone save may have published a newer snapshot while the worker read the disk.
-            return this.cache.GetOrAdd(name, new Entry(template)).Template;
-        });
+        return template;
     }
 
     /// <summary>
@@ -76,6 +113,9 @@ internal sealed class StructureBlockTemplates
     /// </summary>
     internal Task<bool> WriteAsync(string name, StructureTemplate template)
     {
+        if (!StructureTemplateNames.IsValid(name))
+            return Task.FromResult(false);
+
         lock (this.writesLock)
         {
             var previous = this.pendingWrites;
@@ -106,14 +146,12 @@ internal sealed class StructureBlockTemplates
 
     private string PathFor(string name)
     {
-        var split = name.IndexOf(':');
-        var resource = name[(split + 1)..];
-        // Identifiers may contain dots, but file paths must stay inside generated/<namespace>/structure.
-        var ns = name[..split];
-        if (ns is "." or ".."
-            || resource.Length > 0 && resource.Split('/').Any(part => part is "" or "." or ".."))
+        if (!StructureTemplateNames.IsValid(name))
             throw new ArgumentException("Invalid structure path", nameof(name));
 
+        var split = name.IndexOf(':');
+        var ns = name[..split];
+        var resource = name[(split + 1)..];
         return Path.Combine(this.generated, ns, "structure", resource.Replace('/', Path.DirectorySeparatorChar)
             + ".nbt");
     }

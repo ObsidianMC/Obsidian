@@ -166,6 +166,9 @@ public final class StructureBlockFixtures {
                     edit(player, edit);
                     if (!op)
                         server.getPlayerList().op(new NameAndId(player.getGameProfile()));
+                } else if (action.has("command")) {
+                    server.getCommands().performPrefixedCommand(player.createCommandSourceStack(),
+                        action.get("command").getAsString());
                 } else {
                     var pos = origin.offset(position(action.getAsJsonArray("offset")));
                     level.setBlock(pos, state(action.get("state").getAsString()),
