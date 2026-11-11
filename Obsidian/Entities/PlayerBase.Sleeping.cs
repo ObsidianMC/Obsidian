@@ -1,7 +1,9 @@
+using Obsidian.API.Blocks;
 using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
+using Obsidian.WorldData.Features;
 
 namespace Obsidian.Entities;
 
@@ -15,9 +17,6 @@ public partial class PlayerBase
 {
     // How long a player sleeps before they count towards skipping the night (vanilla's Player.SLEEP_DURATION).
     internal const int DeepSleepTicks = 100;
-
-    // Where a sleeping player's position is in their bed's head, as vanilla's LivingEntity.setPosToBed puts it.
-    private const double SleepingHeight = 0.6875;
 
     /// <summary>
     /// Where the player respawns; null for the world spawn.
@@ -46,23 +45,28 @@ public partial class PlayerBase
             await this.QueuePacketAsync(new SystemChatPacket(new ChatMessage { Translate = "block.minecraft.set_spawn" }, false));
     }
 
+    // How long a player woken without being forced keeps counting, the client's fade out (vanilla's Player.tick).
+    private const int WakeTimerEnd = 110;
+
+    // Whether the bed the player sleeps in set their spawn, which only then counts as having slept in a bed for
+    // advancements (vanilla's SLEPT_IN_BED trigger).
+    internal bool SleepSetSpawn { get; private set; }
+
     /// <summary>
-    /// Puts the player to sleep in the bed whose head is at <paramref name="head"/>, like vanilla's
-    /// <c>ServerPlayer.startSleepInBed</c>: the bed must be in reach and not obstructed; it sets the player's spawn
-    /// where the bed rule lets it; then the rule must let them sleep now and, out of creative mode, no monster may be
-    /// near.
+    /// Puts the player to sleep in the bed or straw bed whose head is at <paramref name="head"/>, like vanilla's
+    /// <c>ServerPlayer.startSleepInBed</c>: the bed must be in reach and not obstructed; it sets the player's spawn where
+    /// the bed's rule lets it; then the rule must let them sleep now and, out of creative mode, no monster may be near.
+    /// The bed's statistic is awarded, and the players are told how many sleep.
     /// </summary>
-    /// <returns>Why the player can't sleep, to show them; null once they're asleep.</returns>
-    internal async ValueTask<ChatMessage?> StartSleepInBedAsync(Vector head, Vector towardsHead, BedRule rule)
+    /// <returns>Why the player can't sleep, to show them; null once they're asleep, or when nothing is said.</returns>
+    internal async ValueTask<ChatMessage?> StartSleepInBedAsync(Vector head, IBlock bed, BedRule rule)
     {
         if (this.Sleeping || !this.Alive || this.Level is not AbstractLevel level)
             return null;
 
+        var towardsHead = BedBlocks.Facing(bed);
         var canSleep = rule.AllowsSleep(level);
         var canSetSpawn = rule.AllowsSetSpawn(level);
-
-        if (!canSleep && !canSetSpawn)
-            return rule.ErrorMessage;
 
         if (!this.BedInRange(head, towardsHead))
             return new ChatMessage { Translate = "block.minecraft.bed.too_far_away" };
@@ -71,7 +75,10 @@ public partial class PlayerBase
             return new ChatMessage { Translate = "block.minecraft.bed.obstructed" };
 
         if (canSetSpawn)
-            await this.SetRespawnPointAsync(new RespawnPoint(level.DimensionName, head, this.Yaw, Forced: false), announce: true);
+        {
+            var point = new RespawnPoint(level.DimensionName, head, this.Yaw, Forced: false);
+            await this.SetRespawnPointAsync(point, announce: true);
+        }
 
         if (!canSleep)
             return rule.ErrorMessage;
@@ -79,26 +86,43 @@ public partial class PlayerBase
         if (this.GameMode != GameMode.Creative && this.MonstersNear(head))
             return new ChatMessage { Translate = "block.minecraft.bed.not_safe" };
 
-        await SetBedOccupiedAsync(level, head, towardsHead, true);
+        // Vanilla's LivingEntity.startSleeping: nobody lies on a straw bed's head without its foot.
+        if (BedBlocks.SleepHeight(level.BlockUpdates.GetBlock, head, bed) is not double height)
+            return null;
 
         this.LeaveVehicle();
-        this.Motion = VectorD.Zero;
-        this.Position = new VectorD(head.X + 0.5, head.Y + SleepingHeight, head.Z + 0.5);
+        this.Position = new VectorD(head.X + 0.5, head.Y + height, head.Z + 0.5);
         this.BoundingBox = this.Dimension.CreateBBFromPosition(this.Position);
+
+        // Only the head is written; its foot follows through its shape update.
+        await level.SetBlockAsync(head, bed.WithProperty("occupied", "true"), BlockUpdateFlags.All);
+
+        this.Motion = VectorD.Zero;
         this.BedBlockPosition = head;
         this.Pose = Pose.Sleeping;
         this.Sleeping = true;
         this.SleepTimer = 0;
+        this.SleepSetSpawn = canSetSpawn;
         this.SyncFoodMetadata();
 
+        var statistic = bed.Is(BlockIds.StrawBed) ? "minecraft:sleep_in_straw_bed" : "minecraft:sleep_in_bed";
+        this.Statistics.Increment(statistic);
+
+        await level.UpdateSleepingPlayersAsync();
         return null;
     }
 
     /// <summary>
-    /// Wakes the player, like vanilla's <c>ServerPlayer.stopSleepInBed</c>: their bed is free again and they stand up
-    /// beside it.
+    /// Wakes the player, like vanilla's <c>ServerPlayer.stopSleepInBed</c>: their bed is free again, a bed whose rule
+    /// says so (a straw bed's) breaks, and they stand up beside it facing it, where vanilla's
+    /// <c>findStandUpPosition</c> finds room, or on top of it.
     /// </summary>
-    internal async ValueTask StopSleepingAsync()
+    /// <param name="forceful">
+    /// Whether they were woken by force (their bed gone, death), which resets the sleep timer; otherwise it runs on for
+    /// the client's fade, as after leaving the bed or the night passing.
+    /// </param>
+    /// <param name="announce">Whether the players are told how many sleep now; not when everyone wakes at once.</param>
+    internal async ValueTask StopSleepingAsync(bool forceful = true, bool announce = true)
     {
         if (!this.Sleeping)
             return;
@@ -106,26 +130,31 @@ public partial class PlayerBase
         var head = this.BedBlockPosition;
 
         this.Sleeping = false;
-        this.SleepTimer = 0;
         this.BedBlockPosition = null;
         this.Pose = Pose.Standing;
+        this.SleepSetSpawn = false;
 
         var position = this.Position;
         if (head is Vector bed && this.Level is AbstractLevel level)
         {
             var block = await level.GetBlockAsync(bed);
-            if (block is not null && TagsRegistry.Block.Beds.Entries.Contains(block.RegistryId))
+            if (BedBlocks.IsBed(block))
             {
-                var towardsHead = BedFacing(block.GetProperty("facing"));
-                await SetBedOccupiedAsync(level, bed, towardsHead, false);
-                position = await StandUpPositionAsync(level, bed, towardsHead) ?? (VectorD)bed + new VectorD(0.5, 0.5625, 0.5);
-            }
-            else
-            {
-                position = (VectorD)bed + new VectorD(0.5, 0.1, 0.5);
+                var facing = BedBlocks.Facing(block!);
+                await level.SetBlockAsync(bed, block!.WithProperty("occupied", "false"), BlockUpdateFlags.All);
+
+                // Vanilla's onStopSleeping: a bed destroyed on leaving, as straw beds are.
+                if (level.BedRuleAt(bed, block).DestroyOnLeave && block.Is(BlockIds.StrawBed))
+                    await level.BreakStrawBedAsync(bed);
+
+                var standUp = BedBlocks.StandUpPosition(level, bed, facing, this.Yaw);
+                position = standUp ?? (VectorD)bed + new VectorD(0.5, 1.1, 0.5);
+                this.Yaw = BedBlocks.YawTowards(bed, position);
+                this.Pitch = 0;
             }
         }
 
+        this.SleepTimer = (short)(forceful ? 0 : DeepSleepTicks);
         this.PacketBroadcaster.QueuePacketToLevel(this.Level, new AnimatePacket
         {
             EntityId = this.EntityId,
@@ -133,16 +162,25 @@ public partial class PlayerBase
         });
         this.SyncFoodMetadata();
         await this.SendPositionAsync(VectorD.Zero, position: position);
+
+        if (announce && this.Level is AbstractLevel announcing)
+            await announcing.UpdateSleepingPlayersAsync();
     }
 
     /// <summary>
-    /// A sleeping player's tick, like vanilla's <c>Player.tick</c>: the sleep timer runs up to its end, and the player
-    /// wakes when their bed is gone or the bed rule no longer lets them sleep (the morning).
+    /// A player's sleep tick, like vanilla's <c>Player.tick</c>: the sleep timer runs up to its end; the player wakes
+    /// when their bed's rule no longer lets them sleep (the morning), or by force when their bed is gone. Awake, the
+    /// timer runs on to the end of the client's fade.
     /// </summary>
     private async ValueTask TickSleepAsync()
     {
         if (!this.Sleeping)
+        {
+            if (this.SleepTimer > 0 && ++this.SleepTimer >= WakeTimerEnd)
+                this.SleepTimer = 0;
+
             return;
+        }
 
         if (this.SleepTimer < DeepSleepTicks)
             this.SleepTimer++;
@@ -154,38 +192,42 @@ public partial class PlayerBase
         }
 
         var block = await level.GetBlockAsync(head);
-        if (block is null
-            || !TagsRegistry.Block.Beds.Entries.Contains(block.RegistryId)
-            || !level.BedRuleAt(head).AllowsSleep(level))
+        if (!BedBlocks.IsBed(block) || BedBlocks.SleepHeight(level.BlockUpdates.GetBlock, head, block!) is null)
         {
             await this.StopSleepingAsync();
+            return;
         }
+
+        if (!level.BedRuleAt(head, block!).AllowsSleep(level))
+            await this.StopSleepingAsync(forceful: false);
     }
 
-    // Vanilla's ServerPlayer.bedInRange: the bed's head or foot within 3 blocks across and 2 up or down.
-    private bool BedInRange(Vector head, Vector towardsHead)
+    // Vanilla's ServerPlayer.bedInRange: the bed's head or foot within 3 blocks across and 2 up or down of its bottom
+    // centre.
+    private bool BedInRange(Vector head, BlockFace towardsHead)
     {
-        return InReach(head) || InReach(head - towardsHead);
+        return InReach(head) || InReach(head.Offset(towardsHead.Opposite()));
 
         bool InReach(Vector part)
         {
-            var center = (VectorD)part + new VectorD(0.5, 0.5, 0.5);
+            var center = (VectorD)part + new VectorD(0.5, 0, 0.5);
             return Math.Abs(this.Position.X - center.X) <= 3
                 && Math.Abs(this.Position.Y - center.Y) <= 2
                 && Math.Abs(this.Position.Z - center.Z) <= 3;
         }
     }
 
-    // Vanilla's ServerPlayer.bedBlocked: something solid over the head, and over the foot too, keeps the player out.
-    private bool BedObstructed(Vector head, Vector towardsHead)
+    // Vanilla's ServerPlayer.bedBlocked: something suffocating over the head, or over the foot, keeps the player out.
+    private bool BedObstructed(Vector head, BlockFace towardsHead)
     {
         var terrain = new MobTerrain(this.Level);
-        return Blocked(head) && Blocked(head - towardsHead);
+        return Blocked(head) || Blocked(head.Offset(towardsHead.Opposite()));
 
         bool Blocked(Vector part)
         {
             var above = part + new Vector(0, 1, 0);
-            return !terrain.IsFree(new BoundingBox((VectorD)above + new VectorD(0.1, 0, 0.1), (VectorD)above + new VectorD(0.9, 0.9, 0.9)));
+            var cell = new BoundingBox((VectorD)above, (VectorD)above + new VectorD(1, 1, 1));
+            return terrain.ContainsSuffocatingBlock(cell);
         }
     }
 
@@ -199,19 +241,10 @@ public partial class PlayerBase
             && Math.Abs(entity.Position.Z - center.Z) <= 8);
     }
 
-    private static async ValueTask SetBedOccupiedAsync(AbstractLevel level, Vector head, Vector towardsHead, bool occupied)
-    {
-        foreach (var part in new[] { head, head - towardsHead })
-        {
-            var block = await level.GetBlockAsync(part);
-            if (block is not null && TagsRegistry.Block.Beds.Entries.Contains(block.RegistryId))
-                await level.SetBlockAsync(part, block.WithProperty("occupied", occupied ? "true" : "false"), true);
-        }
-    }
-
     /// <summary>
-    /// Where a player stands up from a bed, like vanilla's <c>BedBlock.findStandUpPosition</c>: a free spot with
-    /// ground beside the bed, around its head then its foot, or on top of the bed if there's none.
+    /// Where a player respawns beside a respawn anchor at <paramref name="head"/>: a free spot with ground around it,
+    /// level with it, then above, then below. Vanilla's <c>RespawnAnchorBlock.findStandUpPosition</c> searches its own
+    /// offsets, which this doesn't follow yet.
     /// </summary>
     internal static async ValueTask<VectorD?> StandUpPositionAsync(AbstractLevel level, Vector head, Vector towardsHead)
     {
@@ -257,11 +290,11 @@ public partial class PlayerBase
         if (this.ResolveLevel(point.Dimension) is AbstractLevel level)
         {
             var block = await level.GetBlockAsync(point.Position);
-            if (block is not null && TagsRegistry.Block.Beds.Entries.Contains(block.RegistryId)
-                && level.BedRuleAt(point.Position).AllowsSetSpawn(level)
-                && await StandUpPositionAsync(level, point.Position, BedFacing(block.GetProperty("facing"))) is VectorD bedSpot)
+            if (BedBlocks.IsBed(block) && level.BedRuleAt(point.Position, block!).AllowsSetSpawn(level))
             {
-                return (level, bedSpot, point.Yaw);
+                var facing = BedBlocks.Facing(block!);
+                if (BedBlocks.StandUpPosition(level, point.Position, facing, point.Yaw) is VectorD bedSpot)
+                    return (level, bedSpot, point.Yaw);
             }
 
             if (block is not null && block.Is(BlockIds.RespawnAnchor)
@@ -275,7 +308,9 @@ public partial class PlayerBase
                 return (level, anchorSpot, point.Yaw);
             }
 
-            if (point.Forced)
+            // Vanilla's isPossibleToRespawnInThis: a forced point needs room where its block and the one above are.
+            var above = await level.GetBlockAsync(point.Position + Vector.Up);
+            if (point.Forced && RespawnsInside(level, point.Position, block) && RespawnsInside(level, point.Position + Vector.Up, above))
                 return (level, (VectorD)point.Position + new VectorD(0.5, 0.1, 0.5), point.Yaw);
         }
 
@@ -284,6 +319,13 @@ public partial class PlayerBase
 
         return (fallback, fallback.LevelData.SpawnPosition, this.Yaw);
     }
+
+    // Vanilla's Block.isPossibleToRespawnInThis: nothing solid or liquid. A block with a collision shape counts as
+    // solid here, which vanilla's legacy solid flag mostly agrees with.
+    private static bool RespawnsInside(ILevel level, Vector position, IBlock? block) =>
+        block is not null
+        && !block.IsLiquid
+        && BlockCollisionShapes.Get(level, position, block).Count == 0;
 
     // The overworld of the player's world, whose spawn is the world spawn.
     private ILevel? SharedWorld() => this.Level is IDimension child ? child.ParentWorld : this.Level;
@@ -294,14 +336,6 @@ public partial class PlayerBase
         var world = this.Level is IDimension child ? child.ParentWorld as World : this.Level as World;
         return world?.DimensionName == dimension ? world : world?.dimensions.GetValueOrDefault(dimension);
     }
-
-    private static Vector BedFacing(string? facing) => facing switch
-    {
-        "north" => new Vector(0, 0, -1),
-        "south" => Vector.South,
-        "west" => new Vector(-1, 0, 0),
-        _ => Vector.East
-    };
 
     // Vanilla's saved respawn: { dimension, pos: [I; x, y, z], yaw, pitch, forced }.
     private void WriteRespawnPoint(NbtCompound tag)

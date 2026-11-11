@@ -90,7 +90,7 @@ public sealed class EnvironmentRules
         world.GetLoadedChunk(0, 0)!.SetBlock(foot, footBlock);
         world.GetLoadedChunk(0, 0)!.SetBlock(foot + new Vector(0, 0, -1), headBlock);
 
-        Assert.True(await world.UseBedAsync(player, foot, footBlock));
+        Assert.True((await world.UseBedAsync(player, foot, footBlock)).ConsumesAction());
 
         Assert.False(world.GetLoadedChunk(0, 0)!.GetBlock(foot).Is(BlockIds.RedBed));
         Assert.False(world.GetLoadedChunk(0, 0)!.GetBlock(foot + new Vector(0, 0, -1)).Is(BlockIds.RedBed));
