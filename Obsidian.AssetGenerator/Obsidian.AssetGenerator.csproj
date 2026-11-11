@@ -132,6 +132,7 @@
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)context_int_provider.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)commands-$(MinecraftVersion).json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)context_float_provider.json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)trial_spawner.json" />
 		</ItemGroup>
 	</Target>
 
