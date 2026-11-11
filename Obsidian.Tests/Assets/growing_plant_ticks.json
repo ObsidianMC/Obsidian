@@ -1,5 +1,5 @@
 {
-  "_notes": "Vanilla randomTick of the origin's state, recorded by the asset generator's GrowingPlantTickFixtures.java against a block view of the case's setup (air elsewhere, void air outside the build height of -64 to 319), with every raw brightness the case's light (15 by default), the spread_vines rule as spreadVines says (true by default), and a legacy random seeded with seed as both the tick's random and the level's. ticks is the state's isRandomlyTicking; a state that doesn't tick isn't ticked, and a case without an origin ticks nothing. After the tick, each of the case's actions sets its state with Level.setBlock and UPDATE_ALL, or without a state removes the block (Level.removeBlock). draws lists each draw in order with its bound and result, the shape updates' included. writes are the block changes in order with their update flags, including those of the neighbour shape updates they cause (neighbour notifications are not run). scheduled lists the block and fluid ticks scheduled. after holds the final state of every setup or written position.",
+  "_notes": "Vanilla randomTick of the origin's state, recorded by the asset generator's GrowingPlantTickFixtures.java against a block view of the case's setup (air elsewhere, void air outside the build height of -64 to 319), with every raw brightness the case's light (15 by default), the spread_vines rule as spreadVines says (true by default), and a legacy random seeded with seed as both the tick's random and the level's. ticks is the state's isRandomlyTicking; a state that doesn't tick isn't ticked, and a case without an origin ticks nothing. After the tick, each of the case's actions sets its state with Level.setBlock and UPDATE_ALL, or without a state removes the block (Level.removeBlock). draws lists each draw in order with its bound and result, the shape updates' included. writes are the block changes in order with their update flags, including those of the neighbour shape updates they cause (neighbour notifications are not run). scheduled lists the block and fluid ticks scheduled. after holds the final state of every setup or written position. A case with bonemeal true uses bone meal on the origin instead of ticking it, as BoneMealItem.growCrop does (isValidBonemealTarget, recorded as valid, then isBonemealSuccess and performBonemeal with the level's random). The level's feature registry holds a stand-in for every feature in the jar's data/minecraft/worldgen/feature (a huge mushroom's with its foliage_radius, which bone meal reads; no tree's is a TreeFeature, so a sapling's minimum height reads 0): placing one draws nothing, returns the case's features entry for it (true by default) and is recorded in placed with its origin. bonemealTargetOnly cases instead retain real vanilla tree features and invoke only isValidBonemealTarget, so minimum-height checks are captured without placing a tree.",
   "version": "26.3",
   "cases": [
     {
@@ -7486,6 +7486,7853 @@
             8
           ],
           "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "oak_sapling_tick_seed_3069683297484132604",
+      "seed": 3069683297484132604,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=1]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 4
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=1]"
+        }
+      ]
+    },
+    {
+      "name": "oak_sapling_tick_seed_2177342782468422677",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=1]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 10,
+          "value": 3
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        }
+      ],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:oak",
+          "pos": [
+            8,
+            64,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "oak_sapling_tick_seed_2677021545047129781",
+      "seed": 2677021545047129781,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=1]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 10,
+          "value": 4
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        }
+      ],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:oak",
+          "pos": [
+            8,
+            64,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "oak_sapling_stage_0_ticks",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=0]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=1]",
+          "flags": 260
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=1]"
+        }
+      ]
+    },
+    {
+      "name": "oak_sapling_near_flowers_tick",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            10,
+            64,
+            10
+          ],
+          "state": "minecraft:poppy"
+        },
+        {
+          "pos": [
+            10,
+            63,
+            10
+          ],
+          "state": "minecraft:dirt"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 10,
+          "value": 3
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        }
+      ],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:oak_bees_005",
+          "pos": [
+            8,
+            64,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            10,
+            63,
+            10
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            10,
+            64,
+            10
+          ],
+          "state": "minecraft:poppy"
+        }
+      ]
+    },
+    {
+      "name": "oak_sapling_tree_fails",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=1]"
+        }
+      ],
+      "features": {
+        "minecraft:oak": false,
+        "minecraft:fancy_oak": false
+      },
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 10,
+          "value": 3
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=1]",
+          "flags": 260
+        }
+      ],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:oak",
+          "pos": [
+            8,
+            64,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=1]"
+        }
+      ]
+    },
+    {
+      "name": "oak_sapling_in_light_8",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=1]"
+        }
+      ],
+      "light": 8,
+      "ticks": true,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=1]"
+        }
+      ]
+    },
+    {
+      "name": "poplar_sapling_tick",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:poplar_sapling[stage=1]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 3,
+          "value": 1
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        }
+      ],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:orange_poplar",
+          "pos": [
+            8,
+            64,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "birch_sapling_near_flowers_tick",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:birch_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            6,
+            65,
+            8
+          ],
+          "state": "minecraft:dandelion"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        }
+      ],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:birch_bees_005",
+          "pos": [
+            8,
+            64,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            6,
+            65,
+            8
+          ],
+          "state": "minecraft:dandelion"
+        }
+      ]
+    },
+    {
+      "name": "spruce_saplings_square_tick",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:spruce_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            9
+          ],
+          "state": "minecraft:spruce_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:spruce_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            9
+          ],
+          "state": "minecraft:spruce_sapling[stage=1]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 2,
+          "value": 0
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        },
+        {
+          "pos": [
+            8,
+            64,
+            9
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        },
+        {
+          "pos": [
+            9,
+            64,
+            9
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        }
+      ],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:mega_spruce",
+          "pos": [
+            8,
+            64,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            9
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            9
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "spruce_saplings_square_from_far_corner_tick",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            7,
+            63,
+            7
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            7,
+            64,
+            7
+          ],
+          "state": "minecraft:spruce_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            7,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            7,
+            64,
+            8
+          ],
+          "state": "minecraft:spruce_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            7
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:spruce_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:spruce_sapling[stage=1]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 2,
+          "value": 0
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            7,
+            64,
+            7
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        },
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        },
+        {
+          "pos": [
+            7,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        }
+      ],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:mega_spruce",
+          "pos": [
+            7,
+            64,
+            7
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            7,
+            63,
+            7
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            7
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            7,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            7,
+            64,
+            7
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            7,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "spruce_saplings_square_tree_fails",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:spruce_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            9
+          ],
+          "state": "minecraft:spruce_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:spruce_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            9
+          ],
+          "state": "minecraft:spruce_sapling[stage=1]"
+        }
+      ],
+      "features": {
+        "minecraft:mega_spruce": false,
+        "minecraft:mega_pine": false
+      },
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 2,
+          "value": 0
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        },
+        {
+          "pos": [
+            8,
+            64,
+            9
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        },
+        {
+          "pos": [
+            9,
+            64,
+            9
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:spruce_sapling[stage=1]",
+          "flags": 260
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:spruce_sapling[stage=1]",
+          "flags": 260
+        },
+        {
+          "pos": [
+            8,
+            64,
+            9
+          ],
+          "state": "minecraft:spruce_sapling[stage=1]",
+          "flags": 260
+        },
+        {
+          "pos": [
+            9,
+            64,
+            9
+          ],
+          "state": "minecraft:spruce_sapling[stage=1]",
+          "flags": 260
+        }
+      ],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:mega_spruce",
+          "pos": [
+            8,
+            64,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:spruce_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:spruce_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            9
+          ],
+          "state": "minecraft:spruce_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            9
+          ],
+          "state": "minecraft:spruce_sapling[stage=1]"
+        }
+      ]
+    },
+    {
+      "name": "dark_oak_sapling_alone_tick",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:dark_oak_sapling[stage=1]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:dark_oak_sapling[stage=1]"
+        }
+      ]
+    },
+    {
+      "name": "dark_oak_saplings_square_tick",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:dark_oak_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            9
+          ],
+          "state": "minecraft:dark_oak_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:dark_oak_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            9
+          ],
+          "state": "minecraft:dark_oak_sapling[stage=1]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        },
+        {
+          "pos": [
+            8,
+            64,
+            9
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        },
+        {
+          "pos": [
+            9,
+            64,
+            9
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        }
+      ],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:dark_oak",
+          "pos": [
+            8,
+            64,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            9
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            9
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "jungle_saplings_square_tick",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:jungle_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            9
+          ],
+          "state": "minecraft:jungle_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:jungle_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            9
+          ],
+          "state": "minecraft:jungle_sapling[stage=1]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        },
+        {
+          "pos": [
+            8,
+            64,
+            9
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        },
+        {
+          "pos": [
+            9,
+            64,
+            9
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        }
+      ],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:mega_jungle_tree",
+          "pos": [
+            8,
+            64,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            9
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            9
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "mangrove_propagule_tick",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:mud"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:mangrove_propagule[age=0,hanging=false,stage=1,waterlogged=false]"
+        }
+      ],
+      "ticks": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 100,
+          "value": 93
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        }
+      ],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:tall_mangrove",
+          "pos": [
+            8,
+            64,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:mud"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "oak_sapling_bonemeal_seed_3069683297484132604",
+      "seed": 3069683297484132604,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=1]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 10,
+          "value": 3
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.5848345
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=1]"
+        }
+      ]
+    },
+    {
+      "name": "oak_sapling_bonemeal_seed_2177342782468422677",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=1]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 10,
+          "value": 5
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.027430534
+        },
+        {
+          "call": "nextInt",
+          "bound": 10,
+          "value": 4
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        }
+      ],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:oak",
+          "pos": [
+            8,
+            64,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "oak_sapling_bonemeal_seed_3191022452028214881",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=1]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 10,
+          "value": 2
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.32654804
+        },
+        {
+          "call": "nextInt",
+          "bound": 10,
+          "value": 3
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        }
+      ],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:oak",
+          "pos": [
+            8,
+            64,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "oak_sapling_bonemeal_seed_713712782862115666",
+      "seed": 713712782862115666,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=1]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 10,
+          "value": 5
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.62952125
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=1]"
+        }
+      ]
+    },
+    {
+      "name": "poplar_sapling_bonemeal_seed_3069683297484132604",
+      "seed": 3069683297484132604,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:poplar_sapling[stage=1]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 3,
+          "value": 1
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.5848345
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:poplar_sapling[stage=1]"
+        }
+      ]
+    },
+    {
+      "name": "poplar_sapling_bonemeal_seed_2177342782468422677",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:poplar_sapling[stage=1]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 3,
+          "value": 2
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.027430534
+        },
+        {
+          "call": "nextInt",
+          "bound": 3,
+          "value": 1
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        }
+      ],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:orange_poplar",
+          "pos": [
+            8,
+            64,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "poplar_sapling_bonemeal_seed_3191022452028214881",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:poplar_sapling[stage=1]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 3,
+          "value": 1
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.32654804
+        },
+        {
+          "call": "nextInt",
+          "bound": 3,
+          "value": 0
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        }
+      ],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:red_poplar",
+          "pos": [
+            8,
+            64,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "poplar_sapling_bonemeal_seed_713712782862115666",
+      "seed": 713712782862115666,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:poplar_sapling[stage=1]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 3,
+          "value": 0
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.62952125
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:poplar_sapling[stage=1]"
+        }
+      ]
+    },
+    {
+      "name": "oak_sapling_bonemeal_tree_fails",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=1]"
+        }
+      ],
+      "bonemeal": true,
+      "features": {
+        "minecraft:oak": false,
+        "minecraft:fancy_oak": false
+      },
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 10,
+          "value": 5
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.027430534
+        },
+        {
+          "call": "nextInt",
+          "bound": 10,
+          "value": 4
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=1]",
+          "flags": 260
+        }
+      ],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:oak",
+          "pos": [
+            8,
+            64,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=1]"
+        }
+      ]
+    },
+    {
+      "name": "oak_sapling_stage_0_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=0]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 10,
+          "value": 5
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.027430534
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=1]",
+          "flags": 260
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=1]"
+        }
+      ]
+    },
+    {
+      "name": "dark_oak_sapling_alone_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:dark_oak_sapling[stage=1]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": false,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:dark_oak_sapling[stage=1]"
+        }
+      ]
+    },
+    {
+      "name": "dark_oak_saplings_square_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:dark_oak_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            9
+          ],
+          "state": "minecraft:dark_oak_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:dark_oak_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            9
+          ],
+          "state": "minecraft:dark_oak_sapling[stage=1]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.027430534
+        },
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        },
+        {
+          "pos": [
+            8,
+            64,
+            9
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        },
+        {
+          "pos": [
+            9,
+            64,
+            9
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        }
+      ],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:dark_oak",
+          "pos": [
+            8,
+            64,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            9
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            9
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "pale_oak_saplings_square_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pale_oak_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            9
+          ],
+          "state": "minecraft:pale_oak_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:pale_oak_sapling[stage=1]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            9
+          ],
+          "state": "minecraft:pale_oak_sapling[stage=1]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.027430534
+        },
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        },
+        {
+          "pos": [
+            8,
+            64,
+            9
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        },
+        {
+          "pos": [
+            9,
+            64,
+            9
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        }
+      ],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:pale_oak_bonemeal",
+          "pos": [
+            8,
+            64,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            9
+          ],
+          "state": "minecraft:air"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            9
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "cherry_sapling_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cherry_sapling[stage=1]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        },
+        {
+          "call": "nextFloat",
+          "value": 0.027430534
+        },
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        }
+      ],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:cherry",
+          "pos": [
+            8,
+            64,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "azalea_bonemeal",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:azalea"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.070840776
+        },
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        }
+      ],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:azalea_tree",
+          "pos": [
+            8,
+            64,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "hanging_propagule_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:mangrove_leaves[distance=1,persistent=true,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:mangrove_propagule[age=2,hanging=true,stage=0,waterlogged=false]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:mangrove_propagule[age=3,hanging=true,stage=0,waterlogged=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "type": "minecraft:mangrove_leaves",
+          "delay": 1
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:mangrove_propagule[age=3,hanging=true,stage=0,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:mangrove_leaves[distance=1,persistent=true,waterlogged=false]"
+        }
+      ]
+    },
+    {
+      "name": "grown_hanging_propagule_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:mangrove_leaves[distance=1,persistent=true,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:mangrove_propagule[age=4,hanging=true,stage=0,waterlogged=false]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": false,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:mangrove_propagule[age=4,hanging=true,stage=0,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:mangrove_leaves[distance=1,persistent=true,waterlogged=false]"
+        }
+      ]
+    },
+    {
+      "name": "standing_propagule_bonemeal",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:mud"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:mangrove_propagule[age=0,hanging=false,stage=1,waterlogged=false]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.070840776
+        },
+        {
+          "call": "nextInt",
+          "bound": 100,
+          "value": 88
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 818
+        }
+      ],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:tall_mangrove",
+          "pos": [
+            8,
+            64,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:mud"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "melon_stem_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=0]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 3
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=5]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=5]"
+        }
+      ]
+    },
+    {
+      "name": "melon_stem_bonemeal_to_last_age",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=5]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            7
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            7,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 4,
+          "value": 3
+        },
+        {
+          "call": "nextInt",
+          "bound": 7,
+          "value": 6
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=7]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            7
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            7,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            9,
+            63,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:melon_stem[age=7]"
+        }
+      ]
+    },
+    {
+      "name": "pumpkin_stem_bonemeal_last_age",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pumpkin_stem[age=7]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": false,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pumpkin_stem[age=7]"
+        }
+      ]
+    },
+    {
+      "name": "pitcher_crop_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=0,half=lower]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=1,half=lower]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=1,half=lower]"
+        }
+      ]
+    },
+    {
+      "name": "pitcher_crop_bonemeal_grows_upper_half",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=2,half=lower]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=3,half=lower]",
+          "flags": 2
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=3,half=upper]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=3,half=lower]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=3,half=upper]"
+        }
+      ]
+    },
+    {
+      "name": "pitcher_crop_upper_half_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        65,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=3,half=lower]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=3,half=upper]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=4,half=lower]",
+          "flags": 2
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=4,half=upper]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=4,half=lower]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=4,half=upper]"
+        }
+      ]
+    },
+    {
+      "name": "pitcher_crop_blocked_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=2,half=lower]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "bonemeal": true,
+      "valid": false,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=2,half=lower]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "pitcher_crop_in_light_7_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=1,half=lower]"
+        }
+      ],
+      "bonemeal": true,
+      "light": 7,
+      "valid": false,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=1,half=lower]"
+        }
+      ]
+    },
+    {
+      "name": "pitcher_crop_grown_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=4,half=lower]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=4,half=upper]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": false,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:farmland[moisture=7]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=4,half=lower]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:pitcher_crop[age=4,half=upper]"
+        }
+      ]
+    },
+    {
+      "name": "sweet_berry_bush_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:sweet_berry_bush[age=1]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:sweet_berry_bush[age=2]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:sweet_berry_bush[age=2]"
+        }
+      ]
+    },
+    {
+      "name": "sweet_berry_bush_grown_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:sweet_berry_bush[age=3]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": false,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:grass_block[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:sweet_berry_bush[age=3]"
+        }
+      ]
+    },
+    {
+      "name": "cocoa_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:jungle_log[axis=y]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cocoa[age=1,facing=north]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cocoa[age=2,facing=north]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:jungle_log[axis=y]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cocoa[age=2,facing=north]"
+        }
+      ]
+    },
+    {
+      "name": "cocoa_grown_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:jungle_log[axis=y]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cocoa[age=2,facing=north]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": false,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            7
+          ],
+          "state": "minecraft:jungle_log[axis=y]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cocoa[age=2,facing=north]"
+        }
+      ]
+    },
+    {
+      "name": "kelp_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp[age=3]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        },
+        {
+          "pos": [
+            8,
+            66,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:kelp[age=4]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp_plant",
+          "flags": 2
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        },
+        {
+          "pos": [
+            8,
+            66,
+            8
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp_plant"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:kelp[age=4]"
+        },
+        {
+          "pos": [
+            8,
+            66,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ]
+    },
+    {
+      "name": "kelp_plant_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp_plant"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:kelp_plant"
+        },
+        {
+          "pos": [
+            8,
+            66,
+            8
+          ],
+          "state": "minecraft:kelp[age=24]"
+        },
+        {
+          "pos": [
+            8,
+            67,
+            8
+          ],
+          "state": "minecraft:water[level=0]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            67,
+            8
+          ],
+          "state": "minecraft:kelp[age=25]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            66,
+            8
+          ],
+          "state": "minecraft:kelp_plant",
+          "flags": 2
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        },
+        {
+          "pos": [
+            8,
+            67,
+            8
+          ],
+          "type": "minecraft:water",
+          "delay": 5
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp_plant"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:kelp_plant"
+        },
+        {
+          "pos": [
+            8,
+            66,
+            8
+          ],
+          "state": "minecraft:kelp_plant"
+        },
+        {
+          "pos": [
+            8,
+            67,
+            8
+          ],
+          "state": "minecraft:kelp[age=25]"
+        }
+      ]
+    },
+    {
+      "name": "kelp_under_air_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp[age=3]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": false,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:kelp[age=3]"
+        }
+      ]
+    },
+    {
+      "name": "weeping_vines_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:weeping_vines[age=7]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.8220058236633325
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.9398011077037933
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:weeping_vines[age=8]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:weeping_vines_plant",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:weeping_vines[age=8]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:weeping_vines_plant"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        }
+      ]
+    },
+    {
+      "name": "weeping_vines_bonemeal_seed_b",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:weeping_vines[age=24]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.07084079573375046
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.6680418489798285
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.7936865625702454
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:weeping_vines[age=25]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:weeping_vines_plant",
+          "flags": 2
+        },
+        {
+          "pos": [
+            8,
+            62,
+            8
+          ],
+          "state": "minecraft:weeping_vines[age=25]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:weeping_vines_plant",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            62,
+            8
+          ],
+          "state": "minecraft:weeping_vines[age=25]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:weeping_vines_plant"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:weeping_vines_plant"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        }
+      ]
+    },
+    {
+      "name": "weeping_vines_plant_bonemeal",
+      "seed": 713712782862115666,
+      "origin": [
+        8,
+        65,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            66,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:weeping_vines_plant"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:weeping_vines[age=3]"
+        },
+        {
+          "pos": [
+            8,
+            61,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.020333224974889985
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.07061043486121654
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.4002326268046723
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.05091787889432009
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.5170430566396841
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:weeping_vines[age=4]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:weeping_vines_plant",
+          "flags": 2
+        },
+        {
+          "pos": [
+            8,
+            62,
+            8
+          ],
+          "state": "minecraft:weeping_vines[age=5]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:weeping_vines_plant",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            61,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            62,
+            8
+          ],
+          "state": "minecraft:weeping_vines[age=5]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:weeping_vines_plant"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:weeping_vines_plant"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:weeping_vines_plant"
+        },
+        {
+          "pos": [
+            8,
+            66,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        }
+      ]
+    },
+    {
+      "name": "twisting_vines_bonemeal",
+      "seed": 713712782862115666,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=7]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.020333224974889985
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.07061043486121654
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.4002326268046723
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.05091787889432009
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.5170430566396841
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=8]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:twisting_vines_plant",
+          "flags": 2
+        },
+        {
+          "pos": [
+            8,
+            66,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=9]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:twisting_vines_plant",
+          "flags": 2
+        },
+        {
+          "pos": [
+            8,
+            67,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=10]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            66,
+            8
+          ],
+          "state": "minecraft:twisting_vines_plant",
+          "flags": 2
+        },
+        {
+          "pos": [
+            8,
+            68,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=11]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            67,
+            8
+          ],
+          "state": "minecraft:twisting_vines_plant",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:twisting_vines_plant"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:twisting_vines_plant"
+        },
+        {
+          "pos": [
+            8,
+            66,
+            8
+          ],
+          "state": "minecraft:twisting_vines_plant"
+        },
+        {
+          "pos": [
+            8,
+            67,
+            8
+          ],
+          "state": "minecraft:twisting_vines_plant"
+        },
+        {
+          "pos": [
+            8,
+            68,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=11]"
+        }
+      ]
+    },
+    {
+      "name": "twisting_vines_bonemeal_at_build_limit",
+      "seed": 713712782862115666,
+      "origin": [
+        8,
+        318,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            317,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            8,
+            318,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=7]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextDouble",
+          "value": 0.020333224974889985
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.07061043486121654
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.4002326268046723
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.05091787889432009
+        },
+        {
+          "call": "nextDouble",
+          "value": 0.5170430566396841
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            319,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=8]",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            318,
+            8
+          ],
+          "state": "minecraft:twisting_vines_plant",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            317,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            8,
+            318,
+            8
+          ],
+          "state": "minecraft:twisting_vines_plant"
+        },
+        {
+          "pos": [
+            8,
+            319,
+            8
+          ],
+          "state": "minecraft:twisting_vines[age=8]"
+        }
+      ]
+    },
+    {
+      "name": "cave_vines_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=3,berries=false]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=3,berries=true]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=3,berries=true]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "cave_vines_with_berries_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=3,berries=true]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": false,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=3,berries=true]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "cave_vines_plant_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines_plant[berries=false]"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=3,berries=false]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines_plant[berries=true]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:cave_vines[age=3,berries=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:cave_vines_plant[berries=true]"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "rooted_dirt_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:rooted_dirt"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:hanging_roots[waterlogged=false]",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:hanging_roots[waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:rooted_dirt"
+        }
+      ]
+    },
+    {
+      "name": "rooted_dirt_over_stone_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:rooted_dirt"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "bonemeal": true,
+      "valid": false,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:rooted_dirt"
+        }
+      ]
+    },
+    {
+      "name": "mangrove_leaves_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:mangrove_leaves[distance=1,persistent=true,waterlogged=false]"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:mangrove_propagule[age=0,hanging=true,stage=0,waterlogged=false]",
+          "flags": 2
+        }
+      ],
+      "scheduled": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "type": "minecraft:mangrove_leaves",
+          "delay": 1
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:mangrove_propagule[age=0,hanging=true,stage=0,waterlogged=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:mangrove_leaves[distance=1,persistent=true,waterlogged=false]"
+        }
+      ]
+    },
+    {
+      "name": "netherrack_by_warped_nylium_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:warped_nylium"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:warped_nylium",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:warped_nylium"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:warped_nylium"
+        }
+      ]
+    },
+    {
+      "name": "netherrack_by_crimson_nylium_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            7,
+            65,
+            9
+          ],
+          "state": "minecraft:crimson_nylium"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:crimson_nylium",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:crimson_nylium"
+        },
+        {
+          "pos": [
+            7,
+            65,
+            9
+          ],
+          "state": "minecraft:crimson_nylium"
+        }
+      ]
+    },
+    {
+      "name": "netherrack_by_both_nylium_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:warped_nylium"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:crimson_nylium"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextBoolean",
+          "value": true
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:warped_nylium",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:crimson_nylium"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:warped_nylium"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:warped_nylium"
+        }
+      ]
+    },
+    {
+      "name": "netherrack_by_both_nylium_bonemeal_seed_b",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:warped_nylium"
+        },
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:crimson_nylium"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextBoolean",
+          "value": false
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:crimson_nylium",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            9
+          ],
+          "state": "minecraft:crimson_nylium"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:crimson_nylium"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:warped_nylium"
+        }
+      ]
+    },
+    {
+      "name": "netherrack_alone_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        }
+      ],
+      "bonemeal": true,
+      "valid": false,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        }
+      ]
+    },
+    {
+      "name": "netherrack_covered_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:warped_nylium"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "bonemeal": true,
+      "valid": false,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:netherrack"
+        },
+        {
+          "pos": [
+            9,
+            64,
+            8
+          ],
+          "state": "minecraft:warped_nylium"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "crimson_nylium_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:crimson_nylium"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:nylium_bonemeal",
+          "pos": [
+            8,
+            65,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:crimson_nylium"
+        }
+      ]
+    },
+    {
+      "name": "warped_nylium_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:warped_nylium"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:nylium_bonemeal",
+          "pos": [
+            8,
+            65,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:warped_nylium"
+        }
+      ]
+    },
+    {
+      "name": "nylium_covered_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:warped_nylium"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "bonemeal": true,
+      "valid": false,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:warped_nylium"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "crimson_fungus_bonemeal_seed_a",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:crimson_nylium"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:crimson_fungus"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.8220058
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:crimson_nylium"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:crimson_fungus"
+        }
+      ]
+    },
+    {
+      "name": "crimson_fungus_bonemeal_seed_b",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:crimson_nylium"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:crimson_fungus"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.070840776
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:crimson_fungus_planted",
+          "pos": [
+            8,
+            64,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:crimson_nylium"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:crimson_fungus"
+        }
+      ]
+    },
+    {
+      "name": "warped_fungus_on_crimson_nylium_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:crimson_nylium"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:warped_fungus"
+        }
+      ],
+      "bonemeal": true,
+      "valid": false,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:crimson_nylium"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:warped_fungus"
+        }
+      ]
+    },
+    {
+      "name": "brown_mushroom_bonemeal_seed_a",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:mycelium[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:brown_mushroom"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.8220058
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:mycelium[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:brown_mushroom"
+        }
+      ]
+    },
+    {
+      "name": "brown_mushroom_bonemeal_seed_b",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:mycelium[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:brown_mushroom"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.070840776
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:huge_brown_mushroom",
+          "pos": [
+            8,
+            64,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:mycelium[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "red_mushroom_bonemeal_fails_to_place",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:mycelium[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:red_mushroom"
+        }
+      ],
+      "bonemeal": true,
+      "features": {
+        "minecraft:huge_red_mushroom": false
+      },
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.070840776
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:red_mushroom",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:huge_red_mushroom",
+          "pos": [
+            8,
+            64,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            63,
+            8
+          ],
+          "state": "minecraft:mycelium[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:red_mushroom"
+        }
+      ]
+    },
+    {
+      "name": "red_mushroom_near_build_limit_bonemeal",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        314,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:mycelium[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:red_mushroom"
+        }
+      ],
+      "bonemeal": true,
+      "valid": false,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:mycelium[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:red_mushroom"
+        }
+      ]
+    },
+    {
+      "name": "brown_mushroom_near_build_limit_bonemeal",
+      "seed": 3191022452028214881,
+      "origin": [
+        8,
+        312,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            311,
+            8
+          ],
+          "state": "minecraft:mycelium[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:brown_mushroom"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextFloat",
+          "value": 0.070840776
+        }
+      ],
+      "writes": [
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:huge_brown_mushroom",
+          "pos": [
+            8,
+            312,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            311,
+            8
+          ],
+          "state": "minecraft:mycelium[snowy=false]"
+        },
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "name": "moss_block_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:moss_block"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:moss_patch_bonemeal",
+          "pos": [
+            8,
+            65,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:moss_block"
+        }
+      ]
+    },
+    {
+      "name": "pale_moss_block_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pale_moss_block"
+        }
+      ],
+      "bonemeal": true,
+      "valid": true,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "placed": [
+        {
+          "feature": "minecraft:pale_moss_patch_bonemeal",
+          "pos": [
+            8,
+            65,
+            8
+          ]
+        }
+      ],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:pale_moss_block"
+        }
+      ]
+    },
+    {
+      "name": "moss_block_covered_bonemeal",
+      "seed": 2177342782468422677,
+      "origin": [
+        8,
+        64,
+        8
+      ],
+      "setup": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:moss_block"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ],
+      "bonemeal": true,
+      "valid": false,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            64,
+            8
+          ],
+          "state": "minecraft:moss_block"
+        },
+        {
+          "pos": [
+            8,
+            65,
+            8
+          ],
+          "state": "minecraft:stone"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_oak_sapling_build_limit_refused",
+      "seed": 0,
+      "origin": [
+        8,
+        316,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            316,
+            8
+          ],
+          "state": "minecraft:oak_sapling"
+        }
+      ],
+      "valid": false,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 10,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            316,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_oak_sapling_build_limit_accepted",
+      "seed": 0,
+      "origin": [
+        8,
+        315,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:oak_sapling"
+        }
+      ],
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 10,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:oak_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_spruce_sapling_build_limit_refused",
+      "seed": 0,
+      "origin": [
+        8,
+        315,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:spruce_sapling"
+        }
+      ],
+      "valid": false,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 2,
+          "value": 1
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:spruce_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_spruce_sapling_build_limit_accepted",
+      "seed": 0,
+      "origin": [
+        8,
+        314,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:spruce_sapling"
+        }
+      ],
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 2,
+          "value": 1
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:spruce_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_birch_sapling_build_limit_refused",
+      "seed": 0,
+      "origin": [
+        8,
+        315,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:birch_sapling"
+        }
+      ],
+      "valid": false,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:birch_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_birch_sapling_build_limit_accepted",
+      "seed": 0,
+      "origin": [
+        8,
+        314,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:birch_sapling"
+        }
+      ],
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:birch_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_jungle_sapling_build_limit_refused",
+      "seed": 0,
+      "origin": [
+        8,
+        316,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            316,
+            8
+          ],
+          "state": "minecraft:jungle_sapling"
+        }
+      ],
+      "valid": false,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            316,
+            8
+          ],
+          "state": "minecraft:jungle_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_jungle_sapling_build_limit_accepted",
+      "seed": 0,
+      "origin": [
+        8,
+        315,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:jungle_sapling"
+        }
+      ],
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        },
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:jungle_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_acacia_sapling_build_limit_refused",
+      "seed": 0,
+      "origin": [
+        8,
+        315,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:acacia_sapling"
+        }
+      ],
+      "valid": false,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            315,
+            8
+          ],
+          "state": "minecraft:acacia_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_acacia_sapling_build_limit_accepted",
+      "seed": 0,
+      "origin": [
+        8,
+        314,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:acacia_sapling"
+        }
+      ],
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:acacia_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_cherry_sapling_build_limit_refused",
+      "seed": 0,
+      "origin": [
+        8,
+        313,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:cherry_sapling"
+        }
+      ],
+      "valid": false,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:cherry_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_cherry_sapling_build_limit_accepted",
+      "seed": 0,
+      "origin": [
+        8,
+        312,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            311,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:cherry_sapling"
+        }
+      ],
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 1,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            311,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:cherry_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_azalea_build_limit_refused",
+      "seed": 0,
+      "origin": [
+        8,
+        314,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:azalea"
+        }
+      ],
+      "valid": false,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:azalea"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_azalea_build_limit_accepted",
+      "seed": 0,
+      "origin": [
+        8,
+        313,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:azalea"
+        }
+      ],
+      "valid": true,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:azalea"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_flowering_azalea_build_limit_refused",
+      "seed": 0,
+      "origin": [
+        8,
+        314,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:flowering_azalea"
+        }
+      ],
+      "valid": false,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            314,
+            8
+          ],
+          "state": "minecraft:flowering_azalea"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_flowering_azalea_build_limit_accepted",
+      "seed": 0,
+      "origin": [
+        8,
+        313,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:flowering_azalea"
+        }
+      ],
+      "valid": true,
+      "draws": [],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:flowering_azalea"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_poplar_sapling_build_limit_refused",
+      "seed": 0,
+      "origin": [
+        8,
+        313,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:poplar_sapling"
+        }
+      ],
+      "valid": false,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 3,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            313,
+            8
+          ],
+          "state": "minecraft:poplar_sapling[stage=0]"
+        }
+      ]
+    },
+    {
+      "name": "bonemeal_poplar_sapling_build_limit_accepted",
+      "seed": 0,
+      "origin": [
+        8,
+        312,
+        8
+      ],
+      "bonemeal": true,
+      "bonemealTargetOnly": true,
+      "setup": [
+        {
+          "pos": [
+            8,
+            311,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:poplar_sapling"
+        }
+      ],
+      "valid": true,
+      "draws": [
+        {
+          "call": "nextInt",
+          "bound": 3,
+          "value": 0
+        }
+      ],
+      "writes": [],
+      "scheduled": [],
+      "after": [
+        {
+          "pos": [
+            8,
+            311,
+            8
+          ],
+          "state": "minecraft:dirt"
+        },
+        {
+          "pos": [
+            8,
+            312,
+            8
+          ],
+          "state": "minecraft:poplar_sapling[stage=0]"
         }
       ]
     }

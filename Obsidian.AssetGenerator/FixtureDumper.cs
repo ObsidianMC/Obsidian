@@ -131,9 +131,18 @@ internal static class FixtureDumper
     }
 
     // An on-request gameplay probe: vanilla's randomTick against each case's block view, with a seeded random.
-    internal static Task DumpGrowingPlantTicksAsync(VanillaServer server, string fixture) =>
-        VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
-            Source("GrowingPlantTickFixtures.java"), fixture);
+    internal static Task DumpGrowingPlantTicksAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null)
+    {
+        var arguments = new List<string>
+        {
+            "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("GrowingPlantTickFixtures.java"), fixture
+        };
+        if (cases is not null)
+            arguments.Add(string.Join('+', cases));
+
+        return VanillaServer.RunJavaAsync(server.ScratchDirectory, arguments.ToArray());
+    }
 
     // An on-request gameplay probe: what cooking machines give a player taking their result, or drop when broken.
     internal static Task DumpFurnaceResultsAsync(VanillaServer server, string fixture) =>
@@ -200,6 +209,21 @@ internal static class FixtureDumper
     internal static Task DumpCauldronsAsync(VanillaServer server, string fixture,
         IReadOnlyCollection<string>? cases = null) =>
         RunObservedProbeAsync(server, fixture, "cauldrons", "CauldronFixtures.java", cases);
+
+    // On-request probes of 26.3's shelves, straw beds and golden dandelions, each a dedicated server of its own in a
+    // new flat world under the scratch directory. They reuse BlockUseFixtures.java from the same directory (the source
+    // launcher compiles it on demand) and its observed copy of the vanilla jar for the ordered block writes.
+    internal static Task DumpShelvesAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunObservedProbeAsync(server, fixture, "shelves", "ShelfFixtures.java", cases);
+
+    internal static Task DumpStrawBedsAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunObservedProbeAsync(server, fixture, "straw-beds", "StrawBedFixtures.java", cases);
+
+    internal static Task DumpGoldenDandelionsAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunObservedProbeAsync(server, fixture, "golden-dandelions", "GoldenDandelionFixtures.java", cases);
 
     // Runs a probe on an observed copy of the vanilla jar, which records ordered block writes, in a new world folder
     // named worldName under the scratch directory.

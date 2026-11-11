@@ -181,7 +181,7 @@ internal sealed partial class LevelBlockUpdates
     internal int AnalogOutputOf(IBlock state, Vector position, BlockFace direction)
     {
         if (!BlocksRegistry.TryGetPluginBlock(state.GetHashCode(), out _))
-            return AnalogOutputs.Get(this, state, position);
+            return AnalogOutputs.Get(this, state, position, direction);
 
         var context = this.SignalContext(state, position, direction);
         var output = this.AskPlugin(state, nameof(IBlockBehavior.GetAnalogOutput), 0, b => b.GetAnalogOutput(context));
@@ -285,8 +285,7 @@ internal sealed partial class LevelBlockUpdates
             Category = SoundCategory.Blocks,
             Volume = volume,
             Pitch = pitch,
-            // Vanilla seeds a sound from its own thread-safe random, never the level's, whose draws stay as they are.
-            Seed = System.Random.Shared.NextInt64()
+            Seed = level.NextSoundSeed()
         };
 
         level.PacketBroadcaster.BroadcastToLevelInRange(level, (VectorD)position + 0.5, packet, excluded);

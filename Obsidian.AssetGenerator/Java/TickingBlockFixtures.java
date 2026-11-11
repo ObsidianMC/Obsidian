@@ -24,14 +24,26 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.attribute.EnvironmentAttributeSystem;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.animal.pig.Pig;
+import net.minecraft.world.entity.animal.wolf.Wolf;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.item.FallingBlockEntity;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SculkSpreader;
+import net.minecraft.world.level.block.entity.SculkCatalystBlockEntity;
+import net.minecraft.world.level.blockscan.BlockMatcher;
+import net.minecraft.world.level.blockscan.BoxBlockMatcher;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.world.level.gameevent.EuclideanGameEventListenerRegistry;
 import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.levelgen.PositionalRandomFactory;
 import net.minecraft.world.level.material.Fluid;
@@ -65,11 +77,21 @@ public final class TickingBlockFixtures {
         + "drop; items the items a landing dropped. after holds the final state of every setup or written position. "
         + "Optional dimension uses that dimension type's environment attributes; actions are later UPDATE_ALL writes. "
         + "call findTip invokes the native speleothem tip search with maxLength and includeMerged, recording tip "
-        + "as a position or null.";
+        + "as a position or null. call catalyst makes the sculk catalyst at the origin a block entity, hands its "
+        + "listener each of deaths as a mob's death would (SculkCatalystBlockEntity.CatalystListener.handleGameEvent "
+        + "for a mob not yet drained, that drops its experience: the charge, if any, at the death's position half "
+        + "a block up, then the bloom), then runs its block entity tick catalystTicks times; cursors holds its "
+        + "charge cursors afterwards. Chunks always tick, and the view holds no entities. call postProcess runs "
+        + "LevelChunk.postProcessGeneration for the origin as a marked position: its fluid ticks, then a liquid "
+        + "block ticks, and any other block takes Block.updateFromNeighbourShapes (its ticks scheduled in the "
+        + "level), written with flags 276 if it changed. listenerRange cases first run the native Euclidean listener "
+        + "registry's range filter and record taken per death. catalystCredit invokes the native catalyst advancement "
+        + "gate after setting the mob's last living attacker in attackers order; playerCredit records whether it "
+        + "reaches the advancement's damage-source read, without requiring an advancement manager.";
 
     private static final List<String> OUTPUTS = List.of(
         "ticks", "draws", "writes", "scheduled", "events", "gameEvents", "entities", "destroyed", "removed", "items",
-        "after", "tip");
+        "after", "tip", "cursors", "playerCredit");
 
     public static void main(String[] arguments) throws Exception {
         var version = VanillaDumper.bootstrap();
@@ -139,6 +161,9 @@ public final class TickingBlockFixtures {
             case "tick" -> level.getBlockState(origin).tick(level, origin, random);
             case "set" -> level.setBlock(origin, state(input.get("state").getAsString()), Block.UPDATE_ALL, 512);
             case "landing" -> land(input, level, origin);
+            case "catalyst" -> catalyst(input, level, origin);
+            case "catalystCredit" -> catalystCredit(input, level, origin);
+            case "postProcess" -> postProcess(level, origin);
             case "findTip" -> {
                 var method = net.minecraft.world.level.block.SpeleothemBlock.class.getDeclaredMethod("findTip",
                     BlockState.class, net.minecraft.world.level.LevelAccessor.class, BlockPos.class,
@@ -179,6 +204,144 @@ public final class TickingBlockFixtures {
             .sorted(order)
             .forEach(pos -> after.add(placement(pos, level.getBlockState(pos))));
         input.add("after", after);
+    }
+
+    // Vanilla's LevelChunk.postProcessGeneration for one marked position, against the probe's level as the live level
+    // it runs against.
+    private static void postProcess(ProbeLevel level, BlockPos origin) {
+        var state = level.getBlockState(origin);
+        var fluid = state.getFluidState();
+        if (!fluid.isEmpty()) {
+            fluid.tick(level, origin, state);
+        }
+
+        if (state.getBlock() instanceof net.minecraft.world.level.block.LiquidBlock) {
+            state.tick(level, origin, level.getRandom());
+            return;
+        }
+
+        var updated = Block.updateFromNeighbourShapes(state, level, origin);
+        if (updated != state) {
+            level.setBlock(origin, updated, 276, 512);
+        }
+    }
+
+    // The sculk catalyst at the origin: each death reaches its listener as vanilla's handleGameEvent takes a mob's
+    // death whose experience isn't consumed yet (the charge, when the mob drops some, then the bloom with the level's
+    // random), and then the catalyst's block entity ticks.
+    private static void catalyst(JsonObject input, ProbeLevel level, BlockPos origin) throws Exception {
+        var state = level.getBlockState(origin);
+        var catalyst = new SculkCatalystBlockEntity(origin, state);
+        var listener = catalyst.getListener();
+        var registry = new EuclideanGameEventListenerRegistry(level, origin.getY() >> 4, unused -> {});
+        // Registering also publishes debug subscriptions, which this bounded level does not have.
+        @SuppressWarnings("unchecked")
+        var listeners = (List<net.minecraft.world.level.gameevent.GameEventListener>)
+            field(EuclideanGameEventListenerRegistry.class, "listeners").get(registry);
+        listeners.add(listener);
+        var spreader = listener.getSculkSpreader();
+        var bloom = SculkCatalystBlockEntity.CatalystListener.class.getDeclaredMethod(
+            "bloom", ServerLevel.class, BlockPos.class, BlockState.class, RandomSource.class);
+        bloom.setAccessible(true);
+
+        for (var entry : input.getAsJsonArray("deaths")) {
+            var death = entry.getAsJsonObject();
+            var at = death.getAsJsonArray("pos");
+            var position = new Vec3(at.get(0).getAsDouble(), at.get(1).getAsDouble(), at.get(2).getAsDouble());
+            if (input.has("listenerRange")) {
+                var reached = new boolean[1];
+                registry.visitInRangeListeners(GameEvent.ENTITY_DIE, position, GameEvent.Context.of(state),
+                    (found, listenerPosition) -> reached[0] = true);
+                death.addProperty("taken", reached[0]);
+                if (!reached[0]) {
+                    continue;
+                }
+            }
+
+            var experience = death.get("experience").getAsInt();
+            if (experience > 0) {
+                spreader.addCursors(BlockPos.containing(position.relative(Direction.UP, 0.5)), experience);
+            }
+
+            bloom.invoke(listener, level, origin, state, level.getRandom());
+        }
+
+        var ticks = input.get("catalystTicks").getAsInt();
+        for (var tick = 0; tick < ticks; tick++) {
+            SculkCatalystBlockEntity.serverTick(level, origin, level.getBlockState(origin), catalyst);
+        }
+
+        var updateDelay = SculkSpreader.ChargeCursor.class.getDeclaredField("updateDelay");
+        updateDelay.setAccessible(true);
+        var cursors = new JsonArray();
+        for (var cursor : spreader.getCursors()) {
+            var recorded = new JsonObject();
+            recorded.add("pos", coordinates(cursor.getPos()));
+            recorded.addProperty("charge", cursor.getCharge());
+            recorded.addProperty("decayDelay", cursor.getDecayDelay());
+            recorded.addProperty("updateDelay", updateDelay.getInt(cursor));
+            var facings = new JsonArray();
+            if (cursor.getFacingData() != null) {
+                cursor.getFacingData().forEach(face -> facings.add(face.getSerializedName()));
+            }
+
+            recorded.add("facings", cursor.getFacingData() == null ? com.google.gson.JsonNull.INSTANCE : facings);
+            cursors.add(recorded);
+        }
+
+        input.add("cursors", cursors);
+    }
+
+    // Isolate the native catalyst advancement gate. The mob's damage-source read signals that the native code
+    // accepted its last living attacker as a server player; no advancement manager or player connection is needed.
+    private static void catalystCredit(JsonObject input, ProbeLevel level, BlockPos origin) throws Exception {
+        var unsafeField = Class.forName("sun.misc.Unsafe").getDeclaredField("theUnsafe");
+        unsafeField.setAccessible(true);
+        var unsafe = unsafeField.get(null);
+        var allocate = unsafe.getClass().getMethod("allocateInstance", Class.class);
+        var victim = (CreditPig)allocate.invoke(unsafe, CreditPig.class);
+        var player = (ServerPlayer)allocate.invoke(unsafe, ServerPlayer.class);
+        var wolf = (Wolf)allocate.invoke(unsafe, Wolf.class);
+        field(Entity.class, "level").set(victim, level);
+        field(Entity.class, "level").set(player, level);
+        field(Entity.class, "level").set(wolf, level);
+
+        for (var entry : input.getAsJsonArray("attackers")) {
+            LivingEntity attacker = switch (entry.getAsString()) {
+                case "player" -> player;
+                case "wolf" -> wolf;
+                default -> throw new IllegalArgumentException("Unknown attacker " + entry);
+            };
+            victim.setLastHurtByMob(attacker);
+        }
+
+        var catalyst = new SculkCatalystBlockEntity(origin, Blocks.SCULK_CATALYST.defaultBlockState());
+        var award = SculkCatalystBlockEntity.CatalystListener.class.getDeclaredMethod(
+            "tryAwardItSpreadsAdvancement", net.minecraft.world.level.Level.class, LivingEntity.class);
+        award.setAccessible(true);
+        var credited = false;
+        try {
+            award.invoke(catalyst.getListener(), level, victim);
+        } catch (java.lang.reflect.InvocationTargetException exception) {
+            if (!(exception.getCause() instanceof CreditReached)) {
+                throw exception;
+            }
+            credited = true;
+        }
+
+        input.addProperty("playerCredit", credited);
+    }
+
+    private static final class CreditReached extends RuntimeException {}
+
+    private static final class CreditPig extends Pig {
+        private CreditPig() {
+            super(EntityTypes.PIG, null);
+        }
+
+        @Override public DamageSource getLastDamageSource() {
+            throw new CreditReached();
+        }
     }
 
     // A falling block of the case's state that has reached the ground at the origin: vanilla decides whether it
@@ -549,6 +712,38 @@ public final class TickingBlockFixtures {
         @Override public boolean addFreshEntity(Entity entity) {
             added.add(entity);
             return true;
+        }
+
+        // Every chunk of the view ticks its blocks, as a sculk charge's cursor checks before it moves.
+        @Override public boolean shouldTickBlocksAt(long chunkPos) {
+            return true;
+        }
+
+        // Sounds draw their seed from their own generator, not the level's random, and aren't recorded.
+        @Override public void playSound(Entity except, double x, double y, double z, SoundEvent sound,
+            SoundSource source, float volume, float pitch) {
+        }
+
+        @Override public <T extends net.minecraft.core.particles.ParticleOptions> int sendParticles(T particle,
+            double x, double y, double z, int count, double xDist, double yDist, double zDist, double speed) {
+            return 0;
+        }
+
+        // Vanilla scans chunk sections, which this view has none of; the count is the same block by block (sculk
+        // counts the sensors and shriekers around where it would grow one).
+        @Override public BlockMatcher findBlocksIn(BlockPos from, BlockPos to) {
+            return new BoxBlockMatcher(this, from, to) {
+                @Override public boolean atLeastMatched(int n) {
+                    var count = 0;
+                    for (var pos : BlockPos.betweenClosed(from, to)) {
+                        if (statePredicate.test(level.getBlockState(pos)) && ++count >= n) {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+            };
         }
 
         // The entities added, read once the routine is done: a falling stalactite's damage is set after it's added.

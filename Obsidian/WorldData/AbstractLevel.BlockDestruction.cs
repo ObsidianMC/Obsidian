@@ -149,7 +149,7 @@ public abstract partial class AbstractLevel
         Motion = motion
     }, hostOwned: true);
 
-    private void PopBlockResource(Vector position, ItemStack stack)
+    internal void PopBlockResource(Vector position, ItemStack stack)
     {
         lock (this.Fluids.TickLock)
         {
@@ -228,11 +228,14 @@ public abstract partial class AbstractLevel
         this.BlockDestroyed?.Invoke(position, block, dropItems);
 
         await parts.RemovePartnerAsync(this);
-        // Vanilla Level.destroyBlock sends 2001 (sound and particles), except for fire. Water washout and
-        // dropResources/removeBlock callers deliberately omit it; sending a separate sound would play it twice.
+        // Vanilla Level.destroyBlock sends 2001 (sound and particles), except for fire, and a straw bed's own 2014
+        // (its spawnDestroyParticles). Water washout and dropResources/removeBlock callers deliberately omit it;
+        // sending a separate sound would play it twice.
         if (playEffect)
         {
-            if (block.BlockClass() is not ("FireBlock" or "SoulFireBlock"))
+            if (block.Is(BlockIds.StrawBed))
+                this.BroadcastLevelEvent(StrawBedBreakEvent, position, block.GetHashCode());
+            else if (block.BlockClass() is not ("FireBlock" or "SoulFireBlock"))
                 this.BroadcastLevelEvent(2001, position, block.GetHashCode());
 
             this.EmitGameEvent(MobGameEvent.BlockDestroy, (VectorD)position + 0.5, breaker, affectedBlock: block);

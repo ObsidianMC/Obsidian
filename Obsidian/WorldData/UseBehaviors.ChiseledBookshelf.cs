@@ -95,9 +95,28 @@ internal static class BookshelfSlots
     /// The slot under the click at <paramref name="cursor"/> on <paramref name="face"/>, or null for a face other than
     /// the shelf's front.
     /// </summary>
-    public static int? HitSlot(IBlock shelf, BlockFace face, VectorD cursor)
+    public static int? HitSlot(IBlock shelf, BlockFace face, VectorD cursor) =>
+        SelectableSlots.HitSlot(shelf, face, cursor, Rows, Columns);
+
+    /// <summary>Whether the block shows a book in <paramref name="slot"/>.</summary>
+    public static bool IsOccupied(IBlock shelf, int slot) => shelf.GetProperty($"slot_{slot}_occupied") == "true";
+}
+
+/// <summary>
+/// Which slot of a block whose front shows a grid of slots a click picks, like vanilla's
+/// <c>SelectableSlotContainer</c>: chiseled bookshelves' two rows of three, and shelves' one row of three. Only a
+/// click on the face the block faces picks one.
+/// </summary>
+internal static class SelectableSlots
+{
+    /// <summary>
+    /// The slot under the click at <paramref name="cursor"/> on <paramref name="face"/> of a block with
+    /// <paramref name="rows"/> rows of <paramref name="columns"/> slots, numbered along each row from the top, or null
+    /// for a face other than the block's front.
+    /// </summary>
+    public static int? HitSlot(IBlock block, BlockFace face, VectorD cursor, int rows, int columns)
     {
-        var facing = shelf.GetProperty("facing");
+        var facing = block.GetProperty("facing");
         if (!string.Equals(face.ToString(), facing, StringComparison.OrdinalIgnoreCase))
             return null;
 
@@ -115,14 +134,11 @@ internal static class BookshelfSlots
             return null;
 
         var up = (float)cursor.Y;
-        var row = Section(1f - up, Rows);
-        var column = Section(across, Columns);
+        var row = Section(1f - up, rows);
+        var column = Section(across, columns);
 
-        return column + row * Columns;
+        return column + row * columns;
     }
-
-    /// <summary>Whether the block shows a book in <paramref name="slot"/>.</summary>
-    public static bool IsOccupied(IBlock shelf, int slot) => shelf.GetProperty($"slot_{slot}_occupied") == "true";
 
     // Vanilla's getSection: the sixteenth of the face the click lands on, in sections of equal width. Ported as vanilla
     // computes it in floats, since a click near a section's edge must pick the same slot.

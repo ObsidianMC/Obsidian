@@ -1,6 +1,8 @@
+using Obsidian.API.Blocks;
 using Obsidian.API.Inventory;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData.Features;
 
 namespace Obsidian.WorldData;
 
@@ -12,8 +14,14 @@ public abstract partial class AbstractLevel
 
     internal const int MaxAnchorCharges = 4;
 
-    // How many players were asleep at the last tick, to tell players when it changes (vanilla's SleepStatus).
+    // The level event of a straw bed breaking, which its clients show with straw particles (vanilla's
+    // StrawBedBlock.spawnDestroyParticles).
+    internal const int StrawBedBreakEvent = 2014;
+
+    // The last sleep-status counts, so either sleepers or active players changing refreshes the message.
     private int previousSleepers;
+
+    private int previousActivePlayers;
 
     /// <summary>
     /// Skips the night like vanilla's <c>ServerLevel.tick</c>: once enough players (by <c>players_sleeping_percentage</c>,
@@ -29,26 +37,15 @@ public abstract partial class AbstractLevel
         if (players.Length == 0)
         {
             previousSleepers = 0;
+            previousActivePlayers = 0;
             return;
         }
+
+        await this.AnnounceSleepersAsync(players);
 
         var percentage = LevelData.GetIntegerRule("players_sleeping_percentage", 100);
         var sleeping = players.Count(player => player.Sleeping);
         var needed = Math.Max(1, (int)Math.Ceiling(players.Length * percentage / 100.0));
-
-        if (sleeping != previousSleepers && (sleeping > 0 || previousSleepers > 0))
-        {
-            var status = sleeping >= needed
-                ? new ChatMessage { Translate = "sleep.skipping_night" }
-                : new ChatMessage { Translate = "sleep.players_sleeping" }
-                    .AddChatComponent(sleeping.ToString())
-                    .AddChatComponent(needed.ToString());
-
-            foreach (var player in players)
-                await player.QueuePacketAsync(new SystemChatPacket(status, overlay: true));
-        }
-
-        previousSleepers = sleeping;
 
         if (sleeping < needed || players.Count(player => player.SleptLongEnough) < needed)
             return;
@@ -65,8 +62,9 @@ public abstract partial class AbstractLevel
             this.BroadcastTime();
         }
 
+        // Vanilla's wakeUpAllPlayers: they wake without the sleepers being announced again.
         foreach (var player in players.Where(player => player.Sleeping))
-            await player.StopSleepingAsync();
+            await player.StopSleepingAsync(forceful: false, announce: false);
 
         if (LevelData.GetBooleanRule("advance_weather") && (LevelData.Raining || LevelData.Thundering))
         {
@@ -83,71 +81,125 @@ public abstract partial class AbstractLevel
         previousSleepers = 0;
     }
 
+    /// <summary>
+    /// Vanilla's <c>updateSleepingPlayerList</c>, when a player falls asleep or wakes: the players are told how many
+    /// sleep, once that changed.
+    /// </summary>
+    internal ValueTask UpdateSleepingPlayersAsync()
+    {
+        var players = this.Players.Values.OfType<PlayerBase>()
+            .Where(player => player.GameMode != GameMode.Spectator)
+            .ToArray();
+
+        return this.AnnounceSleepersAsync(players);
+    }
+
+    // Vanilla's SleepStatus.update and announceSleepStatus: when sleepers or active players changed, and anyone
+    // sleeps or slept, every player is told that the night is being skipped or how many sleep of how many are needed.
+    private async ValueTask AnnounceSleepersAsync(PlayerBase[] players)
+    {
+        var percentage = LevelData.GetIntegerRule("players_sleeping_percentage", 100);
+        var sleeping = players.Count(player => player.Sleeping);
+        var needed = Math.Max(1, (int)Math.Ceiling(players.Length * percentage / 100.0));
+
+        var changed = (sleeping != previousSleepers || players.Length != previousActivePlayers)
+            && (sleeping > 0 || previousSleepers > 0);
+        previousActivePlayers = players.Length;
+        previousSleepers = sleeping;
+        if (!changed)
+            return;
+
+        var status = sleeping >= needed
+            ? new ChatMessage { Translate = "sleep.skipping_night" }
+            : new ChatMessage { Translate = "sleep.players_sleeping" }
+                .AddChatComponent(sleeping.ToString())
+                .AddChatComponent(needed.ToString());
+
+        foreach (var player in players)
+            await player.QueuePacketAsync(new SystemChatPacket(status, overlay: true));
+    }
+
     // The player inventory's offhand slot.
     private const int OffhandSlot = 45;
 
     /// <summary>
-    /// A player using a bed, like vanilla's <c>BedBlock.useWithoutItem</c>: where the bed rule there says beds
-    /// explode (the nether's and the end's), the bed is removed and explodes, with the rule's message if it has one;
-    /// otherwise a player is told the bed is occupied, or that they can't sleep now when the rule says so.
+    /// A player using a bed or straw bed, like vanilla's <c>AbstractBedBlock.useWithoutItem</c>: a half without its
+    /// other half does nothing. Where the bed's rule destroys it on use (the nether's and the end's), it's removed, a
+    /// bed exploding and a straw bed breaking, with the rule's message if it has one; otherwise a player is told the
+    /// bed is occupied, or tries to sleep in it (see <see cref="PlayerBase.StartSleepInBedAsync"/>).
     /// </summary>
-    /// <remarks>
-    /// A bed that works sets the player's spawn and puts them to sleep (see <see cref="PlayerBase.StartSleepInBedAsync"/>).
-    /// </remarks>
-    /// <returns>Whether <paramref name="block"/> is a bed, which the use is then done with.</returns>
-    internal async ValueTask<bool> UseBedAsync(IPlayer player, Vector position, IBlock block)
+    /// <returns>Pass when <paramref name="block"/> isn't a bed; how the use went otherwise.</returns>
+    internal async ValueTask<UseResult> UseBedAsync(IPlayer player, Vector position, IBlock block)
     {
-        if (!TagsRegistry.Block.Beds.Entries.Contains(block.RegistryId))
-            return false;
+        if (!BedBlocks.IsBed(block))
+            return UseResult.Pass;
 
-        // The facing property points from the bed's foot to its head, whose position the rule is read at.
-        var towardsHead = BedFacing(block.GetProperty("facing"));
-        var head = position;
+        // The use is about the head; the other half must be there, the same bed's other part.
+        var facing = BedBlocks.Facing(block);
+        var part = block.GetProperty("part");
+        var isHead = part == "head";
+        var otherPosition = position.Offset(isHead ? facing.Opposite() : facing);
+        var other = GameEventBlock(otherPosition);
+        if (other is null || other.RegistryId != block.RegistryId || other.GetProperty("part") == part)
+            return UseResult.Consume;
 
-        if (block.GetProperty("part") != "head")
-        {
-            head = position + towardsHead;
-            if (GameEventBlock(head) is not IBlock headBlock || headBlock.RegistryId != block.RegistryId)
-                return true;
+        var head = isHead ? position : otherPosition;
+        var headBlock = isHead ? block : other;
+        var rule = this.BedRuleAt(head, headBlock);
 
-            block = headBlock;
-        }
-
-        var rule = this.BedRuleAt(head);
-
-        if (rule.Explode)
+        if (rule.DestroyOnUse)
         {
             if (rule.ErrorMessage is ChatMessage reason)
                 await player.QueuePacketAsync(new SystemChatPacket(reason, overlay: true));
 
-            await SetBlockAsync(head, BlocksRegistry.Air, true);
+            if (headBlock.Is(BlockIds.StrawBed))
+                await this.BreakStrawBedAsync(head);
+            else
+                await this.ExplodeBedAsync(head, headBlock);
 
-            var foot = head - towardsHead;
-            if (GameEventBlock(foot)?.RegistryId == block.RegistryId)
-                await SetBlockAsync(foot, BlocksRegistry.Air, true);
-
-            await ExplodeAsync(
-                (VectorD)head + new VectorD(0.5, 0.5, 0.5),
-                BadRespawnPointPower,
-                fire: true,
-                ExplosionInteraction.Block);
-            return true;
+            return UseResult.SuccessServer;
         }
 
-        if (block.GetProperty("occupied") == "true")
+        if (headBlock.GetProperty("occupied") == "true")
         {
             var occupied = new ChatMessage { Translate = "block.minecraft.bed.occupied" };
             await player.QueuePacketAsync(new SystemChatPacket(occupied, overlay: true));
-            return true;
+            return UseResult.SuccessServer;
         }
 
         if (player is PlayerBase sleeper
-            && await sleeper.StartSleepInBedAsync(head, towardsHead, rule) is ChatMessage problem)
+            && await sleeper.StartSleepInBedAsync(head, headBlock, rule) is ChatMessage problem)
         {
             await player.QueuePacketAsync(new SystemChatPacket(problem, overlay: true));
         }
 
-        return true;
+        return UseResult.SuccessServer;
+    }
+
+    /// <summary>
+    /// Vanilla's <c>StrawBedBlock.destroyBed</c>: the straw bed's break sound, and its head set to air with every
+    /// update, so that its foot, losing its other half, breaks too.
+    /// </summary>
+    internal async ValueTask BreakStrawBedAsync(Vector head)
+    {
+        this.BlockUpdates.PlaySound(head, "minecraft:block.straw_bed.break_leave");
+        await this.SetBlockAsync(head, BlocksRegistry.Air, BlockUpdateFlags.All);
+    }
+
+    // Vanilla's BedBlock.destroyOnUse: both halves removed, then an explosion that sets fires at the head.
+    private async ValueTask ExplodeBedAsync(Vector head, IBlock headBlock)
+    {
+        await SetBlockAsync(head, BlocksRegistry.Air, true);
+
+        var foot = head.Offset(BedBlocks.Facing(headBlock).Opposite());
+        if (GameEventBlock(foot)?.RegistryId == headBlock.RegistryId)
+            await SetBlockAsync(foot, BlocksRegistry.Air, true);
+
+        await ExplodeAsync(
+            (VectorD)head + new VectorD(0.5, 0.5, 0.5),
+            BadRespawnPointPower,
+            fire: true,
+            ExplosionInteraction.Block);
     }
 
     /// <summary>
@@ -235,7 +287,7 @@ public abstract partial class AbstractLevel
     /// Whether water poured at <paramref name="position"/> evaporates, like vanilla's <c>BucketItem.emptyContents</c>
     /// where <c>water_evaporates</c> is true (the nether): it isn't placed, and the players around hear it hiss.
     /// </summary>
-    internal bool Evaporates(IPlayer player, Vector position)
+    internal bool Evaporates(IPlayer? player, Vector position)
     {
         if (!this.Gameplay(LevelEnvironment.WaterEvaporates, position))
             return false;
@@ -250,7 +302,7 @@ public abstract partial class AbstractLevel
             Volume = 0.5f,
             Pitch = 2.6f + (Random.Shared.NextSingle() - Random.Shared.NextSingle()) * 0.8f,
             Seed = Random.Shared.NextInt64()
-        }, player.EntityId);
+        }, player?.EntityId ?? -1);
 
         PacketBroadcaster.QueuePacketToLevelInRange(this, center, new LevelParticlesPacket
         {
@@ -263,14 +315,6 @@ public abstract partial class AbstractLevel
 
         return true;
     }
-
-    private static Vector BedFacing(string? facing) => facing switch
-    {
-        "north" => new Vector(0, 0, -1),
-        "south" => Vector.South,
-        "west" => new Vector(-1, 0, 0),
-        _ => Vector.East
-    };
 
     private sealed class BucketSteamParticle : ParticleData
     {

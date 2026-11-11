@@ -27,6 +27,14 @@ replaces only what vanilla produced.
   move items into and out of the blocks that hold them, each read by a comparator into a dust: the shelf's slots
   and the last slot used, and how full the pot is. A scenario naming an `item` also records in each checkpoint the total count of that item lying as item
   entities within two blocks of its box, and the replay counts Obsidian's the same way, so it must be `level`.
+  Consumers and sources with no other capture each have one: `doors_open_from_power` (an oak and an iron door,
+  powered beside either half), `tnt_primed_by_power` (beside a new redstone block, and placed beside one),
+  `rails_powered_along_a_line` (ten powered and ten activator rails, the last of each out of reach),
+  `crafter_crafts_into_chest`, `dropper_pushes_into_chest` and `hopper_pushes_into_chest` (each read through a
+  comparator into a dust), `copper_bulb_toggles_comparator`, `bell_powered_by_redstone`,
+  `sculk_sensor_reads_note_frequency` (a note block's vibration, whose frequency a comparator reads while the sensor
+  is active) and `calibrated_sculk_sensor_filters_frequency` (only the sensor whose back signal matches the note's
+  frequency activates). The capture kills TNT a scenario primed when it ends, so it can't explode during a later one.
 - `fluid_scenarios.json` (`VanillaFluids`) defines the box, setup fills, actions, dimension and checkpoint ticks; the
   capture records the checkpoints.
 - `daylight_detector.json` (`DaylightDetectorTests`) defines the clock times to sample; the capture records the
@@ -201,8 +209,10 @@ replaces only what vanilla produced.
 - `ticking_blocks.json` (`VanillaTickingBlocks.ReplayTickingBlockReference`) records single block routines from
   `Java/TickingBlockFixtures.java`, against a bounded block view of the case's setup with a seeded, recording random
   as both the routine's and the level's: a random tick (only of a state that random-ticks), a scheduled tick, a
-  `Level.setBlock` with its on-place and neighbour shape updates (not neighbour notifications), or a falling block's
-  landing. Each case records the draws, block writes, scheduled block and fluid ticks with their delays, level events,
+  `Level.setBlock` with its on-place and neighbour shape updates (not neighbour notifications), a falling block's
+  landing, a sculk catalyst taking mobs' deaths and spreading their charge (`catalyst`), or chunk completion of a
+  marked position (`postProcess`: `LevelChunk.postProcessGeneration`'s fluid tick, then `updateFromNeighbourShapes`
+  with the level's ticks). Each case records the draws, block writes, scheduled block and fluid ticks with their delays, level events,
   game events, the entities added (a falling block's state and stalactite damage) and the blocks destroyed. The cases
   cover pointed dripstone growing (the block and water source above, column length, stalagmite search), dripping
   water and lava into each kind of cauldron or drying mud into clay, a waterlogged block counting as water (above
@@ -213,7 +223,19 @@ replaces only what vanilla produced.
   beside them schedule that; coral blocks, plants, fans and wall fans dying dry or staying by water, scheduling their
   death when placed or when a neighbour changes, and breaking when their support goes; chorus plants staying, breaking
   and connecting as their support and neighbours change; an oak door whose stone floor becomes soul sand (it stays)
-  or oak leaves (both halves break). The replay runs each case through Obsidian's generated
+  or oak leaves (both halves break); and a sculk catalyst taking deaths (with and without experience, two that merge,
+  one in the air, one beside water, and more than a cursor holds) and ticking its block entity until the charge is
+  spent or mid-spread, recording its charge cursors afterwards (`cursors`). Two `listenerRange` cases use the native
+  Euclidean listener registry to capture the floored-position range boundary (`taken` per death), including a death
+  outside the exact center radius that reaches it and the reverse. Two `catalystCredit` cases invoke the native
+  catalyst advancement gate after setting its last living attacker to a player, or a player then a wolf; `playerCredit`
+  records whether the gate reaches its advancement damage-source read. This isolates eligibility without a vanilla
+  advancement manager. The catalyst probe hands its listener each
+  death as `handleGameEvent` takes a mob's (charge, then the bloom), and the replay offers it through
+  `AbstractLevel.OfferDeathToSculkCatalysts`. Its charge particles' level events follow vanilla's hash map order.
+  The `completion_*` cases complete a stalactite, stalagmite, column, sulfur spike, kelp, kelp stem and vines with and
+  without support; their replay runs Obsidian's completion (`BiomeTerrain.PostProcess`) over nine empty chunks and
+  compares the blocks and the ticks saved in the chunk. The replay runs each case through Obsidian's generated
   owners, or a live block change, in its own world, and compares everything but the game events. Obsidian destroys
   blocks in the tick's entity phase, so a case that destroys one runs the world tick before comparing, keeping the
   recording random active. Ordered writes compare every flag bit; destruction compares state and drops intent;
@@ -350,8 +372,13 @@ replaces only what vanilla produced.
   the result. The original 92 cases retain their captured bytes. Another 285 cases cover buckets (72), chest
   obstructions (73), lighting (63) and the blocks that hold items (77: flower pots, chiseled bookshelves, decorated
   pots, including ones still waiting for their loot table, lodestone compasses and jukeboxes), including ordered block writes with every flag bit and successful block
-  destructions. These cases observe all writes, including positions absent from their setup; an unexpected position
-  fails the replay. The older 92 cases compare final block states only. Extending ordered-write checks to those
+  destructions. Fourteen redstone cases do too: opening a single and a double trapped chest powers the dust beside
+  it and, through the block below, the dust beside that; clicking a comparator into subtract mode reads a chest
+  under a sitting and a standing cat, a command block's `SuccessCount`, an active, a cooling and a calibrated sculk
+  sensor's last frequency, a lit copper bulb and a copper golem statue's pose; and a lever rings a bell, flips a
+  copper bulb, and extends and retracts a piston, with their sounds and game events. Their ordered writes now
+  compare every flag bit directly with vanilla. These cases observe all writes, including positions absent from
+  their setup; an unexpected position fails the replay. The older 92 cases compare final block states only. Extending ordered-write checks to those
   cases remains an open follow-up. The replay uses the capture's absolute coordinates: translating plant
   outlines changes their position-dependent offsets and can change a bucket ray hit. It also checks whether
   closing effects exist, rather than comparing them only when both sides happened to open a menu.
@@ -500,6 +527,51 @@ replaces only what vanilla produced.
   Channeling case, whose bolt's life and copper sparks are otherwise random. The replay seeds them at the same point,
   runs that case with its players as spectators on a ticking chunk ticket (the capture's players aren't in vanilla's
   chunk map, so its storm draws no strike chances) and, like the capture, with random ticks off.
+- `shelves.json` (`VanillaShelves.ReplayShelvesReference`) records 26.3's shelves, from `Java/ShelfFixtures.java`
+  (`CaptureFixtures=shelves`). Like the waxing probe it takes `block_use.json`'s inputs and runs on
+  `BlockUseFixtures.java`'s server, players, recorders and write observer by reflection. A case's `kind` is `use` (the
+  default: the hand's item used on the clicked face), `set` (`place` set with every update, which powers, unpowers and
+  connects shelves), `hopper` (the hopper at `hopper` runs `pushItemsTick` once) or `break` (the user breaks the
+  clicked block); a case may select a hotbar slot (`selected`) and fill hotbar slots (`hotbar`). Every case records
+  what a waxing case records, items' components among the entities, `blockEntities` (each setup block entity's saved
+  data), `inventory` with `checkInventory` and `comparatorSignal` for a `comparator`. The 70 cases cover putting,
+  taking and swapping in each slot, whole stacks, creative, adventure, spectator, the off hand, sneaking, faces that
+  pick no slot, a click on a slot's edge (with the float a client sends), spears' silent `use_effects`, comparators
+  behind, beside and in front, powered rows of one, two and three swapping with the end of the hotbar, power reaching
+  shelves alone, beside powered ones, at a row's ends and middle, past a full row and across woods and facings, hopper
+  insertion and extraction, and breaking (with drops and a row letting go). The replay drives the use-item-on packet,
+  `SetBlockAsync`, `Hoppers.TickAsync` and a finished dig, and compares every field from the start; three break cases
+  pin the shared player break effects ([player break effects](known-gaps/player-break-effects.md)).
+- `straw_bed_sleep.json` (`VanillaStrawBeds.ReplayStrawBedSleepReference`) records straw beds and beds over time, from
+  `Java/StrawBedFixtures.java` (`CaptureFixtures=straw_beds`), on `BlockUseFixtures.java`'s server in the overworld and
+  the nether, with a stone floor and a spectating bystander (who doesn't count towards sleepers). A case sets the time
+  of day, its blocks, the user's game mode, standing and respawn point, then runs steps: `use`, `tick` (that many server
+  ticks: `ServerLevel.tick`, then the user's `doTick`, as its connection runs it), `leave` (the leave-bed command),
+  `time`, `bystanderMode` (changing whether the bystander counts as an active player) and `respawn`
+  (`findRespawnPositionAndUseSpawnBlock`). Each step records the blocks, ordered writes and
+  destroyed blocks, entities, what the bystander heard, game events, statistics (but those every tick awards), the
+  user's own sounds and messages, whether it sleeps, its sleep timer, its position and its respawn point; a respawn
+  records whether its block was missing (the world spawn, whose spot is random, is recorded as such). The 22 cases
+  cover straw beds slept in from either half, breaking as the night passes, on leaving and as the morning comes, in
+  the day, occupied, obstructed, too far, in creative, without their other half, keeping an earlier spawn point, as
+  plain and forced respawn points, breaking on use in the nether, and sleep-status messages when the active-player
+  count changes, with beds for comparison. The replay ticks the test world and the user, confirms the user's teleports as its client would, and compares every step; a sleeper's
+  position while it lies through ticks is its own physics' and isn't compared, and one case pins the bounce vanilla's
+  player physics plays on a bed ([26.3 blocks](known-gaps/26-3-blocks.md)).
+- `golden_dandelions.json` (`VanillaGoldenDandelions.ReplayGoldenDandelionReference`) records golden dandelions locking
+  young mobs' age, from `Java/GoldenDandelionFixtures.java` (`CaptureFixtures=golden_dandelions`), on
+  `BlockUseFixtures.java`'s server over a stone floor. A case spawns its `entity` (a baby unless `baby` is false) with
+  `age` and `ageLocked` set as a save loads them, and gives the user its hands; steps are `interact`
+  (`Player.interactOn`), `tick` (the mob's own ticks), `eatGrass` (a sheep's grass meal) and `item` (changing
+  the main hand). `owned` tames a pet for the user before the steps. Each step records an interaction's result and
+  hand, the bystander's sounds (`id source volume pitch`) and age particles (`pause_mob_growth`, `reset_mob_growth`,
+  `happy_villager`), game events, statistics and the mob's type with its saved `Age`, `ForcedAge`, `AgeLocked` and
+  `PersistenceRequired`, plus `GotFish` and `Sitting` where applicable. The 32 cases lock and unlock cows, sheep,
+  horses, llamas, camels, pandas, axolotls, chickens and tadpoles, refuse adults, creative's kept dandelion, the off hand, the last dandelion, the 40-tick cooldown,
+  locked growth, locked feeding, grass meals, dolphins taking fish, owned baby pets before their sitting fallback,
+  sniffers' initial and reset ages, and the mobs that can't be locked. The replay sends the interact packet and ticks the
+  mob; tick steps compare the particles and the mob only, since ambient sounds and steps are chance. Three cases pin
+  mob behaviour outside the age lock ([26.3 blocks](known-gaps/26-3-blocks.md)).
 - `turtle_eggs.json` (`VanillaTurtleEggs.ReplayTurtleEggReference`) records vanilla's turtle eggs, from
   `Java/HatchingFixtures.java` (`CaptureFixtures=turtle_eggs`). Each case is its input: the blocks of a small block
   view (air elsewhere), the origin, a seed, the overworld clock's time and the dimension, and either a random tick or
@@ -524,7 +596,7 @@ replaces only what vanilla produced.
   events and tadpoles.
 
 - `growing_plant_ticks.json` (`VanillaGrowingPlantTicks.ReplayGrowingPlantTickReference`) records vanilla's
-  `randomTick` of growing plants, and the shape updates of kelp and the vines, from
+  `randomTick` of growing plants and saplings, bone meal on plants, and the shape updates of kelp and the vines, from
   `Java/GrowingPlantTickFixtures.java` (`CaptureFixtures=growing_plant_ticks`). Each case is its input: the blocks of
   a small block view (air elsewhere), an optional ticked origin, optional actions after the tick (a state set with
   `UPDATE_ALL`, or a block removed), a seed, and optionally the raw light everywhere (`light`) and the `spread_vines`
@@ -535,11 +607,24 @@ replaces only what vanilla produced.
   state of every position it set up or wrote. The cases cover kelp and the cave, weeping and twisting vines, melon and
   pumpkin stems, wall vines and the pitcher crop: growing, a missed draw, being blocked, the last age, light, the
   build height limits, each way a vine spreads, a tip broken off after growing, a head growing into a one-block gap
-  below its plant, and support placed or removed under a head. The replay builds each case in a fresh world with the
+  below its plant, and support placed or removed under a head. A `bonemeal` case uses bone meal on the origin
+  instead, as `BoneMealItem.growCrop` does, and records whether it took (`valid`). The probe's feature registry holds
+  a stand-in for every feature in the jar, which records where it's placed (`placed`) and succeeds unless the case's
+  `features` says otherwise; a huge mushroom's stand-in has its foliage radius, but no stand-in is a tree, so a
+  sapling's trunk room reads 0. The eighteen `bonemealTargetOnly` cases instead retain real vanilla tree features and
+  capture only `isValidBonemealTarget`: the native minimum trunk height boundary and the block immediately below it,
+  for seven sapling growers and both azaleas. Tree placement remains covered by the worldgen replays. Case selection
+  is supported with `CaptureCases` so adding these does not re-record the existing cases.
+  The other cases cover saplings growing on random ticks and with bone meal (26.3's weighted
+  growers: oak, birch, spruce and jungle squares, dark and pale oak alone and in squares, cherry, the poplar's three
+  trees, the azalea and the mangrove propagule, near flowers and with the tree failing), and bone meal on stems, the
+  pitcher crop, sweet berries, cocoa, kelp and the vines (heads and bodies), rooted dirt, mangrove leaves, netherrack,
+  nylium, fungi, mushrooms (near the build limit too) and moss. The replay builds each case in a fresh world with the
   recording random as the level's, dispatches the state as `AbstractLevel.TickChunkBlocks` does (its
   `isRandomlyTicking`, then its generated owner), runs the actions, and compares the draws, the ordered writes and
-  their neighbour, client and known-shape flags, the final blocks, that nothing else in the chunk around them changed,
-  and the ticks pending in the chunk with their delays. Six cases list exactly where the block notification pipeline
+  their neighbour, client and known-shape flags, the features asked for, the final blocks, that nothing else in the
+  chunk around them changed, and the ticks pending in the chunk with their delays. The replay lights the area around
+  the case with the probe's one brightness, and records features through the level's `GrowthFeatures`. Six cases list exactly where the block notification pipeline
   still parts from vanilla (see
   [reactions to block updates](known-gaps/vanilla-blocks-reactions-to-block-updates.md)).
 
@@ -631,6 +716,12 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=dispenser
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=cauldrons
 
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=shelves
+
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=straw_beds
+
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=golden_dandelions
+
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=eyeblossom_ghast_portal
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=brushing
@@ -663,6 +754,17 @@ scenario has checkpoints) and capture again; the tests pick it up.
 
 For redstone, `CaptureCases` accepts exact `+`-separated scenario names and records only those; the other
 scenarios keep what they hold.
+
+`review_retraction_notifies_base_neighbours` covers the moving base's immediate neighbour notification: a
+quasi-connected piston extends in tick 1. `review_compare_mode_same_output_notifies_front` in `block_use.json`
+covers a compare-mode click with unchanged output waking the piston beyond its front support. The block-use
+replay compares their writes with vanilla's exact flags; no `RedstoneWriteFlags` pins remain.
+
+`calibrated_sensor_frequency_table` records `VibrationSystem.getGameEventFrequency` for the entire game-event
+registry, plus native calibrated-sensor acceptance of landings, bounces, deaths and sensor clicks at matching
+and mismatching filters. The replay checks every event Obsidian exposes and the captured acceptance cases.
+The two `lever_*_piston` cases also opt into seeded pitch, sound packet seed and next level-random checks for
+both extension and retraction. `CaptureCases` can refresh each of these cases independently.
 
 `block_contact` is captured only when named. Its original 16 RCON scenarios take about 15 seconds each. A scenario
 gives its number of `ticks` and starts with empty `checkpoints`; `CaptureCases` records only the exact names supplied,
@@ -817,6 +919,10 @@ For `cauldrons`, `CaptureCases` likewise takes exact `+`-separated names in `cau
 For `projectile_hits`, `CaptureCases` accepts exact `+`-separated names in `projectile_block_hits.json` and records
 only those cases; the others keep theirs. The capture takes about 15 seconds after the server starts.
 
+For `shelves`, `straw_beds` and `golden_dandelions`, `CaptureCases` likewise takes exact `+`-separated names in
+`shelves.json`, `straw_bed_sleep.json` and `golden_dandelions.json` and records only those cases. Each capture takes
+about 15 seconds after the server starts.
+
 The `turtle_eggs` and `frogspawn` captures run no server and re-record every case. To add one, add a case with its
 `name`, `seed`, `origin` and `setup` (and `time`, `dimension`, `place` or `tick`) and capture again; pick a seed whose
 first draw takes the branch the case is about. The `furnace_results` capture also runs no server and re-records every
@@ -844,7 +950,8 @@ The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft 
 <scratch directory> <test assets directory>
 [redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+heightmaps+saved_heightmaps+mining+placement+
 copper_weathering+fire+ticking_blocks+block_use+waxing_bells_ore+cauldrons+turtle_eggs+frogspawn+growing_plant_ticks+
-melting_weather+furnace_results+brushing+armor_stand_use+projectile_hits+dispenser+lightning+trial_spawners]
+melting_weather+furnace_results+brushing+armor_stand_use+projectile_hits+dispenser+shelves+straw_beds+
+golden_dandelions+lightning+trial_spawners]
 [case names]`.
 
 ## How it captures

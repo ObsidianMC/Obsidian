@@ -314,9 +314,7 @@ internal static partial class UseBehaviors
     {
         public async ValueTask<UseResult> UseWithoutItemAsync(BlockUse use)
         {
-            var used = await use.Level.UseBedAsync(use.Player, use.Position, use.Block);
-
-            return used ? UseResult.SuccessServer : UseResult.Pass;
+            return await use.Level.UseBedAsync(use.Player, use.Position, use.Block);
         }
     }
 
