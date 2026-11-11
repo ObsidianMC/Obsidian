@@ -934,8 +934,8 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
     {
         plugin?.ThrowIfClosing();
 
-        // A player with the name may still be leaving: one removed from a tick leaves once the ticks end (see
-        // RemoveServerPlayerAsync). The join waits for that, like a network player's, unless a tick is asking: the
+        // A player with the name may still be leaving (see RemoveServerPlayerAsync); one removed from a tick leaves
+        // only once the ticks end. The join waits for that, like a network player's, unless a tick is asking: the
         // leave may wait for that tick (it's the player's own, or a leave handler saves its level).
         var leaving = this.WaitForLeavesAsync(username);
         if (!leaving.IsCompleted)
@@ -1050,15 +1050,6 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
         return true;
     }
 
-    // Drops the lookups that hang off an online registration; the caller must have just removed that registration.
-    private void ReleaseRegistrations(IPlayer player)
-    {
-        lock (this.playerList)
-            this.ReleaseNameAndListing(player);
-
-        LeaveOwningLevel(player);
-    }
-
     private static void LeaveOwningLevel(IPlayer player)
     {
         // Outside the registrations' lock, and under the transfer lock of the level that owns the player, so a level
@@ -1070,15 +1061,21 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
 
     public async Task<bool> RemoveServerPlayerAsync(IPlayer player)
     {
-        // Claiming the registration first means concurrent removals run the leave lifecycle only once. Its name and
-        // place in the list are released once it left (see LeaveServerPlayerAsync).
+        // Claiming the registration first means concurrent removals run the leave lifecycle only once.
         if (player is not ServerPlayer serverPlayer)
             return false;
 
+        var left = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         lock (this.playerList)
         {
             if (!this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
                 return false;
+
+            // The name and the place in the list go with the registration, so no lookup finds a player who took the
+            // UUID meanwhile under this one's name. A join under the name waits for the leave instead: it's tracked
+            // before the name is free (see WaitForLeavesAsync).
+            this.ReleaseNameAndListing(player);
+            this.TrackLeave(left.Task, serverPlayer.Username);
         }
 
         serverPlayer.CancelJoin();
@@ -1087,14 +1084,21 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
         // plugin removing the player as they die, say) runs apart from it, once it's done, and isn't waited for.
         if (!serverPlayer.IsInOwnTick && !WorldData.AbstractLevel.MustNotWaitForGates)
         {
-            await this.LeaveServerPlayerAsync(serverPlayer);
+            try
+            {
+                await this.LeaveServerPlayerAsync(serverPlayer);
+            }
+            finally
+            {
+                left.SetResult();
+            }
+
             return true;
         }
 
-        Task leave;
         using (ExecutionContext.SuppressFlow())
         {
-            leave = Task.Run(async () =>
+            _ = Task.Run(async () =>
             {
                 // Nobody awaits it, so it logs its own failure, like a network player's leave.
                 try
@@ -1105,10 +1109,13 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
                 {
                     Log.ServerPlayerLeaveFailed(this.logger, ex, serverPlayer.Username);
                 }
+                finally
+                {
+                    left.SetResult();
+                }
             });
         }
 
-        this.TrackLeave(leave, serverPlayer.Username);
         return true;
     }
 
@@ -1138,7 +1145,7 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
                 // No longer a viewer of what they had open, so other viewers' clicks don't update them.
                 player.OpenedContainer = null;
                 player.RunMenusClosed();
-                this.ReleaseRegistrations(player);
+                LeaveOwningLevel(player);
             }
         }
     }

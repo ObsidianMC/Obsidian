@@ -26,6 +26,22 @@ public sealed partial class FinishConfigurationPacket
             return;
         }
 
+        // The connection may close at any point of the join. One that closed first admits nothing, so the player is
+        // unregistered again; one that closes later leaves once the join is over, and undoes all of it.
+        if (client is not Client connection)
+        {
+            await JoinAsync(server, player);
+            return;
+        }
+
+        if (!await connection.AdmitAsync(() => JoinAsync(server, player)))
+            server.RemovePlayer(player);
+    }
+
+    // Admits the registered player to their level and sends them the world, as vanilla's PlayerList.placeNewPlayer.
+    private static async ValueTask JoinAsync(IServer server, IClientPlayer player)
+    {
+        var client = player.Client;
         var joined = (Entities.Player)player;
         await client.QueuePacketAsync(new LoginPacket
         {

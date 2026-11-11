@@ -97,7 +97,30 @@ public sealed partial class Client : IClient
     private TaskCompletionSource? leaving;
 
     // Starting a leave and tracking it happen together, so that no caller sees a leave the server doesn't track yet.
+    // It also orders the join's admission against the connection closing (see AdmitAsync and Disconnect).
     private readonly Lock leavingLock = new();
+
+    // How far the player's join got, whether the connection closed, and whether a leave asked for during the join waits
+    // for its end. All guarded by leavingLock.
+    private JoinStage joinStage;
+    private bool connectionClosed;
+    private bool leaveDeferred;
+
+    // The client whose join is admitting its player on this flow, so a join handler that kicks the player doesn't wait
+    // for the leave, which waits for the join.
+    private static readonly AsyncLocal<Client?> admitting = new();
+
+    private enum JoinStage
+    {
+        // Logging in or configuring: there's nothing to leave.
+        None,
+
+        // Admitting the player: a leave waits for the join's end, so that it undoes all of it.
+        Joining,
+
+        // Admitted: a leave runs at once.
+        Joined
+    }
 
     // Set once Disconnect ran; it may be called again (a shutdown disconnecting a client that already left). Guarded by
     // lifecycleLock together with disposing and registering the client, so a login that resumes after a disconnect
@@ -643,9 +666,17 @@ public sealed partial class Client : IClient
         Disconnected?.Invoke(this);
 
         // A player whose client closed the connection (as vanilla's clients do to quit) leaves too and is saved, and
-        // other players stop seeing them. A player still logging in or configuring hasn't joined, so there's nothing to
-        // leave.
-        if (this.State == ClientState.Play)
+        // other players stop seeing them. A player still logging in or configuring, or whose join hasn't started
+        // admitting them, hasn't joined, so there's nothing to leave: that join sees the connection closed and admits
+        // nothing (see AdmitAsync).
+        bool joined;
+        lock (this.leavingLock)
+        {
+            this.connectionClosed = true;
+            joined = this.joinStage != JoinStage.None;
+        }
+
+        if (joined)
             _ = this.LeaveAsync();
 
         this.HostServer.Connections.Remove(this.Id, out _);
@@ -980,6 +1011,7 @@ public sealed partial class Client : IClient
 
             this.Player = fresh;
             this.leaving = null;
+            this.joinStage = JoinStage.None;
         }
 
         var concreteServer = (Server)this.HostServer;
@@ -1004,7 +1036,8 @@ public sealed partial class Client : IClient
     /// (<see cref="DisconnectAsync"/>) or by the client (<see cref="Disconnect"/>). Every call returns the same leave, so
     /// a later one waits for it, and the server's shutdown waits for it too (<see cref="Server.TrackLeave"/>). A call from
     /// a leave handler itself (kicking the player who's leaving) or from one of the player's ticks doesn't wait, since
-    /// the leave waits for those.
+    /// the leave waits for those. A leave asked for while the join admits the player starts once the join is over (see
+    /// <see cref="AdmitAsync"/>), so a call from the join itself doesn't wait either.
     /// </summary>
     private Task LeaveAsync()
     {
@@ -1024,7 +1057,10 @@ public sealed partial class Client : IClient
             // The leave waits for a tick of the player under way, so a leave from inside one isn't waited for. Nor is
             // one from inside any other tick (a level's, or another player's): that tick could be what the player's
             // tick waits for.
-            cannotWait = player.IsInOwnTick || WorldData.AbstractLevel.MustNotWaitForGates;
+            var joining = this.joinStage == JoinStage.Joining;
+            cannotWait = player.IsInOwnTick
+                || WorldData.AbstractLevel.MustNotWaitForGates
+                || (joining && admitting.Value == this);
 
             if (this.leaving is TaskCompletionSource started)
                 return cannotWait ? Task.CompletedTask : started.Task;
@@ -1035,13 +1071,74 @@ public sealed partial class Client : IClient
             // Tracked before it starts, so a shutdown, or the player joining again, that begins meanwhile waits for it.
             if (this.HostServer is Server server)
                 server.TrackLeave(leave.Task, player.Username);
+
+            // The join still admitting the player starts it as it ends, so that the leave undoes all of it.
+            if (joining)
+            {
+                this.leaveDeferred = true;
+                return cannotWait ? Task.CompletedTask : leave.Task;
+            }
         }
 
-        // Raised apart from the caller's flow, so that it doesn't count as being in the caller's tick.
+        this.StartLeave(player, leave);
+        return cannotWait ? Task.CompletedTask : leave.Task;
+    }
+
+    // Raised apart from the caller's flow, so that it doesn't count as being in the caller's tick or join.
+    private void StartLeave(Player player, TaskCompletionSource leave)
+    {
         using (ExecutionContext.SuppressFlow())
             _ = Task.Run(() => this.RaiseLeaveAsync(player, leave));
+    }
 
-        return cannotWait ? Task.CompletedTask : leave.Task;
+    /// <summary>
+    /// Admits the player who finished configuring, through <paramref name="admit"/>, unless the connection closed or
+    /// the player started leaving first. Admission and the connection closing are ordered under the leave's lock:
+    /// either the join sees the connection closed and admits nothing, or the connection closes after the join began,
+    /// and the player's leave then waits for the join to end, so that it undoes all of what the join did.
+    /// </summary>
+    /// <returns>Whether the player was admitted; if not, the caller undoes what it did before.</returns>
+    internal async ValueTask<bool> AdmitAsync(Func<ValueTask> admit)
+    {
+        lock (this.leavingLock)
+        {
+            if (this.connectionClosed || this.leaving is not null)
+                return false;
+
+            this.joinStage = JoinStage.Joining;
+        }
+
+        admitting.Value = this;
+        try
+        {
+            await admit();
+        }
+        finally
+        {
+            this.EndJoin();
+        }
+
+        return true;
+    }
+
+    // Ends the join, and starts the leave asked for while it ran.
+    private void EndJoin()
+    {
+        Player? player = null;
+        TaskCompletionSource? leave = null;
+        lock (this.leavingLock)
+        {
+            this.joinStage = JoinStage.Joined;
+            if (this.leaveDeferred)
+            {
+                this.leaveDeferred = false;
+                player = (Player)this.Player!;
+                leave = this.leaving;
+            }
+        }
+
+        if (player is not null && leave is not null)
+            this.StartLeave(player, leave);
     }
 
     // Raises the leave event and completes the leave; it never throws.
