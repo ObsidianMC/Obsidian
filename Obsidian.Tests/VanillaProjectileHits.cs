@@ -70,11 +70,6 @@ public sealed class VanillaProjectileHits(ITestOutputHelper output)
         [("fishing_bobber_target", "gameEvents")] = BobberRehits,
         [("fishing_bobber_target", "stats")] = BobberRehits,
         [("flaming_arrow_waterlogged_campfire", "sounds")] = "water doesn't put out a burning arrow",
-        [("channeling_trident_lightning_rod", "changes")] = Lightning,
-        [("channeling_trident_lightning_rod", "signal")] = Lightning,
-        [("channeling_trident_lightning_rod", "levelEvents")] = Lightning,
-        [("channeling_trident_lightning_rod", "gameEvents")] = Lightning,
-        [("channeling_trident_lightning_rod", "writes")] = Lightning,
         [("arrow_oak_button", "sounds")] = ButtonContact,
         [("arrow_oak_button", "gameEvents")] = ButtonContact,
         [("spectral_arrow_oak_button", "sounds")] = ButtonContact,
@@ -87,8 +82,6 @@ public sealed class VanillaProjectileHits(ITestOutputHelper output)
 
     private const string BobberRehits =
         "vanilla's grounded bobber hits the block again on ticks 2 and 4; Obsidian's rests on it";
-
-    private const string Lightning = "the summoned lightning bolt doesn't strike: no rod power, sparks or event";
 
     private const string ButtonContact =
         "the button is pressed in the contact pass after the arrow's tick, not as the arrow moves, before its hit";
@@ -165,6 +158,9 @@ public sealed class VanillaProjectileHits(ITestOutputHelper output)
         world.LevelData.Difficulty = Difficulty.Easy;
         world.LevelData.GameRules["mob_griefing"] = "false";
 
+        // The capture's random tick speed: no chunk draws its random ticks from the level's random.
+        world.LevelData.GameRules["random_tick_speed"] = "0";
+
         var owner = AddPlayer(context, "Owner", Offset(root.GetProperty("owner")));
         var bystander = AddPlayer(context, "Bystander", Offset(root.GetProperty("bystander")));
         return new Harness(context, owner, bystander);
@@ -217,6 +213,7 @@ public sealed class VanillaProjectileHits(ITestOutputHelper output)
 
             PrepareOwner(harness.Owner, input);
             RegisterCriteria(hit, previous);
+            using var spectating = SpectateForSeededLightning(harness, input);
             var projectile = Spawn(world, harness.Owner, input);
             var differences = await RunAsync(harness, hit, projectile);
             Assert.True(differences.Count == 0, string.Join("; ", differences));
@@ -239,12 +236,14 @@ public sealed class VanillaProjectileHits(ITestOutputHelper output)
         {
             var before = Snapshot(world);
             var done = Criteria(harness.Owner, hit.Input);
+            var seeded = new HashSet<LightningBolt>();
             foreach (var expected in hit.Ticks)
             {
                 var actual = await TickAsync(harness, hit, projectile, observed, before, done);
                 before = Snapshot(world);
                 done = Criteria(harness.Owner, hit.Input);
                 Compare(hit.Name, expected, actual, differences, pinnedDiffer);
+                SeedLightning(world, hit.Input, seeded);
             }
         }
         finally
@@ -259,6 +258,47 @@ public sealed class VanillaProjectileHits(ITestOutputHelper output)
         }
 
         return differences;
+    }
+
+    // The capture's players aren't in vanilla's chunk map, so no chunk spawns mobs there, and a thunderstorm's strike
+    // chances draw nothing from the level's random. A case whose lightning is seeded runs with spectators here, so that
+    // none draw before the bolt's strike does either, and its chunk ticks by a ticket, as the capture's forced chunk
+    // does. Disposing it puts the players back in survival.
+    private static IDisposable? SpectateForSeededLightning(Harness harness, JsonElement input)
+    {
+        if (!input.TryGetProperty("boltSeed", out _))
+            return null;
+
+        harness.Owner.GameMode = GameMode.Spectator;
+        harness.Bystander.GameMode = GameMode.Spectator;
+        var ticket = harness.Context.World.AddChunkTicket(target.X >> 4, target.Z >> 4);
+        return new Undo(() =>
+        {
+            ticket.Dispose();
+            harness.Owner.GameMode = GameMode.Survival;
+            harness.Bystander.GameMode = GameMode.Survival;
+        });
+    }
+
+    private sealed class Undo(Action undo) : IDisposable
+    {
+        public void Dispose() => undo();
+    }
+
+    // As the capture does for a case with boltSeed: a lightning bolt the hit summoned is seeded after the tick it
+    // appeared in, before it first ticks (its own random, its seed and flashes drawn again), and the level's random its
+    // strike draws from too.
+    private static void SeedLightning(WorldData.World world, JsonElement input, HashSet<LightningBolt> seeded)
+    {
+        if (!input.TryGetProperty("boltSeed", out var boltSeed))
+            return;
+
+        var bolts = world.GetNonPlayerEntitiesInRange((VectorD)target, 16).OfType<LightningBolt>();
+        foreach (var bolt in bolts.Where(seeded.Add).ToList())
+        {
+            bolt.Reseed(new LegacyRandomSource(boltSeed.GetInt64()));
+            world.GrowthRandom = new LegacyRandomSource(input.GetProperty("levelSeed").GetInt64());
+        }
     }
 
     // One game tick of the world, then its record, the way the capture writes it.

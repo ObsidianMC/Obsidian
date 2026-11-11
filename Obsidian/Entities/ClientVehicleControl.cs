@@ -108,13 +108,14 @@ internal sealed class ClientVehicleControl
 
             this.controller = rider;
 
-            if (!this.Check(vehicle, terrain, queued.Move, firstGood, position, onGround, flying))
+            if (!PlayerBase.TryClientRotation(queued.Move.Yaw, queued.Move.Pitch, out var rotation)
+                || !this.Check(vehicle, terrain, queued.Move, firstGood, position, onGround, flying))
             {
                 rider.SendPacket(new MoveVehiclePacket
                 {
                     Position = position,
-                    Yaw = vehicle.Yaw.Degrees,
-                    Pitch = vehicle.Pitch.Degrees
+                    Yaw = vehicle.Yaw,
+                    Pitch = vehicle.Pitch
                 });
 
                 continue;
@@ -122,7 +123,10 @@ internal sealed class ClientVehicleControl
 
             position = queued.Move.Position;
             onGround = queued.Move.OnGround;
-            this.accepted = queued;
+            this.accepted = queued with
+            {
+                Move = queued.Move with { Yaw = rotation.Yaw, Pitch = rotation.Pitch }
+            };
         }
 
         if (this.controller is null)
@@ -192,7 +196,6 @@ internal sealed class ClientVehicleControl
     {
         var target = move.Position;
         if (!double.IsFinite(target.X) || !double.IsFinite(target.Y) || !double.IsFinite(target.Z)
-            || !float.IsFinite(move.Yaw) || !float.IsFinite(move.Pitch)
             || Math.Abs(target.X) > 3.0E7 || Math.Abs(target.Z) > 3.0E7 || Math.Abs(target.Y) > 2.0E7)
         {
             return false;

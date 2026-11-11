@@ -47,7 +47,8 @@ public sealed partial class Hoglin : FarmAnimal
         if (++TimeInOverworld > 300)
         {
             PlayMobSound("converted_to_zombified");
-            var zoglin = (Zoglin)await ConvertToAsync(EntityType.Zoglin);
+            if (await ConvertToAsync(EntityType.Zoglin) is not Zoglin zoglin)
+                return;
             zoglin.AddPotionEffect((int)PotionEffect.Nausea - 1, 200);
         }
     }

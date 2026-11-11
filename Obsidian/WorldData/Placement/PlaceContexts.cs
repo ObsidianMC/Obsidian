@@ -15,17 +15,17 @@ internal static class PlaceContexts
     /// </summary>
     public static BlockFace[] NearestLookingDirections(this BlockPlaceContext context) =>
         PlacementDirections.NearestLooking(
-            context.Player.Yaw.Degrees,
-            context.Player.Pitch.Degrees,
+            context.Player.Yaw,
+            context.Player.Pitch,
             context.ClickedFace,
             context.ReplacesClicked);
 
     /// <summary>Vanilla <c>getNearestLookingVerticalDirection</c>: up when the player looks above the horizon.</summary>
     public static BlockFace NearestLookingVertical(this BlockPlaceContext context) =>
-        context.Player.Pitch.Degrees < 0 ? BlockFace.Up : BlockFace.Down;
+        context.Player.Pitch < 0 ? BlockFace.Up : BlockFace.Down;
 
     /// <summary>Vanilla <c>getRotation</c>: the player's yaw, in degrees.</summary>
-    public static float Rotation(this BlockPlaceContext context) => context.Player.Yaw.Degrees;
+    public static float Rotation(this BlockPlaceContext context) => context.Player.Yaw;
 
     /// <summary>Vanilla <c>isSecondaryUseActive</c>: the player sneaks.</summary>
     public static bool Sneaking(this BlockPlaceContext context) => context.Player.Sneaking;
