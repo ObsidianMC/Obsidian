@@ -40,6 +40,10 @@ public partial class Spider : PathfinderMob
                 _ => PotionEffect.Invisibility
             };
             AddPotionEffect((int)effect - 1, -1, 0, EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon);
+
+            // Vanilla brings the invisible flag in line with the effects before the spider's spawn data is sent.
+            if (effect == PotionEffect.Invisibility)
+                Invisible = true;
         }
 
         return new(Vehicle: null, Passenger: rider);

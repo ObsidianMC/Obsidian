@@ -92,6 +92,33 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
     }
 
     /// <summary>
+    /// A bare spider on Hard that rolls invisibility is spawned invisible, as vanilla syncs the invisible flag with the
+    /// effects before sending its spawn data. The seeds are scanned for spiders that roll an effect; at least one
+    /// must roll invisibility.
+    /// </summary>
+    [Fact]
+    public async Task BareSpiderThatRollsInvisibilitySpawnsInvisible()
+    {
+        await using var context = TestServerFactory.CreateServer($"bare-spider-{Guid.NewGuid():N}");
+        var level = context.World;
+        level.TimeProvider = new NoonUtc(CapturedOn);
+        level.LevelData.Difficulty = Difficulty.Hard;
+        level.LevelData.Time = 24000 * 8 * 100;
+        var invisible = 0;
+        for (var seed = 0; seed < 20000 && invisible == 0; seed++)
+        {
+            var spider = new Spider { Level = level };
+            spider.FinalizeBareSpawn(level, new LegacyRandomSource(seed));
+            var rolled = spider.HasPotionEffect((int)PotionEffect.Invisibility - 1);
+            Assert.Equal(rolled, spider.Invisible);
+            if (rolled)
+                invisible++;
+        }
+
+        Assert.True(invisible > 0, "No seed rolled invisibility.");
+    }
+
+    /// <summary>
     /// A wither skeleton from spawn data that only names it gets vanilla's wither skeleton setup, not the skeleton's
     /// it inherits: a stone sword, no armour, no enchantments, and an attack damage of 4. It draws only the base
     /// setup's and the loot pickup chance from the level's random. Before Halloween, so no pumpkin draws either.
