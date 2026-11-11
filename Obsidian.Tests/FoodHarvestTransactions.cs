@@ -130,7 +130,7 @@ public sealed class FoodHarvestTransactions
         }
     }
 
-    [Fact]
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task ABusyInventoryIsTriedWhileTheTickLockIsHeld()
     {
         await using var context = await StartAsync("harvest-busy");
@@ -148,7 +148,7 @@ public sealed class FoodHarvestTransactions
                 {
                     lock (context.World.Fluids.TickLock)
                         return UseAsync(use, harvest).GetAwaiter().GetResult();
-                }).WaitAsync(TimeSpan.FromSeconds(10));
+                });
             }
 
             Assert.Equal(UseResult.Fail, result);
@@ -166,7 +166,7 @@ public sealed class FoodHarvestTransactions
         return harvest.WithItem ? await behavior.UseItemOnAsync(use) : await behavior.UseWithoutItemAsync(use);
     }
 
-    [Fact]
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task TimedReleaseAndHarvestDetachEachStoredBeeOnce()
     {
         await using var context = await StartAsync("hive-release-race");
@@ -174,10 +174,42 @@ public sealed class FoodHarvestTransactions
         player.Inventory.SetItem(36, new ItemStack(ItemsRegistry.GlassBottle, 2));
         var hive = PrepareHive(context, 5, Occupant(2400, true), Occupant(0, false));
 
-        // Pause real entity registration after the timer has read and detached its eligible occupant.
-        // The harvest runs before registration finishes, while a second, younger bee remains in the hive.
-        var ticking = HarvestWhileTimedSpawnIsBlocked(context, hive, player);
-        await ticking.WaitAsync(TimeSpan.FromSeconds(10));
+        // Signal the exact boundary between the real detach and spawn stages. The timer cannot publish
+        // until the harvest has finished, and never holds the tick lock while waiting for that signal.
+        var detached = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var resume = new ManualResetEventSlim();
+        var spawner = new MobSpawner(context.World);
+        var ticking = Task.Run(() =>
+        {
+            try
+            {
+                object released;
+                lock (context.World.Fluids.TickLock)
+                    released = HiveStage(spawner, "DetachTimedHiveBees", hive);
+
+                detached.SetResult();
+                resume.Wait();
+                HiveStage(spawner, "SpawnTimedHiveBees", hive, released);
+            }
+            catch (Exception exception)
+            {
+                detached.TrySetException(exception);
+                throw;
+            }
+        });
+
+        try
+        {
+            await detached.Task;
+            var use = BlockUseTransactions.Read(context, player);
+            Assert.Equal(UseResult.Success, await UseAsync(use, Harvests()[0]));
+        }
+        finally
+        {
+            resume.Set();
+            await ticking;
+        }
+
         await context.World.RunQueuedEntityActionsAsync();
 
         Assert.Equal(2, context.World.GetEntitiesInRange((VectorD)target, 5).OfType<Bee>().Count());
@@ -236,50 +268,61 @@ public sealed class FoodHarvestTransactions
         }
     }
 
-    private static Task HarvestWhileTimedSpawnIsBlocked(RealServerContext context, DataBlockEntity hive,
-        ServerPlayer player)
+    [Fact]
+    public async Task FailedTimedAdmissionDoesNotLoseOtherStoredBees()
     {
-        var gateField = typeof(EntityGrid).GetField("gate", BindingFlags.NonPublic | BindingFlags.Instance)!;
-        var gate = (Lock)gateField.GetValue(context.World.EntityGrid)!;
-        Task ticking;
-        gate.Enter();
-        try
+        await using var context = await StartAsync("hive-release-rejected");
+        var existing = new Bee
         {
-            ticking = Task.Run(() => TickHive(context.World, hive));
-            var reachedRegistration = SpinWait.SpinUntil(() => context.World.Regions.Values
-                .SelectMany(region => region.Entities.Values).OfType<Bee>().Any(), TimeSpan.FromSeconds(10));
-            Assert.True(reachedRegistration, "The timed release did not reach entity registration.");
+            Level = context.World,
+            EntityId = Server.GetNextEntityId(),
+            Position = (VectorD)target + new VectorD(0.5, 0.2, -0.5)
+        };
+        context.World.SpawnEntity(existing);
+        var unique = new Bee { Level = context.World, HasNectar = true };
+        var blocked = Occupant(2400, true);
+        var admitted = Occupant(2400, true);
+        Assert.True(blocked.TryGetTag<NbtCompound>("entity_data", out var blockedData));
+        Assert.True(admitted.TryGetTag<NbtCompound>("entity_data", out var admittedData));
+        blockedData.Set(new NbtArray<int>("UUID", EntityNbt.UuidToInts(existing.Uuid)));
+        admittedData.Set(new NbtArray<int>("UUID", EntityNbt.UuidToInts(unique.Uuid)));
+        var hive = PrepareHive(context, 0, blocked, admitted);
 
-            // The current thread can query/register through its grid gate. The timer is blocked outside the tick.
-            var tickLock = context.World.Fluids.TickLock;
-            Assert.True(tickLock.TryEnter(TimeSpan.FromSeconds(10)),
-                "The timer must release the tick lock before waiting for entity registration.");
-            try
-            {
-                var use = BlockUseTransactions.Read(context, player);
-                var behavior = BlocksRegistry.GetUseItemOnBehavior(use.Block.RegistryId)!;
-                var result = behavior.UseItemOnAsync(use);
-                Assert.True(result.IsCompletedSuccessfully);
-                Assert.Equal(UseResult.Success, result.GetAwaiter().GetResult());
-            }
-            finally
-            {
-                tickLock.Exit();
-            }
-        }
-        finally
-        {
-            gate.Exit();
-        }
+        TickHive(context.World, hive);
+        await context.World.RunQueuedEntityActionsAsync();
 
-        return ticking;
+        var live = context.World.GetEntitiesInRange((VectorD)target, 5).OfType<Bee>().ToArray();
+        Assert.Equal(2, live.Length);
+        Assert.Same(existing, Assert.Single(live, bee => bee.Uuid == existing.Uuid));
+        Assert.False(Assert.Single(live, bee => bee.Uuid == unique.Uuid).HasNectar);
+        var retained = Assert.IsType<NbtCompound>(Assert.Single(hive.SnapshotTag<NbtList>("bees")!));
+        Assert.True(retained.TryGetTag<NbtCompound>("entity_data", out var retainedData));
+        var savedBee = Assert.IsType<Bee>(EntityNbt.Load(retainedData, context.World));
+        Assert.Equal(existing.Uuid, savedBee.Uuid);
+        Assert.True(savedBee.HasNectar);
+        var honey = context.World.BlockUpdates.GetBlock(target).GetProperty("honey_level");
+        Assert.True(honey is "1" or "2", $"Only the admitted bee may deliver nectar; honey was {honey}.");
+
+        // Retrying the UUID clash neither duplicates the admitted bee nor delivers the rejected bee's nectar.
+        TickHive(context.World, hive);
+        await context.World.RunQueuedEntityActionsAsync();
+
+        Assert.Equal(2, context.World.GetEntitiesInRange((VectorD)target, 5).OfType<Bee>().Count());
+        Assert.Equal(honey, context.World.BlockUpdates.GetBlock(target).GetProperty("honey_level"));
+        var saved = new NbtCompound();
+        hive.Save(saved);
+        Assert.True(saved.TryGetTag<NbtList>("bees", out var occupants));
+        Assert.Single(occupants);
     }
 
-    private static void TickHive(World world, DataBlockEntity hive)
+    private static object HiveStage(MobSpawner spawner, string name, params object[] arguments)
     {
-        var method = typeof(MobSpawner).GetMethod("TickHive", BindingFlags.NonPublic | BindingFlags.Instance)!;
-        method.Invoke(new MobSpawner(world), [hive]);
+        var method = typeof(MobSpawner).GetMethod(name, BindingFlags.NonPublic | BindingFlags.Instance)!;
+        return method.Invoke(spawner, arguments)!;
     }
+
+    private static void TickHive(World world, DataBlockEntity hive) =>
+        HiveStage(new MobSpawner(world), "TickHive", hive);
 
     private static DataBlockEntity PrepareHive(RealServerContext context, int honey, params NbtCompound[] bees)
     {

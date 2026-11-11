@@ -6,20 +6,60 @@ namespace Obsidian.WorldData;
 
 internal sealed partial class MobSpawner
 {
+    private sealed record TimedHiveBee(Bee Bee, NbtCompound Occupant, IBlock HiveState);
+
     private void TickHive(DataBlockEntity hive)
     {
-        List<Bee> released;
+        List<TimedHiveBee> released;
         lock (level.Fluids.TickLock)
             released = DetachTimedHiveBees(hive);
 
-        // A harvest can run while entity registration is busy. These bees no longer belong to the hive,
-        // and no stale occupant snapshot is written back after spawning them.
-        foreach (var bee in released)
-            level.SpawnEntity(bee);
+        SpawnTimedHiveBees(hive, released);
+    }
+
+    private void SpawnTimedHiveBees(DataBlockEntity hive, List<TimedHiveBee> released)
+    {
+        IBlock? expected = null;
+        foreach (var release in released)
+        {
+            expected ??= release.HiveState;
+            var bee = release.Bee;
+            var deliveredNectar = bee.HasNectar;
+            bee.HasNectar = false;
+
+            // Admission can reject one UUID or an unloaded region. Each detached occupant is independent:
+            // restore just the rejected one, without overwriting occupants changed by a concurrent harvest/entry.
+            if (!level.TrySpawnEntity(bee, hostOwned: true))
+            {
+                lock (level.Fluids.TickLock)
+                {
+                    if (ReferenceEquals(level.GetResidentBlockEntity(hive.BlockPosition), hive))
+                    {
+                        var occupants = hive.SnapshotTag<NbtList>("bees")
+                            ?? new NbtList(NbtTagType.Compound, "bees");
+                        occupants.Add(release.Occupant);
+                        hive.Set(occupants);
+                    }
+                }
+
+                continue;
+            }
+
+            // Failed admission must not deliver nectar. Keep the state from detachment so a harvest that
+            // completed while spawning was busy still invalidates the queued delivery.
+            if (deliveredNectar)
+            {
+                var honey = int.TryParse(expected.GetProperty("honey_level"), out var value) ? value : 0;
+                var updated = expected.WithProperty("honey_level",
+                    Math.Min(5, honey + (random.Next(100) == 0 ? 2 : 1)));
+                QueueHiveHoney(hive, expected, updated);
+                expected = updated;
+            }
+        }
     }
 
     // The same tick lock protects harvest, entry and timed release; no inventory or entity spawn is waited for here.
-    private List<Bee> DetachTimedHiveBees(DataBlockEntity hive)
+    private List<TimedHiveBee> DetachTimedHiveBees(DataBlockEntity hive)
     {
         if (!ReferenceEquals(level.GetResidentBlockEntity(hive.BlockPosition), hive)
             || hive.SnapshotTag<NbtList>("bees") is not NbtList occupants)
@@ -35,7 +75,7 @@ internal sealed partial class MobSpawner
         var facing = Features.FeatureHelpers.ParseFace(block.GetProperty("facing")).ToVector();
         var position = (VectorD)(hive.BlockPosition + facing) + new VectorD(0.5f, 0.2f, 0.5f);
         var retained = new NbtList(NbtTagType.Compound, "bees");
-        var released = new List<Bee>();
+        var released = new List<TimedHiveBee>();
         foreach (var occupant in occupants.OfType<NbtCompound>())
         {
             var elapsed = occupant.GetInt("ticks_in_hive") + 1;
@@ -57,16 +97,7 @@ internal sealed partial class MobSpawner
             }
 
             bee.HivePosition = hive.BlockPosition;
-            if (bee.HasNectar)
-            {
-                bee.HasNectar = false;
-                var honey = int.TryParse(block.GetProperty("honey_level"), out var value) ? value : 0;
-                var expected = block;
-                block = block.WithProperty("honey_level", Math.Min(5, honey + (random.Next(100) == 0 ? 2 : 1)));
-                QueueHiveHoney(hive, expected, block);
-            }
-
-            released.Add(bee);
+            released.Add(new TimedHiveBee(bee, occupant, block));
         }
 
         hive.Set(retained);

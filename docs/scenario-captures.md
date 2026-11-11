@@ -347,7 +347,7 @@ replaces only what vanilla produced.
   [waxing, bells and redstone ore](known-gaps/waxing-bells-and-redstone-ore.md)).
 
 - `food_and_harvest.json` (`VanillaFoodHarvest.ReplayFoodAndHarvestReference`) records phase 2 batch A's
-  110 cake, candle cake, berry, pumpkin, plant-head trim and hive uses, from `Java/FoodHarvestFixtures.java`
+  123 cake, candle cake, berry, pumpkin, plant-head trim and hive uses, from `Java/FoodHarvestFixtures.java`
   (`CaptureFixtures=food_and_harvest`). It reuses `BlockUseFixtures`' real server, use dispatcher, packet and game
   event recorders and the observed jar's ordered writes. All cases compare every existing observable from the
   start, including every block-write flag bit and unexpected writes. `soundPackets` also checks exact transmitted
@@ -361,8 +361,8 @@ replaces only what vanilla produced.
   covers age and hunger boundaries, both berry yield outcomes, all six pumpkin faces, broken shears, offhand use,
   full inventories, creative bottle exchanges, trim criteria before and after the write, occupied and obstructed
   hives, both campfire types at the smoke boundary, bees at and beyond the harvest search box, and nested codec
-  predicates. `shippedAdvancement` reads criteria directly from vanilla's advancement resource; replay verifies
-  those conditions against Obsidian's shipped definition. All recorded fields match without pins
+  predicates with array or singleton-object terms, plus omitted tool/location predicates. `shippedAdvancement`
+  reads criteria directly from vanilla's advancement resource; replay verifies those conditions against Obsidian's shipped definition. All recorded fields match without pins
   (see [food and harvest](known-gaps/food-and-harvest.md)). Capture only this fixture with
   `dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=food_and_harvest`;
   `CaptureCases` selects exact `+`-separated names as for `block_use`.

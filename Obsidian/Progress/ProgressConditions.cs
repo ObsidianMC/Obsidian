@@ -116,10 +116,17 @@ internal static class ProgressConditions
         if (type is "minecraft:all_of" or "minecraft:any_of")
         {
             if (!conditions.EnumerateObject().All(property => property.Name is "type" or "condition" or "terms")
-                || !conditions.TryGetProperty("terms", out var terms) || terms.ValueKind != JsonValueKind.Array)
+                || !conditions.TryGetProperty("terms", out var terms))
             {
                 return false;
             }
+
+            // Vanilla's terms codec accepts a single condition as well as a list, including recursively.
+            if (terms.ValueKind == JsonValueKind.Object)
+                return LocationEvent(player, terms, item, block, position);
+
+            if (terms.ValueKind != JsonValueKind.Array)
+                return false;
 
             var entries = terms.EnumerateArray();
             return type == "minecraft:all_of"
@@ -131,7 +138,7 @@ internal static class ProgressConditions
         {
             "minecraft:match_tool" => conditions.EnumerateObject()
                 .All(property => property.Name is "type" or "condition" or "predicate")
-                && Item(item, conditions.GetProperty("predicate")),
+                && (!conditions.TryGetProperty("predicate", out var predicate) || Item(item, predicate)),
             "minecraft:match_block" => conditions.EnumerateObject()
                 .All(property => property.Name is "type" or "condition" or "blocks" or "state")
                 && block is not null && EventBlock(block, conditions),
@@ -157,11 +164,14 @@ internal static class ProgressConditions
 
     private static bool EventLocation(IPlayer player, JsonElement condition, Vector? position)
     {
+        if (!condition.TryGetProperty("predicate", out var predicate))
+            return true;
+
         var origin = position ?? (Vector)player.Position.Floor();
         var x = condition.TryGetProperty("offsetX", out var offsetX) ? offsetX.GetInt32() : 0;
         var y = condition.TryGetProperty("offsetY", out var offsetY) ? offsetY.GetInt32() : 0;
         var z = condition.TryGetProperty("offsetZ", out var offsetZ) ? offsetZ.GetInt32() : 0;
-        return Location(player, condition.GetProperty("predicate"), origin + new Vector(x, y, z));
+        return Location(player, predicate, origin + new Vector(x, y, z));
     }
 
     private static bool Inventory(IPlayer player, JsonElement predicates)

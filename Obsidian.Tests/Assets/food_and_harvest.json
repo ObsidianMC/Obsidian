@@ -8819,6 +8819,1269 @@
       ],
       "checkDropPositions": true,
       "dropPositions": []
+    },
+    {
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:beehive[honey_level=5]",
+          "nbt": "{bees:[{entity_data:{id:\"minecraft:bee\"},ticks_in_hive:0,min_ticks_in_hive:600}]}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:glass_bottle",
+      "count": 1,
+      "checkDropPositions": true,
+      "name": "hive_codec_single_any",
+      "criteria": {
+        "composite": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": {
+              "type": "minecraft:any_of",
+              "terms": {
+                "type": "minecraft:match_tool",
+                "predicate": {
+                  "items": "minecraft:glass_bottle"
+                }
+              }
+            }
+          }
+        }
+      },
+      "awardedCriteria": [
+        "composite"
+      ],
+      "result": "success",
+      "changes": "0,0,0=minecraft:beehive",
+      "hand": "minecraft:honey_bottle x1",
+      "foodAfter": 20,
+      "saturationAfter": 5.0,
+      "inventory": [
+        "0=minecraft:honey_bottle x1"
+      ],
+      "smokey": false,
+      "bees": [
+        "occupants=0",
+        "bee target=true angry=false"
+      ],
+      "dropPositions": [],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bottle.fill 0,0,-3 1.0",
+        "minecraft:block.beehive.exit 0,0,0 1.0"
+      ],
+      "entities": [
+        "minecraft:bee"
+      ],
+      "sounds": [
+        "minecraft:item.bottle.fill",
+        "minecraft:block.beehive.exit"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_pickup 0,0,0 player",
+        "minecraft:block_change 0,0,0 minecraft:bee"
+      ],
+      "stats": [
+        "minecraft:used minecraft:glass_bottle 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.beehive.exit"
+      ],
+      "soundPackets": [
+        {
+          "id": "minecraft:item.bottle.fill",
+          "x": 4,
+          "y": 512,
+          "z": -20,
+          "volume": 1.0,
+          "pitch": 1.0,
+          "category": "blocks"
+        },
+        {
+          "id": "minecraft:block.beehive.exit",
+          "x": 4,
+          "y": 516,
+          "z": 4,
+          "volume": 1.0,
+          "pitch": 1.0,
+          "category": "blocks"
+        }
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:beehive",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:beehive[honey_level=5]",
+          "nbt": "{bees:[{entity_data:{id:\"minecraft:bee\"},ticks_in_hive:0,min_ticks_in_hive:600}]}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:glass_bottle",
+      "count": 1,
+      "checkDropPositions": true,
+      "name": "hive_codec_single_all",
+      "criteria": {
+        "composite": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": {
+              "type": "minecraft:all_of",
+              "terms": {
+                "type": "minecraft:match_tool",
+                "predicate": {
+                  "items": "minecraft:glass_bottle"
+                }
+              }
+            }
+          }
+        }
+      },
+      "awardedCriteria": [
+        "composite"
+      ],
+      "result": "success",
+      "changes": "0,0,0=minecraft:beehive",
+      "hand": "minecraft:honey_bottle x1",
+      "foodAfter": 20,
+      "saturationAfter": 5.0,
+      "inventory": [
+        "0=minecraft:honey_bottle x1"
+      ],
+      "smokey": false,
+      "bees": [
+        "occupants=0",
+        "bee target=true angry=false"
+      ],
+      "dropPositions": [],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bottle.fill 0,0,-3 1.0",
+        "minecraft:block.beehive.exit 0,0,0 1.0"
+      ],
+      "entities": [
+        "minecraft:bee"
+      ],
+      "sounds": [
+        "minecraft:item.bottle.fill",
+        "minecraft:block.beehive.exit"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_pickup 0,0,0 player",
+        "minecraft:block_change 0,0,0 minecraft:bee"
+      ],
+      "stats": [
+        "minecraft:used minecraft:glass_bottle 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.beehive.exit"
+      ],
+      "soundPackets": [
+        {
+          "id": "minecraft:item.bottle.fill",
+          "x": 4,
+          "y": 512,
+          "z": -20,
+          "volume": 1.0,
+          "pitch": 1.0,
+          "category": "blocks"
+        },
+        {
+          "id": "minecraft:block.beehive.exit",
+          "x": 4,
+          "y": 516,
+          "z": 4,
+          "volume": 1.0,
+          "pitch": 1.0,
+          "category": "blocks"
+        }
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:beehive",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:beehive[honey_level=5]",
+          "nbt": "{bees:[{entity_data:{id:\"minecraft:bee\"},ticks_in_hive:0,min_ticks_in_hive:600}]}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:glass_bottle",
+      "count": 1,
+      "checkDropPositions": true,
+      "name": "hive_codec_single_all_false",
+      "criteria": {
+        "composite": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": {
+              "type": "minecraft:all_of",
+              "terms": {
+                "type": "minecraft:match_tool",
+                "predicate": {
+                  "items": "minecraft:shears"
+                }
+              }
+            }
+          }
+        }
+      },
+      "awardedCriteria": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:beehive",
+      "hand": "minecraft:honey_bottle x1",
+      "foodAfter": 20,
+      "saturationAfter": 5.0,
+      "inventory": [
+        "0=minecraft:honey_bottle x1"
+      ],
+      "smokey": false,
+      "bees": [
+        "occupants=0",
+        "bee target=true angry=false"
+      ],
+      "dropPositions": [],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bottle.fill 0,0,-3 1.0",
+        "minecraft:block.beehive.exit 0,0,0 1.0"
+      ],
+      "entities": [
+        "minecraft:bee"
+      ],
+      "sounds": [
+        "minecraft:item.bottle.fill",
+        "minecraft:block.beehive.exit"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_pickup 0,0,0 player",
+        "minecraft:block_change 0,0,0 minecraft:bee"
+      ],
+      "stats": [
+        "minecraft:used minecraft:glass_bottle 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.beehive.exit"
+      ],
+      "soundPackets": [
+        {
+          "id": "minecraft:item.bottle.fill",
+          "x": 4,
+          "y": 512,
+          "z": -20,
+          "volume": 1.0,
+          "pitch": 1.0,
+          "category": "blocks"
+        },
+        {
+          "id": "minecraft:block.beehive.exit",
+          "x": 4,
+          "y": 516,
+          "z": 4,
+          "volume": 1.0,
+          "pitch": 1.0,
+          "category": "blocks"
+        }
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:beehive",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:beehive[honey_level=5]",
+          "nbt": "{bees:[{entity_data:{id:\"minecraft:bee\"},ticks_in_hive:0,min_ticks_in_hive:600}]}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:glass_bottle",
+      "count": 1,
+      "checkDropPositions": true,
+      "name": "hive_codec_single_nested",
+      "criteria": {
+        "composite": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": {
+              "type": "minecraft:all_of",
+              "terms": {
+                "type": "minecraft:any_of",
+                "terms": {
+                  "type": "minecraft:match_tool",
+                  "predicate": {
+                    "items": "minecraft:glass_bottle"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "awardedCriteria": [
+        "composite"
+      ],
+      "result": "success",
+      "changes": "0,0,0=minecraft:beehive",
+      "hand": "minecraft:honey_bottle x1",
+      "foodAfter": 20,
+      "saturationAfter": 5.0,
+      "inventory": [
+        "0=minecraft:honey_bottle x1"
+      ],
+      "smokey": false,
+      "bees": [
+        "occupants=0",
+        "bee target=true angry=false"
+      ],
+      "dropPositions": [],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bottle.fill 0,0,-3 1.0",
+        "minecraft:block.beehive.exit 0,0,0 1.0"
+      ],
+      "entities": [
+        "minecraft:bee"
+      ],
+      "sounds": [
+        "minecraft:item.bottle.fill",
+        "minecraft:block.beehive.exit"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_pickup 0,0,0 player",
+        "minecraft:block_change 0,0,0 minecraft:bee"
+      ],
+      "stats": [
+        "minecraft:used minecraft:glass_bottle 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.beehive.exit"
+      ],
+      "soundPackets": [
+        {
+          "id": "minecraft:item.bottle.fill",
+          "x": 4,
+          "y": 512,
+          "z": -20,
+          "volume": 1.0,
+          "pitch": 1.0,
+          "category": "blocks"
+        },
+        {
+          "id": "minecraft:block.beehive.exit",
+          "x": 4,
+          "y": 516,
+          "z": 4,
+          "volume": 1.0,
+          "pitch": 1.0,
+          "category": "blocks"
+        }
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:beehive",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:beehive[honey_level=5]",
+          "nbt": "{bees:[{entity_data:{id:\"minecraft:bee\"},ticks_in_hive:0,min_ticks_in_hive:600}]}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:glass_bottle",
+      "count": 1,
+      "checkDropPositions": true,
+      "name": "hive_codec_single_nested_false",
+      "criteria": {
+        "composite": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": {
+              "type": "minecraft:any_of",
+              "terms": {
+                "type": "minecraft:all_of",
+                "terms": {
+                  "type": "minecraft:match_tool",
+                  "predicate": {
+                    "items": "minecraft:shears"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "awardedCriteria": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:beehive",
+      "hand": "minecraft:honey_bottle x1",
+      "foodAfter": 20,
+      "saturationAfter": 5.0,
+      "inventory": [
+        "0=minecraft:honey_bottle x1"
+      ],
+      "smokey": false,
+      "bees": [
+        "occupants=0",
+        "bee target=true angry=false"
+      ],
+      "dropPositions": [],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bottle.fill 0,0,-3 1.0",
+        "minecraft:block.beehive.exit 0,0,0 1.0"
+      ],
+      "entities": [
+        "minecraft:bee"
+      ],
+      "sounds": [
+        "minecraft:item.bottle.fill",
+        "minecraft:block.beehive.exit"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_pickup 0,0,0 player",
+        "minecraft:block_change 0,0,0 minecraft:bee"
+      ],
+      "stats": [
+        "minecraft:used minecraft:glass_bottle 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.beehive.exit"
+      ],
+      "soundPackets": [
+        {
+          "id": "minecraft:item.bottle.fill",
+          "x": 4,
+          "y": 512,
+          "z": -20,
+          "volume": 1.0,
+          "pitch": 1.0,
+          "category": "blocks"
+        },
+        {
+          "id": "minecraft:block.beehive.exit",
+          "x": 4,
+          "y": 516,
+          "z": 4,
+          "volume": 1.0,
+          "pitch": 1.0,
+          "category": "blocks"
+        }
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:beehive",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:beehive[honey_level=5]",
+          "nbt": "{bees:[{entity_data:{id:\"minecraft:bee\"},ticks_in_hive:0,min_ticks_in_hive:600}]}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:glass_bottle",
+      "count": 1,
+      "checkDropPositions": true,
+      "name": "hive_codec_default_tool",
+      "criteria": {
+        "composite": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": {
+              "type": "minecraft:match_tool"
+            }
+          }
+        }
+      },
+      "awardedCriteria": [
+        "composite"
+      ],
+      "result": "success",
+      "changes": "0,0,0=minecraft:beehive",
+      "hand": "minecraft:honey_bottle x1",
+      "foodAfter": 20,
+      "saturationAfter": 5.0,
+      "inventory": [
+        "0=minecraft:honey_bottle x1"
+      ],
+      "smokey": false,
+      "bees": [
+        "occupants=0",
+        "bee target=true angry=false"
+      ],
+      "dropPositions": [],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bottle.fill 0,0,-3 1.0",
+        "minecraft:block.beehive.exit 0,0,0 1.0"
+      ],
+      "entities": [
+        "minecraft:bee"
+      ],
+      "sounds": [
+        "minecraft:item.bottle.fill",
+        "minecraft:block.beehive.exit"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_pickup 0,0,0 player",
+        "minecraft:block_change 0,0,0 minecraft:bee"
+      ],
+      "stats": [
+        "minecraft:used minecraft:glass_bottle 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.beehive.exit"
+      ],
+      "soundPackets": [
+        {
+          "id": "minecraft:item.bottle.fill",
+          "x": 4,
+          "y": 512,
+          "z": -20,
+          "volume": 1.0,
+          "pitch": 1.0,
+          "category": "blocks"
+        },
+        {
+          "id": "minecraft:block.beehive.exit",
+          "x": 4,
+          "y": 516,
+          "z": 4,
+          "volume": 1.0,
+          "pitch": 1.0,
+          "category": "blocks"
+        }
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:beehive",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:beehive[honey_level=5]",
+          "nbt": "{bees:[{entity_data:{id:\"minecraft:bee\"},ticks_in_hive:0,min_ticks_in_hive:600}]}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:glass_bottle",
+      "count": 1,
+      "checkDropPositions": true,
+      "name": "hive_codec_default_location",
+      "criteria": {
+        "composite": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": {
+              "type": "minecraft:location_check"
+            }
+          }
+        }
+      },
+      "awardedCriteria": [
+        "composite"
+      ],
+      "result": "success",
+      "changes": "0,0,0=minecraft:beehive",
+      "hand": "minecraft:honey_bottle x1",
+      "foodAfter": 20,
+      "saturationAfter": 5.0,
+      "inventory": [
+        "0=minecraft:honey_bottle x1"
+      ],
+      "smokey": false,
+      "bees": [
+        "occupants=0",
+        "bee target=true angry=false"
+      ],
+      "dropPositions": [],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bottle.fill 0,0,-3 1.0",
+        "minecraft:block.beehive.exit 0,0,0 1.0"
+      ],
+      "entities": [
+        "minecraft:bee"
+      ],
+      "sounds": [
+        "minecraft:item.bottle.fill",
+        "minecraft:block.beehive.exit"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_pickup 0,0,0 player",
+        "minecraft:block_change 0,0,0 minecraft:bee"
+      ],
+      "stats": [
+        "minecraft:used minecraft:glass_bottle 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.beehive.exit"
+      ],
+      "soundPackets": [
+        {
+          "id": "minecraft:item.bottle.fill",
+          "x": 4,
+          "y": 512,
+          "z": -20,
+          "volume": 1.0,
+          "pitch": 1.0,
+          "category": "blocks"
+        },
+        {
+          "id": "minecraft:block.beehive.exit",
+          "x": 4,
+          "y": 516,
+          "z": 4,
+          "volume": 1.0,
+          "pitch": 1.0,
+          "category": "blocks"
+        }
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:beehive",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:beehive[honey_level=5]",
+          "nbt": "{bees:[{entity_data:{id:\"minecraft:bee\"},ticks_in_hive:0,min_ticks_in_hive:600}]}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:glass_bottle",
+      "count": 1,
+      "checkDropPositions": true,
+      "name": "hive_codec_default_location_offset",
+      "criteria": {
+        "composite": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": {
+              "type": "minecraft:location_check",
+              "offsetX": 1000
+            }
+          }
+        }
+      },
+      "awardedCriteria": [
+        "composite"
+      ],
+      "result": "success",
+      "changes": "0,0,0=minecraft:beehive",
+      "hand": "minecraft:honey_bottle x1",
+      "foodAfter": 20,
+      "saturationAfter": 5.0,
+      "inventory": [
+        "0=minecraft:honey_bottle x1"
+      ],
+      "smokey": false,
+      "bees": [
+        "occupants=0",
+        "bee target=true angry=false"
+      ],
+      "dropPositions": [],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bottle.fill 0,0,-3 1.0",
+        "minecraft:block.beehive.exit 0,0,0 1.0"
+      ],
+      "entities": [
+        "minecraft:bee"
+      ],
+      "sounds": [
+        "minecraft:item.bottle.fill",
+        "minecraft:block.beehive.exit"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_pickup 0,0,0 player",
+        "minecraft:block_change 0,0,0 minecraft:bee"
+      ],
+      "stats": [
+        "minecraft:used minecraft:glass_bottle 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.beehive.exit"
+      ],
+      "soundPackets": [
+        {
+          "id": "minecraft:item.bottle.fill",
+          "x": 4,
+          "y": 512,
+          "z": -20,
+          "volume": 1.0,
+          "pitch": 1.0,
+          "category": "blocks"
+        },
+        {
+          "id": "minecraft:block.beehive.exit",
+          "x": 4,
+          "y": 516,
+          "z": 4,
+          "volume": 1.0,
+          "pitch": 1.0,
+          "category": "blocks"
+        }
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:beehive",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:beehive[honey_level=5]",
+          "nbt": "{bees:[{entity_data:{id:\"minecraft:bee\"},ticks_in_hive:0,min_ticks_in_hive:600}]}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:glass_bottle",
+      "count": 1,
+      "checkDropPositions": true,
+      "name": "hive_codec_defaults_all",
+      "criteria": {
+        "composite": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": {
+              "type": "minecraft:all_of",
+              "terms": [
+                {
+                  "type": "minecraft:match_tool"
+                },
+                {
+                  "type": "minecraft:location_check"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "awardedCriteria": [
+        "composite"
+      ],
+      "result": "success",
+      "changes": "0,0,0=minecraft:beehive",
+      "hand": "minecraft:honey_bottle x1",
+      "foodAfter": 20,
+      "saturationAfter": 5.0,
+      "inventory": [
+        "0=minecraft:honey_bottle x1"
+      ],
+      "smokey": false,
+      "bees": [
+        "occupants=0",
+        "bee target=true angry=false"
+      ],
+      "dropPositions": [],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bottle.fill 0,0,-3 1.0",
+        "minecraft:block.beehive.exit 0,0,0 1.0"
+      ],
+      "entities": [
+        "minecraft:bee"
+      ],
+      "sounds": [
+        "minecraft:item.bottle.fill",
+        "minecraft:block.beehive.exit"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_pickup 0,0,0 player",
+        "minecraft:block_change 0,0,0 minecraft:bee"
+      ],
+      "stats": [
+        "minecraft:used minecraft:glass_bottle 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.beehive.exit"
+      ],
+      "soundPackets": [
+        {
+          "id": "minecraft:item.bottle.fill",
+          "x": 4,
+          "y": 512,
+          "z": -20,
+          "volume": 1.0,
+          "pitch": 1.0,
+          "category": "blocks"
+        },
+        {
+          "id": "minecraft:block.beehive.exit",
+          "x": 4,
+          "y": 516,
+          "z": 4,
+          "volume": 1.0,
+          "pitch": 1.0,
+          "category": "blocks"
+        }
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:beehive",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:beehive[honey_level=5]",
+          "nbt": "{bees:[{entity_data:{id:\"minecraft:bee\"},ticks_in_hive:0,min_ticks_in_hive:600}]}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:glass_bottle",
+      "count": 1,
+      "checkDropPositions": true,
+      "name": "hive_codec_default_tool_any",
+      "criteria": {
+        "composite": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": {
+              "type": "minecraft:any_of",
+              "terms": [
+                {
+                  "type": "minecraft:match_tool"
+                },
+                {
+                  "type": "minecraft:match_tool",
+                  "predicate": {
+                    "items": "minecraft:shears"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "awardedCriteria": [
+        "composite"
+      ],
+      "result": "success",
+      "changes": "0,0,0=minecraft:beehive",
+      "hand": "minecraft:honey_bottle x1",
+      "foodAfter": 20,
+      "saturationAfter": 5.0,
+      "inventory": [
+        "0=minecraft:honey_bottle x1"
+      ],
+      "smokey": false,
+      "bees": [
+        "occupants=0",
+        "bee target=true angry=false"
+      ],
+      "dropPositions": [],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bottle.fill 0,0,-3 1.0",
+        "minecraft:block.beehive.exit 0,0,0 1.0"
+      ],
+      "entities": [
+        "minecraft:bee"
+      ],
+      "sounds": [
+        "minecraft:item.bottle.fill",
+        "minecraft:block.beehive.exit"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_pickup 0,0,0 player",
+        "minecraft:block_change 0,0,0 minecraft:bee"
+      ],
+      "stats": [
+        "minecraft:used minecraft:glass_bottle 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.beehive.exit"
+      ],
+      "soundPackets": [
+        {
+          "id": "minecraft:item.bottle.fill",
+          "x": 4,
+          "y": 512,
+          "z": -20,
+          "volume": 1.0,
+          "pitch": 1.0,
+          "category": "blocks"
+        },
+        {
+          "id": "minecraft:block.beehive.exit",
+          "x": 4,
+          "y": 516,
+          "z": 4,
+          "volume": 1.0,
+          "pitch": 1.0,
+          "category": "blocks"
+        }
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:beehive",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:beehive[honey_level=5]",
+          "nbt": "{bees:[{entity_data:{id:\"minecraft:bee\"},ticks_in_hive:0,min_ticks_in_hive:600}]}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:glass_bottle",
+      "count": 1,
+      "checkDropPositions": true,
+      "name": "hive_codec_default_location_any",
+      "criteria": {
+        "composite": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": {
+              "type": "minecraft:any_of",
+              "terms": [
+                {
+                  "type": "minecraft:location_check"
+                },
+                {
+                  "type": "minecraft:match_block",
+                  "blocks": "#minecraft:beehives"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "awardedCriteria": [
+        "composite"
+      ],
+      "result": "success",
+      "changes": "0,0,0=minecraft:beehive",
+      "hand": "minecraft:honey_bottle x1",
+      "foodAfter": 20,
+      "saturationAfter": 5.0,
+      "inventory": [
+        "0=minecraft:honey_bottle x1"
+      ],
+      "smokey": false,
+      "bees": [
+        "occupants=0",
+        "bee target=true angry=false"
+      ],
+      "dropPositions": [],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bottle.fill 0,0,-3 1.0",
+        "minecraft:block.beehive.exit 0,0,0 1.0"
+      ],
+      "entities": [
+        "minecraft:bee"
+      ],
+      "sounds": [
+        "minecraft:item.bottle.fill",
+        "minecraft:block.beehive.exit"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_pickup 0,0,0 player",
+        "minecraft:block_change 0,0,0 minecraft:bee"
+      ],
+      "stats": [
+        "minecraft:used minecraft:glass_bottle 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.beehive.exit"
+      ],
+      "soundPackets": [
+        {
+          "id": "minecraft:item.bottle.fill",
+          "x": 4,
+          "y": 512,
+          "z": -20,
+          "volume": 1.0,
+          "pitch": 1.0,
+          "category": "blocks"
+        },
+        {
+          "id": "minecraft:block.beehive.exit",
+          "x": 4,
+          "y": 516,
+          "z": 4,
+          "volume": 1.0,
+          "pitch": 1.0,
+          "category": "blocks"
+        }
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:beehive",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:beehive[honey_level=5]",
+          "nbt": "{bees:[{entity_data:{id:\"minecraft:bee\"},ticks_in_hive:0,min_ticks_in_hive:600}]}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": "minecraft:glass_bottle",
+      "count": 1,
+      "checkDropPositions": true,
+      "name": "hive_codec_default_tool_any_second",
+      "criteria": {
+        "composite": {
+          "trigger": "minecraft:item_used_on_block",
+          "conditions": {
+            "location": {
+              "type": "minecraft:any_of",
+              "terms": [
+                {
+                  "type": "minecraft:match_tool",
+                  "predicate": {
+                    "items": "minecraft:shears"
+                  }
+                },
+                {
+                  "type": "minecraft:match_tool"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "awardedCriteria": [
+        "composite"
+      ],
+      "result": "success",
+      "changes": "0,0,0=minecraft:beehive",
+      "hand": "minecraft:honey_bottle x1",
+      "foodAfter": 20,
+      "saturationAfter": 5.0,
+      "inventory": [
+        "0=minecraft:honey_bottle x1"
+      ],
+      "smokey": false,
+      "bees": [
+        "occupants=0",
+        "bee target=true angry=false"
+      ],
+      "dropPositions": [],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:item.bottle.fill 0,0,-3 1.0",
+        "minecraft:block.beehive.exit 0,0,0 1.0"
+      ],
+      "entities": [
+        "minecraft:bee"
+      ],
+      "sounds": [
+        "minecraft:item.bottle.fill",
+        "minecraft:block.beehive.exit"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:fluid_pickup 0,0,0 player",
+        "minecraft:block_change 0,0,0 minecraft:bee"
+      ],
+      "stats": [
+        "minecraft:used minecraft:glass_bottle 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.beehive.exit"
+      ],
+      "soundPackets": [
+        {
+          "id": "minecraft:item.bottle.fill",
+          "x": 4,
+          "y": 512,
+          "z": -20,
+          "volume": 1.0,
+          "pitch": 1.0,
+          "category": "blocks"
+        },
+        {
+          "id": "minecraft:block.beehive.exit",
+          "x": 4,
+          "y": 516,
+          "z": 4,
+          "volume": 1.0,
+          "pitch": 1.0,
+          "category": "blocks"
+        }
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:beehive",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
+    },
+    {
+      "name": "cake_codec_default_tool_empty_hand",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cake[bites=0]"
+        },
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "item": null,
+      "food": 18,
+      "saturation": 0,
+      "checkDropPositions": true,
+      "criteria": {
+        "default_tool": {
+          "trigger": "minecraft:any_block_use",
+          "conditions": {
+            "location": {
+              "type": "minecraft:match_tool"
+            }
+          }
+        }
+      },
+      "awardedCriteria": [
+        "default_tool"
+      ],
+      "result": "success",
+      "changes": "0,0,0=minecraft:cake[bites=1]",
+      "hand": "empty",
+      "foodAfter": 20,
+      "saturationAfter": 0.4,
+      "inventory": [],
+      "smokey": false,
+      "bees": [],
+      "dropPositions": [],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:eat 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:eat_cake_slice 1"
+      ],
+      "userEffects": [],
+      "soundPackets": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:cake[bites=1]",
+          "flags": 3
+        }
+      ],
+      "destroyed": []
     }
   ],
   "_notes": "Vanilla 26.3 batch A. BlockUseFixtures supplies the server, use-item-on dispatch, packet and game-event recorders and ordered write observer. Each case resets the level random and the named harvest/carve loot streams to randomSeed (1234 by default). Food, saturation, all inventory slots, hive occupants/bee targets and campfire smoke are also recorded. Every case records exact item drop positions. Setup is quiet; smoke fixtures clear seven cells below the target. The bystander is a spectator, so bee targets have one eligible player."
