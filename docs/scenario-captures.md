@@ -209,8 +209,10 @@ replaces only what vanilla produced.
 - `ticking_blocks.json` (`VanillaTickingBlocks.ReplayTickingBlockReference`) records single block routines from
   `Java/TickingBlockFixtures.java`, against a bounded block view of the case's setup with a seeded, recording random
   as both the routine's and the level's: a random tick (only of a state that random-ticks), a scheduled tick, a
-  `Level.setBlock` with its on-place and neighbour shape updates (not neighbour notifications), or a falling block's
-  landing. Each case records the draws, block writes, scheduled block and fluid ticks with their delays, level events,
+  `Level.setBlock` with its on-place and neighbour shape updates (not neighbour notifications), a falling block's
+  landing, a sculk catalyst taking mobs' deaths and spreading their charge (`catalyst`), or chunk completion of a
+  marked position (`postProcess`: `LevelChunk.postProcessGeneration`'s fluid tick, then `updateFromNeighbourShapes`
+  with the level's ticks). Each case records the draws, block writes, scheduled block and fluid ticks with their delays, level events,
   game events, the entities added (a falling block's state and stalactite damage) and the blocks destroyed. The cases
   cover pointed dripstone growing (the block and water source above, column length, stalagmite search), dripping
   water and lava into each kind of cauldron or drying mud into clay, a waterlogged block counting as water (above
@@ -221,7 +223,19 @@ replaces only what vanilla produced.
   beside them schedule that; coral blocks, plants, fans and wall fans dying dry or staying by water, scheduling their
   death when placed or when a neighbour changes, and breaking when their support goes; chorus plants staying, breaking
   and connecting as their support and neighbours change; an oak door whose stone floor becomes soul sand (it stays)
-  or oak leaves (both halves break). The replay runs each case through Obsidian's generated
+  or oak leaves (both halves break); and a sculk catalyst taking deaths (with and without experience, two that merge,
+  one in the air, one beside water, and more than a cursor holds) and ticking its block entity until the charge is
+  spent or mid-spread, recording its charge cursors afterwards (`cursors`). Two `listenerRange` cases use the native
+  Euclidean listener registry to capture the floored-position range boundary (`taken` per death), including a death
+  outside the exact center radius that reaches it and the reverse. Two `catalystCredit` cases invoke the native
+  catalyst advancement gate after setting its last living attacker to a player, or a player then a wolf; `playerCredit`
+  records whether the gate reaches its advancement damage-source read. This isolates eligibility without a vanilla
+  advancement manager. The catalyst probe hands its listener each
+  death as `handleGameEvent` takes a mob's (charge, then the bloom), and the replay offers it through
+  `AbstractLevel.OfferDeathToSculkCatalysts`. Its charge particles' level events follow vanilla's hash map order.
+  The `completion_*` cases complete a stalactite, stalagmite, column, sulfur spike, kelp, kelp stem and vines with and
+  without support; their replay runs Obsidian's completion (`BiomeTerrain.PostProcess`) over nine empty chunks and
+  compares the blocks and the ticks saved in the chunk. The replay runs each case through Obsidian's generated
   owners, or a live block change, in its own world, and compares everything but the game events. Obsidian destroys
   blocks in the tick's entity phase, so a case that destroys one runs the world tick before comparing, keeping the
   recording random active. Ordered writes compare every flag bit; destruction compares state and drops intent;
@@ -545,7 +559,7 @@ replaces only what vanilla produced.
   events and tadpoles.
 
 - `growing_plant_ticks.json` (`VanillaGrowingPlantTicks.ReplayGrowingPlantTickReference`) records vanilla's
-  `randomTick` of growing plants, and the shape updates of kelp and the vines, from
+  `randomTick` of growing plants and saplings, bone meal on plants, and the shape updates of kelp and the vines, from
   `Java/GrowingPlantTickFixtures.java` (`CaptureFixtures=growing_plant_ticks`). Each case is its input: the blocks of
   a small block view (air elsewhere), an optional ticked origin, optional actions after the tick (a state set with
   `UPDATE_ALL`, or a block removed), a seed, and optionally the raw light everywhere (`light`) and the `spread_vines`
@@ -556,11 +570,24 @@ replaces only what vanilla produced.
   state of every position it set up or wrote. The cases cover kelp and the cave, weeping and twisting vines, melon and
   pumpkin stems, wall vines and the pitcher crop: growing, a missed draw, being blocked, the last age, light, the
   build height limits, each way a vine spreads, a tip broken off after growing, a head growing into a one-block gap
-  below its plant, and support placed or removed under a head. The replay builds each case in a fresh world with the
+  below its plant, and support placed or removed under a head. A `bonemeal` case uses bone meal on the origin
+  instead, as `BoneMealItem.growCrop` does, and records whether it took (`valid`). The probe's feature registry holds
+  a stand-in for every feature in the jar, which records where it's placed (`placed`) and succeeds unless the case's
+  `features` says otherwise; a huge mushroom's stand-in has its foliage radius, but no stand-in is a tree, so a
+  sapling's trunk room reads 0. The eighteen `bonemealTargetOnly` cases instead retain real vanilla tree features and
+  capture only `isValidBonemealTarget`: the native minimum trunk height boundary and the block immediately below it,
+  for seven sapling growers and both azaleas. Tree placement remains covered by the worldgen replays. Case selection
+  is supported with `CaptureCases` so adding these does not re-record the existing cases.
+  The other cases cover saplings growing on random ticks and with bone meal (26.3's weighted
+  growers: oak, birch, spruce and jungle squares, dark and pale oak alone and in squares, cherry, the poplar's three
+  trees, the azalea and the mangrove propagule, near flowers and with the tree failing), and bone meal on stems, the
+  pitcher crop, sweet berries, cocoa, kelp and the vines (heads and bodies), rooted dirt, mangrove leaves, netherrack,
+  nylium, fungi, mushrooms (near the build limit too) and moss. The replay builds each case in a fresh world with the
   recording random as the level's, dispatches the state as `AbstractLevel.TickChunkBlocks` does (its
   `isRandomlyTicking`, then its generated owner), runs the actions, and compares the draws, the ordered writes and
-  their neighbour, client and known-shape flags, the final blocks, that nothing else in the chunk around them changed,
-  and the ticks pending in the chunk with their delays. Six cases list exactly where the block notification pipeline
+  their neighbour, client and known-shape flags, the features asked for, the final blocks, that nothing else in the
+  chunk around them changed, and the ticks pending in the chunk with their delays. The replay lights the area around
+  the case with the probe's one brightness, and records features through the level's `GrowthFeatures`. Six cases list exactly where the block notification pipeline
   still parts from vanilla (see
   [reactions to block updates](known-gaps/vanilla-blocks-reactions-to-block-updates.md)).
 

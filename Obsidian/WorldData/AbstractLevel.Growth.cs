@@ -17,6 +17,12 @@ public abstract partial class AbstractLevel
     internal IRandomSource GrowthRandom { get; set; } = new LegacyRandomSource(Random.Shared.NextInt64());
 
     /// <summary>
+    /// Where plants find and place the features they grow into (see <see cref="WorldData.GrowthFeatures"/>). Tests
+    /// set their own.
+    /// </summary>
+    internal GrowthFeatures GrowthFeatures { get; set; } = GrowthFeatures.Registered;
+
+    /// <summary>
     /// The clock the level reads the server's local date from, as vanilla's <c>SpecialDates</c> reads it (Halloween
     /// pumpkins on mobs). Tests give it a fixed date.
     /// </summary>
@@ -107,8 +113,11 @@ public abstract partial class AbstractLevel
     {
         lock (this.Fluids.TickLock)
         {
-            if (GameEventBlock(position) is not IBlock block || !Growth.IsValidBonemealTarget(this, position, block))
+            if (GameEventBlock(position) is not IBlock block
+                || !Growth.IsValidBonemealTarget(this, position, block, this.GrowthRandom))
+            {
                 return false;
+            }
 
             Growth.ApplyBonemeal(this, position, block, this.GrowthRandom);
             return true;

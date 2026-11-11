@@ -145,7 +145,14 @@ public partial class Entity : IEquatable<Entity>, IEntity
         }
     } = Pose.Standing;
 
-    public virtual BoundingBox BoundingBox { get; protected set; } = new(VectorD.Zero, VectorD.Zero);
+    private BoundingBox boundingBox = new(VectorD.Zero, VectorD.Zero);
+
+    public virtual BoundingBox BoundingBox
+    {
+        get => this.boundingBox;
+        protected set => this.boundingBox = value;
+    }
+
     public virtual EntityDimension Dimension { get; protected set; } = EntityDimension.Zero;
     protected virtual float DimensionScale => 1;
 

@@ -7,10 +7,14 @@ namespace Obsidian.API.Blocks;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Growing picks like vanilla's: <see cref="MegaTree"/> where four saplings of the block stand in a square (its
-/// north-west corner is where the feature's placed), else <see cref="Flowers"/> when a flower is within two blocks
-/// of the sapling, else <see cref="Tree"/>. With <see cref="SecondaryChance"/>, the secondary feature of the choice is
-/// placed instead when there's one. A sapling with nothing to place doesn't grow, like a single dark oak sapling.
+/// Growing picks like vanilla's since 26.1, each list by weight: a tree from <see cref="MegaTrees"/> where four
+/// saplings of the block stand in a square (its north-west corner is where the feature's placed), else one from
+/// <see cref="FlowerTrees"/> when a flower is within two blocks of the sapling, else one from <see cref="Trees"/>. A
+/// sapling with nothing to place doesn't grow, like a single dark oak sapling, and bone meal does nothing to it.
+/// </para>
+/// <para>
+/// A grower whose lists are all empty uses the older shape instead: <see cref="Tree"/>, <see cref="MegaTree"/> and
+/// <see cref="Flowers"/>, each with its secondary tree taking <see cref="SecondaryChance"/> of the weight.
 /// </para>
 /// <para>
 /// A sapling with a <c>stage</c> property (<c>StateProperty.Int("stage", 0, 1)</c>) grows in two steps like
@@ -20,7 +24,28 @@ namespace Obsidian.API.Blocks;
 public sealed record TreeGrower
 {
     /// <summary>
-    /// The tree it grows by itself.
+    /// The trees it grows by itself, like an oak (nine in ten) or a fancy oak.
+    /// </summary>
+    public IReadOnlyList<WeightedFeature> Trees { get; init; } = [];
+
+    /// <summary>
+    /// The trees four saplings in a square grow into, like a dark oak.
+    /// </summary>
+    public IReadOnlyList<WeightedFeature> MegaTrees { get; init; } = [];
+
+    /// <summary>
+    /// The trees it grows near flowers, like an oak with a bee nest.
+    /// </summary>
+    public IReadOnlyList<WeightedFeature> FlowerTrees { get; init; } = [];
+
+    /// <summary>
+    /// The tree whose trunk bone meal needs room for: the sapling takes bone meal only where its trunk's base height
+    /// above it is inside the build range.
+    /// </summary>
+    public string? ShortestTree { get; init; }
+
+    /// <summary>
+    /// The tree it grows by itself, in the older shape (see the remarks).
     /// </summary>
     public string? Tree { get; init; }
 
@@ -30,7 +55,7 @@ public sealed record TreeGrower
     public string? SecondaryTree { get; init; }
 
     /// <summary>
-    /// The tree four saplings in a square grow into, like a dark oak.
+    /// The tree four saplings in a square grow into, in the older shape.
     /// </summary>
     public string? MegaTree { get; init; }
 
@@ -41,7 +66,7 @@ public sealed record TreeGrower
     public string? SecondaryMegaTree { get; init; }
 
     /// <summary>
-    /// The tree it grows near flowers, like an oak with a bee nest.
+    /// The tree it grows near flowers, in the older shape.
     /// </summary>
     public string? Flowers { get; init; }
 
@@ -55,3 +80,10 @@ public sealed record TreeGrower
     /// </summary>
     public float SecondaryChance { get; init; }
 }
+
+/// <summary>
+/// A configured feature, by identifier, and its weight in a list picked from by weight.
+/// </summary>
+/// <param name="Feature">The configured feature's identifier, like <c>minecraft:oak</c>.</param>
+/// <param name="Weight">Its weight, at least 1.</param>
+public sealed record WeightedFeature(string Feature, int Weight);

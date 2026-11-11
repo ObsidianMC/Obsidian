@@ -1078,16 +1078,10 @@ public final class VanillaDumper {
 
     /**
      * {@code sapling_growers.json}: the {@code TreeGrower} each sapling block holds in its {@code treeGrower} field
-     * (declared by {@code SaplingBlock}, which the mangrove propagule extends), in the shape Obsidian's
-     * {@code TreeGrower} still has: the configured features by identifier and one secondary chance. Which class owns
-     * each sapling's random tick is in {@code block_random_tick_classes.json}.
-     *
-     * <p>Since 26.1 vanilla picks from weighted lists ({@code trees}, {@code megaTrees}, {@code flowerTrees}) instead.
-     * A list's first entry is the feature ({@code tree}, {@code megaTree}, {@code flowers}), its second the secondary
-     * one, and the second's share of the weight the secondary chance, which gives 1.21.11's values for every sapling it
-     * had. A grower that this shape can't hold (more than two entries in a list, or lists with different chances, like
-     * the poplar's three trees) is left out, so the sapling doesn't grow. Temporary until the gameplay port (Phase 6 of
-     * {@code docs/porting-26.3-plan.md}) moves {@code TreeGrower} to weighted lists.
+     * (declared by {@code SaplingBlock}, which the mangrove propagule extends): its weighted lists ({@code trees},
+     * {@code megaTrees} and {@code flowerTrees}, each entry a configured feature by identifier and its weight, in the
+     * list's order, which decides what a draw picks) and the {@code shortestTreeType} whose trunk bone meal needs room
+     * for, when it has one. Which class owns each sapling's random tick is in {@code block_random_tick_classes.json}.
      */
     private void dumpSaplingGrowers() throws IOException {
         var sapling = Vanilla.type("net.minecraft.world.level.block.SaplingBlock");
@@ -1097,18 +1091,10 @@ public final class VanillaDumper {
         var unwrap = Vanilla.method("net.minecraft.util.random.WeightedList", "unwrap");
         var value = Vanilla.method("net.minecraft.util.random.Weighted", "value");
         var weight = Vanilla.method("net.minecraft.util.random.Weighted", "weight");
-        // Each weighted list and the fields its first and second entries become.
-        var lists = Map.of(
-            "trees",
-            new String[] {"tree", "secondaryTree"},
-            "megaTrees",
-            new String[] {"megaTree", "secondaryMegaTree"},
-            "flowerTrees",
-            new String[] {"flowers", "secondaryFlowers"});
+        var shortest = Vanilla.field(grower, "shortestTreeType");
 
         var blockRegistry = Vanilla.get(REGISTRIES, "BLOCK");
         var growers = new TreeMap<String, Map<String, Object>>();
-        var skipped = new ArrayList<String>();
 
         for (var block : (Iterable<?>) blockRegistry) {
             if (!sapling.isInstance(block)) {
@@ -1117,41 +1103,27 @@ public final class VanillaDumper {
 
             var holder = Vanilla.get(growerField, block);
             var row = new TreeMap<String, Object>();
-            Float chance = null;
-            var fits = true;
-            for (var list : lists.entrySet()) {
-                var entries = (List<?>) Vanilla.call(unwrap, Vanilla.get(Vanilla.field(grower, list.getKey()), holder));
-                if (entries.size() > 2) {
-                    fits = false;
-                    break;
+            for (var list : List.of("trees", "megaTrees", "flowerTrees")) {
+                var entries = (List<?>) Vanilla.call(unwrap, Vanilla.get(Vanilla.field(grower, list), holder));
+                var weighted = new ArrayList<Map<String, Object>>();
+                for (var entry : entries) {
+                    var feature = new LinkedHashMap<String, Object>();
+                    feature.put("feature", Vanilla.call(identifier, Vanilla.call(value, entry)).toString());
+                    feature.put("weight", Vanilla.call(weight, entry));
+                    weighted.add(feature);
                 }
-                for (var index = 0; index < entries.size(); index++) {
-                    row.put(
-                        list.getValue()[index],
-                        Vanilla.call(identifier, Vanilla.call(value, entries.get(index))).toString());
-                }
-                if (entries.size() == 2) {
-                    var first = (int) Vanilla.call(weight, entries.get(0));
-                    var second = (int) Vanilla.call(weight, entries.get(1));
-                    var listChance = (float) second / (first + second);
-                    fits &= chance == null || chance == listChance;
-                    chance = listChance;
-                }
+
+                row.put(list, weighted);
             }
 
-            if (!fits) {
-                skipped.add(key(blockRegistry, block));
-                continue;
+            var shortestTree = Vanilla.get(shortest, holder);
+            if (shortestTree != null) {
+                row.put("shortestTreeType", Vanilla.call(identifier, shortestTree).toString());
             }
-            row.put("secondaryChance", chance == null ? 0f : chance);
+
             growers.put(key(blockRegistry, block), row);
         }
 
-        if (!skipped.isEmpty()) {
-            System.out.println(
-                "These saplings' tree growers don't fit Obsidian's TreeGrower, so they don't grow: "
-                + String.join(", ", skipped));
-        }
         Json.write(output.resolve("sapling_growers.json"), growers, false);
     }
 

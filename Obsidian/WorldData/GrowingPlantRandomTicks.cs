@@ -10,7 +10,7 @@ namespace Obsidian.WorldData;
 /// Vanilla <c>randomTick</c> overrides of plants that grow into the blocks around them: kelp and the cave, weeping and
 /// twisting vines (<c>GrowingPlantHeadBlock</c>), melon and pumpkin stems (<c>StemBlock</c>), wall vines
 /// (<c>VineBlock</c>) and the pitcher crop (<c>PitcherCropBlock</c>). Checked against the
-/// <c>growing_plant_ticks</c> capture.
+/// <c>growing_plant_ticks</c> capture. Bone meal shares their growth (see <c>Growth.Plants.cs</c>).
 /// </summary>
 /// <remarks>
 /// Writes go through the level's block updates, so neighbours get vanilla's shape updates: that is how a growing
@@ -26,6 +26,32 @@ internal static partial class RandomTickBehaviors
     internal static IRandomTickBehavior VineBlock { get; } = new Vine();
 
     internal static IRandomTickBehavior PitcherCropBlock { get; } = new PitcherCrop();
+
+    /// <summary>
+    /// The direction a growing plant's head grows in: up for kelp and twisting vines, down for the cave and weeping
+    /// vines.
+    /// </summary>
+    internal static BlockFace GrowthDirection(int head) => GrowingPlantHead.Kind(head)?.Direction ?? BlockFace.Up;
+
+    /// <summary>
+    /// Whether a growing plant's head grows into <paramref name="target"/> (vanilla's <c>canGrowInto</c>): kelp into
+    /// water, flowing or not, and the vines into air.
+    /// </summary>
+    internal static bool CanGrowInto(int head, IBlock target) => GrowingPlantHead.CanGrowInto(head, target);
+
+    /// <summary>
+    /// Vanilla's <c>PitcherCropBlock.canGrow</c>: whether the lower half at <paramref name="lower"/> can grow to
+    /// <paramref name="age"/>.
+    /// </summary>
+    internal static bool CanGrowPitcherCrop(AbstractLevel level, Vector lower, IBlock block, int age) =>
+        PitcherCrop.CanGrow(level, lower, block, age);
+
+    /// <summary>
+    /// Vanilla's <c>PitcherCropBlock.grow</c> by one age, from the lower half at <paramref name="lower"/>, which
+    /// random ticks and bone meal share.
+    /// </summary>
+    internal static void GrowPitcherCrop(AbstractLevel level, Vector lower, IBlock block) =>
+        PitcherCrop.Grow(level, lower, block);
 
     /// <summary>
     /// A plant that grows a block at a time from its head: the head's age goes up by one in the new head, and the old
@@ -65,7 +91,7 @@ internal static partial class RandomTickBehaviors
         }
 
         // Each head's growth direction and its chance to grow on a random tick (vanilla's growPerTickProbability).
-        private static (BlockFace Direction, double Chance)? Kind(int head) => head switch
+        internal static (BlockFace Direction, double Chance)? Kind(int head) => head switch
         {
             BlockIds.Kelp => (BlockFace.Up, 0.14),
             BlockIds.CaveVines => (BlockFace.Down, 0.1),
@@ -75,7 +101,7 @@ internal static partial class RandomTickBehaviors
         };
 
         // Kelp grows into water, flowing or not; the vines into air.
-        private static bool CanGrowInto(int head, IBlock target) => head == BlockIds.Kelp
+        internal static bool CanGrowInto(int head, IBlock target) => head == BlockIds.Kelp
             ? target.RegistryId == BlockIds.Water
             : target.IsAir;
     }
@@ -356,29 +382,34 @@ internal static partial class RandomTickBehaviors
                 Grow(level, position, block);
         }
 
-        // Vanilla shares this growth with the pitcher crop's bone meal, which Obsidian doesn't grow it with yet.
-        private static void Grow(AbstractLevel level, Vector lower, IBlock block)
+        // Vanilla's grow by one age, which the pitcher crop's bone meal shares.
+        internal static void Grow(AbstractLevel level, Vector lower, IBlock block)
         {
-            var age = Growth.Age(block);
-            var grown = Math.Min(age + 1, MaxAge);
-            var upper = lower + Vector.Up;
+            var grown = Math.Min(Growth.Age(block) + 1, MaxAge);
+            if (!CanGrow(level, lower, block, grown))
+                return;
+
             var blocks = level.BlockUpdates;
-
-            if (age >= MaxAge
-                || Growth.RawBrightness(level, lower, ambientDarkness: 0) < MinimumLight
-                || level.IsOutsideBuildHeight(upper.Y))
-            {
-                return;
-            }
-
-            if (grown >= DoubleAge && !CanGrowInto(blocks.GetBlock(upper)))
-                return;
-
             var lowerState = block.WithProperty("age", grown);
             blocks.SetBlock(lower, lowerState, BlockUpdateFlags.Clients);
 
             if (grown >= DoubleAge)
-                blocks.SetBlock(upper, lowerState.WithProperty("half", "upper"), BlockUpdateFlags.All);
+                blocks.SetBlock(lower + Vector.Up, lowerState.WithProperty("half", "upper"), BlockUpdateFlags.All);
+        }
+
+        // Vanilla's canGrow: not at its last age, in light, with room above, and air or the crop above once it's
+        // two blocks tall.
+        internal static bool CanGrow(AbstractLevel level, Vector lower, IBlock block, int age)
+        {
+            var upper = lower + Vector.Up;
+            if (Growth.Age(block) >= MaxAge
+                || Growth.RawBrightness(level, lower, ambientDarkness: 0) < MinimumLight
+                || level.IsOutsideBuildHeight(upper.Y))
+            {
+                return false;
+            }
+
+            return age < DoubleAge || CanGrowInto(level.BlockUpdates.GetBlock(upper));
         }
 
         private static bool CanGrowInto(IBlock block) => block.IsAir || block.RegistryId == BlockIds.PitcherCrop;
