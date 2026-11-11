@@ -6,8 +6,9 @@ using Xunit;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Angles are sent to clients as one byte, 256ths of a turn. Since .NET 11 a float cast straight to a byte saturates
-/// rather than wrapping, which silently sent every negative angle as 0; this guards the wrap.
+/// Angles are sent to clients as one byte, 256ths of a turn, packed from the float rotation entities keep. Since
+/// .NET 11 a float cast straight to a byte saturates rather than wrapping, which silently sent every negative angle as
+/// 0; this guards the wrap.
 /// </summary>
 public sealed class AngleEncoding
 {
@@ -23,6 +24,8 @@ public sealed class AngleEncoding
         (-90f, 192),
         (-180f, 128),
         (-450f, 192),
+        // Just below zero floors to -1: wrapping into [0, 360) first would round it up to 360 and give 0.
+        (-1e-10f, 255),
     ];
 
     [Fact]

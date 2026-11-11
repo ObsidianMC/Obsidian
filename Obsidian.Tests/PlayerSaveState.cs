@@ -55,6 +55,9 @@ public sealed class PlayerSaveState
         await player.LoadAsync(loadFromPersistentWorld: false);
 
         player.Position = new VectorD(12.5, 70, -3.5);
+        // Off the 256ths of a turn a packet carries, so a save that rounds them shows.
+        player.Yaw = -171.37f;
+        player.Pitch = 29.87f;
         player.Health = 14;
         player.FallDistance = 3.5f;
         player.Air = 123;
@@ -82,6 +85,7 @@ public sealed class PlayerSaveState
         var returning = await LeaveAndReturnAsync(context, player);
 
         Assert.Equal(new VectorD(12.5, 70, -3.5), returning.Position);
+        Assert.Equal((-171.37f, 29.87f), (returning.Yaw, returning.Pitch));
         Assert.Equal(14, returning.Health);
         Assert.Equal(3.5f, returning.FallDistance);
         Assert.Equal(123, returning.Air);

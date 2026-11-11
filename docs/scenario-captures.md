@@ -278,6 +278,37 @@ replaces only what vanilla produced.
   An optional `dimension` supplies that dimension type's environment attributes; optional `actions` are subsequent
   `UPDATE_ALL` writes. `findTip` takes `maxLength` and `includeMerged` and records the returned position or null.
 
+- `lightning_bolts.json` (`VanillaLightning.ReplayLightningReference`) records lightning bolts from
+  `Java/LightningFixtures.java` (`CaptureFixtures=lightning`), on a dedicated server of its own in a flat world of air
+  (plains, seed `test-seed`, the replay world's), frozen, whose level ticks the probe runs itself between the server's
+  own. Each case runs in a chunk of its own, forced, at origin (32i + 8, 64, 8). RCON can't seed a bolt's random or
+  hear sounds, level events and game events, so this is a Java probe rather than an RCON scenario. A `strike` case
+  sets its blocks without updates and adds its mobs without AI, seeds the level's random, adds a bolt whose own random
+  is seeded (its seed and flashes drawn again, as its constructor draws them), optionally visual only or with the
+  listener as its cause, and records after each tick the blocks the level stored in the area (in order, with every
+  flag, through the block use probe's observed jar), the blocks that changed, the entities (type, position, remaining
+  fire ticks, health, persistence and what lightning changes), the sounds and level events a spectator received and
+  the game events within 16 blocks, then the lightning advancements the spectator was granted. The spectator stands
+  where the bolt can't strike it, and spectators don't count for natural spawning, so no chunk is shuffled with the
+  level's random between the strike's draws. Mobs' own randoms aren't seeded, so their ambient sounds, a witch's
+  drinking and whether a pig's zombified piglin holds a golden sword or spear aren't recorded. A `natural` case runs
+  `ServerLevel.tickThunder` once on its chunk in a thunderstorm, with the level's random seeded and `randValue` set,
+  and records the entities it added, `randValue` afterwards and the level random's next `nextInt()`.
+  `inhabitedChunks` sets neighbouring chunks' relative `offset` and inhabited `time`; their entities are included
+  when recording a redirected strike. The copper golem case's `recordWeathering` also records the saved deadline
+  relative to game time and the level random's next integer after each tick, including the strike's -1 deadline
+  and the following tick's reschedule. The cases cover
+  rods (up, sideways, weathered, waxed) powering lamps on their side and beside their support, copper cleared around a
+  rod and under a bolt, fire on grass and planks with the fire spread rule on and off (26.3 has no `do_fire_tick`;
+  `fire_spread_radius_around_player` is 0 or -1), easy (fire only on flashes) and peaceful (no conversions), a charged
+  creeper, a zombified piglin, a witch, mooshrooms changing colour, a turtle (with mob drops off), items, a copper
+  golem, a Breeze, an armor stand, a channeled bolt and the advancements, a visual-only bolt, and storms striking open ground, a
+  rod (and not a covered one), a mob under the sky, a skeleton trap (none above a rod or without mob spawning), a
+  redirected trap in a neighbouring chunk with a different inhabited time, a missed chance, no thunder and an empty
+  column. The replay runs every case in one world, through the level's ticks
+  with a ticking chunk ticket for each, and compares all of it; its pinned differences are listed in [the known
+  gaps](known-gaps/lightning.md).
+
 - `block_use.json` (`VanillaBlockUse.ReplayBlockUseReference`) records what using a block does, from
   `Java/BlockUseFixtures.java`. Like the placement probe it runs a dedicated server of its own in a flat world of air,
   and each case uses its main hand's item through `ServerPlayerGameMode.useItemOn`; optional `rayUse` also runs
@@ -355,6 +386,27 @@ replaces only what vanilla produced.
   with every flag bit and swings included; two cases pin the door and trapdoor opening flags (see
   [waxing, bells and redstone ore](known-gaps/waxing-bells-and-redstone-ore.md)).
 
+- `food_and_harvest.json` (`VanillaFoodHarvest.ReplayFoodAndHarvestReference`) records phase 2 batch A's
+  123 cake, candle cake, berry, pumpkin, plant-head trim and hive uses, from `Java/FoodHarvestFixtures.java`
+  (`CaptureFixtures=food_and_harvest`). It reuses `BlockUseFixtures`' real server, use dispatcher, packet and game
+  event recorders and the observed jar's ordered writes. All cases compare every existing observable from the
+  start, including every block-write flag bit and unexpected writes. `soundPackets` also checks exact transmitted
+  positions, volume, pitch and category (the independent sound-variant seed is not a replay input).
+  Additional outputs are `foodAfter`,
+  `saturationAfter`, `inventory` (all 41 vanilla inventory slots), `smokey`, and `bees` (occupant count and each bee's
+  target/anger state); every case also compares `dropPositions` exactly. Pumpkin cases compare `dropMotion` too. The spectator bystander hears effects
+  but cannot be chosen as a bee's target. Players are indexed as entities so nearby-bee targeting runs normally;
+  cleanup excludes them. Each case seeds the level random and the four harvest/carve loot streams with
+  `randomSeed`, default 1234. It clears seven cells below the target for smoke range/obstruction cases. The fixture
+  covers age and hunger boundaries, both berry yield outcomes, all six pumpkin faces, broken shears, offhand use,
+  full inventories, creative bottle exchanges, trim criteria before and after the write, occupied and obstructed
+  hives, both campfire types at the smoke boundary, bees at and beyond the harvest search box, and nested codec
+  predicates with array or singleton-object terms, plus omitted tool/location predicates. `shippedAdvancement`
+  reads criteria directly from vanilla's advancement resource; replay verifies those conditions against Obsidian's shipped definition. All recorded fields match without pins
+  (see [food and harvest](known-gaps/food-and-harvest.md)). Capture only this fixture with
+  `dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=food_and_harvest`;
+  `CaptureCases` selects exact `+`-separated names as for `block_use`.
+
 - `cauldrons.json` (`VanillaCauldrons.ReplayCauldronReference`) records using cauldrons, from
   `Java/CauldronFixtures.java` (`CaptureFixtures=cauldrons`), which runs on `BlockUseFixtures.java`'s server, players,
   recorders and write observer by reflection, as the waxing probe does. Its cases take `block_use.json`'s inputs and
@@ -370,8 +422,9 @@ replaces only what vanilla produced.
   that doesn't fill goes on to its own use (`rayUse`). Cauldrons keep vanilla's quirk of awarding
   `minecraft:used minecraft:air` for the last water bottle poured into a water cauldron. The replay drives
   `UseItemOnPacket` (then `UseItemPacket`, with the capture's exact rotation) in one world and compares every
-  recorded field from the start; three cases pin an empty bucket's own use, which Obsidian aims with a rotation held
-  in 256ths of a turn (see [cauldrons](known-gaps/cauldrons.md)). `CauldronExchanges` checks what vanilla can't: an
+  recorded field from the start; an empty bucket's own use after the cauldron passes aims with that rotation, so its
+  ray passes between the cauldron's legs as vanilla's does. Two cases pin a custom effect bottle's encoding (see
+  [cauldrons](known-gaps/cauldrons.md)). `CauldronExchanges` checks what vanilla can't: an
   interrupted or raced exchange neither loses nor duplicates an item or a level, and a busy inventory is waited for
   outside the level's locks.
 
@@ -413,7 +466,12 @@ replaces only what vanilla produced.
   out. The owner and the bystander stand nine blocks away, where experience orbs and dragon's breath don't reach them:
   vanilla's are players the level knows of but not entities of its sections, while the replay's are entities. The
   replay ticks a test server's world the same way and compares every field of every tick, with each known difference
-  pinned by case and field ([projectile block hits](known-gaps/projectile-block-hits.md)).
+  pinned by case and field ([projectile block hits](known-gaps/projectile-block-hits.md)). A case with `boltSeed`
+  and `levelSeed` seeds the lightning bolt its hit calls down, after the tick it appeared in and before its first
+  (the bolt's own random, its seed and flashes drawn again, then the level's random its strike draws from): the
+  Channeling case, whose bolt's life and copper sparks are otherwise random. The replay seeds them at the same point,
+  runs that case with its players as spectators on a ticking chunk ticket (the capture's players aren't in vanilla's
+  chunk map, so its storm draws no strike chances) and, like the capture, with random ticks off.
 - `turtle_eggs.json` (`VanillaTurtleEggs.ReplayTurtleEggReference`) records vanilla's turtle eggs, from
   `Java/HatchingFixtures.java` (`CaptureFixtures=turtle_eggs`). Each case is its input: the blocks of a small block
   view (air elsewhere), the origin, a seed, the overworld clock's time and the dimension, and either a random tick or
@@ -572,6 +630,8 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=block_contact
 
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=lightning
+
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=sulfur -p:CaptureCases=spike_shatters_after_falling+review_spike_pending_fall_keeps_frustum
 ```
 
@@ -587,7 +647,7 @@ scenarios keep what they hold.
 gives its number of `ticks` and starts with empty `checkpoints`; `CaptureCases` records only the exact names supplied,
 and the other cases keep their recordings.
 
-The 81 `contactMoves` scenarios use `Java/BlockContactFixtures.java` on a real dedicated server, with the same
+The 117 `contactMoves` scenarios use `Java/BlockContactFixtures.java` on a real dedicated server, with the same
 scratch-only block-write instrumentation as block uses. They drive native `Entity.move` and
 `applyEffectsFromBlocks` with controlled velocities: falls, stationary contacts, walking and external pushes.
 This boundary exercises native collision, fall accounting, restitution and block hooks without AI or travel forces.
@@ -598,6 +658,25 @@ whose effect is removed before movement. `recordSafeFallDistance: true` also rec
 safe-fall-distance attribute at every checkpoint, including checkpoint zero. The review cases cover water at impact,
 water crossed before a dry landing, fluid touching only the body's edge, slime and bed support outside the centre,
 and Jump Boost I, II, a control fall and effect removal.
+
+A summon's `feet` puts an item in a living entity's feet slot (leather boots for powder snow), and `sneaking` holds
+its shift key down. A tick event's `jump` runs the named entity's `jumpFromGround` before movement. A summon of
+`minecraft:player` makes a player without a client (its packets are kept, like the watcher's) that plates and
+tripwires find, with `pose` naming its vanilla `Pose` (`STANDING`, `CROUCHING`, `SWIMMING`, `SLEEPING`); the replay
+joins a test player in that pose. The probe never ticks its entities, so their `oldPosition` stays where they were
+summoned; the replay sets the same start position. The `speed_*`, `jump_*`, `cobweb_*`, `berry_bush_*`,
+`powder_snow_*`, `scaffolding_*`, `slime_step_*` and `pose_*` cases cover block speed and jump factors (from the block
+an entity is in and the one below its support), being stuck in cobwebs, berry bushes and powder snow, berry bush
+damage, powder snow and scaffolding collision for the entity moving, slime's step damping, and posed player boxes on
+tripwires and plates. Their boxes are one row of three cells, the smallest that holds each setup.
+
+`stationaryPlayer: true` skips movement entirely so that it cannot hide a stale stored bounding box. An
+`updatePose` event names a player, sets its `sneaking` flag and asks vanilla to choose its pose; `tickAir: true`
+also runs its base tick (the replay runs the player's ordinary tick). These cases record and compare pose,
+both box corners, eye position, the swimming flag and air supply alongside the usual observations. The replay
+checks both the stored and current box, and both eye-position readers. `pose_stationary_crouch_stand` checks
+shrinking and growing without movement. `pose_stationary_auto_crawl_water` checks a non-swimming player forced
+to crawl beneath a ceiling in water: air drops to 299 and then 298 at the crawling eye height.
 
 From checkpoint zero onwards, the replay compares every recorded block, position, velocity, fall distance,
 grounded flag, health and last accepted damage type; ordered block writes with their exact flags; unexpected
@@ -630,6 +709,10 @@ attempts use another delay. The pending-coral case records delays 85 and 88, but
 For `dispenser`, `CaptureCases` accepts exact `+`-separated names in `dispenser.json` and records only those cases;
 the others keep theirs. Add a case with empty `checkpoints` and capture it on its own. The whole capture takes about
 20 seconds after the server starts.
+
+For `lightning`, `CaptureCases` accepts exact `+`-separated names in `lightning_bolts.json` and records only those
+cases; the others keep theirs. Every case takes well under a second after the server starts. The probe needs the block
+use probe's observed copy of the jar, which the capture builds first.
 
 For `eyeblossom_ghast_portal`, `CaptureCases` accepts exact `+`-separated names in
 `eyeblossom_ghast_portal_ticks.json` and records only those cases; the others keep theirs. The capture takes about ten
@@ -734,7 +817,7 @@ The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft 
 <scratch directory> <test assets directory>
 [redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+heightmaps+saved_heightmaps+mining+placement+
 copper_weathering+fire+ticking_blocks+block_use+waxing_bells_ore+cauldrons+turtle_eggs+frogspawn+growing_plant_ticks+
-melting_weather+furnace_results+brushing+armor_stand_use+projectile_hits+dispenser]
+melting_weather+furnace_results+brushing+armor_stand_use+projectile_hits+dispenser+lightning]
 [case names]`.
 
 ## How it captures

@@ -84,9 +84,9 @@ public partial class PlayerBase
         this.LeaveVehicle();
         this.Motion = VectorD.Zero;
         this.Position = new VectorD(head.X + 0.5, head.Y + SleepingHeight, head.Z + 0.5);
-        this.BoundingBox = this.Dimension.CreateBBFromPosition(this.Position);
         this.BedBlockPosition = head;
         this.Pose = Pose.Sleeping;
+        this.BoundingBox = this.Dimension.CreateBBFromPosition(this.Position);
         this.Sleeping = true;
         this.SleepTimer = 0;
         this.SyncFoodMetadata();

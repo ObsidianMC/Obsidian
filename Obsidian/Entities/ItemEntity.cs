@@ -55,8 +55,13 @@ public partial class ItemEntity : Entity
     /// dropped: vanilla's <c>Player.drop</c> for an item a use gave back that didn't fit their inventory. The server
     /// owns the drop, so a level that can't take it yet gets it on a later entity action rather than losing it.
     /// </summary>
-    internal static void DropUncounted(IPlayer player, ItemStack stack) =>
-        Drop(player, stack, hostOwned: true, counted: false);
+    internal static void DropUncounted(IPlayer player, ItemStack stack)
+    {
+        // Player.drop uses a float eye height and float 0.3 offset, promoted to double for the position.
+        var eyeHeight = (float)(player.HeadY - player.Position.Y);
+        var dropY = player.Position.Y + eyeHeight - 0.3f;
+        Drop(player, stack, hostOwned: true, counted: false, dropY: dropY);
+    }
 
     // Finished menu clicks drop the player's items, regardless of the menu's ambient plugin call.
     internal static void DropHostOwned(IPlayer player, ItemStack stack) => Drop(player, stack, hostOwned: true);
@@ -108,7 +113,7 @@ public partial class ItemEntity : Entity
 
     // Thrown where the player looks, or with the given motion for a drop around them.
     private static bool Drop(IPlayer player, ItemStack stack, bool hostOwned, VectorD? around = null,
-        bool counted = true)
+        bool counted = true, double? dropY = null)
     {
         var direction = player.GetLookDirection();
         var motion = around ?? new VectorD(direction.X * 0.3, direction.Y * 0.3 + 0.1, direction.Z * 0.3);
@@ -117,7 +122,7 @@ public partial class ItemEntity : Entity
             EntityId = Server.GetNextEntityId(),
             Item = new ItemStack(stack, stack.Count),
             Level = player.Level,
-            Position = new VectorD(player.Position.X, player.HeadY - 0.3, player.Position.Z),
+            Position = new VectorD(player.Position.X, dropY ?? player.HeadY - 0.3, player.Position.Z),
             Motion = motion,
             // Vanilla gives an item a player drops 40 ticks before anyone can pick it up, so the thrower doesn't
             // collect it again straight away.
@@ -299,12 +304,26 @@ public partial class ItemEntity : Entity
     /// star withstands it, and anything else is gone once its five health is.
     /// </summary>
     /// <returns>Whether it was destroyed.</returns>
-    internal async ValueTask<bool> HurtByExplosionAsync(float damage)
+    internal ValueTask<bool> HurtByExplosionAsync(float damage)
     {
         if (this.Item.Holder.Id == ItemIds.NetherStar)
-            return false;
+            return ValueTask.FromResult(false);
 
+        return this.HurtAsync(damage);
+    }
+
+    // Vanilla's Entity.thunderHit on an item: five lightning damage, which nothing withstands (fire resistant items
+    // only withstand fire, and lightning isn't fire), so it's gone.
+    internal override async ValueTask ThunderHitAsync(LightningBolt bolt) => await this.HurtAsync(5);
+
+    // Vanilla's ItemEntity.hurtServer once the item takes the damage: the damage's game event, which names no
+    // source for explosions and lightning, then the item is gone once its five health is.
+    private async ValueTask<bool> HurtAsync(float damage)
+    {
         this.itemHealth -= damage;
+        if (this.Level is WorldData.AbstractLevel level)
+            level.EmitGameEvent(WorldData.MobGameEvent.EntityDamage, this.Position);
+
         if (this.itemHealth > 0)
             return false;
 

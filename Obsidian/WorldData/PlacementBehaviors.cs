@@ -29,8 +29,8 @@ internal static class PlacementBehaviors
     private static readonly IBlockBehavior Seagrass = new SeagrassPlacement();
     private static readonly IBlockBehavior Crafter = new CrafterPlacement();
     private static readonly IBlockBehavior Rail = new RailPlacement();
-    private static readonly IBlockBehavior Diode = new DerivedPlacement(context => RedstoneComparator.DerivePlacement(context.Block, context.Player.Yaw.Degrees));
-    private static readonly IBlockBehavior Repeater = new DerivedPlacement(context => RedstoneRepeater.DerivePlacement(context.Block, context.Player.Yaw.Degrees));
+    private static readonly IBlockBehavior Diode = new DerivedPlacement(context => RedstoneComparator.DerivePlacement(context.Block, context.Player.Yaw));
+    private static readonly IBlockBehavior Repeater = new DerivedPlacement(context => RedstoneRepeater.DerivePlacement(context.Block, context.Player.Yaw));
     private static readonly IBlockBehavior Observer = new DerivedPlacement(context => RedstoneObserver.DerivePlacement(context.Block, context.NearestLookDirection));
     private static readonly IBlockBehavior Piston = new DerivedPlacement(context => Pistons.PistonBehaviors.DerivePlacement(context.Block, context.NearestLookDirection));
     // Vanilla RedstoneLampBlock.getStateForPlacement: lit when the level has a neighbour signal where the lamp goes

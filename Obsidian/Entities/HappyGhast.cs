@@ -14,7 +14,7 @@ public sealed partial class HappyGhast : FarmAnimal, IRideable
 
     protected override VectorD PassengerOffset(int index)
     {
-        var angle = (Yaw.Degrees + index * 90) * MathF.PI / 180;
+        var angle = (Yaw + index * 90) * MathF.PI / 180;
         return new VectorD(-MathF.Sin(angle) * 1.1f * this.AttributeScale, Dimension.Height,
             MathF.Cos(angle) * 1.1f * this.AttributeScale);
     }
@@ -134,7 +134,7 @@ public sealed partial class HappyGhast : FarmAnimal, IRideable
         Pitch = Rider.Pitch;
         var forward = (Rider.Input.HasFlag(PlayerInput.Forward) ? 1f : 0) - (Rider.Input.HasFlag(PlayerInput.Backward) ? 0.5f : 0);
         var sideways = (Rider.Input.HasFlag(PlayerInput.Left) ? 1f : 0) - (Rider.Input.HasFlag(PlayerInput.Right) ? 1f : 0);
-        var yaw = Yaw.Degrees * MathF.PI / 180;
+        var yaw = Yaw * MathF.PI / 180;
         var input = (VectorD)Rider.GetLookDirection() * forward + new VectorD(MathF.Cos(yaw) * sideways,
             Rider.Input.HasFlag(PlayerInput.Jump) ? 0.5f : 0, MathF.Sin(yaw) * sideways);
         if (input.MagnitudeSquared() > 1)

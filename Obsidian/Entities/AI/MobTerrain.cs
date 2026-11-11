@@ -157,9 +157,10 @@ internal sealed class MobTerrain(ILevel level) : IPathTerrain
 
     /// <summary>
     /// Adds the collision shapes near <paramref name="bounds"/> to <paramref name="shapes"/>, as
-    /// <see cref="GetCollisions"/> returns them, for callers that reuse a list.
+    /// <see cref="GetCollisions"/> returns them, for callers that reuse a list. With <paramref name="entity"/>, the
+    /// blocks whose collision depends on the entity moving (powder snow, scaffolding) give its shapes.
     /// </summary>
-    public void CollectCollisions(BoundingBox bounds, List<BoundingBox> shapes)
+    public void CollectCollisions(BoundingBox bounds, List<BoundingBox> shapes, Entity? entity = null)
     {
         for (var x = (int)Math.Floor(bounds.Min.X); x <= (int)Math.Floor(bounds.Max.X); x++)
         {
@@ -174,7 +175,7 @@ internal sealed class MobTerrain(ILevel level) : IPathTerrain
                         continue;
                     }
 
-                    foreach (var shape in BlockCollisionShapes.Get(level, position, block))
+                    foreach (var shape in BlockCollisionShapes.Get(level, position, block, entity))
                         shapes.Add(shape.OffsetBy(new VectorD(x, y, z)));
                 }
             }
@@ -182,7 +183,16 @@ internal sealed class MobTerrain(ILevel level) : IPathTerrain
     }
 
     // GetCollisions(bounds).Any(overlapping), without its iterators: mobs' pathfinding asks this many times a tick.
-    public bool IsFree(BoundingBox bounds, bool ignoreWoodenDoors = false)
+    public bool IsFree(BoundingBox bounds, bool ignoreWoodenDoors = false) =>
+        this.IsFree(bounds, ignoreWoodenDoors, null);
+
+    /// <summary>
+    /// Whether no block's collision for <paramref name="entity"/> overlaps <paramref name="bounds"/>: powder snow and
+    /// scaffolding collide as they do for it.
+    /// </summary>
+    internal bool IsFreeFor(BoundingBox bounds, Entity entity) => this.IsFree(bounds, false, entity);
+
+    private bool IsFree(BoundingBox bounds, bool ignoreWoodenDoors, Entity? entity)
     {
         for (var x = (int)Math.Floor(bounds.Min.X); x <= (int)Math.Floor(bounds.Max.X); x++)
         {
@@ -200,7 +210,7 @@ internal sealed class MobTerrain(ILevel level) : IPathTerrain
                     if (ignoreWoodenDoors && TagsRegistry.Block.WoodenDoors.Entries.Contains(block.RegistryId))
                         continue;
 
-                    foreach (var shape in BlockCollisionShapes.Get(level, position, block))
+                    foreach (var shape in BlockCollisionShapes.Get(level, position, block, entity))
                     {
                         if (Overlaps(bounds, shape.OffsetBy(new VectorD(x, y, z))))
                             return false;

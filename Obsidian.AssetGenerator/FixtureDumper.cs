@@ -192,6 +192,10 @@ internal static class FixtureDumper
         IReadOnlyCollection<string>? cases = null) =>
         RunObservedProbeAsync(server, fixture, "waxing-bells-ore", "WaxingBellsOreFixtures.java", cases);
 
+    internal static Task DumpFoodHarvestAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunObservedProbeAsync(server, fixture, "food-harvest", "FoodHarvestFixtures.java", cases);
+
     // An on-request probe like DumpWaxingBellsOreAsync's: cauldrons filled, emptied and washing items.
     internal static Task DumpCauldronsAsync(VanillaServer server, string fixture,
         IReadOnlyCollection<string>? cases = null) =>
@@ -239,6 +243,12 @@ internal static class FixtureDumper
             "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("DispenserFixtures.java"), fixture,
             cases is null ? "" : string.Join('+', cases));
     }
+
+    // An on-request probe: lightning bolts on a dedicated server of its own, in a new flat world under the scratch
+    // directory. It shares block_use's observed copy of the vanilla jar for the ordered block writes.
+    internal static Task DumpLightningAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunObservedProbeAsync(server, fixture, "lightning", "LightningFixtures.java", cases);
 
     // An on-request probe of controlled entity contacts, on block_use's observed copy of the vanilla jar.
     internal static Task DumpBlockContactsAsync(VanillaServer server, string fixture,

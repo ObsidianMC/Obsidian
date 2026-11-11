@@ -34,13 +34,16 @@ internal static partial class Growth
 
     private const string GrassBonemeal = "minecraft:grass_bonemeal";
 
-    // Vanilla's setBlock flags for a sapling turning to stage 1, or put back where its tree failed (260:
-    // UPDATE_INVISIBLE | UPDATE_SKIP_BLOCK_ENTITY_SIDEEFFECTS), and for clearing it for its tree (818: UPDATE_CLIENTS
-    // | UPDATE_KNOWN_SHAPE | UPDATE_SUPPRESS_DROPS | UPDATE_SKIP_BLOCK_ENTITY_SIDEEFFECTS | UPDATE_SKIP_ON_PLACE).
-    // BlockUpdateFlags shares vanilla's bits, though it doesn't name all of these.
-    private const BlockUpdateFlags SaplingResetFlags = (BlockUpdateFlags)260;
+    // Vanilla's setBlock flags for a sapling turning to stage 1, or put back where its tree failed (260), and for
+    // clearing it for its tree (818).
+    private const BlockUpdateFlags SaplingResetFlags =
+        BlockUpdateFlags.Invisible | BlockUpdateFlags.SkipBlockEntitySideEffects;
 
-    private const BlockUpdateFlags SaplingRemovalFlags = (BlockUpdateFlags)818;
+    private const BlockUpdateFlags SaplingRemovalFlags = BlockUpdateFlags.Clients
+        | BlockUpdateFlags.KnownShape
+        | BlockUpdateFlags.SuppressDrops
+        | BlockUpdateFlags.SkipBlockEntitySideEffects
+        | BlockUpdateFlags.SkipOnPlace;
 
     // The tree of vanilla's azalea TreeGrower (AzaleaBlock grows TreeGrower.AZALEA, which no sapling holds).
     private const string AzaleaTree = "minecraft:azalea_tree";

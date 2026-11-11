@@ -19,8 +19,8 @@ internal readonly record struct PortalExit(PortalFrame Frame, Vector? Found);
 internal sealed record PortalDestination(
     AbstractLevel Level,
     VectorD Position,
-    Angle Yaw,
-    Angle Pitch,
+    float Yaw,
+    float Pitch,
     VectorD Motion,
     PortalArea Area,
     PortalType? Type = null,
@@ -161,7 +161,7 @@ internal static class PortalTravel
                     return new(
                         destination,
                         positionAtExit,
-                        (float)entity.Yaw + rotation,
+                        entity.Yaw + rotation,
                         entity.Pitch,
                         motion,
                         exitArea,

@@ -1,3 +1,4 @@
+using Obsidian.API.Blocks;
 using Obsidian.Entities;
 using Obsidian.WorldData.BlockTicks;
 using Obsidian.WorldData.Features;
@@ -141,12 +142,14 @@ internal sealed class PressurePlates(IRedstoneLevel level)
         : state.WithProperty("powered", signal > 0);
 
     /// <summary>
-    /// Commits a plate's state, then notifies the block it stands on. Vanilla plates do this with <c>updateNeighborsAt(pos.below())</c>,
-    /// so a door or wire against the support sees the press.
+    /// Commits a plate's state to clients only, then notifies its neighbours and those of the block it stands on, as
+    /// vanilla's <c>checkPressed</c> writes it (flag 2) and then runs <c>updateNeighbours</c>, so a door or wire
+    /// against the support sees the press.
     /// </summary>
     private async ValueTask WriteAsync(Vector position, IBlock block)
     {
-        await level.SetBlockAsync(position, block);
+        await level.WriteAsync(position, block, BlockUpdateFlags.Clients);
+        await level.NotifyNeighborsAsync(position);
         await level.NotifyNeighborsAsync(position.Offset(BlockFace.Down));
     }
 

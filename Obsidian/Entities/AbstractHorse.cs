@@ -186,7 +186,7 @@ public class AbstractHorse : Animal, IRideable
         if (!SupportsSaddle || !HasSaddle)
             return;
         Yaw = Rider.Yaw;
-        Pitch = Rider.Pitch.Degrees * 0.5f;
+        Pitch = Rider.Pitch * 0.5f;
         var input = Rider.Input;
         var forward = (input.HasFlag(PlayerInput.Forward) ? 1f : 0) - (input.HasFlag(PlayerInput.Backward) ? 1f : 0);
         var sideways = (input.HasFlag(PlayerInput.Left) ? 0.5f : 0) - (input.HasFlag(PlayerInput.Right) ? 0.5f : 0);

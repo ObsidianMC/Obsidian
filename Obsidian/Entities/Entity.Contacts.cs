@@ -11,6 +11,46 @@ public partial class Entity
 
     internal bool ContactBounced { get; set; }
 
+    /// <summary>
+    /// Where the entity was when its last tick's movement began, like vanilla's <c>oldPosition</c>: set by its level
+    /// before the tick of an entity the server moves, and after the contacts of a player, whose client moves them
+    /// between ticks. Null until it's first set.
+    /// </summary>
+    internal VectorD? TickStartPosition { get; set; }
+
+    /// <summary>
+    /// How far the entity moved since <see cref="TickStartPosition"/>, which blocks such as sweet berry bushes read.
+    /// </summary>
+    internal VectorD TickMovement => this.Position - (this.TickStartPosition ?? this.Position);
+
+    // What the entity's next move is scaled by, set by the blocks it's stuck in (see MakeStuckInBlock).
+    private VectorD stuckMultiplier;
+
+    /// <summary>
+    /// Slows the entity's next move by <paramref name="multiplier"/> on each axis, as being inside a cobweb, a sweet
+    /// berry bush or powder snow does, and ends its fall, like vanilla's <c>makeStuckInBlock</c>. The block sets it
+    /// again each tick the entity is still inside.
+    /// </summary>
+    internal void MakeStuckInBlock(VectorD multiplier)
+    {
+        this.ResetFallDistance();
+        this.stuckMultiplier = multiplier;
+    }
+
+    /// <summary>
+    /// The multiplier <see cref="MakeStuckInBlock"/> set since the last move, cleared as vanilla's <c>Entity.move</c>
+    /// clears it, or null when there's none.
+    /// </summary>
+    internal VectorD? TakeStuckMultiplier()
+    {
+        var multiplier = this.stuckMultiplier;
+        if (multiplier.MagnitudeSquared() <= 1.0E-7)
+            return null;
+
+        this.stuckMultiplier = VectorD.Zero;
+        return multiplier;
+    }
+
     internal void TrackContactFall(
         double descent, bool grounded, VectorD impactPosition, (Vector, IBlock)? support)
     {

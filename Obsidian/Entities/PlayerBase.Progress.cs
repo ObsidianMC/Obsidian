@@ -184,12 +184,20 @@ public partial class PlayerBase
     /// <param name="trigger">The trigger, without its namespace.</param>
     /// <param name="entity">The entity the trigger's conditions test: <c>target_hit</c>'s projectile, say.</param>
     /// <param name="signal"><c>target_hit</c>'s signal strength.</param>
-    internal void QueueProgress(string trigger, IEntity? entity = null, int? signal = null)
-    {
-        var matched = this.ProgressAdvancements.Match(
-            $"minecraft:{trigger}",
+    internal void QueueProgress(string trigger, IEntity? entity = null, int? signal = null) =>
+        this.QueueProgress(
+            trigger,
             conditions => ProgressConditions.Match(
                 this, trigger, conditions, null, entity, null, null, null, null, null, null, signal));
+
+    /// <summary>
+    /// Fires a trigger for this player from a level's tick like <see cref="QueueProgress(string, IEntity?, int?)"/>,
+    /// granting the criteria whose conditions <paramref name="matches"/> accepts: for a trigger with conditions of its
+    /// own, like lightning's.
+    /// </summary>
+    internal void QueueProgress(string trigger, Func<System.Text.Json.JsonElement, bool> matches)
+    {
+        var matched = this.ProgressAdvancements.Match($"minecraft:{trigger}", matches);
         if (matched.Count > 0 && this.Server is Server server)
             server.BackgroundWork.TryStart(() => this.GrantMatchedAsync(matched));
     }

@@ -65,7 +65,7 @@ internal sealed class DriedGhastBehavior : IRandomTickBehavior, IScheduledTickBe
         blocks.RemoveBlock(position);
 
         var ghastling = (HappyGhast)EntitySpawner.CreateMob(level, EntityType.HappyGhast)!;
-        Angle yaw = FacingYaw(block.GetProperty("facing"));
+        var yaw = FacingYaw(block.GetProperty("facing"));
         ghastling.EntityId = Server.GetNextEntityId();
         ghastling.Position = new VectorD(position.X + 0.5, position.Y, position.Z + 0.5);
         ghastling.Yaw = yaw;

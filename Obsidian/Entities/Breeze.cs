@@ -11,7 +11,7 @@ public sealed partial class Breeze : PathfinderMob
     internal override bool PanicsWhenHurt => false;
     protected override string? SoundName => "breeze";
     protected override SoundCategory MobSoundCategory => SoundCategory.Hostile;
-    protected override bool CanTakeDamage(IEntity source) => source is not Breeze;
+    protected override bool CanTakeDamage(IEntity? source) => source is not Breeze;
     protected override int GetExperienceReward() => 10;
 
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)

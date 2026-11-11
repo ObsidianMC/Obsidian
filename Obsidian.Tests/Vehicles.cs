@@ -2,9 +2,11 @@ using Obsidian.API;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
 using Obsidian.Entities;
+using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
+using Obsidian.Tests.Utilities;
 using Obsidian.WorldData;
 using System;
 using System.Threading.Tasks;
@@ -18,6 +20,42 @@ namespace Obsidian.Tests;
 public sealed class Vehicles
 {
     private const int Floor = 69;
+
+    [Fact]
+    public async Task ClientBoatRotationIsNormalizedAndNonFiniteRotationIsRejected()
+    {
+        await using var context = await CreateAsync();
+        var world = context.World;
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "BoatRotation");
+        var boat = Spawn(world, new Boat { Level = world }, new VectorD(8.5, Floor + 1, 8.5));
+        Assert.True(player.Ride(boat));
+        var terrain = new MobTerrain(world);
+
+        foreach (var row in ClientRotationCases.Finite)
+        {
+            await player.EnqueueVehicleMovementAsync(new VehicleMove(boat.Position, row.Yaw, row.Pitch, false));
+            boat.ClientControl.Tick(boat, terrain, player, flying: false);
+            var accepted = boat.ClientControl.AcceptedMove;
+            Assert.NotNull(accepted);
+            boat.ApplyClientMovement(accepted);
+
+            ClientRotationCases.AssertRotation(boat, row.ExpectedYaw, row.ExpectedPitch);
+        }
+
+        var rotation = (boat.Yaw, boat.Pitch);
+        foreach (var invalid in new[] { float.NaN, float.PositiveInfinity, float.NegativeInfinity })
+        {
+            (float Yaw, float Pitch)[] rotations = [(invalid, 0), (0, invalid)];
+            foreach (var row in rotations)
+            {
+                await player.EnqueueVehicleMovementAsync(new VehicleMove(boat.Position, row.Yaw, row.Pitch, false));
+                boat.ClientControl.Tick(boat, terrain, player, flying: false);
+
+                Assert.Null(boat.ClientControl.AcceptedMove);
+                Assert.Equal(rotation, (boat.Yaw, boat.Pitch));
+            }
+        }
+    }
 
     [Fact(DisplayName = "Players get in boats and minecarts, and out by sneaking", Timeout = TestServerFactory.TestTimeout)]
     public async Task PlayersRideVehicles()

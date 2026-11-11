@@ -17,11 +17,16 @@ public partial class PlayerInputPacket
     {
         var wasSneaking = player.Sneaking;
         var previous = player.Input;
+        var previousPose = player.Pose;
 
         player.Input = this.Flags;
         player.TrackJumpInput(previous, this.Flags);
 
-        if (player.Sneaking != wasSneaking)
+        // Sneaking crouches at once; a pose that changes is sent with the change.
+        if (player is PlayerBase posed)
+            posed.UpdatePose();
+
+        if (player.Sneaking != wasSneaking && player.Pose == previousPose)
         {
             player.Level.PacketBroadcaster.QueuePacketToLevel(player.Level, new SetEntityDataPacket
             {

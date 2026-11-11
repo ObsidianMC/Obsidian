@@ -42,11 +42,11 @@ public sealed partial class Villager : AgeableMob
     private long lastRestock;
     private int tradingLevel;
 
-    public Villager()
-    {
-        Type = EntityType.Villager;
-        PersistenceRequired = true;
-    }
+    public Villager() => Type = EntityType.Villager;
+
+    // Vanilla's Villager.removeWhenFarAway: villagers never despawn, without being marked as persistence required, so
+    // what they turn into (a witch, a zombie villager) despawns or not by its own rules.
+    protected override bool CanDespawn => false;
 
     protected override bool UsesAi => true;
     protected override string? SoundName => "villager";
@@ -132,6 +132,26 @@ public sealed partial class Villager : AgeableMob
         }
 
         return new MerchantTradeUpdate(offers, VillagerLevel, VillagerXp);
+    }
+
+    // Vanilla's Villager.thunderHit: unless the difficulty is peaceful, the villager lets go of its bed and job site
+    // and becomes a witch that never despawns; on peaceful it's struck like anything living.
+    internal override async ValueTask ThunderHitAsync(LightningBolt bolt)
+    {
+        if (Level.LevelData.Difficulty == Difficulty.Peaceful || Level is not AbstractLevel level)
+        {
+            await base.ThunderHitAsync(bolt);
+            return;
+        }
+
+        if (Home is { } home)
+            level.ReleaseVillagePoi(home, Uuid);
+        if (JobSite is { } job)
+            level.ReleaseVillagePoi(job, Uuid);
+
+        if (await ConvertToAsync(EntityType.Witch, keepHealth: false) is not Mob witch)
+            return;
+        witch.PersistenceRequired = true;
     }
 
     private async ValueTask TickVillageAsync(AbstractLevel level)

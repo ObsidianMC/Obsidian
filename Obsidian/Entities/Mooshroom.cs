@@ -8,6 +8,22 @@ public sealed partial class Mooshroom : Cow, IShearable
 {
     public Mooshroom() => Type = EntityType.Mooshroom;
     public bool Brown { get; set; }
+
+    // The bolt that last turned it, which turns it only once however many ticks it strikes.
+    private Guid lastLightningBolt;
+
+    // Vanilla's MushroomCow.thunderHit: the first time a bolt strikes it, it turns the other colour. It isn't hurt.
+    internal override ValueTask ThunderHitAsync(LightningBolt bolt)
+    {
+        if (bolt.Uuid == lastLightningBolt || Level is not Obsidian.WorldData.AbstractLevel level)
+            return ValueTask.CompletedTask;
+
+        Brown = !Brown;
+        lastLightningBolt = bolt.Uuid;
+        SynchronizeMetadata();
+        Obsidian.WorldData.LevelSounds.Play(level, Position, "minecraft:entity.mooshroom.convert", MobSoundCategory, 2);
+        return ValueTask.CompletedTask;
+    }
     internal Obsidian.API.Effects.SuspiciousStewEffect? StewEffect { get; set; }
 
     /// <inheritdoc/>

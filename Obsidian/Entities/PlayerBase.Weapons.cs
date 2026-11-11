@@ -370,7 +370,7 @@ public partial class PlayerBase
         var holdingArm = offHandHolds && !mainHandHolds
             ? (ClientInformation.MainHand == HumanoidArm.Right ? HumanoidArm.Left : HumanoidArm.Right)
             : ClientInformation.MainHand;
-        var yaw = (Yaw.Degrees + (holdingArm == HumanoidArm.Right ? 80 : -80)) * Math.PI / 180;
+        var yaw = (Yaw + (holdingArm == HumanoidArm.Right ? 80 : -80)) * Math.PI / 180;
         return new VectorD(-Math.Sin(yaw), 0, Math.Cos(yaw)) * 0.5;
     }
 
@@ -655,7 +655,7 @@ public partial class PlayerBase
         var creative = GameMode == GameMode.Creative;
         var reach = CombatItems.Number(range, creative ? "max_creative_reach" : "max_reach", 4.5f);
         var minimum = CombatItems.Number(range, creative ? "min_creative_reach" : "min_reach", 2);
-        var eye = Position + new VectorD(0, 1.62, 0);
+        var eye = EyePosition(this);
         var direction = GetLookDirection();
         var start = eye + direction * minimum;
         var ray = direction * (reach - minimum);
