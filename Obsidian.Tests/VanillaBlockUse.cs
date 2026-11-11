@@ -57,6 +57,27 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
     // Named expected difference DestroyEventAfterRemoval, pinned to the one case whose removal emits game events.
     private static readonly HashSet<string> destroyEventAfterRemoval = ["jukebox_destroy_with_disc"];
 
+    // Named expected difference RedstoneWriteFlags (see known-gaps/redstone.md), pinned to these cases: Obsidian's
+    // flags for each of the case's ordered writes, whose positions and states match vanilla's. Redstone's writes
+    // through the notification pipeline notify neighbours (3) where vanilla's dust and comparators update only
+    // clients (2) and then notify by hand; its silent writes skip placement (514) where vanilla's comparator mode
+    // change sends 2 and its piston moves send their own flags.
+    private static readonly Dictionary<string, int[]> redstoneWriteFlags = new()
+    {
+        ["trapped_chest_powers_neighbours"] = [3, 3],
+        ["double_trapped_chest_powers_neighbours"] = [3, 3],
+        ["comparator_reads_chest_under_sitting_cat"] = [514],
+        ["comparator_reads_chest_under_standing_cat"] = [514, 3, 3],
+        ["comparator_reads_command_block"] = [514, 3, 3],
+        ["comparator_reads_active_sculk_sensor"] = [514, 3, 3],
+        ["comparator_reads_inactive_sculk_sensor"] = [514],
+        ["comparator_reads_calibrated_sculk_sensor"] = [514, 3, 3],
+        ["comparator_reads_copper_bulb"] = [514, 3, 3],
+        ["comparator_reads_copper_golem_statue"] = [514, 3, 3],
+        ["lever_extends_piston"] = [3, 514, 3],
+        ["lever_retracts_piston"] = [3, 514, 3],
+    };
+
     private sealed record Setup(Vector Offset, IBlock State, string? Text);
 
     private sealed record Effects(
@@ -326,10 +347,14 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
         differences.AddRange(writeDifferences);
         if (use.Reference.TryGetProperty("writes", out expectedWrites))
         {
-            var recorded = expectedWrites.EnumerateArray().Select(write => Write(
+            var recordedFlags = expectedWrites.EnumerateArray()
+                .Select(write => write.GetProperty("flags").GetInt32())
+                .ToArray();
+            var flags = ExpectedWriteFlags(use.Name, recordedFlags, differences);
+            var recorded = expectedWrites.EnumerateArray().Select((write, index) => Write(
                 target + Position(write.GetProperty("offset")),
                 VanillaSulfurBlocks.ParseState(write.GetProperty("state").GetString()!),
-                (BlockUpdateFlags)write.GetProperty("flags").GetInt32())).ToArray();
+                (BlockUpdateFlags)flags[index])).ToArray();
             differences.AddRange(CompareLists("ordered writes", recorded, writes.ToArray()));
             var removed = use.Reference.GetProperty("destroyed").EnumerateArray().Select(block => Destroyed(
                 target + Position(block.GetProperty("offset")),
@@ -999,6 +1024,23 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
     {
         var offset = position - target;
         return $"{offset.X},{offset.Y},{offset.Z}";
+    }
+
+    // The flags a case's writes are compared with: vanilla's, or Obsidian's pinned RedstoneWriteFlags, which must
+    // still differ from vanilla's so that the pin goes once Obsidian matches.
+    private static int[] ExpectedWriteFlags(string name, int[] recorded, List<string> differences)
+    {
+        if (!redstoneWriteFlags.TryGetValue(name, out var pinned))
+            return recorded;
+
+        if (pinned.Length != recorded.Length || pinned.SequenceEqual(recorded))
+        {
+            differences.Add($"RedstoneWriteFlags pin [{string.Join(", ", pinned)}] no longer fits vanilla's "
+                + $"[{string.Join(", ", recorded)}]");
+            return recorded;
+        }
+
+        return pinned;
     }
 
     private static string Write(Vector position, IBlock block, BlockUpdateFlags flags) =>

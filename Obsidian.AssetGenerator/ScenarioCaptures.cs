@@ -427,6 +427,7 @@ internal static class ScenarioCaptures
             scenario["checkpoints"] = checkpoints;
             await RemoveEntitiesAsync(vanilla, dimension);
             await KillItemsAsync(vanilla, dimension, box.Grow(2));
+            await KillPrimedTntAsync(vanilla, dimension, box.Grow(2));
             await ClearAsync(vanilla, dimension, box.Grow(1));
         }
     }
@@ -463,14 +464,23 @@ internal static class ScenarioCaptures
         await vanilla.RunInAsync(dimension, $"kill {ItemsIn(area)}");
     }
 
+    // Removes the TNT a scenario primed, so it doesn't explode during a later one.
+    private static async Task KillPrimedTntAsync(ScenarioServer vanilla, string dimension, Box area)
+    {
+        await vanilla.RunInAsync(dimension, $"kill {EntitiesIn(area, "minecraft:tnt")}");
+    }
+
     // The item entities in the area, narrowed by any further selector arguments in filter.
-    private static string ItemsIn(Box area, string filter = "")
+    private static string ItemsIn(Box area, string filter = "") => EntitiesIn(area, "minecraft:item", filter);
+
+    // The entities of the type in the area, narrowed by any further selector arguments in filter.
+    private static string EntitiesIn(Box area, string type, string filter = "")
     {
         var dx = area.Max.X - area.Min.X;
         var dy = area.Max.Y - area.Min.Y;
         var dz = area.Max.Z - area.Min.Z;
         var volume = $"x={area.Min.X},y={area.Min.Y},z={area.Min.Z},dx={dx},dy={dy},dz={dz}";
-        return $"@e[type=minecraft:item,{volume}{filter}]";
+        return $"@e[type={type},{volume}{filter}]";
     }
 
     // A placement's state with its block entity's items as /setblock data: each item's slot, id and count.

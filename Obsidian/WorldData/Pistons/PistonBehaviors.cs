@@ -106,13 +106,21 @@ internal static class PistonBehaviors
                     return false;
 
                 await level.WriteAsync(position, state.WithProperty("extended", "true"), notifyNeighbors: true);
-                level.PlaySound(position, "minecraft:block.piston.extend");
+                level.PlaySound(position, "minecraft:block.piston.extend", MoveVolume, MovePitch(0.25f));
+                level.EmitGameEvent(MobGameEvent.BlockActivate, position, null);
                 return true;
             }
 
             await this.RetractAsync(position, state, type, facing);
+            level.PlaySound(position, "minecraft:block.piston.contract", MoveVolume, MovePitch(0.15f));
+            level.EmitGameEvent(MobGameEvent.BlockDeactivate, position, null);
             return true;
         }
+
+        // Vanilla PistonBaseBlock.triggerEvent's sounds: half volume, and a pitch from 0.6 up by a random spread.
+        private const float MoveVolume = 0.5f;
+
+        private static float MovePitch(float spread) => Globals.Random.NextSingle() * spread + 0.6f;
 
         private async ValueTask RetractAsync(Vector position, IBlock state, int type, BlockFace facing)
         {

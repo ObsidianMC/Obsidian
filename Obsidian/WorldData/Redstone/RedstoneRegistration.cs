@@ -33,6 +33,7 @@ internal static class RedstoneRegistration
         var engine = new RedstoneEngine(world, redstone);
         RedstoneWire.Register(redstone, neighbors, engine);
         SculkSensorSignal.Register(redstone);
+        TrappedChestSignal.Register(world, redstone);
         BasicRedstoneComponents.Register(world, ticks, redstone, neighbors, engine, playNote);
         RedstoneRepeater.Register(world, ticks, redstone, neighbors, engine);
         RedstoneObserver.Register(world, ticks, redstone, neighbors);
@@ -44,6 +45,7 @@ internal static class RedstoneRegistration
         RedstoneDispenser.Register(world, engine, ticks, neighbors);
         var detectorRails = RedstoneRails.Register(world, engine, ticks, redstone, neighbors);
         RedstoneHopper.Register(world, neighbors, engine);
+        RedstoneBell.Register(world, neighbors, engine);
         var tripwires = TripWire.Register(world, ticks, redstone, neighbors);
         var targets = TargetBlock.Register(world, ticks, redstone);
         var plates = new PressurePlates(world);

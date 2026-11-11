@@ -149,6 +149,8 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IRedstoneLevel,
         this.IsOutsideBuildHeight(position.Y) ? 0 :
         this.GetLoadedChunk(position.X.ToChunkCoord(), position.Z.ToChunkCoord())?.GetLightLevel(position.X, position.Y, position.Z, LightType.Sky) ?? 0;
 
+    int IRedstoneLevel.TrappedChestViewers(Vector position) => this.TrappedChestViewers(position);
+
     bool IRedstoneLevel.HasAnalogOutput(IBlock block)
     {
         lock (this.Fluids.TickLock)

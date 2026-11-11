@@ -20276,6 +20276,911 @@
       "stats": [],
       "menu": null,
       "blockEntity": "{LootTable:\"minecraft:pots/trial_chambers/corridor\",LootTableSeed:5L,components:{},id:\"minecraft:decorated_pot\"}"
+    },
+    {
+      "name": "trapped_chest_powers_neighbours",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:trapped_chest"
+        },
+        {
+          "offset": [-1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:redstone_wire[east=side,west=side]"
+        },
+        {
+          "offset": [0, -2, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, 1],
+          "state": "minecraft:redstone_wire[north=side,south=side]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:redstone_wire[east=side,power=1,west=side]",
+          "flags": 2
+        },
+        {
+          "offset": [0, -1, 1],
+          "state": "minecraft:redstone_wire[north=side,power=1,south=side]",
+          "flags": 2
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,-1,1=minecraft:redstone_wire[north=side,power=1,south=side];-1,0,0=minecraft:redstone_wire[east=side,power=1,west=side]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.chest.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:trapped_chest 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:trigger_trapped_chest 1"
+      ],
+      "menu": "minecraft:generic_9x3",
+      "closed": {
+        "changes": "0,-1,1=minecraft:redstone_wire[north=side,south=side];-1,0,0=minecraft:redstone_wire[east=side,west=side]",
+        "sounds": [
+          "minecraft:block.chest.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [
+          "minecraft:trapped_chest 1 0 0,0,0"
+        ],
+        "gameEvents": [
+          "minecraft:container_close 0,0,0 player"
+        ]
+      }
+    },
+    {
+      "name": "double_trapped_chest_powers_neighbours",
+      "setup": [
+        {
+          "offset": [-1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:trapped_chest[type=left]"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:trapped_chest[type=right]"
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:redstone_wire[east=side,west=side]"
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:redstone_wire[east=side,west=side]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:redstone_wire[east=side,power=1,west=side]",
+          "flags": 2
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:redstone_wire[east=side,power=1,west=side]",
+          "flags": 2
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "-1,0,0=minecraft:redstone_wire[east=side,power=1,west=side];2,0,0=minecraft:redstone_wire[east=side,power=1,west=side]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.chest.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:trapped_chest 1 1 1,0,0",
+        "minecraft:trapped_chest 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:container_open 1,0,0 player",
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:trigger_trapped_chest 1"
+      ],
+      "menu": "minecraft:generic_9x6",
+      "closed": {
+        "changes": "-1,0,0=minecraft:redstone_wire[east=side,west=side];2,0,0=minecraft:redstone_wire[east=side,west=side]",
+        "sounds": [
+          "minecraft:block.chest.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [
+          "minecraft:trapped_chest 1 0 1,0,0",
+          "minecraft:trapped_chest 1 0 0,0,0"
+        ],
+        "gameEvents": [
+          "minecraft:container_close 1,0,0 player",
+          "minecraft:container_close 0,0,0 player"
+        ]
+      }
+    },
+    {
+      "name": "comparator_reads_chest_under_sitting_cat",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chest",
+          "nbt": "{Items:[{Slot:0b,id:\"minecraft:stone\",count:64}]}"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:redstone_wire[east=side,west=side]"
+        }
+      ],
+      "clicked": [1, 0, 0],
+      "face": "north",
+      "checkWrites": true,
+      "cats": [
+        {
+          "offset": [0, 1, 0],
+          "sitting": true
+        }
+      ],
+      "writes": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west,mode=subtract]",
+          "flags": 2
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "1,0,0=minecraft:comparator[facing=west,mode=subtract]",
+      "hand": "empty",
+      "entities": [
+        "minecraft:cat"
+      ],
+      "sounds": [
+        "minecraft:block.comparator.click"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "comparator_reads_chest_under_standing_cat",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chest",
+          "nbt": "{Items:[{Slot:0b,id:\"minecraft:stone\",count:64}]}"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:redstone_wire[east=side,west=side]"
+        }
+      ],
+      "clicked": [1, 0, 0],
+      "face": "north",
+      "checkWrites": true,
+      "cats": [
+        {
+          "offset": [0, 1, 0],
+          "sitting": false
+        }
+      ],
+      "writes": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west,mode=subtract]",
+          "flags": 2
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west,mode=subtract,powered=true]",
+          "flags": 2
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:redstone_wire[east=side,power=1,west=side]",
+          "flags": 2
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "1,0,0=minecraft:comparator[facing=west,mode=subtract,powered=true];2,0,0=minecraft:redstone_wire[east=side,power=1,west=side]",
+      "hand": "empty",
+      "entities": [
+        "minecraft:cat"
+      ],
+      "sounds": [
+        "minecraft:block.comparator.click"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "comparator_reads_command_block",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:command_block",
+          "nbt": "{SuccessCount:3}"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:redstone_wire[east=side,west=side]"
+        }
+      ],
+      "clicked": [1, 0, 0],
+      "face": "north",
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west,mode=subtract]",
+          "flags": 2
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west,mode=subtract,powered=true]",
+          "flags": 2
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:redstone_wire[east=side,power=3,west=side]",
+          "flags": 2
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "1,0,0=minecraft:comparator[facing=west,mode=subtract,powered=true];2,0,0=minecraft:redstone_wire[east=side,power=3,west=side]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.comparator.click"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "comparator_reads_active_sculk_sensor",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:sculk_sensor[sculk_sensor_phase=active,power=5]",
+          "nbt": "{last_vibration_frequency:7}"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:redstone_wire[east=side,west=side]"
+        }
+      ],
+      "clicked": [1, 0, 0],
+      "face": "north",
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west,mode=subtract]",
+          "flags": 2
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west,mode=subtract,powered=true]",
+          "flags": 2
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:redstone_wire[east=side,power=7,west=side]",
+          "flags": 2
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "1,0,0=minecraft:comparator[facing=west,mode=subtract,powered=true];2,0,0=minecraft:redstone_wire[east=side,power=7,west=side]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.comparator.click"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "comparator_reads_inactive_sculk_sensor",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:sculk_sensor[sculk_sensor_phase=cooldown]",
+          "nbt": "{last_vibration_frequency:7}"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:redstone_wire[east=side,west=side]"
+        }
+      ],
+      "clicked": [1, 0, 0],
+      "face": "north",
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west,mode=subtract]",
+          "flags": 2
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "1,0,0=minecraft:comparator[facing=west,mode=subtract]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.comparator.click"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "comparator_reads_calibrated_sculk_sensor",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:calibrated_sculk_sensor[facing=north,sculk_sensor_phase=active,power=5]",
+          "nbt": "{last_vibration_frequency:12}"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:redstone_wire[east=side,west=side]"
+        }
+      ],
+      "clicked": [1, 0, 0],
+      "face": "north",
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west,mode=subtract]",
+          "flags": 2
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west,mode=subtract,powered=true]",
+          "flags": 2
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:redstone_wire[east=side,power=12,west=side]",
+          "flags": 2
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "1,0,0=minecraft:comparator[facing=west,mode=subtract,powered=true];2,0,0=minecraft:redstone_wire[east=side,power=12,west=side]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.comparator.click"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "comparator_reads_copper_bulb",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_bulb[lit=true]"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:redstone_wire[east=side,west=side]"
+        }
+      ],
+      "clicked": [1, 0, 0],
+      "face": "north",
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west,mode=subtract]",
+          "flags": 2
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west,mode=subtract,powered=true]",
+          "flags": 2
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:redstone_wire[east=side,power=15,west=side]",
+          "flags": 2
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "1,0,0=minecraft:comparator[facing=west,mode=subtract,powered=true];2,0,0=minecraft:redstone_wire[east=side,power=15,west=side]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.comparator.click"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "comparator_reads_copper_golem_statue",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:copper_golem_statue[copper_golem_pose=running]"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:redstone_wire[east=side,west=side]"
+        }
+      ],
+      "clicked": [1, 0, 0],
+      "face": "north",
+      "checkWrites": true,
+      "writes": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west,mode=subtract]",
+          "flags": 2
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west,mode=subtract,powered=true]",
+          "flags": 2
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:redstone_wire[east=side,power=3,west=side]",
+          "flags": 2
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "1,0,0=minecraft:comparator[facing=west,mode=subtract,powered=true];2,0,0=minecraft:redstone_wire[east=side,power=3,west=side]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.comparator.click"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "lever_rings_bell",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lever[face=floor]"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:bell[attachment=floor,facing=north]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkWrites": true,
+      "checkEffects": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lever[face=floor,powered=true]",
+          "flags": 3
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:bell[powered=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:lever[face=floor,powered=true];1,0,0=minecraft:bell[powered=true]",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.bell.use 1,0,0 2.0",
+        "minecraft:block.lever.click 0,0,0 0.3"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.bell.use",
+        "minecraft:block.lever.click"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:bell 1 2 1,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_change 1,0,0 none",
+        "minecraft:block_activate 0,0,0 none"
+      ],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "lever_flips_copper_bulb",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lever[face=floor]"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:copper_bulb"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkWrites": true,
+      "checkEffects": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lever[face=floor,powered=true]",
+          "flags": 3
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:copper_bulb[lit=true,powered=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:lever[face=floor,powered=true];1,0,0=minecraft:copper_bulb[lit=true,powered=true]",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.copper_bulb.turn_on 1,0,0 1.0",
+        "minecraft:block.lever.click 0,0,0 0.3"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.copper_bulb.turn_on",
+        "minecraft:block.lever.click"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_activate 0,0,0 none"
+      ],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "lever_extends_piston",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lever[face=floor]"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:piston[facing=up]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkWrites": true,
+      "checkEffects": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lever[face=floor,powered=true]",
+          "flags": 3
+        },
+        {
+          "offset": [1, 1, 0],
+          "state": "minecraft:moving_piston[facing=up]",
+          "flags": 324
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:piston[extended=true,facing=up]",
+          "flags": 67
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:lever[face=floor,powered=true];1,0,0=minecraft:piston[extended=true,facing=up];1,1,0=minecraft:moving_piston[facing=up]",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.lever.click 0,0,0 0.3",
+        "minecraft:block.piston.extend 1,0,0 0.5"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.lever.click",
+        "minecraft:block.piston.extend"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:piston 0 1 1,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_activate 0,0,0 none",
+        "minecraft:block_activate 1,0,0 none"
+      ],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "lever_retracts_piston",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lever[face=floor,facing=north,powered=true]"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:piston[facing=up,extended=true]"
+        },
+        {
+          "offset": [1, 1, 0],
+          "state": "minecraft:piston_head[facing=up]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkWrites": true,
+      "checkEffects": true,
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lever[face=floor]",
+          "flags": 3
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:moving_piston[facing=up]",
+          "flags": 276
+        },
+        {
+          "offset": [1, 1, 0],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:lever[face=floor];1,0,0=minecraft:moving_piston[facing=up];1,1,0=minecraft:air",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.lever.click 0,0,0 0.3",
+        "minecraft:block.piston.contract 1,0,0 0.5"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.lever.click",
+        "minecraft:block.piston.contract"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:piston 1 1 1,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_deactivate 0,0,0 none",
+        "minecraft:block_deactivate 1,0,0 none"
+      ],
+      "stats": [],
+      "menu": null
     }
   ],
   "version": "26.3"

@@ -5,16 +5,31 @@
 [block interactions plan](../block-interactions-plan.md) lists every component's state in its appendix, section 7.
 What follows is what still differs.
 
-- **Consumers.** Bells don't react to power. Doors, trapdoors and fence gates, note blocks, powered and activator
-  rails, TNT, copper bulbs, pistons, hoppers, droppers, dispensers and crafters do; copper bulbs make no
-  sound, and dispensers still drop buckets, bottles, honeycomb and a few other items they'd use (see
-  [dispenser behaviours](dispenser-behaviours.md)).
-- **Sources.** Trapped chests and lightning rods give no power, though dust connects to them as to any signal
-  source, and a jukebox gives none while it plays, where vanilla's gives 15 (`JukeboxBlock.isSignalSource`).
-  Observers, daylight detectors, target blocks (hit by arrows, spectral arrows and tridents only), tripwire
-  hooks, detector rails, sculk sensors and lecterns do.
-- **Analog outputs.** Comparators read 0 from shelves, command blocks, sculk sensors, creaking hearts, copper bulbs
-  and copper golem statues.
+- **Consumers.** Doors, trapdoors and fence gates, note blocks, powered and activator rails, TNT, copper bulbs
+  (with their sounds), bells (ringing on a rising edge), pistons, hoppers, droppers, dispensers and crafters react to
+  power, each captured in `redstone_scenarios.json` or `block_use.json`. Dispensers still drop buckets, bottles,
+  honeycomb and a few other items they'd use (see [dispenser behaviours](dispenser-behaviours.md)). A moving slime
+  block launches the server's own entities along its axis, as vanilla's `moveCollidedEntities` does; no capture
+  covers entity motion off pistons yet.
+- **Sources.** Lightning rods give no power, though dust connects to them as to any signal source, and a jukebox
+  gives none while it plays, where vanilla's gives 15 (`JukeboxBlock.isSignalSource`). Observers, daylight
+  detectors, target blocks (hit by arrows, spectral arrows and tridents only), tripwire hooks, detector rails, sculk
+  sensors, lecterns and trapped chests do. A trapped chest's viewer count changes when the level reconciles
+  container lids, just before the tick's block events, where vanilla's changes as the player opens or closes it;
+  its neighbours hear of it then, after the lid's block event, as in vanilla.
+- **Analog outputs.** Comparators read 0 from shelves (#736) and creaking hearts. A heart's output is how near its
+  creaking is, and Obsidian's hearts don't tick: they neither spawn a creaking nor keep track of one, so they read 0
+  as vanilla's do without a creaking. Command blocks give their saved `SuccessCount`, which nothing changes yet,
+  since Obsidian doesn't run them.
+- **Sculk.** Calibrated sensors hear only the frequency of the signal behind them, when there is one, and stay
+  active for 10 ticks. A sensor dates a vibration from when it was emitted, so one from between ticks (a player's
+  action or a command) arrives a tick sooner than one emitted during the tick, as in vanilla. Wardens and allays,
+  which vanilla ticks with entities, still date vibrations from the tick that dispatches them.
+- **Write flags.** Redstone's writes through the notification pipeline notify neighbours (flags 3) where vanilla's
+  dust and comparators update only clients (2) and then notify by hand, and its silent writes skip placement (514)
+  where vanilla's comparator mode change sends 2 and its pistons send their own flags (67, 276, 324). The states,
+  their order and the neighbours reached match; `VanillaBlockUse` pins the flags of the redstone cases as
+  `RedstoneWriteFlags`.
 - **Timing.** Comparators hear of a container's items changing at the end of the level's block entity tick (through
   item access) or on its next one (players' clicks), and only near players, where vanilla's `setChanged` tells them
   at once. Entities press plates, trip wires and press wooden buttons (arrows) straight after their own tick, as
@@ -22,7 +37,8 @@ What follows is what still differs.
   Which entities touch blocks and which leave plates and tripwires alone (vexes touch them, bats don't trigger them,
   an entity its own tick removed touches nothing) follows vanilla's source; `block_contact_scenarios.json` doesn't
   capture those kinds yet.
-  Cats sitting on a chest don't stop comparators reading it.
+  Cats sitting on a chest stop comparators reading it, as in vanilla (captured in `block_use.json`); a cat sitting
+  down or standing up doesn't update them, as vanilla's doesn't either.
   Solid-block obstruction above a single chest or either double-chest half leaves the comparator's output stale
   until another notification, as captured in vanilla; removing it alone does too. Observers use the shape owner,
   run once per block change by the fluid level's vanilla-ordered updater. Captured player placement facing air or
@@ -44,10 +60,13 @@ What follows is what still differs.
   derive to air in vanilla, but Obsidian's shape rules have no case for them. When a completed move derives to air,
   destruction replaces the block and notifies neighbours before broadcasting the break effect and spawning its
   drop; vanilla broadcasts the effect and spawns the drop before replacement and notifications.
-- **Game events.** Levers, buttons and pressure plates don't emit vanilla's `block_activate` and `block_deactivate`
-  vibrations.
+- **Neighbour reactions.** Consumers are bound to blocks through `NeighborBehaviors`' registrations by name and
+  class, built per level with the engine and level they use, not through a generated hook by declaring class as
+  shape rules are (`ShapeUpdateBehaviors`). Moving them would need a dump of vanilla's `neighborChanged` declaring
+  classes, generator bindings, and every consumer (dust, torches, diodes, observers, pistons, rails, doors, TNT,
+  bulbs, bells, crafters, dispensers, hoppers) reaching its level's engine through the hook's view instead.
 - **Experiments.** The `redstone_experiments` feature's wire evaluator and update orientations aren't modelled.
 
-**Where to start:** each consumer is another `RedstoneComponent` in `Obsidian/WorldData/Redstone`, listed in
-`VanillaRedstone`, reacting in `NeighborChanged` through `LevelBlockUpdates`' signal methods, like the lamp; sources
-give their power from `GetSignal` and `GetDirectSignal`, like the lever. Analog outputs go in `AnalogOutputs`.
+**Where to start:** each consumer is an `INeighborChangedBehavior` in `Obsidian/WorldData/Redstone`, registered in
+`RedstoneRegistration` and reading power through the `RedstoneEngine`, like the bell; sources give their power from
+`IRedstoneBehavior.GetSignal` and `GetDirectSignal`, like the trapped chest. Analog outputs go in `AnalogOutputs`.

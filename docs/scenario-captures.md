@@ -27,6 +27,14 @@ replaces only what vanilla produced.
   move items into and out of the blocks that hold them, each read by a comparator into a dust: the shelf's slots
   and the last slot used, and how full the pot is. A scenario naming an `item` also records in each checkpoint the total count of that item lying as item
   entities within two blocks of its box, and the replay counts Obsidian's the same way, so it must be `level`.
+  Consumers and sources with no other capture each have one: `doors_open_from_power` (an oak and an iron door,
+  powered beside either half), `tnt_primed_by_power` (beside a new redstone block, and placed beside one),
+  `rails_powered_along_a_line` (ten powered and ten activator rails, the last of each out of reach),
+  `crafter_crafts_into_chest`, `dropper_pushes_into_chest` and `hopper_pushes_into_chest` (each read through a
+  comparator into a dust), `copper_bulb_toggles_comparator`, `bell_powered_by_redstone`,
+  `sculk_sensor_reads_note_frequency` (a note block's vibration, whose frequency a comparator reads while the sensor
+  is active) and `calibrated_sculk_sensor_filters_frequency` (only the sensor whose back signal matches the note's
+  frequency activates). The capture kills TNT a scenario primed when it ends, so it can't explode during a later one.
 - `fluid_scenarios.json` (`VanillaFluids`) defines the box, setup fills, actions, dimension and checkpoint ticks; the
   capture records the checkpoints.
 - `daylight_detector.json` (`DaylightDetectorTests`) defines the clock times to sample; the capture records the
@@ -282,7 +290,13 @@ replaces only what vanilla produced.
   the result. The original 92 cases retain their captured bytes. Another 285 cases cover buckets (72), chest
   obstructions (73), lighting (63) and the blocks that hold items (77: flower pots, chiseled bookshelves, decorated
   pots, including ones still waiting for their loot table, lodestone compasses and jukeboxes), including ordered block writes with every flag bit and successful block
-  destructions. These cases observe all writes, including positions absent from their setup; an unexpected position
+  destructions. Fourteen redstone cases do too: opening a single and a double trapped chest powers the dust beside
+  it and, through the block below, the dust beside that; clicking a comparator into subtract mode reads a chest
+  under a sitting and a standing cat, a command block's `SuccessCount`, an active, a cooling and a calibrated sculk
+  sensor's last frequency, a lit copper bulb and a copper golem statue's pose; and a lever rings a bell, flips a
+  copper bulb, and extends and retracts a piston, with their sounds and game events. Their write flags differ from
+  vanilla's on Obsidian's redstone paths, pinned as `RedstoneWriteFlags` (see
+  [redstone](known-gaps/redstone.md)). These cases observe all writes, including positions absent from their setup; an unexpected position
   fails the replay. The older 92 cases compare final block states only. Extending ordered-write checks to those
   cases remains an open follow-up. The replay uses the capture's absolute coordinates: translating plant
   outlines changes their position-dependent offsets and can change a bucket ray hit. It also checks whether

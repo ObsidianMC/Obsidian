@@ -84,6 +84,12 @@ internal interface IRedstoneLevel : IBlockChangeWorld
     /// <summary>Crafts a crafter's grid on the entity path (vanilla <c>CrafterBlock.dispenseFrom</c>).</summary>
     void CraftCrafter(Vector position);
 
+    /// <summary>
+    /// How many viewers have the trapped chest at <paramref name="position"/> open, as its last opener recheck
+    /// counted them (vanilla <c>ChestBlockEntity.getOpenCount</c>). Worlds without players have none.
+    /// </summary>
+    int TrappedChestViewers(Vector position) => 0;
+
     bool HasAnalogOutput(IBlock block);
 
     /// <summary>Vanilla's <c>getAnalogOutputSignal</c> of the block at <paramref name="position"/>, read as the neighbour in <paramref name="direction"/>.</summary>
