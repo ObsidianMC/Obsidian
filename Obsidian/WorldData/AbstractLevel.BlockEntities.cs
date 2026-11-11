@@ -593,6 +593,32 @@ public abstract partial class AbstractLevel
         }
     }
 
+    /// <summary>Stores a prebuilt dispenser box during a state-only commit, without loading or running factories.</summary>
+    internal bool PlaceDispensedBlock(Vector position, IBlock block, BlockPlacement.Prepared prepared)
+    {
+        if (this.IsOutsideBuildHeight(position.Y)
+            || !this.Fluids.TryGetChunk(position, out var chunk)
+            || chunk is Chunk { EntitiesUnloaded: true })
+        {
+            return false;
+        }
+
+        var old = chunk.GetBlock(position.X, position.Y, position.Z);
+        if (!old.IsAir && !old.CanBeReplaced())
+            return false;
+
+        var removed = this.UpdateBlockEntity(chunk, position, block, prepared.Entity);
+        chunk.SetBlock(position.X, position.Y, position.Z, block);
+        var effects = this.ActiveBlockUse
+            ?? throw new InvalidOperationException("Dispenser placement requires a state commit.");
+        effects.After(() => this.CompleteBlockEntityPlacement(chunk, prepared.Entity));
+        if (removed is not null)
+            effects.After(() => this.QueueBlockEntityRemoval(removed));
+
+        this.AfterBlockSet(position, old, block, API.Blocks.BlockUpdateFlags.AllImmediate);
+        return true;
+    }
+
     /// <summary>Finishes a placement that raced the plugin's unloading sweep, after transferring its items.</summary>
     internal void CompleteBlockEntityPlacement(IChunk chunk, BlockEntity? entity)
     {

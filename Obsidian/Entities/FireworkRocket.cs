@@ -52,6 +52,20 @@ public sealed partial class FireworkRocket : Entity
             if (!ShotAtAngle) Motion = new VectorD(Motion.X * 1.15, Motion.Y + 0.04, Motion.Z * 1.15);
             if (!MoveFree(level, terrain, out target, out hit)) return;
         }
+        if (this.life == 0 && this.ShotAtAngle && this.Owner is null)
+        {
+            this.PacketBroadcaster.BroadcastToLevelInRange(level, (Vector)this.Position.Floor(), new SoundPacket
+            {
+                SoundLocation = "minecraft:entity.firework_rocket.launch",
+                SoundPosition = new SoundPosition(this.Position.X, this.Position.Y, this.Position.Z),
+                Category = SoundCategory.Ambient,
+                Volume = 3,
+                Pitch = 1,
+                Seed = Globals.Random.NextInt64()
+            });
+        }
+
+        this.EmitShotOnce(this.Owner);
         if (++life > lifetime || hit)
         {
             if (fireworks is { Explosions.Length: > 0 })
