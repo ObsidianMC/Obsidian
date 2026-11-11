@@ -144,6 +144,7 @@ public final class TrialSpawnerFixtures {
 
         try {
             runOn(CapturedOn);
+            installLootTables(root);
             startServer();
             level = server.overworld();
             serverThread = server.submit(Thread::currentThread).join();
@@ -499,6 +500,7 @@ public final class TrialSpawnerFixtures {
         if (machine() instanceof VaultBlockEntity) {
             checkpoint.addProperty("updateTag", machine().getUpdateTag(level.registryAccess()).toString());
             checkpoint.add("itemMotion", itemMotion());
+            checkpoint.add("itemStacks", itemStacks());
         }
         recordEvents(checkpoint, heard, gameEvents);
         checkpoint.addProperty("random", randomState());
@@ -617,6 +619,22 @@ public final class TrialSpawnerFixtures {
         }
 
         return motion;
+    }
+
+    // Vault drops retain their complete saved stack data, including enchantments and other reward components.
+    // Only vaults record this extra field, so trial-spawner captures retain their original item observations.
+    private static JsonArray itemStacks() {
+        var found = new ArrayList<Entity>(
+            level.getEntities((Entity) null, box(), entity -> entity instanceof ItemEntity));
+        found.sort(Comparator.comparingInt(Entity::getId));
+        var stacks = new JsonArray();
+        var ops = level.registryAccess().createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE);
+        for (var entity : found) {
+            var item = ((ItemEntity) entity).getItem();
+            stacks.add(ItemStack.CODEC.encodeStart(ops, item).getOrThrow().toString());
+        }
+
+        return stacks;
     }
 
     // An entity as "<type> <x,y,z>", then a mob's yaw (the spawner draws it), name and what it holds and wears, its
@@ -1021,6 +1039,36 @@ public final class TrialSpawnerFixtures {
 
         matcher.appendTail(result);
         return result.toString();
+    }
+
+    // Load fixture tables through vanilla's data-pack loader, so location predicates run on the real server level.
+    private static void installLootTables(JsonObject root) throws Exception {
+        if (!root.has("lootTables"))
+            return;
+
+        net.minecraft.SharedConstants.tryDetectVersion();
+        var format = net.minecraft.SharedConstants.getCurrentVersion()
+            .packVersion(net.minecraft.server.packs.PackType.SERVER_DATA);
+        var metadata = new JsonObject();
+        var pack = new JsonObject();
+        pack.addProperty("description", "Vault fixture loot");
+        var version = new JsonArray();
+        version.add(format.major());
+        version.add(format.minor());
+        pack.add("min_format", version);
+        pack.add("max_format", version.deepCopy());
+        metadata.add("pack", pack);
+
+        var folder = Path.of("world", "datapacks", "vault-fixtures");
+        Files.createDirectories(folder);
+        Files.writeString(folder.resolve("pack.mcmeta"), metadata.toString());
+        for (var entry : root.getAsJsonObject("lootTables").entrySet()) {
+            var id = Identifier.parse(entry.getKey());
+            var path = folder.resolve("data").resolve(id.getNamespace()).resolve("loot_table")
+                .resolve(id.getPath() + ".json");
+            Files.createDirectories(path.getParent());
+            Files.writeString(path, entry.getValue().toString());
+        }
     }
 
     private static void startServer() throws Exception {

@@ -8,8 +8,9 @@ trial chamber's 51 trial spawners and vaults load and save back unchanged. Obsid
 `trial_spawner` registry entry it doesn't have (perhaps a data pack's), and saves it again, where vanilla drops it; the
 spawner uses the default config meanwhile, as vanilla does. Vaults connect nearby eligible players, cycle their
 display loot, accept the configured key once per player and eject rewards, including ominous vaults. The separate
-`vaults.json` capture checks their block changes, saved and client data, loot, timings, item motion, sounds and level
-events every tick. Vanilla's client draws the connection, activation and idle particles from those updates; the
+`vaults.json` capture checks their block changes, saved and client data, world-dependent loot, full dropped stacks
+(including components), timings, item motion, sounds and level events every tick. Vanilla's client draws the
+connection, activation and idle particles from those updates; the
 server sends no particle packets. What's left:
 
 ## Left for later trial work

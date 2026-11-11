@@ -327,14 +327,20 @@ replaces only what vanilla produced.
   frozen level ticks and packet listener as the trial-spawner probe. Each case supplies a `vault` state and saved
   data, players and timed movement, game-mode or item-use events. Item uses call `ServerPlayerGameMode.useItemOn`
   and record whether the action was consumed and the remaining hand stack. Checkpoints include saved data, the
-  shared-only update tag, every block-entity packet in order, block writes, entities, exact item motion, sounds
-  including pitch and seed, level events, particles and gameplay random state. The independent sound-seed random
+  shared-only update tag, every block-entity packet in order, block writes, entities, exact item motion, full dropped
+  stacks (including components in `itemStacks`), sounds including pitch and seed, level events, particles and
+  gameplay random state. The independent sound-seed random
   is seeded with the case's seed so packet seeds are reproducible without changing gameplay randomness. Item ID
   phases are supplied as in the trial-spawner replay because entity IDs differ between servers.
   Cases cover default and custom ranges, strict block-distance boundaries and hysteresis, no line-of-sight check,
   creative and spectator detection, normal and ominous loot, display overrides, key item/components/count matching,
   final-key consumption, creative preservation, adventure use, repeat claims, failure-sound throttling, multiple
-  players, the 128-player eviction cap, empty loot, missing keys and loaded reward queues. A loaded queue keeps
+  players, the 128-player eviction cap, empty loot, missing keys and loaded reward queues. Root `lootTables` are
+  installed as a data pack before vanilla starts and through the host loot registry for the replay; the replay runs
+  alone while that process-wide registry is changed. World-context cases check plains versus desert, an offset
+  stone floor versus gold, and a combined biome/block-state predicate for both displays and claims. A loaded ominous
+  queue contains an enchanted sword with custom data, so loss of dropped components is observable independently of
+  the random reward selection. The trial-spawner capture retains its original item comparison. A loaded queue keeps
   vanilla's zero ejection-total counter, including the resulting pitch progression. An unlock's state update is
   sent before the next block-entity tick, then dirty shared data is sent at that tick's end; both are compared.
   Capture the whole file in one run: its reward tables' random sequences are shared across cases, so selecting an

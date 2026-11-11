@@ -2,6 +2,7 @@ using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Loot;
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.WorldData;
 using System.Text.Json;
 
 namespace Obsidian.Registries;
@@ -73,6 +74,17 @@ internal static partial class BlockLoot
         condition.TryGetProperty("offsetX", out var x) ? x.GetInt32() : 0,
         condition.TryGetProperty("offsetY", out var y) ? y.GetInt32() : 0,
         condition.TryGetProperty("offsetZ", out var z) ? z.GetInt32() : 0);
+
+    /// <summary>Tests an offset loot location against loaded blocks, without waiting under the tick lock.</summary>
+    internal static bool TestLocation(AbstractLevel level, Vector origin, JsonElement condition)
+    {
+        var position = Offset(origin, condition);
+        if (level.IsOutsideBuildHeight(position.Y))
+            return false;
+
+        var chunk = level.GetLoadedChunk(position.X >> 4, position.Z >> 4);
+        return TestLocation(condition, chunk?.GetBlock(position.X, position.Y, position.Z));
+    }
 
     private static bool TestLocation(JsonElement condition, IBlock? block)
     {

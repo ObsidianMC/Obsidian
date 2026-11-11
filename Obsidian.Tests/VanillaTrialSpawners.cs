@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Obsidian.API;
 using Obsidian.API.Blocks;
 using Obsidian.API.Inventory;
+using Obsidian.API.Loot;
 using Obsidian.API.Registries;
 using Obsidian.API.Utilities;
 using Obsidian.API.World.Generator.RandomSources;
@@ -29,11 +30,19 @@ using Xunit.Abstractions;
 
 namespace Obsidian.Tests;
 
+/// <summary>The vault replay installs data-pack loot in a process-wide registry, so it runs alone.</summary>
+[CollectionDefinition(Name, DisableParallelization = true)]
+public sealed class VaultLootTableCollection
+{
+    public const string Name = "Vault loot tables";
+}
+
 /// <summary>
 /// Replays <c>trial_spawners.json</c>: vanilla's trial spawners recorded tick by tick on a dedicated server by
 /// <c>Java/TrialSpawnerFixtures.java</c> (<c>CaptureFixtures=trial_spawners</c>), and loads and saves the trial
 /// spawners and vaults of a trial chamber vanilla placed.
 /// </summary>
+[Collection(VaultLootTableCollection.Name)]
 public sealed class VanillaTrialSpawners(ITestOutputHelper output)
 {
     // The cases run this far apart along x, each in a chunk of its own, around the middle of that chunk.
@@ -106,10 +115,20 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
             .ToArray();
         await using var replay = await TrialWorld.CreateAsync(cases.Length);
 
-        await FixtureCases.AssertAllAsync(
-            cases,
-            item => Name(item.Probe),
-            item => Replay(replay, item.Probe, item.Origin));
+        var tables = vaults.GetProperty("lootTables").EnumerateObject()
+            .Select(table => LootTableJson.Parse(table.Value.GetRawText(), table.Name));
+        PluginLootTables.Apply(tables);
+        try
+        {
+            await FixtureCases.AssertAllAsync(
+                cases,
+                item => Name(item.Probe),
+                item => Replay(replay, item.Probe, item.Origin));
+        }
+        finally
+        {
+            PluginLootTables.Apply([]);
+        }
 
         output.WriteLine($"Replayed {cases.Length} vault cases.");
     }
@@ -412,6 +431,14 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
                 var update = Canonical(checkpoint.GetProperty("updateTag").GetString()!);
                 BlockProbes.Expect(differences, $"tick {tick} update tag", update, Snbt.Write(vault.GetUpdateData()!));
                 CompareItemMotion(differences, tick, level, origin, checkpoint.GetProperty("itemMotion"));
+                if (checkpoint.TryGetProperty("itemStacks", out var stacks))
+                {
+                    var expected = Strings(stacks).Select(Canonical).ToList();
+                    var actualStacks = ItemsInArea(level, origin)
+                        .Select(item => Snbt.Write(item.Item.ToNbt()))
+                        .ToList();
+                    Compare(differences, $"tick {tick} item stacks", expected, actualStacks);
+                }
             }
 
             writes.Clear();

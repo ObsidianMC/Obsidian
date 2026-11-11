@@ -217,6 +217,8 @@ internal sealed partial class VaultBlockEntity
                 Tool = tool,
                 Luck = luck,
                 EntityVillagerVariant = LootEntityComponents.VillagerVariant,
+                OriginBiome = level.LootOriginBiome,
+                TestLocation = condition => BlockLoot.TestLocation(level, this.BlockPosition, condition),
                 ResolveTable = resolver
             });
         }
