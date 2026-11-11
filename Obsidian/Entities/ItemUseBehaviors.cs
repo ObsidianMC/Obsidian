@@ -140,7 +140,7 @@ internal static class ItemUseBehaviors
                 player,
                 EntityType.SplashPotion,
                 new VectorD(player.Position.X, player.HeadY - 0.1, player.Position.Z),
-                ThrownExperienceBottle.Direction(player.Yaw.Degrees, player.Pitch.Degrees + PitchOffset),
+                ThrownExperienceBottle.Direction(player.Yaw, player.Pitch + PitchOffset),
                 Speed)
             {
                 SplashEffects = [.. ArrowPotionEffects.Get(stack.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents))],

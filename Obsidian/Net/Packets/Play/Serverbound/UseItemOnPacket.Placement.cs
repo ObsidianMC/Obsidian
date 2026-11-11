@@ -56,8 +56,8 @@ public partial class UseItemOnPacket
             ClickedFace = this.Face,
             ClickedAt = this.Cursor,
             ReplacesClicked = replacesClicked,
-            HorizontalDirection = PlacementDirections.Horizontal(player.Yaw.Degrees),
-            NearestLookDirection = PlacementDirections.Nearest(player.Yaw.Degrees, player.Pitch.Degrees)
+            HorizontalDirection = PlacementDirections.Horizontal(player.Yaw),
+            NearestLookDirection = PlacementDirections.Nearest(player.Yaw, player.Pitch)
         };
 
         // Like the block's other hooks, while the level's block updates wait, so what it reads stays as it read.

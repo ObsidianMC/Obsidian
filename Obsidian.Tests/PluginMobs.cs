@@ -207,10 +207,33 @@ public sealed class PluginMobs
         drake.ClientControl.Enqueue(player, new VehicleMove(moved, 90, 0, false));
         await drake.TickAsync();
         Assert.Equal(moved, drake.Position);
-        Assert.Equal(90, drake.Yaw.Degrees, 1);
+        Assert.Equal(90, drake.Yaw, 1);
 
         await drake.TickAsync();
         Assert.Equal(moved, drake.Position);
+
+        // The plugin vehicle commit takes the same normalized client rotation as boats and player movement.
+        foreach (var row in ClientRotationCases.Finite)
+        {
+            drake.ClientControl.Enqueue(player, new VehicleMove(moved, row.Yaw, row.Pitch, false));
+            await drake.TickAsync();
+            ClientRotationCases.AssertRotation(drake, row.ExpectedYaw, row.ExpectedPitch);
+        }
+
+        var rotation = (drake.Yaw, drake.Pitch);
+        var rotationTerrain = new MobTerrain(world);
+        foreach (var invalid in new[] { float.NaN, float.PositiveInfinity, float.NegativeInfinity })
+        {
+            (float Yaw, float Pitch)[] rotations = [(invalid, 0), (0, invalid)];
+            foreach (var row in rotations)
+            {
+                drake.ClientControl.Enqueue(player, new VehicleMove(moved, row.Yaw, row.Pitch, false));
+                drake.ClientControl.Tick(drake, rotationTerrain, player, flying: true);
+
+                Assert.Null(drake.ClientControl.AcceptedMove);
+                Assert.Equal(rotation, (drake.Yaw, drake.Pitch));
+            }
+        }
 
         // It refuses one far beyond the mob's motion, as vanilla does, and puts the client's mob back.
         client.ClearPackets();

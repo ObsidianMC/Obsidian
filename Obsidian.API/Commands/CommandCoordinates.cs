@@ -42,7 +42,7 @@ public static class CommandCoordinates
                     return false;
             }
 
-            result = Local(position, yaw.Degrees, pitch.Degrees, offsets[0], offsets[1], offsets[2]);
+            result = Local(position, yaw, pitch, offsets[0], offsets[1], offsets[2]);
             return true;
         }
 

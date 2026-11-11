@@ -6,10 +6,10 @@ namespace Obsidian.Net.Packets.Play.Serverbound;
 public partial class MovePlayerRotPacket
 {
     [Field(0), DataFormat(typeof(float))]
-    public Angle Yaw { get; private set; }
+    public float Yaw { get; private set; }
 
     [Field(1), DataFormat(typeof(float))]
-    public Angle Pitch { get; private set; }
+    public float Pitch { get; private set; }
 
     [Field(3)]
     public MovementFlags MovementFlags { get; private set; }

@@ -168,7 +168,7 @@ public abstract class VehicleEntity : Entity, IPlayerInteractable
     // Vanilla's Vec3.yRot(-yaw in radians) of an attachment along the vehicle's length.
     private protected VectorD Rotated(double up, double forward)
     {
-        var yaw = this.Yaw.Degrees * Math.PI / 180;
+        var yaw = this.Yaw * Math.PI / 180;
         return new VectorD(-Math.Sin(yaw) * forward, up, Math.Cos(yaw) * forward);
     }
 
@@ -455,7 +455,8 @@ public abstract class VehicleEntity : Entity, IPlayerInteractable
         var onGround = this.MovementFlags.HasFlag(MovementFlags.OnGround);
         var delta = MoveDelta(this.lastSentPosition, this.Position);
         var moved = delta != Vector.Zero;
-        var rotated = this.Yaw != this.lastSentYaw || this.Pitch != this.lastSentPitch;
+        // Like vanilla's ServerEntity, compared as sent: in 256ths of a turn.
+        var rotated = (Angle)this.Yaw != this.lastSentYaw || (Angle)this.Pitch != this.lastSentPitch;
 
         if (moved && !IsRelativeMove(delta))
         {
