@@ -121,6 +121,9 @@ internal sealed partial class ShulkerBoxBlockEntity
     private float progress;
     private float progressOld;
 
+    // Test-only interleaving point, after observing the entity and before committing its push.
+    internal Action<Entity>? BeforePushCommit { get; set; }
+
     /// <summary>Whether the lid is closed, opening, open or closing. Not saved, as vanilla's isn't.</summary>
     internal ShulkerLidStatus Lid => this.lid;
 
@@ -226,8 +229,34 @@ internal sealed partial class ShulkerBoxBlockEntity
             if (entity is IPlayer || ShulkerLids.IgnoresPushing(entity))
                 continue;
 
-            var moved = EntityMovement.Collide(terrain, entity.CurrentBox, push, stepHeight: 0, grounded: false);
-            await entity.UpdatePositionAsync(entity.Position + moved, entity.MovementFlags);
+            var observedPosition = entity.Position;
+            var box = entity.CurrentBox;
+            var movementFlags = entity.MovementFlags;
+            var moved = EntityMovement.Collide(terrain, box, push, stepHeight: 0, grounded: false);
+            var destination = observedPosition + moved;
+            var (chunkX, chunkZ) = Region.ChunkOf(destination);
+            await level.GetChunkAsync(chunkX, chunkZ, scheduleGeneration: false);
+
+            this.BeforePushCommit?.Invoke(entity);
+
+            Task movement;
+            lock (level.Fluids.TickLock)
+            {
+                using (level.TransferLock.Enter())
+                {
+                    if (entity.Level != level || entity.Position != observedPosition || !entity.IsTravelResident(level))
+                        continue;
+
+                    if (level.GetLoadedChunk(chunkX, chunkZ) is null)
+                        continue;
+
+                    // TickLock keeps this chunk loaded, so UpdatePositionAsync's chunk lookup completes synchronously.
+                    // Position, grid membership and bounding box change before transfer is released; await outside it.
+                    movement = entity.UpdatePositionAsync(destination, movementFlags);
+                }
+            }
+
+            await movement;
         }
     }
 }

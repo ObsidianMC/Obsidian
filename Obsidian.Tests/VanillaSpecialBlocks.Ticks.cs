@@ -28,6 +28,133 @@ public sealed partial class VanillaSpecialBlocks
     private static readonly string[] eventFields =
         ["writes", "sounds", "levelEvents", "blockEvents", "particles", "gameEvents", "effects", "blockEntity", "user"];
 
+    [Fact]
+    public async Task ShulkerLidSkipsEntityTransferredBeforePushCommit()
+    {
+        await using var source = TestServerFactory.CreateServer($"shulker-travel-source-{Guid.NewGuid():N}");
+        await using var destination = TestServerFactory.CreateServer($"shulker-travel-destination-{Guid.NewGuid():N}");
+        WorldBlockEntities.AddEmptyChunk(source.World);
+        WorldBlockEntities.AddEmptyChunk(destination.World);
+        var position = new Vector(8, 70, 8);
+        var state = VanillaSulfurBlocks.ParseState("minecraft:shulker_box[facing=east]");
+        source.World.BlockUpdates.SetBlock(position, state, Quiet);
+        var lid = Assert.IsType<ShulkerBoxBlockEntity>(source.World.GetResidentBlockEntity(position));
+        var zombie = new Zombie
+        {
+            EntityId = Server.GetNextEntityId(),
+            Level = source.World,
+            Position = new VectorD(9.1, 70, 8.5),
+            NoGravity = true
+        };
+        source.World.SpawnEntity(zombie);
+        await source.World.RunQueuedEntityActionsAsync();
+
+        // A resident is pushed normally before we force the cross-level lookup race on the next tick.
+        lid.ViewersChanged(1);
+        var beforePush = zombie.Position;
+        await lid.TickAsync();
+        Assert.True(zombie.Position.X > beforePush.X);
+
+        var gate = new SpecialBlockCommitGate<Entity>();
+        lid.BeforePushCommit = gate.Pause;
+        var tick = Task.Run(async () => await lid.TickAsync());
+        var arrival = zombie.Position;
+        BoundingBox arrivalBox = default;
+        try
+        {
+            Assert.Same(gate.Reached.Task, await Task.WhenAny(gate.Reached.Task, tick));
+            Assert.Same(zombie, await gate.Reached.Task);
+            // Keep the coordinates identical, so rejecting the stale push requires validating level ownership.
+            await zombie.TeleportAsync(destination.World, arrival);
+            arrivalBox = zombie.BoundingBox;
+            Assert.Same(destination.World, zombie.Level);
+            Assert.Same(zombie, destination.World.FindEntity(zombie.Uuid));
+            Assert.Null(source.World.FindEntity(zombie.Uuid));
+        }
+        finally
+        {
+            gate.Release.TrySetResult();
+            lid.BeforePushCommit = null;
+            await tick;
+        }
+
+        Assert.Equal(arrival, zombie.Position);
+        Assert.Equal(arrivalBox, zombie.BoundingBox);
+        Assert.Same(destination.World, zombie.Level);
+    }
+
+    [Fact]
+    public async Task ConduitSkipsTargetTransferredAfterResolution()
+    {
+        using var stream = typeof(VanillaSpecialBlocks).Assembly
+            .GetManifestResourceStream("Obsidian.Tests.Assets.special_blocks.json")!;
+        using var document = JsonDocument.Parse(stream);
+        var root = document.RootElement;
+        var captured = root.GetProperty("cases").EnumerateArray()
+            .Single(special => Name(special) == "conduit_full_frame_attacks_drowned");
+        var harness = await StartAsync(root);
+        await using var source = harness.Context;
+        await using var destination = TestServerFactory.CreateServer($"conduit-travel-destination-{Guid.NewGuid():N}");
+        WorldBlockEntities.AddEmptyChunk(destination.World);
+        await SetUpAsync(harness, captured);
+        var conduit = Assert.IsType<ConduitBlockEntity>(source.World.GetResidentBlockEntity(target));
+        var zombie = new Zombie
+        {
+            EntityId = Server.GetNextEntityId(),
+            Level = source.World,
+            Position = (VectorD)target + new VectorD(0.5, -1, 0.5),
+            NoGravity = true
+        };
+        source.World.SpawnEntity(zombie);
+        await source.World.RunQueuedEntityActionsAsync();
+        Assert.Equal(20, zombie.Health);
+        Forget(harness);
+        source.World.LevelData.GameTime = 40;
+
+        var gate = new SpecialBlockCommitGate<Living>();
+        conduit.TargetResolved = gate.Pause;
+        var tick = Task.Run(async () => await conduit.TickAsync());
+        var originalPosition = zombie.Position;
+        try
+        {
+            Assert.Same(gate.Reached.Task, await Task.WhenAny(gate.Reached.Task, tick));
+            Assert.Same(zombie, await gate.Reached.Task);
+            await zombie.TeleportAsync(destination.World, new VectorD(8.5, 70, 8.5));
+            Assert.Same(destination.World, zombie.Level);
+            Assert.Same(zombie, destination.World.FindEntity(zombie.Uuid));
+            Assert.Null(source.World.FindEntity(zombie.Uuid));
+        }
+        finally
+        {
+            gate.Release.TrySetResult();
+            conduit.TargetResolved = null;
+            await tick;
+        }
+
+        Assert.Equal(20, zombie.Health);
+        Assert.DoesNotContain(((TestClient)harness.Bystander.Client).SentPackets.OfType<SoundPacket>(),
+            sound => sound.SoundLocation == "minecraft:block.conduit.attack.target");
+
+        // The same real mob is eligible for damage when it belongs to the conduit's level again.
+        await zombie.TeleportAsync(source.World, originalPosition);
+        await conduit.TickAsync();
+        Assert.Equal(16, zombie.Health);
+    }
+
+    // The block tick runs on another thread while the test completes travel before letting the commit proceed.
+    private sealed class SpecialBlockCommitGate<T>
+    {
+        internal TaskCompletionSource<T> Reached { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        internal TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        internal void Pause(T entity)
+        {
+            this.Reached.SetResult(entity);
+            this.Release.Task.GetAwaiter().GetResult();
+        }
+    }
+
     /// <summary>
     /// Runs the case's whole level ticks after its optional use, comparing every tick from the first: a tick the
     /// capture kept must match it field by field, entities included, and a tick it left out must have done nothing it

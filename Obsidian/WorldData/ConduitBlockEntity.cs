@@ -46,6 +46,9 @@ internal sealed class ConduitBlockEntity : BlockEntity
     private bool active;
     private long nextAmbientSound;
 
+    // Test-only interleaving point, after target resolution and before checking it still belongs to this level.
+    internal Action<Living>? TargetResolved { get; set; }
+
     internal override bool SavesOnAnyThread => true;
 
     /// <summary>Whether its frame and water were whole at its last check.</summary>
@@ -219,8 +222,16 @@ internal sealed class ConduitBlockEntity : BlockEntity
         var next = hunting ? this.KeptOrChosenTarget(level) : null;
         if (next is not null && level.FindEntity(next.Value) is Living hunted && hunted.Health > 0)
         {
-            LevelSounds.Play(level, hunted.Position, "minecraft:block.conduit.attack.target", SoundCategory.Blocks);
-            await hunted.DamageCombatAsync(null, 4, CombatDamageKind.Magic);
+            this.TargetResolved?.Invoke(hunted);
+
+            // No await between validating this lookup and entering damage. Damage itself must run without transfer:
+            // mob death can acquire the tick lock, and an asynchronous damage filter belongs to the shared pipeline.
+            if (hunted.Level == level && hunted.Health > 0 && hunted is not Mob { IsRemoved: true }
+                && hunted.IsTravelResident(level))
+            {
+                LevelSounds.Play(level, hunted.Position, "minecraft:block.conduit.attack.target", SoundCategory.Blocks);
+                await hunted.DamageCombatAsync(null, 4, CombatDamageKind.Magic);
+            }
         }
 
         if (next != this.target)
