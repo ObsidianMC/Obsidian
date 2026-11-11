@@ -119,12 +119,15 @@ public sealed class WorldBlockEntities : IDisposable
         Assert.Equal(hit.ClickedAt, AppContext.GetData(ProbePartsBehavior.UseKey));
 
         human.GameMode = GameMode.Creative;
+        // World ticks derive the pose from these flags, so keep the crouch through the intervening blocked attempt.
+        human.Sneaking = true;
         human.Pose = Pose.Sneaking;
         Assert.True(human.TryUpdateAttribute("minecraft:scale", 0.5f)
             || human.TryAddAttribute("minecraft:scale", 0.5f));
         human.Position = new VectorD(4.5, eye.Y - 1.27f * 0.5f, 2);
         human.Yaw = 0;
         human.Pitch = 0;
+        Assert.Equal(eye, PlayerBase.EyePosition(human));
 
         using var breakData = new NetworkBuffer();
         breakData.WriteVarInt((int)PlayerActionStatus.StartedDigging);
@@ -141,6 +144,8 @@ public sealed class WorldBlockEntities : IDisposable
         await breaking.HandleAsync(context.Server, human);
         await context.World.DoWorldTickAsync();
         Assert.Null(AppContext.GetData(ProbePartsBehavior.BreakKey));
+        Assert.Equal(Pose.Sneaking, human.Pose);
+        Assert.Equal(eye, PlayerBase.EyePosition(human));
         await context.World.SetBlockAsync(new Vector(4, 70, 3), BlocksRegistry.Air);
 
         client.ClearPackets();
@@ -173,10 +178,16 @@ public sealed class WorldBlockEntities : IDisposable
         Assert.False(context.World.IsFaceSturdy(position, BlockFace.Up));
 
         // The final part permits ordinary block removal.
+        human.Sneaking = false;
+        human.Swimming = true;
         human.Pose = Pose.Swimming;
         human.Position = new VectorD(4.5, eye.Y - 0.4f * 0.5f, 2);
+        Assert.Equal(eye, PlayerBase.EyePosition(human));
+
         await breaking.HandleAsync(context.Server, human);
         await context.World.DoWorldTickAsync();
+        Assert.Equal(Pose.Swimming, human.Pose);
+        Assert.Equal(eye, PlayerBase.EyePosition(human));
         Assert.True(chunk.GetBlock(position.X, position.Y, position.Z).IsAir);
         Assert.Null(chunk.GetBlockEntity(4, 70, 4));
 
