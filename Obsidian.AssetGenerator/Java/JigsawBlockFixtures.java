@@ -133,7 +133,8 @@ public final class JigsawBlockFixtures {
                 place(level, source, block.getAsJsonObject());
 
             level.getStructureTemplateManager().getOrCreate(Identifier.parse(entry.getKey()))
-                .fillFromWorld(level, source, size, false, List.of());
+                .fillFromWorld(level, source, size, false,
+                    template.has("ignoreAir") ? List.of(Blocks.AIR) : List.of());
         }
     }
 
@@ -181,11 +182,30 @@ public final class JigsawBlockFixtures {
                     var packet = ServerboundJigsawGeneratePacket.STREAM_CODEC.decode(buffer);
                     buffer.release();
                     observation.addProperty("levels", packet.levels());
+                    var chunks = new java.util.TreeSet<String>();
+                    if (input.has("recordChunks")) {
+                        System.getProperties().put("obsidian.jigsaw.chunks", (java.util.function.Consumer<Object>) raw -> {
+                            var access = (Object[]) raw;
+                            if (access[2] == net.minecraft.world.level.chunk.status.ChunkStatus.FULL
+                                && Boolean.TRUE.equals(access[3])) {
+                                chunks.add(access[0] + "," + access[1]);
+                            }
+                        });
+                    }
                     try {
                         player.connection.handleJigsawGenerate(packet);
                         observation.addProperty("error", false);
                     } catch (IllegalStateException error) {
                         observation.addProperty("error", true);
+                    } finally {
+                        System.getProperties().remove("obsidian.jigsaw.chunks");
+                    }
+                    if (input.has("recordChunks")) {
+                        var requests = new JsonArray();
+                        for (var chunk : chunks)
+                            requests.add(chunk);
+
+                        observation.add("chunks", requests);
                     }
                 } else if (action.has("reload")) {
                     var entity = level.getBlockEntity(pos);

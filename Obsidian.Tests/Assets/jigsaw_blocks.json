@@ -227,6 +227,34 @@
           }
         }
       ]
+    },
+    "test:review_waterlog": {
+      "fallback": "minecraft:empty",
+      "elements": [
+        {
+          "weight": 1,
+          "element": {
+            "element_type": "minecraft:single_pool_element",
+            "location": "test:review_waterlog",
+            "projection": "rigid",
+            "processors": "minecraft:empty"
+          }
+        }
+      ]
+    },
+    "test:review_sparse": {
+      "fallback": "minecraft:empty",
+      "elements": [
+        {
+          "weight": 1,
+          "element": {
+            "element_type": "minecraft:single_pool_element",
+            "location": "test:review_sparse",
+            "projection": "rigid",
+            "processors": "minecraft:empty"
+          }
+        }
+      ]
     }
   },
   "templates": {
@@ -475,6 +503,35 @@
         {
           "offset": [1, 0, 0],
           "state": "minecraft:emerald_block"
+        }
+      ]
+    },
+    "test:review_waterlog": {
+      "size": [2, 1, 1],
+      "blocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"test:start\",target:\"minecraft:empty\",pool:\"minecraft:empty\",joint:\"aligned\",final_state:\"minecraft:air\"}"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_slab"
+        }
+      ]
+    },
+    "test:review_sparse": {
+      "size": [96, 1, 96],
+      "ignoreAir": true,
+      "blocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"test:start\",target:\"minecraft:empty\",pool:\"minecraft:empty\",joint:\"aligned\",final_state:\"minecraft:air\"}"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:gold_block"
         }
       ]
     }
@@ -3551,6 +3608,172 @@
                 "placement_priority": "3:-9",
                 "pool": "test:root",
                 "selection_priority": "3:7",
+                "target": "test:start"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "review_waterlogging_reads_unloaded_neighbor",
+      "recordChunks": true,
+      "min": [12, -2, 6],
+      "max": [20, 2, 12],
+      "setup": [
+        {
+          "offset": [14, 0, 8],
+          "state": "minecraft:jigsaw[orientation=east_up]",
+          "nbt": "{name:\"minecraft:empty\",target:\"test:start\",pool:\"test:review_waterlog\",joint:\"aligned\",final_state:\"minecraft:air\"}"
+        },
+        {
+          "offset": [16, -1, 9],
+          "state": "minecraft:water"
+        }
+      ],
+      "actions": [
+        {
+          "offset": [14, 0, 8],
+          "generate": {
+            "levels": 1,
+            "keepJigsaws": true
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "levels": 1,
+          "error": false,
+          "chunks": [
+            "0,0",
+            "1,0"
+          ],
+          "world": {
+            "blocks": [
+              "15,-1,8=minecraft:jigsaw[orientation=east_up]",
+              "14,0,8=minecraft:jigsaw[orientation=east_up]",
+              "15,-1,9=minecraft:oak_slab[waterlogged=true]",
+              "16,-1,9=minecraft:water"
+            ],
+            "saved": {
+              "15,-1,8": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:start",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              },
+              "14,0,8": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:review_waterlog",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "15,-1,8": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:start",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              },
+              "14,0,8": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:review_waterlog",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "review_sparse_template_requests_entries_only",
+      "recordChunks": true,
+      "min": [5, -2, 5],
+      "max": [12, 2, 12],
+      "setup": [
+        {
+          "offset": [7, 0, 8],
+          "state": "minecraft:jigsaw[orientation=east_up]",
+          "nbt": "{name:\"minecraft:empty\",target:\"test:start\",pool:\"test:review_sparse\",joint:\"aligned\",final_state:\"minecraft:air\"}"
+        }
+      ],
+      "actions": [
+        {
+          "offset": [7, 0, 8],
+          "generate": {
+            "levels": 1,
+            "keepJigsaws": true
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "levels": 1,
+          "error": false,
+          "chunks": [
+            "0,0"
+          ],
+          "world": {
+            "blocks": [
+              "8,-1,8=minecraft:jigsaw[orientation=east_up]",
+              "7,0,8=minecraft:jigsaw[orientation=east_up]",
+              "8,-1,9=minecraft:gold_block"
+            ],
+            "saved": {
+              "8,-1,8": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:start",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              },
+              "7,0,8": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:review_sparse",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "8,-1,8": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:start",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              },
+              "7,0,8": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:review_sparse",
+                "selection_priority": "3:0",
                 "target": "test:start"
               }
             }

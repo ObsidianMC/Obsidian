@@ -20,18 +20,29 @@ The keep-jigsaws flag reaches the existing template processors. Templates use ge
 same data pack/plugin overrides as world generation.
 Zero and negative levels place no pieces, including the starting template.
 
-Chunk generation is asynchronous in Obsidian. Generate assembles pieces before acquiring tickets for their
-destination chunks, releases world locks while waiting, and rechecks the original block entity, settings and
-orientation before writing. Changing the editor during that wait cancels the stale placement. Vanilla performs
-this work synchronously on its server thread.
+Chunk generation is asynchronous in Obsidian. Generate assembles pieces, then evaluates placement against a
+private block/entity overlay. A missing chunk suspends planning before live writes; Generate loads just that
+chunk outside world locks and retries with the same placement random seed. It rechecks the original block
+entity, settings and orientation before each retry and the live commit. Changing the editor while waiting
+cancels the stale placement. Vanilla performs this work synchronously on its server thread.
 
-The capture covers deterministic rigid templates, legacy save defaults, both priorities, both joints, depth
-boundaries, rejected permissions, missing targets/pools, empty pools, placement orientations and a chunk crossing.
-It does not establish fresh parity for every built-in worldgen processor, terrain-matching pool, feature element
-or spawned entity; those reuse the existing worldgen implementation and its separate capture coverage. In
-particular, features or processors that read/write beyond their piece's bounding box may reach unloaded chunks;
-the current live adapter does not request additional chunks on those accesses. A follow-up needs a bounded,
-asynchronous access plan for those elements, with native captures of their chunk requests and writes.
+Chunk demand comes from actual template/processor accesses, including the conditional waterlogging search,
+not declared template sizes or piece boxes. Jigsaw pool placement uses known-shape flags in vanilla 26.3, so
+the template's final shape and neighbour-update passes are skipped. The capture observes native FULL-chunk
+requests: a dry slab beside water across a chunk boundary requests that neighbour and becomes waterlogged;
+a sparse 96 by 96 template requests only its entries' chunk. Cold-chunk replay checks the generated chunk set
+as well as block/entity output. Existing fixture cases remain unpinned.
 
-Placement randomness comes from the live placement view. These fixtures use deterministic templates rather than
-pinning a vanilla level-random state; processor/entity randomness is not newly established by this capture.
+The planning view does not run block-removal, on-place, fluid or plugin callbacks; those run during live
+placement. Their additional accesses are not preloaded, and callbacks that change blocks can make the live
+world differ from the overlay. No speculative padding is generated to cover them. Exact callback-dependent
+chunk demand needs a resumable live update path, which this change does not introduce. Features and processors
+reuse the worldgen implementation; their parity is not newly established by these rigid-template captures.
+Planning can evaluate them repeatedly, so stateful plugin processors must not assume a single evaluation.
+An unloaded biome query cancels placement rather than generating terrain: vanilla can satisfy such a query at
+BIOMES status, while Obsidian's live chunk lease currently loads FULL. This deliberately leaves unsupported
+biome-dependent placement incomplete instead of generating terrain the query does not justify.
+
+Placement randomness uses a fresh seed shared by planning retries and the live commit. These fixtures use
+deterministic templates rather than pinning a vanilla level-random state; processor/entity randomness is not
+newly established by this capture.

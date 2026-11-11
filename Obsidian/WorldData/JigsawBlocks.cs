@@ -75,65 +75,73 @@ internal static class JigsawBlocks
         using (FeatureRegistry.UseTemplates(Template))
             pieces = JigsawPlacement.Generate(context, pool, settings.Target, levels, origin);
 
-        // Assembly itself uses noise, not loaded terrain. Only load chunks reached by actual pieces, never the
-        // whole 128-block search radius. Keep their tickets until placement has completed.
+        // Use the same random for every retry and the live commit. The planning view has private block/entity
+        // copies, so neither an incomplete plan nor a stale editor can publish partial placement effects.
+        var placementSeed = System.Random.Shared.NextInt64();
         var leases = new List<PortalArea>();
-        var chunks = new HashSet<(int X, int Z)>();
         try
         {
-            foreach (var piece in pieces)
+            while (true)
             {
-                var box = piece.BoundingBox;
-                if (box.MaxY < level.MinY || box.MinY >= level.MinY + level.Height)
-                    continue;
-
-                for (var x = box.MinX >> 4; x <= box.MaxX >> 4; x++)
+                Vector missing;
+                lock (level.Fluids.TickLock)
                 {
-                    for (var z = box.MinZ >> 4; z <= box.MaxZ >> 4; z++)
+                    if (editor.IsRemoved || !ReferenceEquals(editor.Settings, settings)
+                        || !ReferenceEquals(level.GetResidentBlockEntity(editorPosition), editor)
+                        || !level.BlockUpdates.GetBlock(editorPosition).IsSameState(editorState))
                     {
-                        if (!chunks.Add((x, z)))
-                            continue;
+                        return;
+                    }
 
-                        var lease = await PortalArea.LoadAsync(level, new Vector(x << 4, 0, z << 4), 0,
-                            () => !level.IsDisposed);
-                        if (lease is null)
-                            return;
-
-                        leases.Add(lease);
+                    using var scope = StructureRegistry.Use(Template);
+                    using var featureScope = FeatureRegistry.UseTemplates(Template);
+                    try
+                    {
+                        var plan = new JigsawPlacementPlan(level, new XoroshiroRandomSource(placementSeed));
+                        Place(plan);
+                        var view = new StructureBlockLevel(level, strict: false, knownShape: true,
+                            new XoroshiroRandomSource(placementSeed));
+                        Place(view);
+                        return;
+                    }
+                    catch (JigsawPlacementPlan.ChunkNeeded demand)
+                    {
+                        missing = demand.Position;
+                    }
+                    catch (JigsawPlacementPlan.UnsupportedAccess)
+                    {
+                        // A biome-only access cannot justify generating a FULL chunk. Leave the world unchanged.
+                        return;
                     }
                 }
-            }
 
-            lock (level.Fluids.TickLock)
-            {
-                if (editor.IsRemoved || !ReferenceEquals(editor.Settings, settings)
-                    || !ReferenceEquals(level.GetResidentBlockEntity(editorPosition), editor)
-                    || !level.BlockUpdates.GetBlock(editorPosition).IsSameState(editorState))
-                {
+                var lease = await PortalArea.LoadAsync(level, missing, 0, () => !level.IsDisposed);
+                if (lease is null)
                     return;
-                }
 
-                using var scope = StructureRegistry.Use(Template);
-                using var featureScope = FeatureRegistry.UseTemplates(Template);
-                var view = new StructureBlockLevel(level, strict: false, knownShape: true);
-                var bounds = new BlockBox(new Vector(int.MinValue), new Vector(int.MaxValue));
-                var placement = new StructurePieceContext(view, view.Random, bounds,
-                    origin.X >> 4, origin.Z >> 4, origin)
-                {
-                    Terrain = terrain,
-                    Generation = context.Generation
-                };
-                foreach (var piece in pieces.OfType<PoolElementStructurePiece>())
-                {
-                    piece.Element.Place(placement, piece.Position, origin, piece.ElementRotation,
-                        placement.Box, placement.Random, piece.LiquidSettings, keepJigsaws);
-                }
+                leases.Add(lease);
             }
         }
         finally
         {
             foreach (var lease in leases)
                 lease.Dispose();
+        }
+
+        void Place(IWorldGenLevel view)
+        {
+            var bounds = new BlockBox(new Vector(int.MinValue), new Vector(int.MaxValue));
+            var placement = new StructurePieceContext(view, view.Random, bounds,
+                origin.X >> 4, origin.Z >> 4, origin)
+            {
+                Terrain = terrain,
+                Generation = context.Generation
+            };
+            foreach (var piece in pieces.OfType<PoolElementStructurePiece>())
+            {
+                piece.Element.Place(placement, piece.Position, origin, piece.ElementRotation,
+                    placement.Box, placement.Random, piece.LiquidSettings, keepJigsaws);
+            }
         }
     }
 

@@ -17,6 +17,7 @@ using Obsidian.WorldData.Generators.Features;
 using Obsidian.WorldData.Structures;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -30,6 +31,73 @@ namespace Obsidian.Tests;
 [Collection(nameof(PluginTagFiles))]
 public sealed class JigsawBlockSafety
 {
+    /// <summary>Replays native access captures with the source chunk present and destination chunks absent.</summary>
+    internal static async Task ReplayChunkAccessAsync(JsonElement root, JsonElement reference)
+    {
+        await using var context = TestServerFactory.CreateServer($"jigsaw-access-{Guid.NewGuid():N}");
+        var world = context.World;
+        var origin = new Vector(0, 80, 0);
+        world.LevelData.RandomSeed = root.GetProperty("seed").GetInt64();
+        WorldBlockEntities.AddEmptyChunk(world);
+        var features = new FeatureRegistry(WorldgenData.Vanilla);
+        var templates = VanillaJigsawBlocks.BuildTemplates(world, origin, root);
+        var files = root.GetProperty("pools").EnumerateObject().Select(pool =>
+            new StructureFile(PluginStructures.TemplatePool, pool.Name, "jigsaw capture", pool.Value)).ToArray();
+        PluginStructures.Apply(files, templates, features.AsFeatureSet(), [], NullLogger.Instance);
+        try
+        {
+            var setup = reference.GetProperty("setup").EnumerateArray().ToArray();
+            var resident = new HashSet<(int X, int Z)> { (0, 0), (16, 16) };
+            foreach (var block in setup)
+            {
+                var position = origin + Position(block.GetProperty("offset"));
+                if (resident.Contains((position.X >> 4, position.Z >> 4)))
+                    VanillaJigsawBlocks.Place(world, origin, block);
+            }
+
+            // Non-resident setup is the chunk's saved/generated contents, only made readable if requested.
+            var generator = new GatedGenerator(chunk =>
+            {
+                foreach (var block in setup)
+                {
+                    var position = origin + Position(block.GetProperty("offset"));
+                    if ((position.X >> 4, position.Z >> 4) != (chunk.X, chunk.Z))
+                        continue;
+
+                    var state = VanillaSulfurBlocks.ParseState(block.GetProperty("state").GetString()!);
+                    chunk.SetBlock(position.X, position.Y, position.Z, state);
+                }
+            });
+            generator.Release.TrySetResult();
+            world.Generator = generator;
+            var action = reference.GetProperty("actions")[0];
+            var positionOfEditor = origin + Position(action.GetProperty("offset"));
+            var packet = VanillaJigsawBlocks.GeneratePacket(positionOfEditor, action.GetProperty("generate"));
+            await JigsawBlocks.GenerateAsync(world, positionOfEditor, packet.Levels, packet.KeepJigsaws);
+
+            var expected = reference.GetProperty("checkpoints")[0];
+            var expectedRequests = expected.GetProperty("chunks").EnumerateArray()
+                .Select(value => value.GetString()!.Split(',').Select(int.Parse).ToArray())
+                .Select(value => (X: value[0], Z: value[1]))
+                .Where(chunk => !resident.Contains(chunk))
+                .OrderBy(chunk => chunk.X).ThenBy(chunk => chunk.Z).ToArray();
+            var generated = generator.Requested.OrderBy(chunk => chunk.X).ThenBy(chunk => chunk.Z).ToArray();
+            Assert.Equal(expectedRequests, generated);
+
+            var actual = VanillaJigsawBlocks.Checkpoint(world, origin,
+                Position(reference.GetProperty("min")), Position(reference.GetProperty("max")));
+            var wanted = JsonNode.Parse(expected.GetProperty("world").GetRawText());
+            Assert.True(JsonNode.DeepEquals(wanted, actual), $"expected {wanted}, got {actual}");
+        }
+        finally
+        {
+            PluginStructures.Apply([], [], features.AsFeatureSet(), [], NullLogger.Instance);
+        }
+    }
+
+    private static Vector Position(JsonElement values) =>
+        new(values[0].GetInt32(), values[1].GetInt32(), values[2].GetInt32());
+
     [Fact]
     public async Task LegacyJointDefaultsUseChunkStateBeforeItsFirstTick()
     {
@@ -190,7 +258,7 @@ public sealed class JigsawBlockSafety
         Assert.Equal(Snbt.Write(saved), Snbt.Write(BlockEntityNbt.Save(restored)!));
     }
 
-    private sealed class GatedGenerator : ILevelGenerator
+    private sealed class GatedGenerator(Action<Chunk>? initialize = null) : ILevelGenerator
     {
         public string Id => "jigsaw-test-gate";
 
@@ -211,6 +279,9 @@ public sealed class JigsawBlockSafety
             this.Entered.TrySetResult();
             await this.Release.Task;
             chunk ??= new Chunk(x, z);
+            if (chunk is Chunk concrete)
+                initialize?.Invoke(concrete);
+
             chunk.SetChunkStatus(ChunkGenStage.full);
             return chunk;
         }

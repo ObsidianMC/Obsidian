@@ -583,6 +583,14 @@ replaces only what vanilla produced.
   tag, preserving primitive NBT types. The replay compares all cases without pins. Existing jigsaw placement orientation and
   game-master item placement behavior are reused.
 
+  The two `review_` cases additionally observe native FULL-chunk requests through
+  `Java/JigsawBlockInstrumentation.java`, applied only to an unsigned temporary jar. Observation surrounds
+  Generate, excluding setup and checkpoint reads. `recordChunks` stores the unique requested chunk coordinates.
+  Cold-chunk replay makes nonresident setup readable only when its chunk is requested and asserts the exact
+  generated set after excluding initially resident chunks. The cases cover waterlogging from a source across
+  an unloaded chunk boundary and a sparse 96 by 96 template whose declared box must not generate empty chunks.
+  Jigsaw placement uses known-shape flags, skipping the template's final shape and neighbour-update passes.
+
   Capture only these cases with
   `dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=jigsaw_blocks`.
   `-p:CaptureCases=edit_and_reload+generate_keep_jigsaws` selects exact names. The fixture remains indented CRLF JSON.

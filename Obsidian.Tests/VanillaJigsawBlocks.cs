@@ -19,6 +19,7 @@ using Obsidian.WorldData;
 using System.Collections.Generic;
 using System.Collections;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Nodes;
@@ -71,7 +72,9 @@ public sealed class VanillaJigsawBlocks(ITestOutputHelper output)
         {
             var cases = root.GetProperty("cases").EnumerateArray().ToArray();
             await FixtureCases.AssertAllAsync(cases, test => test.GetProperty("name").GetString()!,
-                test => ReplayAsync(context, player, origin, test));
+                test => test.TryGetProperty("recordChunks", out _)
+                    ? JigsawBlockSafety.ReplayChunkAccessAsync(root, test)
+                    : ReplayAsync(context, player, origin, test));
             output.WriteLine($"Replayed {cases.Length} jigsaw block cases without pins.");
         }
         finally
@@ -94,11 +97,34 @@ public sealed class VanillaJigsawBlocks(ITestOutputHelper output)
             foreach (var block in template.Value.GetProperty("blocks").EnumerateArray())
                 Place(world, source, block);
 
-            templates.Add(new TemplateFile(template.Name, "jigsaw capture",
-                StructureTemplate.Capture(world, source, size, false, string.Empty)));
+            var captured = StructureTemplate.Capture(world, source, size, false, string.Empty);
+            if (template.Value.TryGetProperty("ignoreAir", out _))
+                captured = WithoutAir(captured);
+
+            templates.Add(new TemplateFile(template.Name, "jigsaw capture", captured));
         }
 
         return templates.ToArray();
+    }
+
+    private static StructureTemplate WithoutAir(StructureTemplate template)
+    {
+        var tag = template.ToNbt();
+        var palette = (NbtList)tag["palette"];
+        var entries = (NbtList)tag["blocks"];
+        foreach (var entry in entries.OfType<NbtCompound>().ToArray())
+        {
+            var state = (NbtCompound)palette[entry.GetInt("state")];
+            if (state.GetString("id") is "minecraft:air" or "minecraft:void_air")
+                entries.Remove(entry);
+        }
+
+        using var buffer = new MemoryStream();
+        using (var writer = new NbtWriterStream(buffer))
+            writer.WriteTag(tag);
+
+        using var input = new MemoryStream(buffer.ToArray());
+        return StructureTemplate.Load(input, NbtCompression.None);
     }
 
     internal static void Place(World world, Vector origin, JsonElement placement)
