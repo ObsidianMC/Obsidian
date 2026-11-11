@@ -9,7 +9,15 @@ namespace Obsidian.Entities;
 [MinecraftEntity("minecraft:item")]
 public partial class ItemEntity : Entity
 {
+    // Vanilla's INFINITE_PICKUP_DELAY and INFINITE_LIFETIME: a pickup delay that never runs down, and an age that never
+    // counts up. Neither item merges.
+    private const int InfinitePickupDelay = 32767;
+    private const int InfiniteLifetime = -32768;
+
     private int age;
+
+    // Who alone may pick the item up (vanilla's target, saved as Owner), or null for anyone.
+    private Guid? target;
 
     // Ticks since it was spawned or loaded, like vanilla's unsaved Entity.tickCount; it paces merging.
     private int ticksExisted;
@@ -196,6 +204,8 @@ public partial class ItemEntity : Entity
         tag.Set(this.Item.ToNbt("Item"));
         tag.Set(new NbtTag<short>("Age", (short)Math.Clamp(age, short.MinValue, short.MaxValue)));
         tag.Set(new NbtTag<short>("PickupDelay", (short)this.pickupDelay));
+        if (this.target is Guid owner)
+            tag.Set(new NbtArray<int>("Owner", EntityNbt.UuidToInts(owner)));
     }
 
     internal override void ReadNbt(NbtCompound tag)
@@ -207,7 +217,16 @@ public partial class ItemEntity : Entity
 
         if (tag.TryGetNumber<short>("Age", out var savedAge)) age = savedAge;
         this.pickupDelay = tag.TryGetNumber<short>("PickupDelay", out var delay) ? Math.Max(0, (int)delay) : 10;
+        this.target = tag.TryGetTag<NbtArray<int>>("Owner", out var owner) && owner.Count == 4
+            ? EntityNbt.UuidFromInts(owner.GetArray())
+            : null;
     }
+
+    /// <summary>
+    /// Whether <paramref name="player"/> may pick the item up, as far as its owner goes: vanilla's
+    /// <c>playerTouch</c> lets only its target take an item that has one.
+    /// </summary>
+    internal bool MayBePickedUpBy(Guid player) => this.target is not Guid owner || owner == player;
 
     public async override ValueTask TickAsync()
     {
@@ -217,10 +236,12 @@ public partial class ItemEntity : Entity
         {
             if (this.Removed)
                 return;
-            if (this.pickupDelay > 0)
+            if (this.pickupDelay > 0 && this.pickupDelay != InfinitePickupDelay)
                 this.pickupDelay--;
         }
-        if (++age >= 6000)
+        if (age != InfiniteLifetime)
+            age++;
+        if (age >= 6000)
         {
             await RemoveAsync();
             return;
@@ -314,12 +335,17 @@ public partial class ItemEntity : Entity
                 // Both stacks are this level's only while the other item hasn't left it since the lookup.
                 if (itemEntity.Level != owner || !itemEntity.IsMemberOf(owner) || !this.IsMemberOf(owner))
                     continue;
-                if (!this.IsMergeable || !itemEntity.IsMergeable || this.Item != itemEntity.Item
+                // Vanilla's tryToMerge and areMergable: the same owner, the same item and components, and room for
+                // both stacks within the other's largest stack.
+                if (!this.IsMergeable || !itemEntity.IsMergeable || this.target != itemEntity.target
+                    || this.Item != itemEntity.Item
                     || this.Item.Count + itemEntity.Item.Count > itemEntity.Item.MaxStackSize)
                 {
                     continue;
                 }
 
+                // Vanilla's merge, which fills the larger stack only up to 64 even when it holds more: a stack of 65
+                // of 99 given one more is cut to 64, and the other grows by one, as vanilla's does.
                 var (into, merged) = itemEntity.Item.Count < this.Item.Count ? (this, itemEntity) : (itemEntity, this);
                 var count = Math.Min(Math.Min(into.Item.MaxStackSize, 64) - into.Item.Count, merged.Item.Count);
                 into.Item.Count += count;
@@ -344,9 +370,11 @@ public partial class ItemEntity : Entity
         }
     }
 
-    // Vanilla's isMergable: still there, not past its lifetime, and with room in its stack.
+    // Vanilla's isMergable: still there, able to be picked up some day, not past its lifetime nor without one, and
+    // with room in its stack.
     private bool IsMergeable =>
-        !this.Removed && this.age < 6000 && !this.Item.IsNullOrAir() && this.Item.Count < this.Item.MaxStackSize;
+        !this.Removed && this.pickupDelay != InfinitePickupDelay && this.age != InfiniteLifetime && this.age < 6000
+        && !this.Item.IsNullOrAir() && this.Item.Count < this.Item.MaxStackSize;
 
     /// <summary>What <see cref="TryTake"/> took from an item entity's stack, and whether that emptied it.</summary>
     internal readonly record struct Taken(ItemStack Stack, bool Emptied);
