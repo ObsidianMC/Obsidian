@@ -31,7 +31,8 @@ internal static class CombatEffects
     internal static float Protect(Living entity, float amount, CombatDamageKind kind)
     {
         if (kind is CombatDamageKind.Void or CombatDamageKind.Starvation) return amount;
-        if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact or CombatDamageKind.HotFloor
+        if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact
+            or CombatDamageKind.Campfire or CombatDamageKind.HotFloor
             && entity.HasPotionEffect((int)PotionEffect.FireResistance - 1))
         {
             return 0;
@@ -46,7 +47,8 @@ internal static class CombatEffects
             protection += kind switch
             {
                 CombatDamageKind.Fall => 3 * CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.FeatherFalling),
-                CombatDamageKind.Fire or CombatDamageKind.FireContact or CombatDamageKind.HotFloor =>
+                CombatDamageKind.Fire or CombatDamageKind.FireContact
+                    or CombatDamageKind.Campfire or CombatDamageKind.HotFloor =>
                     2 * CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.FireProtection),
                 CombatDamageKind.Explosion => 2 * CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.BlastProtection),
                 CombatDamageKind.Projectile => 2 * CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.ProjectileProtection), _ => 0

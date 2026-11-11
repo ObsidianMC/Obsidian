@@ -11,7 +11,7 @@ internal enum MobGameEvent
     EntityDamage, EntityDie, EntityInteract, NoteBlockPlay, JukeboxPlay, JukeboxStop, SculkSensorClick,
     BlockActivate, BlockDeactivate, BlockOpen, BlockClose, ContainerOpen, ContainerClose, Eat, FluidPickup,
     FluidPlace, PrimeFuse, EntityPlace, ItemInteractFinish, ItemInteractStart, Shear, Equip, Unequip, Explode,
-    LightningStrike
+    LightningStrike, Shriek
 }
 
 internal static class MobGameEvents
@@ -119,7 +119,7 @@ public abstract partial class AbstractLevel
         await DeliverBlockVibrationsAsync();
         await TickActiveSculkAsync();
         while (mobGameEvents.TryDequeue(out var vibration))
-            await DispatchGameEventAsync(vibration);
+            DispatchGameEvent(vibration);
     }
 
     /// <summary>Hands each warden and allay the vibration that has reached it this tick.</summary>
@@ -219,16 +219,13 @@ public abstract partial class AbstractLevel
         }
     }
 
-    private async ValueTask DispatchGameEventAsync(MobVibration vibration)
+    private void DispatchGameEvent(MobVibration vibration)
     {
         if (vibration.Kind is MobGameEvent.JukeboxPlay or MobGameEvent.JukeboxStop)
         {
             NotifyJukeboxListeners(vibration);
             return;
         }
-
-        if (vibration.Kind is MobGameEvent.Step or MobGameEvent.Land && vibration.Source is IPlayer)
-            await ShriekUnderfootAsync(vibration);
 
         if (!ValidVibration(vibration))
             return;
@@ -245,17 +242,6 @@ public abstract partial class AbstractLevel
         var jukebox = (Vector)vibration.Position.Floor();
         foreach (var allay in allays)
             allay.ReceiveJukeboxEvent(jukebox, vibration.Kind == MobGameEvent.JukeboxPlay);
-    }
-
-    /// <summary>A player stepping or landing on a shrieker, or on the block above one, sets it off.</summary>
-    private async ValueTask ShriekUnderfootAsync(MobVibration vibration)
-    {
-        var feet = (Vector)vibration.Position.Floor();
-        if (GameEventBlock(feet)?.RegistryId == BlockIds.SculkShrieker)
-            await ShriekAsync(feet, vibration.Source);
-
-        if (GameEventBlock(feet - new Vector(0, 1, 0))?.RegistryId == BlockIds.SculkShrieker)
-            await ShriekAsync(feet - new Vector(0, 1, 0), vibration.Source);
     }
 
     private void OfferToMobListeners(MobVibration vibration)
@@ -502,31 +488,49 @@ public abstract partial class AbstractLevel
 
     private readonly HashSet<Vector> shriekerSummons = [];
 
-    private async ValueTask ShriekAsync(Vector point, IEntity? source)
+    internal ValueTask ShriekAsync(Vector point, IEntity? source)
     {
         if (source is not IPlayer player || player.GameMode == GameMode.Spectator || activeSculk.ContainsKey(point))
-            return;
+            return default;
 
-        var block = GameEventBlock(point);
-        if (block?.RegistryId != BlockIds.SculkShrieker || block.GetProperty("shrieking") == "true")
-            return;
-
-        await SetBlockAsync(point, block.WithProperty("shrieking", true), true);
-        activeSculk[point] = 90;
-        PacketBroadcaster.QueuePacketToLevelInRange(this, (VectorD)point, new LevelEventPacket(3007, point, 0));
-        var darkened = GetPlayersInRange((VectorD)point, 40).Where(nearby => nearby.GameMode != GameMode.Spectator);
-        foreach (var nearby in darkened)
-            nearby.AddPotionEffect((int)PotionEffect.Darkness - 1, 260);
-
-        if (block.GetProperty("can_summon") != "true"
-            || LevelData.Difficulty == Difficulty.Peaceful
-            || !LevelData.GetBooleanRule("spawn_wardens")
-            || GetNonPlayerEntitiesInRange((VectorD)point, 48).Any(entity => entity is Warden))
+        lock (this.Fluids.TickLock)
         {
-            return;
+            var block = GameEventBlock(point);
+            if (block?.RegistryId != BlockIds.SculkShrieker || block.GetProperty("shrieking") == "true")
+                return default;
+
+            this.BlockUpdates.SetBlock(point, block.WithProperty("shrieking", true), API.Blocks.BlockUpdateFlags.Clients);
+            this.BlockUpdates.ScheduleTick(point, block, 90);
+            this.BroadcastLevelEvent(3007, point, 0);
+            this.EmitGameEvent(MobGameEvent.Shriek, (VectorD)point + 0.5, source);
+
+            if (block.GetProperty("can_summon") == "true"
+                && this.LevelData.Difficulty != Difficulty.Peaceful
+                && this.LevelData.GetBooleanRule("spawn_wardens")
+                && !this.GetNonPlayerEntitiesInRange((VectorD)point, 48).Any(entity => entity is Warden))
+            {
+                this.RaiseWardenWarning(point, player);
+            }
         }
 
-        RaiseWardenWarning(point, player);
+        return default;
+    }
+
+    /// <summary>Ends a shriek through its saved block tick; placed shriekers have no warden or darkness response.</summary>
+    internal void FinishShriek(Vector point, IBlock block)
+    {
+        this.BlockUpdates.SetBlock(point, block.WithProperty("shrieking", false));
+        if (block.GetProperty("can_summon") != "true")
+            return;
+
+        if (this.shriekerSummons.Remove(point))
+            this.TrySummonWarden(point);
+
+        foreach (var nearby in this.GetPlayersInRange((VectorD)point + 0.5, 40))
+        {
+            if (nearby.GameMode != GameMode.Spectator)
+                nearby.AddPotionEffect((int)PotionEffect.Darkness - 1, 260);
+        }
     }
 
     /// <summary>

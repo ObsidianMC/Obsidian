@@ -264,6 +264,7 @@ internal sealed class EntityContactPass(IContactLevel level)
     // The cells from index on; a behaviour that doesn't finish at once hands the rest to InsideAfterAsync.
     private ValueTask InsideFromAsync(Entity entity, CellBox cells, int index)
     {
+        var touched = index > 0;
         var blocks = new ChunkCursor(level);
         for (; index < cells.Count; index++)
         {
@@ -275,12 +276,18 @@ internal sealed class EntityContactPass(IContactLevel level)
             if (IsRemoved(entity) || entity is Living { Alive: false })
                 return default;
 
+            touched = true;
             var pending = this.EntityInsideAsync(entity, cell, state);
             if (!pending.IsCompletedSuccessfully)
                 return this.InsideAfterAsync(pending, entity, cells, index + 1);
 
             pending.GetAwaiter().GetResult();
         }
+
+        // Inside effects are completed after every touched cell, so powder snow in two cells can melt both before
+        // fire is cleared. Cells without hooks still do only the flag read and never enter the effect path.
+        if (touched)
+            entity.FinishInsideContact();
 
         return default;
     }

@@ -11,6 +11,73 @@ public partial class Entity
 
     internal bool ContactBounced { get; set; }
 
+    internal virtual int ContactFireTicks { get; set; }
+
+    internal bool IsContactBurning => (this.ContactFireTicks > 0 || this.Burning)
+        && this is not Living { IsFireImmune: true };
+
+    /// <summary>The entity random used for contact effects; mobs share their ordinary AI random.</summary>
+    internal Random ContactEffectRandom { get; set; } = Random.Shared;
+
+    internal virtual Random ContactRandom => this.ContactEffectRandom;
+
+    private bool contactExtinguishPending;
+
+    private List<(WorldData.IContactLevel Level, Vector Position, IBlock State)>? burningSnow;
+
+    internal void RecordBurningSnow(WorldData.IContactLevel level, Vector position, IBlock state)
+    {
+        this.burningSnow ??= [];
+        this.burningSnow.Add((level, position, state));
+    }
+
+    internal void RequestContactExtinguish() => this.contactExtinguishPending = true;
+
+    internal void FinishInsideContact()
+    {
+        if (!this.contactExtinguishPending)
+            return;
+
+        this.contactExtinguishPending = false;
+        if (this.burningSnow is not null)
+        {
+            foreach (var (level, position, state) in this.burningSnow)
+                WorldData.PowderSnowContactBehavior.Melt(level, position, state, this);
+
+            this.burningSnow.Clear();
+        }
+
+        this.ExtinguishFromContact();
+    }
+
+    private void ExtinguishFromContact()
+    {
+        if (this.IsContactBurning)
+        {
+            // Vanilla draws two entity floats for the extinguish pitch, even when the entity is silent.
+            var pitch = 1.6f + (this.ContactRandom.NextSingle() - this.ContactRandom.NextSingle()) * 0.4f;
+            if (this.Level is WorldData.AbstractLevel world)
+            {
+                var category = this switch
+                {
+                    Mob mob => mob.ContactSoundCategory,
+                    IPlayer => SoundCategory.Players,
+                    _ => SoundCategory.Ambient
+                };
+                WorldData.LevelSounds.Play(world, this.Position, "minecraft:entity.generic.extinguish_fire",
+                    category, 0.7f, pitch);
+            }
+        }
+
+        this.ContactFireTicks = 0;
+        if (this.Burning)
+        {
+            this.Burning = false;
+            this.PacketBroadcaster.QueuePacketToLevelInRange(this.Level, this.Position,
+                new Net.Packets.Play.Clientbound.SetEntityDataPacket { EntityId = this.EntityId, Entity = this });
+        }
+    }
+
     /// <summary>
     /// Where the entity was when its last tick's movement began, like vanilla's <c>oldPosition</c>: set by its level
     /// before the tick of an entity the server moves, and after the contacts of a player, whose client moves them

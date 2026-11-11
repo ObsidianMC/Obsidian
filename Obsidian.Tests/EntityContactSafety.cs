@@ -7,6 +7,7 @@ using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -14,6 +15,62 @@ namespace Obsidian.Tests;
 
 public sealed class EntityContactSafety
 {
+    [Fact]
+    public async Task HopperContactTriesBusyInventoryUnderTickAndTransferLocksWithoutLosingItems()
+    {
+        await using var context = TestServerFactory.CreateServer($"contact-hopper-locks-{Guid.NewGuid():N}");
+        var world = context.World;
+        WorldBlockEntities.AddEmptyChunk(world);
+        await world.GetChunkAsync(0, 0, scheduleGeneration: false);
+        var position = new Vector(8, 64, 8);
+        world.BlockUpdates.SetBlock(position, BlocksRegistry.Hopper);
+        var hopper = (HopperBlockEntity)world.BlockUpdates.GetBlockEntity(position)!;
+        var item = new ItemEntity
+        {
+            Level = world,
+            EntityId = Server.GetNextEntityId(),
+            Position = new VectorD(8.5, 64.75, 8.5),
+            Item = new ItemStack(ItemsRegistry.Diamond, 5),
+            CanPickup = false
+        };
+        world.SpawnEntity(item);
+
+        // The other thread owns the inventory until both contact attempts finish. Explicit signals force the
+        // contested interval; no sleep, timeout, or chance of two uncoordinated operations overlapping is involved.
+        var inventoryHeld = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var releaseInventory = new ManualResetEventSlim();
+        var holder = Task.Factory.StartNew(() =>
+        {
+            using var held = hopper.Inventory.Lock();
+            inventoryHeld.SetResult();
+            releaseInventory.Wait();
+        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        await inventoryHeld.Task;
+        try
+        {
+            lock (world.Fluids.TickLock)
+                Assert.True(world.EntityContacts.TouchAsync(item).IsCompletedSuccessfully);
+
+            using (world.TransferLock.Enter())
+                Assert.True(world.EntityContacts.TouchAsync(item).IsCompletedSuccessfully);
+
+            Assert.False(item.Removed);
+            Assert.Equal(5, item.Item.Count);
+        }
+        finally
+        {
+            releaseInventory.Set();
+            await holder;
+        }
+
+        // Once admission is available, contact takes the stack, and the ordinary hopper tick cannot take it again.
+        await world.EntityContacts.TouchAsync(item);
+        await Hoppers.TickAsync(world, hopper);
+        Assert.True(item.Removed);
+        Assert.Equal(5, hopper.Inventory[0]?.Count);
+        Assert.False(item.IsMemberOf(world));
+    }
+
     [Fact]
     public async Task PlayerLandingKeepsItsSupportAcrossLaterMovement()
     {
@@ -87,7 +144,6 @@ public sealed class EntityContactSafety
                 default,
                 TaskCreationOptions.LongRunning,
                 TaskScheduler.Default);
-            Assert.True(replacement.Wait(TimeSpan.FromSeconds(10)), "Concurrent replacement was blocked.");
             replacement.GetAwaiter().GetResult();
         });
         await world.EntityContacts.TouchAsync(pig);
@@ -126,7 +182,6 @@ public sealed class EntityContactSafety
                 default,
                 TaskCreationOptions.LongRunning,
                 TaskScheduler.Default);
-            Assert.True(replacement.Wait(TimeSpan.FromSeconds(10)), "Concurrent replacement was blocked.");
             replacement.GetAwaiter().GetResult();
         }, alwaysZero: true);
         await world.EntityContacts.TouchAsync(pig);

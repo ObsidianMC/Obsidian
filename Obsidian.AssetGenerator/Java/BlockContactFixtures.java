@@ -21,6 +21,7 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundBlockEventPacket;
 import net.minecraft.network.protocol.game.ClientboundLevelEventPacket;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
+import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ClientInformation;
@@ -102,6 +103,8 @@ public final class BlockContactFixtures {
         var min = position(input.getAsJsonArray("min"));
         var max = position(input.getAsJsonArray("max"));
         var area = new AABB(Vec3.atLowerCornerOf(min), Vec3.atLowerCornerOf(max).add(1, 1, 1));
+        level.getBlockTicks().clearArea(new net.minecraft.world.level.levelgen.structure.BoundingBox(
+            min.getX(), min.getY(), min.getZ(), max.getX(), max.getY(), max.getZ()));
         for (var entity : level.getEntities((Entity)null, area.inflate(4), entity -> true)) {
             entity.discard();
         }
@@ -131,6 +134,16 @@ public final class BlockContactFixtures {
         var checkpoints = new JsonArray();
         input.add("checkpoints", checkpoints);
         var writes = new JsonArray();
+        var entityEvents = new JsonArray();
+        java.util.function.Consumer<Object[]> eventObserver = values -> {
+            if (values[0] == level) {
+                var entity = (Entity)values[1];
+                var tag = entities.entrySet().stream().filter(entry -> entry.getValue() == entity)
+                    .map(Map.Entry::getKey).findFirst().orElse("other");
+                entityEvents.add(tag + " " + values[3]);
+            }
+        };
+        System.getProperties().put("obsidian.blockUse.entityEvents", eventObserver);
         java.util.function.Consumer<Object[]> observer = values -> {
             if (values[0] != level) {
                 return;
@@ -146,6 +159,17 @@ public final class BlockContactFixtures {
             packets.clear();
             gameEvents.clear();
             writes.asList().clear();
+            entityEvents.asList().clear();
+            if (tick > 0 && input.has("scheduledTicks")) {
+                var data = (net.minecraft.world.level.storage.ServerLevelData)level.getLevelData();
+                data.setGameTime(level.getGameTime() + 1);
+                level.getBlockTicks().tick(level.getGameTime(), 65536, (pos, block) -> {
+                    var current = level.getBlockState(pos);
+                    if (current.is(block)) {
+                        current.tick(level, pos, level.getRandom());
+                    }
+                });
+            }
             for (var value : input.getAsJsonArray("entities")) {
                 var event = value.getAsJsonObject();
                 if (event.get("tick").getAsInt() == tick) {
@@ -160,10 +184,17 @@ public final class BlockContactFixtures {
                     }
                     var before = entity.position();
                     entity.move(net.minecraft.world.entity.MoverType.SELF, entity.getDeltaMovement());
-                    entity.applyEffectsFromBlocks(before, entity.position());
+                    // A non-experimental minecart already runs its inside effects from move.
+                    if (!(entity instanceof net.minecraft.world.entity.vehicle.minecart.AbstractMinecart)) {
+                        entity.applyEffectsFromBlocks(before, entity.position());
+                    }
                 }
             }
             var checkpoint = checkpoint(level, min, max, tick, entities);
+            if (input.has("recordInside")) {
+                recordInside(level, checkpoint, input, entities);
+                checkpoint.add("entityEvents", entityEvents.deepCopy());
+            }
             if (input.has("stationaryPlayer")) {
                 recordPlayerState(checkpoint, entities);
             }
@@ -180,7 +211,15 @@ public final class BlockContactFixtures {
             checkpoints.add(checkpoint);
         }
         input.addProperty("nextRandom", level.getRandom().nextInt());
+        if (input.has("recordInside")) {
+            var entityRandoms = new JsonObject();
+            for (var entry : entities.entrySet()) {
+                entityRandoms.addProperty(entry.getKey(), entry.getValue().getRandom().nextInt());
+            }
+            input.add("nextEntityRandom", entityRandoms);
+        }
         System.getProperties().remove("obsidian.blockUse.writes");
+        System.getProperties().remove("obsidian.blockUse.entityEvents");
         registry.unregister(listener);
         level.players().remove(watcher);
         players(server.getPlayerList()).remove(watcher);
@@ -207,12 +246,26 @@ public final class BlockContactFixtures {
             }
             entity.setNoGravity(!event.has("noGravity") || event.get("noGravity").getAsBoolean());
             entity.setShiftKeyDown(event.has("sneaking") && event.get("sneaking").getAsBoolean());
+            if (event.has("entitySeed")) {
+                entity.getRandom().setSeed(event.get("entitySeed").getAsLong());
+            }
+            if (event.has("fireTicks")) {
+                entity.setRemainingFireTicks(event.get("fireTicks").getAsInt());
+            }
+            if (event.has("silent")) {
+                entity.setSilent(event.get("silent").getAsBoolean());
+            }
+            if (entity instanceof ServerPlayer player && event.has("gameMode")) {
+                player.setGameMode(net.minecraft.world.level.GameType.byName(event.get("gameMode").getAsString()));
+                player.noPhysics = player.isSpectator();
+            }
             if (entity instanceof net.minecraft.world.entity.Mob mob) {
                 mob.setNoAi(true);
             }
             if (entity instanceof ItemEntity item) {
                 item.setItem(new ItemStack(BuiltInRegistries.ITEM.getValue(
-                    Identifier.parse(event.get("item").getAsString()))));
+                    Identifier.parse(event.get("item").getAsString())),
+                    event.has("count") ? event.get("count").getAsInt() : 1));
                 item.setNeverPickUp();
             }
             if (entity instanceof net.minecraft.world.entity.LivingEntity living) {
@@ -257,6 +310,17 @@ public final class BlockContactFixtures {
                 level.addFreshEntity(entity);
             }
             entities.put(event.get("summon").getAsString(), entity);
+        } else if (event.has("remove")) {
+            var entity = entities.get(event.get("remove").getAsString());
+            if (entity instanceof ServerPlayer player) {
+                level.removePlayerImmediately(player, Entity.RemovalReason.DISCARDED);
+            } else {
+                entity.discard();
+            }
+        } else if (event.has("setBlock")) {
+            level.setBlock(position(event.getAsJsonArray("setBlock")), state(event.get("state").getAsString()), 3);
+        } else if (event.has("move")) {
+            entities.get(event.get("move").getAsString()).setPos(vec(event.getAsJsonArray("pos")));
         } else if (event.has("updatePose")) {
             var player = (ServerPlayer)entities.get(event.get("updatePose").getAsString());
             player.setShiftKeyDown(event.get("sneaking").getAsBoolean());
@@ -277,6 +341,39 @@ public final class BlockContactFixtures {
         } else {
             throw new IllegalArgumentException("Unknown contact event " + event);
         }
+    }
+
+    private static void recordInside(ServerLevel level, JsonObject checkpoint, JsonObject input,
+        Map<String, Entity> entities) {
+        for (var entry : entities.entrySet()) {
+            var entity = entry.getValue();
+            var observation = checkpoint.getAsJsonObject("observations").getAsJsonObject(entry.getKey());
+            observation.addProperty("removed", entity.isRemoved());
+            observation.addProperty("fireTicks", entity.getRemainingFireTicks());
+            if (entity instanceof net.minecraft.world.entity.vehicle.VehicleEntity vehicle) {
+                observation.addProperty("vehicleDamage", vehicle.getDamage());
+            }
+            if (entity instanceof ItemEntity item) {
+                observation.addProperty("itemCount", item.getItem().getCount());
+            }
+        }
+        var containers = new JsonArray();
+        for (var value : input.getAsJsonArray("setup")) {
+            var pos = position(value.getAsJsonObject().getAsJsonArray("pos"));
+            if (level.getBlockEntity(pos) instanceof net.minecraft.world.level.block.entity.HopperBlockEntity hopper) {
+                var container = new JsonObject();
+                container.add("pos", vector(pos));
+                var items = new JsonArray();
+                for (int slot = 0; slot < hopper.getContainerSize(); slot++) {
+                    var stack = hopper.getItem(slot);
+                    items.add(stack.isEmpty() ? "air" : BuiltInRegistries.ITEM.getKey(stack.getItem())
+                        + " x" + stack.getCount());
+                }
+                container.add("items", items);
+                containers.add(container);
+            }
+        }
+        checkpoint.add("containers", containers);
     }
 
     private static void recordPlayerState(JsonObject checkpoint, Map<String, Entity> entities) {
@@ -427,6 +524,7 @@ public final class BlockContactFixtures {
         var details = new JsonArray();
         var levelEvents = new ArrayList<String>();
         var blockEvents = new ArrayList<String>();
+        var particles = new JsonArray();
         for (var packet : heard) {
             if (packet instanceof ClientboundSoundPacket sound) {
                 var id = sound.getSound().value().location().toString();
@@ -438,6 +536,17 @@ public final class BlockContactFixtures {
                 detail.addProperty("pitch", sound.getPitch());
                 detail.add("position", vector(new Vec3(sound.getX(), sound.getY(), sound.getZ())));
                 details.add(detail);
+            } else if (packet instanceof ClientboundLevelParticlesPacket particle) {
+                var detail = new JsonObject();
+                detail.addProperty("id", BuiltInRegistries.PARTICLE_TYPE.getKey(particle.particle().getType()).toString());
+                detail.add("position", vector(new Vec3(particle.x(), particle.y(), particle.z())));
+                detail.add("offset", vector(new Vec3(particle.xDist(), particle.yDist(), particle.zDist())));
+                detail.add("speed", vector(new Vec3(particle.xMaxSpeed(), particle.yMaxSpeed(), particle.zMaxSpeed())));
+                detail.addProperty("count", particle.count());
+                detail.addProperty("randomization", particle.randomizationType().ordinal());
+                detail.addProperty("overrideLimiter", particle.overrideLimiter());
+                detail.addProperty("alwaysShow", particle.alwaysShow());
+                particles.add(detail);
             } else if (packet instanceof ClientboundLevelEventPacket event) {
                 levelEvents.add(event.getType() + " " + offset(event.getPos()) + " " + event.getData());
             } else if (packet instanceof ClientboundBlockEventPacket event) {
@@ -451,6 +560,7 @@ public final class BlockContactFixtures {
         output.add("levelEvents", strings(levelEvents));
         output.add("blockEvents", strings(blockEvents));
         output.add("gameEvents", strings(new ArrayList<>(gameEvents)));
+        output.add("particles", particles);
     }
 
     // A game connection that keeps the packets sent to it instead of sending them.

@@ -47,6 +47,22 @@ public sealed partial class ArmorStand : Living
     // Vanilla's ArmorStand.thunderHit does nothing: lightning neither burns nor hurts it.
     internal override ValueTask ThunderHitAsync(LightningBolt bolt) => ValueTask.CompletedTask;
 
+    /// <summary>A campfire first lights the stand for five seconds, then deals 0.15 health per contact.</summary>
+    internal ValueTask BurnFromCampfireAsync()
+    {
+        if (this.ContactFireTicks <= 0)
+        {
+            this.Ignite(5);
+            return default;
+        }
+
+        this.Health -= 0.15f;
+        if (this.Level is WorldData.AbstractLevel world)
+            world.EmitGameEvent(WorldData.MobGameEvent.EntityDamage, this.Position);
+
+        return this.Health <= 0 ? this.RemoveAsync() : default;
+    }
+
     /// <summary>A small stand, half the size, like one placed as a baby.</summary>
     public bool Small { get; set; }
 

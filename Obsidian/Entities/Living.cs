@@ -108,6 +108,8 @@ public partial class Living : Entity, ILiving
     private int fireTicks;
     internal int FireTicks { get => fireTicks; set => fireTicks = value; }
 
+    internal override int ContactFireTicks { get => this.fireTicks; set => this.fireTicks = value; }
+
     public void Ignite(int seconds)
     {
         if (!IsFireImmune && seconds > 0)

@@ -20,8 +20,8 @@ namespace Obsidian.WorldData;
 /// whichever ticks first).
 /// </para>
 /// <para>
-/// Runs on the level's tick, without its tick lock: each step takes one container's lock at a time, and an item
-/// entity's transfer lock before the hopper's.
+/// Runs from the block-entity tick and inside contact. Inventory admission finishes outside an item's short
+/// transfer section; inherited tick or transfer locks allow only a nonblocking inventory attempt.
 /// </para>
 /// </remarks>
 internal static class Hoppers
@@ -43,7 +43,24 @@ internal static class Hoppers
 
         hopper.Cooldown = 0;
 
-        // Vanilla's tryMoveItems.
+        await MoveItemsAsync(level, hopper);
+    }
+
+    /// <summary>Inside contact tries the same push/pull transaction, without advancing the tick cooldown.</summary>
+    internal static ValueTask TouchItemAsync(AbstractLevel level, HopperBlockEntity hopper, ItemEntity item)
+    {
+        var position = hopper.BlockPosition;
+        var min = new VectorD(position.X, position.Y + SuckBottom, position.Z);
+        var max = new VectorD(position.X + 1, position.Y + SuckTop, position.Z + 1);
+        return item.Removed || !Overlaps(item.BoundingBox, min, max)
+            ? default : MoveItemsAsync(level, hopper, item);
+    }
+
+    private static async ValueTask MoveItemsAsync(AbstractLevel level, HopperBlockEntity hopper, ItemEntity? item = null)
+    {
+        if (hopper.Cooldown > 0 || hopper.IsRemoved)
+            return;
+
         var state = level.BlockUpdates.GetBlock(hopper.BlockPosition);
         if (state.GetProperty("enabled") != "true" || hopper.GetItemAccess(side: null) is not IItemAccess own)
             return;
@@ -53,7 +70,19 @@ internal static class Hoppers
             changed = Eject(level, hopper, own, FeatureHelpers.ParseFace(state.GetProperty("facing")));
 
         if (!IsFull(own))
-            changed |= await SuckInAsync(level, hopper, own);
+        {
+            if (item is null)
+            {
+                changed |= await SuckInAsync(level, hopper, own);
+            }
+            else
+            {
+                var position = hopper.BlockPosition;
+                var min = new VectorD(position.X, position.Y + SuckBottom, position.Z);
+                var max = new VectorD(position.X + 1, position.Y + SuckTop, position.Z + 1);
+                changed |= await TakeInAsync(own, item, level, min, max, position);
+            }
+        }
 
         if (changed)
         {
