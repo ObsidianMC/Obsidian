@@ -8616,10 +8616,11 @@
           ],
           "details": [
             "drop minecraft:powder_snow_bucket x1 total=1",
-            "particle minecraft:snowflake 1.503360,1.000000,0.546411 count=1"
+            "particle minecraft:snowflake 1.341423,1.000000,0.493065 count=1"
           ]
         }
-      ]
+      ],
+      "selectionSeed": 2
     },
     {
       "name": "water_bucket_stacked",

@@ -387,6 +387,26 @@ public partial class ItemEntity : Entity
     // Vanilla's ItemEntity health: what's left of it before damage destroys it.
     private float itemHealth = 5;
 
+    /// <summary>Cactus takes one of the item's five health on each contact, including fire-resistant items.</summary>
+    internal async ValueTask HurtByCactusAsync()
+    {
+        bool destroyed;
+        using (this.EnterOwningLevel(out var level))
+        {
+            if (this.Removed || !this.IsMemberOf(level))
+                return;
+
+            this.itemHealth--;
+            destroyed = this.itemHealth <= 0;
+            this.Removed = destroyed;
+            if (level is AbstractLevel world)
+                world.EmitGameEvent(MobGameEvent.EntityDamage, this.Position);
+        }
+
+        if (destroyed)
+            await this.RemoveAsync();
+    }
+
     /// <summary>
     /// Hurts it by <paramref name="damage"/> from an explosion, as vanilla's <c>ItemEntity.hurtServer</c> does: a nether
     /// star withstands it, and anything else is gone once its five health is.

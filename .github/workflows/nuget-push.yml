@@ -1,33 +1,135 @@
 name: Nuget
 
+# Nightlies publish once a day, not on every merge, and only when the packages changed since the branch's last
+# nightly and the branch's latest build passed and built the packages' code as it is. A manual run or a tag skips the
+# change check, not the build check. GitHub runs scheduled workflows from the default branch (26.3.x) copy of this file.
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *"
   push:
-    branches: ["26.3.x"]
-    # Publish semver tags as releases.
     tags: ["v*.*.*"]
-    # only publish when we change a file here
-    paths:
-      - "Obsidian.API/**/*.cs"
-      - "Obsidian.API/*.csproj"
-      - "Obsidian.API.Client/**/*.cs"
-      - "Obsidian.API.Client/**/*.razor"
-      - "Obsidian.API.Client/*.csproj"
-      - "Obsidian/Obsidian.csproj"
-      - "Obsidian.AssetGenerator/**"
-      - "Obsidian.SourceGenerators/**/*.cs"
-      - "Obsidian.SourceGenerators/*.csproj"
-      - ".github/workflows/nuget-push.yml"
 
 env:
   DOTNET_NOLOGO: 1
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
   DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: 1
+  BRANCH: 26.3.x
 
 jobs:
+  gate:
+    name: Decide whether to publish
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      publish: ${{ steps.decide.outputs.publish }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Decide
+        id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          # The asset generator's vanilla capture tooling, which only the tests use: the scenario and worldgen
+          # captures, and every *Fixtures.java probe except those asset generation runs (see below).
+          CAPTURE_ONLY: >-
+            ^Obsidian\.AssetGenerator/(Captures/|Scenario[^/]*\.cs$|WorldgenCaptures\.cs$|WorldgenFixtureFiles\.cs$|Java/BlockUseInstrumentation\.java$|Java/[^/]*Fixtures\.java$)
+        run: |
+          skip() { echo "Not publishing: $1"; echo "publish=false" >> "$GITHUB_OUTPUT"; exit 0; }
+          publish() { echo "Publishing: $1"; echo "publish=true" >> "$GITHUB_OUTPUT"; exit 0; }
+
+          # The packages' code: the API projects, the source generators, the bundled NBT library, shared build
+          # settings, the Minecraft version and the asset generator, which generates the vanilla data they embed.
+          code=(
+            Obsidian.API Obsidian.API.Client Obsidian.SourceGenerators Obsidian.Nbt
+            Obsidian/Obsidian.csproj Directory.Build.props Obsidian.AssetGenerator
+          )
+          # Files the packages carry as they are.
+          packed=(README.md LICENSE icon.png)
+
+          # The fixture probes asset generation runs (FixtureDumper.DumpServerAsync). Some also write assets the API
+          # embeds (synced_registries.json, component_registry_ids.json, enums.json), so all of them count. If the
+          # method can't be read, every probe counts.
+          GENERATING=$(sed -n '/DumpServerAsync(/,/^    }/p' Obsidian.AssetGenerator/FixtureDumper.cs \
+            | { grep -o '[A-Za-z]*Fixtures\.java' || true; } | sort -u | paste -sd '|' -)
+          export GENERATING="${GENERATING:-[A-Za-z]*Fixtures.java}"
+          echo "Probes asset generation runs: $GENERATING"
+
+          # The package files that changed between two commits, without the capture tooling.
+          changed() {
+            git diff --name-only "$1" "$2" -- "${@:3}" \
+              | awk '$0 ~ ("/(" ENVIRON["GENERATING"] ")$") || $0 !~ ENVIRON["CAPTURE_ONLY"]'
+          }
+
+          # The branch's latest build (cancelled runs aside) must have finished, passed, and built the packages' code
+          # as it is now. A failing or unfinished build, or code changed since, holds the publish for a later run.
+          # Every query runs in an assignment, which fails the job if the query fails, so a failed query never
+          # publishes.
+          build=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow dotnet.yml --branch "$BRANCH" --event push \
+            --limit 20 --json status,conclusion,headSha \
+            --jq '[.[] | select(.conclusion != "cancelled")][0] | "\(.status)|\(.conclusion)|\(.headSha)"')
+          IFS='|' read -r status conclusion built <<< "$build"
+          echo "Latest build of $BRANCH: $status $conclusion at $built"
+          if [ "$status" != "completed" ] || [ "$conclusion" != "success" ]; then
+            skip "the latest build of $BRANCH hasn't passed"
+          fi
+          if ! git cat-file -e "$built^{commit}" 2>/dev/null; then
+            skip "the latest build's commit $built isn't in this history"
+          fi
+          # Only what dotnet.yml builds counts here, so a docs-only commit after a green build doesn't hold it.
+          unbuilt=$(changed "$built" HEAD "${code[@]}" \
+            | awk '/\.(cs|csproj|java)$/ || /^Obsidian\.AssetGenerator\/.*\.json$/ \
+              || $0 == "Directory.Build.props" || $0 == "Obsidian.Nbt"')
+          if [ -n "$unbuilt" ]; then
+            skip "the packages' code changed after the latest passing build: $(echo $unbuilt)"
+          fi
+
+          if [ "$EVENT" != "schedule" ]; then
+            publish "a $EVENT run doesn't wait for package changes"
+          fi
+
+          # The commit of this branch's last run whose publish job ran. Runs the gate held back, the run in progress
+          # and other branches' publishes don't count.
+          runs=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow nuget-push.yml --branch "$BRANCH" \
+            --status success --limit 1000 --json databaseId,headSha --jq '.[] | "\(.databaseId):\(.headSha)"')
+          last=""
+          for run in $runs; do
+            published=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/${run%%:*}/jobs" \
+              --jq '[.jobs[] | select(.name == "Package Commit" and .conclusion == "success")] | length')
+            if [ "$published" -gt 0 ]; then
+              last=${run#*:}
+              break
+            fi
+          done
+
+          # A full page of 1,000 runs without a publish can't tell "never published" from "published longer ago",
+          # so it waits for a manual run rather than guessing.
+          if [ -z "$last" ] && [ "$(printf '%s\n' $runs | grep -c .)" -ge 1000 ]; then
+            skip "no nightly in the last 1,000 runs of $BRANCH; publish with a manual run"
+          fi
+          if [ -z "$last" ]; then
+            publish "no earlier nightly of $BRANCH found"
+          fi
+          if ! git cat-file -e "$last^{commit}" 2>/dev/null; then
+            publish "the last nightly's commit $last isn't in this history"
+          fi
+
+          updated=$(changed "$last" HEAD "${code[@]}" "${packed[@]}")
+          if [ -z "$updated" ]; then
+            skip "nothing in the packages changed since the last nightly at $last"
+          fi
+          publish "changed since the last nightly at $last: $(echo $updated)"
+
   nuget-publish:
     name: Package Commit
+    needs: gate
+    if: needs.gate.outputs.publish == 'true'
     runs-on: ubuntu-latest
     # Trusted publishing: NuGet/login trades the job's OIDC token for a short-lived API key, so there's no key to
     # store or rotate. It needs a nuget.org trusted publishing policy for this repository and workflow file.

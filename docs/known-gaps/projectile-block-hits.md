@@ -5,7 +5,8 @@ of its tick where vanilla's `onHitBlock` runs: the block reacts, then the projec
 `projectile_land`, then what the projectile does on any hit. Target blocks (power, the `target_hit` statistic and
 criterion), campfires, candles and candle cakes lit by burning projectiles, TNT primed by them, chorus flowers and
 pointed dripstone or sulfur spikes broken by projectiles, Channeling's lightning on a lightning rod (the rod powered
-and sparking, the strike, the bolt's whole life; see [lightning](lightning.md)) and wooden buttons pressed by arrows
+and sparking, the strike, the bolt's whole life; see [lightning](lightning.md)), wooden buttons pressed by arrows,
+and big dripleaves tilted fully by arrows and snowballs (including powered leaves and the scheduled reset)
 are checked against vanilla by `projectile_block_hits.json` (see [scenario captures](../scenario-captures.md)). `VanillaProjectileHits` pins each difference below by case and field,
 and fails once one goes.
 

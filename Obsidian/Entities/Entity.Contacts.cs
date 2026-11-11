@@ -11,6 +11,96 @@ public partial class Entity
 
     internal bool ContactBounced { get; set; }
 
+    internal virtual int ContactFireTicks { get; set; }
+
+    // A stand's shared Burning flag follows baseTick; extinguishing during contacts only changes its counter.
+    internal bool IsContactBurning => (this.ContactFireTicks > 0 || this is not ArmorStand && this.Burning)
+        && this is not Living { IsFireImmune: true };
+
+    internal bool NeedsRainContact => this is ArmorStand { ContactFireTicks: > 0 } && this.Level.LevelData.Raining;
+
+    /// <summary>The entity random used for contact effects; mobs share their ordinary AI random.</summary>
+    internal Random ContactEffectRandom { get; set; } = Random.Shared;
+
+    internal virtual Random ContactRandom => this.ContactEffectRandom;
+
+    private bool contactExtinguishPending;
+    private bool contactWasBurning;
+    private bool contactWasFrozen;
+    private List<(WorldData.IContactLevel Level, Vector Position, IBlock State)>? snowContacts;
+
+    internal void BeginInsideContact()
+    {
+        this.contactWasBurning = this.IsContactBurning;
+        this.contactWasFrozen = this.PowderedSnowTicks > 0;
+    }
+
+    internal void RecordPowderSnow(WorldData.IContactLevel level, Vector position, IBlock state)
+    {
+        this.snowContacts ??= [];
+        this.snowContacts.Add((level, position, state));
+    }
+
+    internal void RequestContactExtinguish() => this.contactExtinguishPending = true;
+
+    // Vanilla's isInRain: rain falling on the entity's feet, or on the cell at the top of its box above them.
+    internal bool IsInRain()
+    {
+        var terrain = new AI.MobTerrain(this.Level);
+        var feet = (Vector)this.Position.Floor();
+        var head = new Vector(feet.X, (int)Math.Floor(this.CurrentBox.Max.Y), feet.Z);
+        return terrain.IsRainingAt(feet) || terrain.IsRainingAt(head);
+    }
+
+    internal void FinishInsideContact()
+    {
+        if (this.contactExtinguishPending)
+        {
+            this.contactExtinguishPending = false;
+            // Stands have no mob/player environment tick. Vanilla applies FREEZE once before deferred melts.
+            if (this is ArmorStand stand)
+                stand.FreezeFromPowderSnow();
+
+            if (this.snowContacts is not null)
+            {
+                foreach (var (level, position, state) in this.snowContacts)
+                    WorldData.PowderSnowContactBehavior.Melt(level, position, state, this);
+
+                this.snowContacts.Clear();
+            }
+            this.ContactFireTicks = 0;
+            if (this.Burning)
+            {
+                this.Burning = false;
+                this.PacketBroadcaster.QueuePacketToLevelInRange(this.Level, this.Position,
+                    new Net.Packets.Play.Clientbound.SetEntityDataPacket { EntityId = this.EntityId, Entity = this });
+            }
+        }
+
+        if (this.NeedsRainContact && this.IsInRain())
+            this.ContactFireTicks = 0;
+
+        // Vanilla snapshots fire/freeze before visiting cells, but evaluates melting after all their hooks. An
+        // ignition later in the pass can therefore melt earlier snow without an extinguish sound that pass.
+        if (this.contactWasBurning && !this.IsContactBurning || this.contactWasFrozen && this.PowderedSnowTicks == 0)
+        {
+            // Vanilla draws two entity floats for the pitch, even when the entity is silent.
+            var pitch = 1.6f + (this.ContactRandom.NextSingle() - this.ContactRandom.NextSingle()) * 0.4f;
+            if (this.Level is WorldData.AbstractLevel world)
+            {
+                var category = this switch
+                {
+                    Mob mob => mob.ContactSoundCategory,
+                    IPlayer => SoundCategory.Players,
+                    ArmorStand => SoundCategory.Neutral,
+                    _ => SoundCategory.Ambient
+                };
+                WorldData.LevelSounds.Play(world, this.Position, "minecraft:entity.generic.extinguish_fire",
+                    category, 0.7f, pitch);
+            }
+        }
+    }
+
     /// <summary>
     /// Where the entity was when its last tick's movement began, like vanilla's <c>oldPosition</c>: set by its level
     /// before the tick of an entity the server moves, and after the contacts of a player, whose client moves them

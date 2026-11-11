@@ -118,6 +118,8 @@ public abstract class VehicleEntity : Entity, IPlayerInteractable
     /// </summary>
     internal double FallDistance { get; set; }
 
+    internal override double ContactFallDistance { get => this.FallDistance; set => this.FallDistance = value; }
+
     internal override void ResetFallDistance() => this.FallDistance = 0;
 
     /// <summary>

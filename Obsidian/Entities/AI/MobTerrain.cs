@@ -120,9 +120,10 @@ internal sealed class MobTerrain(ILevel level) : IPathTerrain
             chunk.GetBiome(position.X, position.Y, position.Z), position.X, position.Y, position.Z, seaLevel);
     }
 
-    public bool IsRainingAt(Vector position) => level.LevelData.Raining && GetSkyLight(position) == 15 &&
-        level is AbstractLevel concrete && concrete.GetLoadedChunk(position.X >> 4, position.Z >> 4) is { } chunk &&
-        chunk.GetBiome(position.X, position.Y, position.Z).Element.HasPrecipitation && GetTemperature(position) >= 0.15f;
+    // Vanilla's Level.isRainingAt, which also needs the column's motion-blocking top at or below the position: a slab
+    // or fence in the cell keeps the rain off it even though the sky light there is full.
+    public bool IsRainingAt(Vector position) => level.LevelData.Raining && level is AbstractLevel concrete &&
+        concrete.RainsOn(position);
 
     public float GetFriction(VectorD position) =>
         GetBlock((Vector)(position - new VectorD(0, 0.500001f, 0)).Floor())?.RegistryId switch

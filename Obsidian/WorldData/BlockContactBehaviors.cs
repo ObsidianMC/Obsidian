@@ -226,25 +226,75 @@ internal sealed class PowderSnowContactBehavior : IEntityInsideBehavior, IFallOn
     public ValueTask EntityInsideAsync(IContactLevel level, Vector position, IBlock block, Entity entity)
     {
         var feet = level.Blocks.GetBlock((Vector)entity.Position.Floor());
-        if (entity is Living && feet.RegistryId != BlockIds.PowderSnow)
-            return default;
-
-        entity.MakeStuckInBlock(stuck);
-
-        // Vanilla draws the snowflakes a moving entity kicks up from the level's random, which later draws depend on,
-        // so they're drawn here too; the particles aren't sent yet.
-        var movement = entity is PlayerBase ? entity.TickMovement : entity.Motion;
-        if (movement.X != 0 || movement.Z != 0)
+        if (entity is not Living || feet.RegistryId == BlockIds.PowderSnow)
         {
-            var random = level.Blocks.Random;
-            if (random.NextBoolean())
+            entity.MakeStuckInBlock(stuck);
+            var movement = entity is PlayerBase ? entity.TickMovement : entity.Motion;
+            if (movement.X != 0 || movement.Z != 0)
             {
-                random.NextFloat();
-                random.NextFloat();
+                var random = level.Blocks.Random;
+                if (random.NextBoolean())
+                {
+                    // Vanilla draws x then z after its boolean. Preserve float arithmetic: later block draws and
+                    // the per-axis particle speed both depend on this order and rounding.
+                    var x = (-1 + random.NextFloat() * 2) * (1 / 12f);
+                    var z = (-1 + random.NextFloat() * 2) * (1 / 12f);
+                    SendSnowflake(level, position, entity, new VectorF(x, 0.05f, z));
+                }
             }
         }
 
+        entity.RecordPowderSnow(level, position, block);
+
+        entity.RequestContactExtinguish();
         return default;
+    }
+
+    internal static void Melt(IContactLevel level, Vector position, IBlock block, Entity entity)
+    {
+        if (entity.IsContactBurning && level.Level is AbstractLevel world)
+        {
+            var canMelt = entity is IPlayer || world.LevelData.GetBooleanRule("mob_griefing");
+            if (canMelt)
+            {
+                lock (world.Fluids.TickLock)
+                {
+                    if (level.Blocks.GetBlock(position).IsSameState(block))
+                    {
+                        world.BroadcastLevelEvent(2001, position, block.GetHashCode());
+                        level.Blocks.RemoveBlock(position);
+                        world.EmitGameEvent(MobGameEvent.BlockDestroy, (VectorD)position + 0.5,
+                            affectedBlock: block);
+                    }
+                }
+            }
+        }
+    }
+
+    private static readonly ParticleData snowflake = new SnowflakeParticle();
+
+    private static void SendSnowflake(IContactLevel level, Vector position, Entity entity, VectorF speed)
+    {
+        if (level.Level is not AbstractLevel world)
+            return;
+
+        var at = new VectorD(entity.Position.X, position.Y + 1, entity.Position.Z);
+        var viewers = world.Players.Values
+            .Where(player => AbstractLevel.IsInParticleRange(player.Position, at, 32))
+            .Select(player => player.EntityId).ToArray();
+        world.PacketBroadcaster.QueuePacketTo(new Net.Packets.Play.Clientbound.LevelParticlesPacket
+        {
+            Position = at,
+            Speed = speed,
+            ParticleCount = 1,
+            Randomization = Net.Packets.Play.Clientbound.ParticleRandomization.Alternative,
+            Data = snowflake
+        }, ids: viewers);
+    }
+
+    private sealed class SnowflakeParticle : ParticleData
+    {
+        public override ParticleType ParticleType => ParticleType.Snowflake;
     }
 
     public ValueTask FallenOnAsync(
