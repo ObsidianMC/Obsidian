@@ -687,6 +687,72 @@
       ]
     },
     {
+      "name": "execute_counts_each_successful_branch",
+      "ticks": 3,
+      "setup": [
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:redstone_wire"
+        }
+      ],
+      "commandBlocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:command_block[facing=up]",
+          "command": "execute as @a run say hi"
+        }
+      ],
+      "actions": [
+        {
+          "tick": 1,
+          "offset": [-1, 0, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "0,0,0 success=2 powered=true conditionMet=true auto=false output=-"
+          ],
+          "chat": [
+            "[Operator] hi",
+            "[Visitor] hi"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "0,0,0 success=2 powered=true conditionMet=true auto=false output=-"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;1,0,0=minecraft:comparator[facing=west,powered=true];2,0,0=minecraft:redstone_wire[east=side,power=2,west=side]",
+          "commandBlocks": [
+            "0,0,0 success=2 powered=true conditionMet=true auto=false output=-"
+          ]
+        }
+      ],
+      "saved": [
+        "0,0,0 Command=execute as @a run say hi LastExecution=1 SuccessCount=2 TrackOutput=1b UpdateLastExecution=1b auto=0b conditionMet=1b powered=1b"
+      ]
+    },
+    {
       "name": "chain_runs_in_order",
       "ticks": 3,
       "commandBlocks": [

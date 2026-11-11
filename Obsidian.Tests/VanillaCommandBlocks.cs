@@ -111,7 +111,7 @@ public sealed partial class VanillaCommandBlocks(ITestOutputHelper output)
     }
 
     // One world of empty chunks around the origin, kept ticking by an operator in creative mode beside it, who hears
-    // the chat and edits the command blocks.
+    // the chat and edits the command blocks, and a second player for selectors to find.
     private static async Task<Harness> StartAsync(Vector origin)
     {
         var context = TestServerFactory.CreateServer($"command-blocks-{Guid.NewGuid():N}");
@@ -144,6 +144,11 @@ public sealed partial class VanillaCommandBlocks(ITestOutputHelper output)
 
         MakeOperator(context.Server, operatorPlayer);
         operatorPlayer.GameMode = GameMode.Creative;
+
+        // A second player, not an operator, whom selectors find after the operator (execute as @a).
+        var visiting = (VectorD)origin + new VectorD(3.5, 0, -6.5);
+        var visitor = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Visitor", visiting);
+        await TestServerFactory.JoinConnectedPlayerAsync(context.Server, visitor);
         return new Harness(context, origin, operatorPlayer);
     }
 

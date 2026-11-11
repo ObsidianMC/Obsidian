@@ -1,10 +1,12 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Commands;
+using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Utilities;
 using Obsidian.WorldData;
 using System.Globalization;
 using System.Text;
+using System.Threading;
 
 namespace Obsidian.Commands;
 
@@ -13,8 +15,10 @@ namespace Obsidian.Commands;
 /// <c>BaseCommandBlock</c>: both run it through <see cref="PerformAsync"/> and save it with <see cref="Save"/>.
 /// </summary>
 /// <remarks>
-/// A run changes it on its level's tick, and an edit under the level's tick lock; a command block saves it from any
-/// thread (see <see cref="WorldData.CommandBlockEntity"/>).
+/// An edit changes it under the level's tick lock. A run reads it as it starts, and commits its results once the
+/// command finished, under the lock its <see cref="CommandRun"/> names and only if no edit set the command meanwhile
+/// (see <see cref="Revision"/>). A command block saves it from any thread (see
+/// <see cref="WorldData.CommandBlockEntity"/>).
 /// </remarks>
 internal sealed partial class StoredCommand
 {
@@ -63,24 +67,34 @@ internal sealed partial class StoredCommand
     public string Name => this.CustomName is ChatMessage name ? PlainText(name) : DefaultName;
 
     /// <summary>
+    /// How many times the command was set. A run commits its results only while it's what the run started with, so
+    /// an edit made while the command ran keeps its reset.
+    /// </summary>
+    public int Revision { get; private set; }
+
+    /// <summary>
     /// Sets the command, which forgets how often the last one succeeded (vanilla's <c>setCommand</c>).
     /// </summary>
     public void SetCommand(string command)
     {
         this.Command = command;
         this.SuccessCount = 0;
+        this.Revision++;
     }
 
     /// <summary>
     /// Runs the command, like vanilla's <c>performCommand</c>: at most once a game tick, only while the level's
     /// <c>command_blocks_work</c> rule is on, at the game master permission level (2), going by <see cref="Name"/>.
     /// The command's output is kept and its successes told to operators as <see cref="TrackOutput"/> and the
-    /// <c>send_command_feedback</c> and <c>command_block_output</c> rules say.
+    /// <c>send_command_feedback</c> and <c>command_block_output</c> rules say. Its success count is how many of its
+    /// branches succeeded (each entity <c>/execute as</c> ran it as, say).
     /// </summary>
     /// <returns>False when the command already ran this game tick, which ends a chain; true otherwise.</returns>
     /// <remarks>
     /// Call on the level's tick. Commands that would wait for the gates (a <c>/save</c>) leave their work to the
-    /// server's background work, as they do from any tick (see <see cref="Server.RunOutsideTicksAsync"/>).
+    /// server's background work, as they do from any tick (see <see cref="Server.RunOutsideTicksAsync"/>). The run's
+    /// results are committed once the command finished, under the run's <see cref="CommandRun.CommitLock"/>; an edit
+    /// meanwhile (see <see cref="Revision"/>) or the holder leaving drops them.
     /// </remarks>
     public async ValueTask<bool> PerformAsync(CommandRun run)
     {
@@ -89,32 +103,71 @@ internal sealed partial class StoredCommand
         if (gameTime == this.LastExecution)
             return false;
 
+        var revision = this.Revision;
         if (string.Equals(this.Command, Searge, StringComparison.OrdinalIgnoreCase))
         {
-            this.LastOutput = ChatMessage.Simple(SeargeOutput);
-            this.SuccessCount = 1;
+            this.Commit(run, revision, () =>
+            {
+                this.LastOutput = ChatMessage.Simple(SeargeOutput);
+                this.SuccessCount = 1;
+            });
             return true;
         }
 
-        this.SuccessCount = 0;
+        RunOutcome? outcome = null;
         var rules = level.LevelData;
         if (rules.GetBooleanRule("command_blocks_work") && this.Command.Length > 0
             && level.OwningServer is Server server)
         {
-            this.LastOutput = null;
-            await this.RunAsync(server, run);
+            outcome = await this.RunAsync(server, run);
         }
 
-        this.LastExecution = this.UpdateLastExecution ? gameTime : NoLastExecution;
+        this.Commit(run, revision, () =>
+        {
+            // A command that ran forgets its last output, keeping only what it said this time.
+            this.SuccessCount = outcome?.Successes ?? 0;
+            if (outcome is RunOutcome ran)
+                this.LastOutput = ran.Output;
+
+            this.LastExecution = this.UpdateLastExecution ? gameTime : NoLastExecution;
+        });
         return true;
     }
 
-    private async ValueTask RunAsync(Server server, CommandRun run)
+    // Applies a run's results under the run's lock, unless an edit set the command while it ran or its holder is no
+    // longer in place.
+    private void Commit(CommandRun run, int revision, Action apply)
     {
+        if (run.CommitLock is not Lock sync)
+        {
+            Apply();
+            return;
+        }
+
+        lock (sync)
+            Apply();
+
+        void Apply()
+        {
+            if (this.Revision != revision || run.StillResident?.Invoke() == false)
+                return;
+
+            apply();
+        }
+    }
+
+    // What a run of the command did: how many of its branches succeeded, and the output it keeps, if any.
+    private readonly record struct RunOutcome(int Successes, ChatMessage? Output);
+
+    // Runs the command as it stood when the run started; operators are told of its successes as it goes.
+    private async ValueTask<RunOutcome> RunAsync(Server server, CommandRun run)
+    {
+        var command = this.Command;
+        var trackOutput = this.TrackOutput;
         var sender = new CommandBlockSender(this.Name);
 
         // Vanilla's performPrefixedCommand takes the command with or without its slash.
-        var line = this.Command.StartsWith('/') ? this.Command : $"/{this.Command}";
+        var line = command.StartsWith('/') ? command : $"/{command}";
         var context = new CommandContext(line, sender, null, server)
         {
             Executor = run.Executor,
@@ -129,36 +182,38 @@ internal sealed partial class StoredCommand
         }
         catch (Exception exception)
         {
-            Log.CommandFailed(run.Level.Logger, this.Command, exception);
-            return;
+            Log.CommandFailed(run.Level.Logger, command, exception);
+            return new RunOutcome(0, null);
         }
 
-        // Vanilla counts each successful result; a command here reports one.
-        if (context.Succeeded)
-            this.SuccessCount = 1;
+        // Vanilla counts each successful result: one per branch that succeeded.
+        var successes = context.Succeeded ? context.SuccessCount : 0;
 
         // Without tracked output vanilla runs the command with no source to tell: nothing is kept or told.
-        if (!this.TrackOutput)
-            return;
+        if (!trackOutput)
+            return new RunOutcome(successes, null);
 
         var rules = run.Level.LevelData;
         var feedback = rules.GetBooleanRule("send_command_feedback");
+        ChatMessage? output = null;
         foreach (var message in sender.Messages)
         {
             // A failure is always kept; a success only with feedback on, which operators are told of too.
             if (!context.Succeeded)
             {
-                this.LastOutput = Timed(message);
+                output = Timed(message);
                 continue;
             }
 
             if (!feedback)
                 continue;
 
-            this.LastOutput = Timed(message);
+            output = Timed(message);
             if (rules.GetBooleanRule("command_block_output"))
                 await InformOperatorsAsync(server, sender.Name, message);
         }
+
+        return new RunOutcome(successes, output);
     }
 
     // Vanilla's broadcastToAdmins: "[name: message]" in grey italics to every online operator.
@@ -212,26 +267,29 @@ internal sealed partial class StoredCommand
     }
 
     /// <summary>
-    /// Writes the fields vanilla's <c>BaseCommandBlock.save</c> writes. <c>LastOutput</c> only while the output is
-    /// tracked, and <c>LastExecution</c> only while it's recorded and set.
+    /// Writes the fields vanilla's <c>BaseCommandBlock.save</c> writes, replacing what <paramref name="tag"/> holds:
+    /// a minecart's tag starts with the data it was loaded from. <c>LastOutput</c> is written only while the output is
+    /// tracked, <c>LastExecution</c> only while it's recorded and set, and <c>CustomName</c> only when there is one;
+    /// each is removed otherwise.
     /// </summary>
     /// <param name="withName">
     /// Whether to write <c>CustomName</c>: a minecart's custom name is its entity's, which it saves itself.
     /// </param>
     public void Save(NbtCompound tag, bool withName)
     {
-        tag.Add(new NbtTag<string>("Command", this.Command));
-        tag.Add(new NbtTag<int>("SuccessCount", this.SuccessCount));
-        if (withName && this.CustomName is ChatMessage name)
-            tag.Add(name.TextToNbt("CustomName"));
+        tag.Set(new NbtTag<string>("Command", this.Command));
+        tag.Set(new NbtTag<int>("SuccessCount", this.SuccessCount));
+        if (withName)
+            tag.SetOrRemove("CustomName", this.CustomName?.TextToNbt("CustomName"));
 
-        tag.Add(new NbtTag<bool>("TrackOutput", this.TrackOutput));
-        if (this.TrackOutput && this.LastOutput is ChatMessage output)
-            tag.Add(output.TextToNbt("LastOutput"));
+        tag.Set(new NbtTag<bool>("TrackOutput", this.TrackOutput));
+        var output = this.TrackOutput ? this.LastOutput?.TextToNbt("LastOutput") : null;
+        tag.SetOrRemove("LastOutput", output);
 
-        tag.Add(new NbtTag<bool>("UpdateLastExecution", this.UpdateLastExecution));
-        if (this.UpdateLastExecution && this.LastExecution != NoLastExecution)
-            tag.Add(new NbtTag<long>("LastExecution", this.LastExecution));
+        tag.Set(new NbtTag<bool>("UpdateLastExecution", this.UpdateLastExecution));
+        var recorded = this.UpdateLastExecution && this.LastExecution != NoLastExecution;
+        var execution = recorded ? new NbtTag<long>("LastExecution", this.LastExecution) : null;
+        tag.SetOrRemove("LastExecution", execution);
     }
 
     /// <summary>
@@ -264,11 +322,21 @@ internal sealed partial class StoredCommand
 /// <param name="Origin">Where it runs: a command block's centre, or a minecart's position.</param>
 /// <param name="Rotation">The rotation local coordinates follow: a command block's facing, or a minecart's.</param>
 /// <param name="Executor">The entity it runs as (a minecart), or null for a command block.</param>
+/// <param name="CommitLock">
+/// The lock the run's results are committed under, which edits take too (a command block's level's tick lock), or
+/// null for a holder whose edits can't come while its command runs (a minecart's are queued to its level's tick).
+/// </param>
+/// <param name="StillResident">
+/// Whether the command's holder is still in place as the results are committed (a command block's block entity still
+/// at its position); null when it always is.
+/// </param>
 internal readonly record struct CommandRun(
     AbstractLevel Level,
     VectorD Origin,
     (float Yaw, float Pitch) Rotation,
-    IEntity? Executor);
+    IEntity? Executor,
+    Lock? CommitLock = null,
+    Func<bool>? StillResident = null);
 
 /// <summary>
 /// A command block's commands' sender: the game master permission level (2), the block's name, and what the command

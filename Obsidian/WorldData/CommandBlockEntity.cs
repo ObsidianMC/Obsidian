@@ -1,5 +1,6 @@
 using Obsidian.API.BlockEntities;
 using Obsidian.Commands;
+using Obsidian.Entities;
 using Obsidian.Nbt;
 
 namespace Obsidian.WorldData;
@@ -55,11 +56,12 @@ internal sealed class CommandBlockEntity : BlockEntity
         this.Automatic = tag.TryGetBool("auto", out var automatic) && automatic;
     }
 
+    // Replaces what the tag holds, as the command's fields do.
     protected internal override void Save(NbtCompound tag)
     {
         this.Command.Save(tag, withName: true);
-        tag.Add(new NbtTag<bool>("powered", this.Powered));
-        tag.Add(new NbtTag<bool>("conditionMet", this.ConditionMet));
-        tag.Add(new NbtTag<bool>("auto", this.Automatic));
+        tag.Set(new NbtTag<bool>("powered", this.Powered));
+        tag.Set(new NbtTag<bool>("conditionMet", this.ConditionMet));
+        tag.Set(new NbtTag<bool>("auto", this.Automatic));
     }
 }

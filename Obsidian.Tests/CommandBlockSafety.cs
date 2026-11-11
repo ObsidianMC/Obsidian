@@ -1,5 +1,6 @@
 using Obsidian.API;
 using Obsidian.API.Blocks;
+using Obsidian.API.Commands;
 using Obsidian.API.Registries;
 using Obsidian.API.Utilities;
 using Obsidian.Commands;
@@ -16,6 +17,7 @@ using Obsidian.Utilities;
 using Obsidian.WorldData;
 using System;
 using System.Collections;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -34,6 +36,12 @@ public sealed class CommandBlockSafety
     private static readonly Vector target = new(8, 64, 8);
 
     private const BlockUpdateFlags Quiet = BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace;
+
+    // Vanilla's Mode ordinals and the edit packet's flags.
+    private const int Repeating = 1;
+    private const int Impulse = 2;
+    private const int TrackOutputFlag = 1;
+    private const int AutomaticFlag = 4;
 
     // Vanilla's advMode.notAllowed.
     private const string NotAllowed = "Must be an opped player in creative mode";
@@ -57,7 +65,8 @@ public sealed class CommandBlockSafety
         foreach (var editor in refused)
         {
             var player = await JoinAsync(context, editor.Name, editor.Level, editor.Mode);
-            await EditPacket(target, "say edited").HandleAsync(context.Server, player);
+            var edit = EditPacket(target, "say edited", Repeating, TrackOutputFlag | AutomaticFlag);
+            await edit.HandleAsync(context.Server, player);
 
             Assert.True(world.BlockUpdates.GetBlock(target).Is(BlockIds.CommandBlock), editor.Name);
             Assert.Equal(string.Empty, Entity(world).Command.Command);
@@ -66,7 +75,8 @@ public sealed class CommandBlockSafety
 
         // A game master in creative mode turns it into an always active repeating block.
         var master = await JoinAsync(context, "game master", 2, GameMode.Creative);
-        await EditPacket(target, "say edited").HandleAsync(context.Server, master);
+        var allowed = EditPacket(target, "say edited", Repeating, TrackOutputFlag | AutomaticFlag);
+        await allowed.HandleAsync(context.Server, master);
 
         Assert.True(world.BlockUpdates.GetBlock(target).Is(BlockIds.RepeatingCommandBlock));
         Assert.Equal("say edited", Entity(world).Command.Command);
@@ -75,7 +85,8 @@ public sealed class CommandBlockSafety
 
         // Naming a block that isn't a command block changes nothing.
         var elsewhere = target + new Vector(1, 0, 0);
-        await EditPacket(elsewhere, "say elsewhere").HandleAsync(context.Server, master);
+        await EditPacket(elsewhere, "say elsewhere", Repeating, TrackOutputFlag | AutomaticFlag)
+            .HandleAsync(context.Server, master);
         Assert.True(world.BlockUpdates.GetBlock(elsewhere).IsAir);
         Assert.Empty(Chat(master));
     }
@@ -129,6 +140,84 @@ public sealed class CommandBlockSafety
     private sealed record SavedRow(string Name, string Data, Action<CommandBlockEntity> Check);
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task AnEditMadeWhileTheCommandRunsKeepsItsReset()
+    {
+        await using var context = await StartAsync();
+        var world = context.World;
+        var gate = new CommandGate();
+        CommandGate.Current = gate;
+        ((CommandHandler)context.Server.CommandHandler).RegisterCommandClass<CommandGate.Module>(null);
+        var editor = await JoinAsync(context, "editor", 2, GameMode.Creative);
+        PlaceImpulse(world, target, "gate");
+
+        // The block's tick runs its command, which waits at the gate in the middle of the level's tick.
+        await world.SetBlockAsync(target + new Vector(-1, 0, 0), BlocksRegistry.RedstoneBlock, doBlockUpdate: true);
+        var tick = world.DoWorldTickAsync();
+        await gate.Entered.Task;
+
+        // An operator edits the block meanwhile, which resets its success count.
+        await EditPacket(target, "say edited", Impulse, TrackOutputFlag).HandleAsync(context.Server, editor);
+        Assert.Equal(0, Entity(world).Command.SuccessCount);
+
+        // The command succeeds once let through: its result is the old command's, so the edit's reset stays.
+        gate.Release.SetResult();
+        await tick;
+
+        var command = Entity(world).Command;
+        Assert.Equal("say edited", command.Command);
+        Assert.Equal(0, command.SuccessCount);
+        Assert.Equal(-1, command.LastExecution);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ACommandBlocksSaveRunsOnceTheTickIsOver()
+    {
+        await using var context = await StartAsync();
+        var world = context.World;
+        ((CommandHandler)context.Server.CommandHandler).RegisterCommands();
+        await JoinAsync(context, "watcher", 0, GameMode.Survival);
+        PlaceImpulse(world, target, "save");
+        var levelFile = Path.Combine(world.WorldFolderPath, "level.dat");
+        File.Delete(levelFile);
+
+        // Inside the tick it can't wait for the levels' gates: the save is left to the background work.
+        await world.SetBlockAsync(target + new Vector(-1, 0, 0), BlocksRegistry.RedstoneBlock, doBlockUpdate: true);
+        await world.DoWorldTickAsync();
+        await context.Server.BackgroundWork.DrainAsync();
+
+        Assert.Equal(1, Entity(world).Command.SuccessCount);
+        Assert.True(File.Exists(levelFile));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ALoadedCommandBlockMinecartSavesAgain()
+    {
+        await using var context = await StartAsync();
+        var vanilla = SnbtReader.ReadCompound(
+            "{id:\"minecraft:command_block_minecart\",Command:\"say cart\",LastExecution:77L,"
+            + "LastOutput:\"[12:34:56] Changed the block at 1, 2, 3\",SuccessCount:2,TrackOutput:1b,"
+            + "UpdateLastExecution:1b,Pos:[8.5d,64.0d,8.5d],Motion:[0.0d,0.0d,0.0d],Rotation:[0.0f,0.0f]}");
+
+        // Loaded as a chunk loads it: its saves start with the data it was loaded from.
+        var cart = Assert.IsType<CommandBlockMinecart>(EntityNbt.Load(vanilla, context.World));
+        Assert.Equal("say cart", cart.Command);
+        Assert.Equal(77, cart.Stored.LastExecution);
+        var saved = EntityNbt.Save(cart)!;
+        Assert.Equal("say cart", saved.GetString("Command"));
+        Assert.Equal(77, saved.GetLong("LastExecution"));
+
+        // An edit that stops tracking output drops the loaded output from its next save.
+        cart.Edit("say other", trackOutput: false);
+        var edited = EntityNbt.Save(cart)!;
+        Assert.Equal("say other", edited.GetString("Command"));
+        Assert.False(edited.HasTag("LastOutput"));
+
+        // Loaded again from that save, it saves again the same.
+        var reloaded = Assert.IsType<CommandBlockMinecart>(EntityNbt.Load(edited, context.World));
+        Assert.Equal(Snbt.Write(edited), Snbt.Write(EntityNbt.Save(reloaded)!));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task CommandBlockDataSurvivesASave()
     {
         SavedRow[] rows =
@@ -173,20 +262,15 @@ public sealed class CommandBlockSafety
             row.Check(Assert.IsType<CommandBlockEntity>(reloaded));
         }
 
-        // A command block minecart saves its command the same way, without a name of its own.
-        await using var context = await StartAsync();
-        var cart = new CommandBlockMinecart { Level = context.World };
-        cart.Stored.Load(SnbtReader.ReadCompound(
-            "{Command:\"say cart\",LastExecution:77L,SuccessCount:2,TrackOutput:1b,UpdateLastExecution:1b}"),
-            withName: false);
-        var cartTag = new NbtCompound();
-        cart.WriteNbt(cartTag);
-
-        var copy = new CommandBlockMinecart { Level = context.World };
-        copy.ReadNbt(cartTag);
-        Assert.Equal("say cart", copy.Command);
-        Assert.Equal(2, copy.SuccessCount);
-        Assert.Equal(77, copy.Stored.LastExecution);
+        // A block's save replaces what the tag holds and drops what it no longer has.
+        var block = Assert.IsType<CommandBlockEntity>(BlockEntityNbt.Load(SnbtReader.ReadCompound(rows[0].Data),
+            CommandBlockEntity.TypeId, target));
+        var stale = SnbtReader.ReadCompound(rows[0].Data);
+        block.Command.CustomName = null;
+        block.Command.TrackOutput = false;
+        block.Save(stale);
+        Assert.False(stale.HasTag("CustomName"));
+        Assert.False(stale.HasTag("LastOutput"));
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
@@ -279,18 +363,42 @@ public sealed class CommandBlockSafety
         return chat;
     }
 
-    // An editor's packet making the block an always active, unconditional repeating block that keeps its output.
-    private static SetCommandBlockPacket EditPacket(Vector position, string command)
+    // An editor's packet setting the block's command, mode (vanilla's Mode ordinal) and flags.
+    private static SetCommandBlockPacket EditPacket(Vector position, string command, int mode, int flags)
     {
-        const int repeating = 1;
-        const int trackOutputAndAutomatic = 1 | 4;
-
         using var buffer = new NetworkBuffer();
         buffer.WritePosition(position);
         buffer.WriteString(command);
-        buffer.WriteVarInt(repeating);
-        buffer.WriteByte((byte)trackOutputAndAutomatic);
+        buffer.WriteVarInt(mode);
+        buffer.WriteByte((byte)flags);
         return SetCommandBlockPacket.Deserialize(buffer.AsSpan(0, buffer.Size).ToArray());
+    }
+
+    /// <summary>
+    /// A <c>/gate</c> command that waits at a gate the test opens, so that something can happen while a command block
+    /// runs it, in the middle of its level's tick.
+    /// </summary>
+    public sealed class CommandGate
+    {
+        /// <summary>The gate the next <c>/gate</c> waits at.</summary>
+        internal static CommandGate? Current { get; set; }
+
+        /// <summary>Set once the command is waiting.</summary>
+        public TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        /// <summary>Set by the test to let the command through, which then succeeds.</summary>
+        public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public sealed class Module : CommandModuleBase
+        {
+            [Command("gate")]
+            public async Task GateAsync()
+            {
+                var gate = Current!;
+                gate.Entered.SetResult();
+                await gate.Release.Task;
+            }
+        }
     }
 
     private static NbtCompound Without(NbtCompound tag, params string[] names)

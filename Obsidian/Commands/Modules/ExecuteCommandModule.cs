@@ -63,6 +63,8 @@ public sealed class ExecuteCommandModule : CommandModuleBase
                 var successes = 0;
                 var result = 0;
 
+                // Like vanilla's result callbacks, each branch's successful results count (a nested /execute's
+                // own branches each), apart from the values they return.
                 foreach (var context in contexts)
                 {
                     var child = context.Derive($"{CommandHelpers.DefaultPrefix}{command}", context.Executor,
@@ -70,12 +72,12 @@ public sealed class ExecuteCommandModule : CommandModuleBase
                     await handler.ProcessCommand(child);
                     if (child.Succeeded)
                     {
-                        successes++;
+                        successes += child.SuccessCount;
                         result += child.Result;
                     }
                 }
 
-                this.CommandContext.SetResult(successes > 0, result);
+                this.CommandContext.SetResult(successes > 0, result, successes);
                 return;
             }
 

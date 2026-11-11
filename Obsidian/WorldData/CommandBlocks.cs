@@ -201,7 +201,7 @@ internal static partial class CommandBlocks
         }
 
         if (state.GetProperty("conditional") == "true")
-            ClearSuccesses(entity);
+            ClearSuccesses(level, entity);
     }
 
     // Vanilla's execute: the command runs (an empty one clears the success count), then the chain it faces.
@@ -211,7 +211,7 @@ internal static partial class CommandBlocks
         if (entity.Command.Command.Length > 0)
             await PerformAsync(level, position, state, entity);
         else
-            ClearSuccesses(entity);
+            ClearSuccesses(level, entity);
 
         await ExecuteChainAsync(level, position, Facing(state));
     }
@@ -239,7 +239,7 @@ internal static partial class CommandBlocks
             }
             else if (step == ChainStep.Clear)
             {
-                ClearSuccesses(entity);
+                ClearSuccesses(level, entity);
             }
 
             direction = Facing(state);
@@ -283,20 +283,30 @@ internal static partial class CommandBlocks
         Clear
     }
 
-    // Runs the block's command from its centre, turned the way it faces.
+    // Runs the block's command from its centre, turned the way it faces. Its results are committed under the level's
+    // tick lock, where edits change the block, and only while this block entity is still the one at the position.
     private static async ValueTask<bool> PerformAsync(AbstractLevel level, Vector position, IBlock state,
         CommandBlockEntity entity)
     {
         var center = (VectorD)position + new VectorD(0.5, 0.5, 0.5);
-        var run = new CommandRun(level, center, (YawOf(Facing(state)), 0), Executor: null);
+        var updates = level.BlockUpdates;
+        var run = new CommandRun(level, center, (YawOf(Facing(state)), 0), Executor: null)
+        {
+            CommitLock = level.Fluids.TickLock,
+            StillResident = () => !entity.IsRemoved && ReferenceEquals(updates.GetBlockEntity(position), entity)
+        };
+
         var ran = await entity.Command.PerformAsync(run);
         entity.SetChanged();
         return ran;
     }
 
-    private static void ClearSuccesses(CommandBlockEntity entity)
+    // A block that didn't run because its condition failed forgets its successes, under the level's tick lock.
+    private static void ClearSuccesses(AbstractLevel level, CommandBlockEntity entity)
     {
-        entity.Command.SuccessCount = 0;
+        lock (level.Fluids.TickLock)
+            entity.Command.SuccessCount = 0;
+
         entity.SetChanged();
     }
 

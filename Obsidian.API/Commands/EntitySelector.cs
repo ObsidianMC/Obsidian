@@ -130,8 +130,10 @@ public sealed partial class EntitySelector
 
         var origin = this.Origin(context);
 
+        // Players in the order they joined, as vanilla's player list keeps them: their entity ids count up as they
+        // join, where the online players' dictionary has no order of its own.
         IEnumerable<IEntity> candidates = this.playersOnly
-            ? context.Server.OnlinePlayers.Values
+            ? context.Server.OnlinePlayers.Values.OrderBy(player => player.EntityId)
             : context.Level?.GetEntitiesInRange(origin, float.MaxValue) ?? [];
 
         var matches = candidates.Where(entity => this.Matches(entity, context, origin));

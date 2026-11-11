@@ -20,8 +20,6 @@ game rule, which is what Obsidian honours.
   fluid ticks, where a command can run; vanilla runs it among the block ticks. Runs keep their order, and everything a
   run changes is in place by the end of the same game tick. But a block tick due in the same game tick that reads what
   a command changed sees it before the command ran.
-- **Success counts.** A command's success counts once. Vanilla counts each successful result, so
-  `execute as @a run say hi` with three players gives 3 in vanilla and 1 here.
 - **Output and operators.** Vanilla tells each message apart as a success (kept with `send_command_feedback`, and told
   to operators with `command_block_output`) or a failure (always kept). Obsidian's command sender can't, so every
   message of a command that succeeded counts as a success, and every message of one that failed as a failure.
@@ -37,15 +35,18 @@ game rule, which is what Obsidian honours.
 ## Concurrency
 
 A run's command executes outside the level's tick lock, as commands await. Edits (the `SetCommandBlock` packet) and
-redstone change the block under the lock, so an edit can land while the block's command is still running. The run's
-results (`SuccessCount`, `LastOutput`, `LastExecution`) are then written after the edit's reset. Vanilla handles edits
-between ticks, so it can't interleave them. The block saves from any thread, like the server's other block
-entities, so a save racing a run may take some fields from before it and some from after. The run's own change is
-saved again at the end of the tick.
+redstone change the block under the lock, so an edit can land while the block's command is still running, which
+vanilla can't do: it handles edits between ticks. The run then commits its results (`SuccessCount`, `LastOutput`,
+`LastExecution`) under the lock only while no edit set the command since it started (`StoredCommand.Revision`) and its
+block entity is still the one at its position, so an edit keeps its reset. What the command itself did (blocks set,
+chat, operators told) stays done. The block saves from any thread, like the server's other block entities, so a save
+racing a commit may take some fields from before it and some from after; the run's own change is saved again at the
+end of the tick.
 
-Commands run inside the level's tick, so they mustn't wait for the gates: a command block's `/save` goes to the
-server's background work (see `Server.RunOutsideTicksAsync`), as a command block minecart's already did. They hold no
-inventory, transfer or chunk lock, so a command that waits for an inventory isn't waiting under one.
+Commands run inside the level's tick, so they mustn't wait for the gates: `/save` from a command block or minecart
+saves the world of the level it runs in from the server's background work, once the ticks let go of the gates (see
+`Server.RunOutsideTicksAsync`). They hold no inventory, transfer or chunk lock, so a command that waits for an
+inventory isn't waiting under one.
 
 ## Items and editing
 
@@ -57,5 +58,4 @@ inventory, transfer or chunk lock, so a command that waits for an inventory isn'
   one. Obsidian sends it only when the block changed. Clients show the same.
 
 **Where to start:** `CommandBlocks.TickAsync` and `StoredCommand.PerformAsync`. A per-message success flag on
-`ICommandSender` would fix the output rules; the `/execute` success count needs its forks' results to reach
-`StoredCommand`.
+`ICommandSender` would fix the output rules.

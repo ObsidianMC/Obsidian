@@ -148,6 +148,20 @@ public final class CommandBlockFixtures {
             operator.setGameMode(GameType.CREATIVE);
         }).join();
 
+        // A second player, not an operator, whom selectors find after the operator (execute as @a).
+        var visitor = new ServerPlayer(server, level, profile("Visitor"), ClientInformation.createDefault());
+        visitor.connection = recorder(new ArrayList<>(), visitor);
+        server.submit(() -> {
+            visitor.snapTo(origin.getX() + 3.5, origin.getY(), origin.getZ() - 6.5, 0, 0);
+            try {
+                players(server.getPlayerList()).add(visitor);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+
+            level.players().add(visitor);
+        }).join();
+
         var count = 0;
         for (var element : root.getAsJsonArray("cases")) {
             var input = element.getAsJsonObject();
