@@ -72,17 +72,26 @@ public sealed partial class ArmorStand : Living
 
     internal ValueTask DamageByBurningAsync(float amount)
     {
-        if (this.IsRemoved || this.Marker || this.Invisible)
+        if (this.IsRemoved || this.Marker || this.Invisible || this.Level is not WorldData.AbstractLevel world)
             return default;
 
-        var remaining = this.Health - amount;
+        // Burning commits like any hit (see TryCommitDamage): not to a stand that was removed (DestroyEntityAsync
+        // doesn't set IsRemoved) or that left the level.
+        float remaining;
+        using (TransferLockOf(world).Enter())
+        {
+            if (!this.StillIn(world, this))
+                return default;
+
+            remaining = this.Health - amount;
+            if (remaining > 0.5f)
+                this.Health = remaining;
+        }
+
         if (remaining <= 0.5f)
             return this.BreakFromBurningAsync();
 
-        this.Health = remaining;
-        if (this.Level is WorldData.AbstractLevel world)
-            world.EmitGameEvent(WorldData.MobGameEvent.EntityDamage, this.Position);
-
+        world.EmitGameEvent(WorldData.MobGameEvent.EntityDamage, this.Position);
         return default;
     }
 

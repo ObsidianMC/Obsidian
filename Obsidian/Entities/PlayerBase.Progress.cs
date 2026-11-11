@@ -297,14 +297,14 @@ public partial class PlayerBase
 
     internal static int Centimetres(double blocks) => (int)Math.Clamp(Math.Floor(blocks * 100 + 0.5), 0, int.MaxValue);
 
-    internal void RecordProgressDamage(IEntity source, float amount)
+    internal void RecordProgressDamage(IEntity source, float amount, float healthBefore)
     {
         var points = (int)Math.Clamp(Math.Floor(amount * 10 + 0.5), 0, int.MaxValue);
         this.Statistics.Increment("minecraft:damage_taken", points);
         if (source is IPlayer attacker && !ReferenceEquals(source, this))
         {
             attacker.Statistics.Increment("minecraft:damage_dealt",
-                (int)Math.Clamp(Math.Floor(Math.Min(this.Health, amount) * 10 + 0.5), 0, int.MaxValue));
+                (int)Math.Clamp(Math.Floor(Math.Min(healthBefore, amount) * 10 + 0.5), 0, int.MaxValue));
         }
     }
 

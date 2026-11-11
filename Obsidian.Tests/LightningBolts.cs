@@ -119,9 +119,10 @@ public sealed class LightningBolts
         try
         {
             await suspended.Task;
-            // The first hit has started and is wearing armour; the bolt has already snapshotted the pig.
+            // The first hit has started and is wearing armour; the bolt has already snapshotted the pig. A hit is only
+            // accepted once it commits, after the wear.
             Assert.False(tick.IsCompleted);
-            Assert.Equal(1, player.AcceptedDamageCount);
+            Assert.Equal(0, player.AcceptedDamageCount);
             var region = Assert.IsType<Region>(world.LoadRegionByChunk(0, 0));
             await region.UnloadChunk(0, 0);
         }
@@ -132,6 +133,8 @@ public sealed class LightningBolts
             await tick;
         }
 
+        // The player's hit, still in its level, commits once the wear goes on.
+        Assert.Equal(1, player.AcceptedDamageCount);
         // Both the strike's stale snapshot and the shared helper must refuse the saved original.
         Assert.False(pig.IsRemoved);
         Assert.Equal(savedHealth, otherTarget.Health);

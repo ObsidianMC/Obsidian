@@ -321,8 +321,14 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
         WorldData.World world, Server server, Vector origin)
     {
         var player = TestServerFactory.CreateConnectedPlayer(server, world, "Attacker", (VectorD)origin);
-        var victim = new Pig { Level = world, Position = (VectorD)origin + new VectorD(2, 0, 0) };
+        var victim = new Pig
+        {
+            Level = world,
+            EntityId = Server.GetNextEntityId(),
+            Position = (VectorD)origin + new VectorD(2, 0, 0)
+        };
         victim.InitializeAi(false);
+        Assert.True(world.TryAddEntity(victim));
         var wolf = new Wolf { Level = world, Position = victim.Position };
         wolf.InitializeAi(false);
 
