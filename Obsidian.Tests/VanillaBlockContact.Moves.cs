@@ -70,6 +70,17 @@ public partial class VanillaBlockContact
                         if (entry.GetProperty("tick").GetInt32() != tick)
                             continue;
 
+                        if (entry.TryGetProperty("updatePose", out var posed))
+                        {
+                            var player = (PlayerBase)entities[posed.GetString()!];
+                            player.Sneaking = entry.GetProperty("sneaking").GetBoolean();
+                            player.UpdatePose();
+                            if (entry.TryGetProperty("tickAir", out _))
+                                await player.TickAsync();
+
+                            continue;
+                        }
+
                         if (entry.TryGetProperty("removeJumpBoost", out var effectTarget))
                         {
                             ((Living)entities[effectTarget.GetString()!])
@@ -83,12 +94,19 @@ public partial class VanillaBlockContact
                             continue;
                         }
 
-                        var entity = Summon(world, entry);
+                        if (entry.TryGetProperty("jump", out var jumper))
+                        {
+                            Jump((Mob)entities[jumper.GetString()!], terrain);
+                            continue;
+                        }
+
+                        var entity = IsPlayer(entry) ? await this.JoinPlayerAsync(entry) : Summon(world, entry);
                         PrepareContactEntity(entity, entry);
                         entities[entry.GetProperty("summon").GetString()!] = entity;
                     }
 
-                    if (tick > 0)
+                    // Keep stationary pose changes observable before any movement can refresh the stored box.
+                    if (tick > 0 && !scenario.TryGetProperty("stationaryPlayer", out _))
                     {
                         foreach (var entity in entities.Values)
                         {
@@ -105,7 +123,12 @@ public partial class VanillaBlockContact
             {
                 world.Fluids.BlockStored = null;
                 foreach (var entity in entities.Values)
-                    await world.DestroyEntityAsync(entity);
+                {
+                    if (entity is Obsidian.Entities.Player player)
+                        world.TryRemovePlayer(player);
+                    else
+                        await world.DestroyEntityAsync(entity);
+                }
             }
 
             var nextRandom = world.GrowthRandom.NextInt();
@@ -116,8 +139,46 @@ public partial class VanillaBlockContact
             return differences;
         }
 
+        private static bool IsPlayer(JsonElement entry) =>
+            entry.GetProperty("type").GetString() == "minecraft:player";
+
+        // A player like the capture's: joined, posed, with the motion and gravity the entry gives.
+        private async Task<Entity> JoinPlayerAsync(JsonElement entry)
+        {
+            var world = this.context.World;
+            var position = ReadLocation(entry.GetProperty("pos"));
+            var name = $"Posed{world.Players.Count}";
+            var player = TestServerFactory.CreateConnectedPlayer(this.context.Server, world, name, position);
+            await TestServerFactory.JoinConnectedPlayerAsync(this.context.Server, player);
+
+            player.Position = position;
+            player.GameMode = GameMode.Survival;
+            player.MovementFlags = MovementFlags.None;
+            player.Motion = ReadLocation(entry.GetProperty("motion"));
+            player.NoGravity = entry.GetProperty("noGravity").GetBoolean();
+            player.Pose = entry.GetProperty("pose").GetString() switch
+            {
+                "CROUCHING" => Pose.Sneaking,
+                "SWIMMING" => Pose.Swimming,
+                "SLEEPING" => Pose.Sleeping,
+                _ => Pose.Standing,
+            };
+            return player;
+        }
+
+        // The capture's jump event: vanilla's jumpFromGround, with the jump the mob would make where it stands.
+        private static void Jump(Mob mob, MobTerrain terrain)
+        {
+            var motion = mob.Motion;
+            var power = EntityMovement.JumpPower(mob, terrain);
+            mob.Motion = new VectorD(motion.X, Math.Max(power, motion.Y), motion.Z);
+        }
+
         private static void PrepareContactEntity(Entity entity, JsonElement entry)
         {
+            // The capture never ticks its entities, so where their tick began stays where they were summoned.
+            entity.TickStartPosition = entity.Position;
+
             if (entity is Living living && entry.TryGetProperty("health", out var health))
                 living.Health = health.GetSingle();
 
@@ -142,6 +203,9 @@ public partial class VanillaBlockContact
 
                 if (entry.TryGetProperty("fireResistance", out _))
                     mob.AddPotionEffect((int)PotionEffect.FireResistance - 1, 1000);
+
+                if (entry.TryGetProperty("feet", out var feet))
+                    mob.SetEquipment(EquipmentSlot.Boots, new ItemStack(ItemsRegistry.Get(feet.GetString()!), 1));
 
                 if (entry.TryGetProperty("frostWalker", out _))
                 {
@@ -178,6 +242,28 @@ public partial class VanillaBlockContact
                 var expected = observation.Value;
                 CompareVector("position", expected.GetProperty("position"), entity.Position);
                 CompareVector("velocity", expected.GetProperty("velocity"), entity.Motion);
+                if (expected.TryGetProperty("pose", out var pose))
+                {
+                    var player = (PlayerBase)entity;
+                    var actualPose = player.Pose switch
+                    {
+                        Pose.Sneaking => "CROUCHING",
+                        _ => player.Pose.ToString().ToUpperInvariant()
+                    };
+                    if (pose.GetString() != actualPose)
+                        differences.Add($"tick {tick} pose: expected {pose}, got {actualPose}");
+
+                    CompareVector("stored box min", expected.GetProperty("boxMin"), player.BoundingBox.Min);
+                    CompareVector("stored box max", expected.GetProperty("boxMax"), player.BoundingBox.Max);
+                    CompareVector("current box min", expected.GetProperty("boxMin"), player.CurrentBox.Min);
+                    CompareVector("current box max", expected.GetProperty("boxMax"), player.CurrentBox.Max);
+                    CompareVector("eye position", expected.GetProperty("eyePosition"), PlayerBase.EyePosition(player));
+                    CompareNumber("head y", expected.GetProperty("eyePosition")[1].GetDouble(), player.HeadY);
+                    CompareNumber("air", expected.GetProperty("air").GetInt32(), player.Air);
+                    if (expected.GetProperty("swimming").GetBoolean() != player.Swimming)
+                        differences.Add($"tick {tick} swimming flag: got {player.Swimming}");
+                }
+
                 CompareNumber("fall distance", expected.GetProperty("fallDistance").GetDouble(),
                     entity.ContactFallDistance);
                 var grounded = entity.MovementFlags.HasFlag(MovementFlags.OnGround);
@@ -197,6 +283,7 @@ public partial class VanillaBlockContact
                         null => null,
                         CombatDamageKind.Fall => "minecraft:fall",
                         CombatDamageKind.HotFloor => "minecraft:hot_floor",
+                        CombatDamageKind.SweetBerryBush => "minecraft:sweet_berry_bush",
                         _ => $"unexpected:{living.LastDamageKind}"
                     };
                     var expectedType = expected.GetProperty("damageType").GetString();

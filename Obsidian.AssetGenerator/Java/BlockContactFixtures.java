@@ -152,7 +152,8 @@ public final class BlockContactFixtures {
                     event(level, event, entities);
                 }
             }
-            if (tick > 0) {
+            // Pose refreshes must be observed without Entity.move refreshing the box for them.
+            if (tick > 0 && !input.has("stationaryPlayer")) {
                 for (var entity : entities.values()) {
                     if (entity.isRemoved()) {
                         continue;
@@ -163,6 +164,9 @@ public final class BlockContactFixtures {
                 }
             }
             var checkpoint = checkpoint(level, min, max, tick, entities);
+            if (input.has("stationaryPlayer")) {
+                recordPlayerState(checkpoint, entities);
+            }
             if (input.has("recordSafeFallDistance")) {
                 for (var entry : entities.entrySet()) {
                     var living = (net.minecraft.world.entity.LivingEntity)entry.getValue();
@@ -181,16 +185,26 @@ public final class BlockContactFixtures {
         level.players().remove(watcher);
         players(server.getPlayerList()).remove(watcher);
         for (var entity : entities.values()) {
-            entity.discard();
+            if (entity instanceof ServerPlayer player) {
+                level.removePlayerImmediately(player, Entity.RemovalReason.DISCARDED);
+            } else {
+                entity.discard();
+            }
         }
     }
 
-    private static void event(ServerLevel level, JsonObject event, Map<String, Entity> entities) {
+    private static void event(ServerLevel level, JsonObject event, Map<String, Entity> entities) throws Exception {
         if (event.has("summon")) {
-            var type = BuiltInRegistries.ENTITY_TYPE.getValue(Identifier.parse(event.get("type").getAsString()));
-            var entity = type.create(level, net.minecraft.world.entity.EntitySpawnReason.COMMAND);
+            var typeName = event.get("type").getAsString();
+            var type = BuiltInRegistries.ENTITY_TYPE.getValue(Identifier.parse(typeName));
+            var entity = typeName.equals("minecraft:player")
+                ? player(level)
+                : type.create(level, net.minecraft.world.entity.EntitySpawnReason.COMMAND);
             var pos = vec(event.getAsJsonArray("pos"));
             entity.snapTo(pos.x, pos.y, pos.z, 0, 0);
+            if (event.has("pose")) {
+                entity.setPose(net.minecraft.world.entity.Pose.valueOf(event.get("pose").getAsString()));
+            }
             entity.setNoGravity(!event.has("noGravity") || event.get("noGravity").getAsBoolean());
             entity.setShiftKeyDown(event.has("sneaking") && event.get("sneaking").getAsBoolean());
             if (entity instanceof net.minecraft.world.entity.Mob mob) {
@@ -213,6 +227,10 @@ public final class BlockContactFixtures {
                     living.addEffect(new net.minecraft.world.effect.MobEffectInstance(
                         net.minecraft.world.effect.MobEffects.JUMP_BOOST, 1000, event.get("jumpBoost").getAsInt()));
                 }
+                if (event.has("feet")) {
+                    living.setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET, new ItemStack(
+                        BuiltInRegistries.ITEM.getValue(Identifier.parse(event.get("feet").getAsString()))));
+                }
                 if (event.has("fireResistance")) {
                     living.addEffect(new net.minecraft.world.effect.MobEffectInstance(
                         net.minecraft.world.effect.MobEffects.FIRE_RESISTANCE, 1000));
@@ -233,17 +251,58 @@ public final class BlockContactFixtures {
             if (event.has("fallDistance")) {
                 entity.fallDistance = event.get("fallDistance").getAsDouble();
             }
-            level.addFreshEntity(entity);
+            if (entity instanceof ServerPlayer player) {
+                level.addNewPlayer(player);
+            } else {
+                level.addFreshEntity(entity);
+            }
             entities.put(event.get("summon").getAsString(), entity);
+        } else if (event.has("updatePose")) {
+            var player = (ServerPlayer)entities.get(event.get("updatePose").getAsString());
+            player.setShiftKeyDown(event.get("sneaking").getAsBoolean());
+            var update = net.minecraft.world.entity.player.Player.class.getDeclaredMethod("updatePlayerPose");
+            update.setAccessible(true);
+            update.invoke(player);
+            if (event.has("tickAir")) {
+                player.baseTick();
+            }
         } else if (event.has("removeJumpBoost")) {
             var living = (net.minecraft.world.entity.LivingEntity)entities.get(
                 event.get("removeJumpBoost").getAsString());
             living.removeEffect(net.minecraft.world.effect.MobEffects.JUMP_BOOST);
+        } else if (event.has("jump")) {
+            ((net.minecraft.world.entity.LivingEntity)entities.get(event.get("jump").getAsString())).jumpFromGround();
         } else if (event.has("velocity")) {
             entities.get(event.get("velocity").getAsString()).setDeltaMovement(vec(event.getAsJsonArray("motion")));
         } else {
             throw new IllegalArgumentException("Unknown contact event " + event);
         }
+    }
+
+    private static void recordPlayerState(JsonObject checkpoint, Map<String, Entity> entities) {
+        for (var entry : entities.entrySet()) {
+            var player = (ServerPlayer)entry.getValue();
+            var observation = checkpoint.getAsJsonObject("observations").getAsJsonObject(entry.getKey());
+            var box = player.getBoundingBox();
+            observation.addProperty("pose", player.getPose().name());
+            observation.add("boxMin", vector(new Vec3(box.minX, box.minY, box.minZ)));
+            observation.add("boxMax", vector(new Vec3(box.maxX, box.maxY, box.maxZ)));
+            observation.add("eyePosition", vector(player.getEyePosition()));
+            observation.addProperty("swimming", player.isSwimming());
+            observation.addProperty("air", player.getAirSupply());
+        }
+    }
+
+    // A player without a client, whose packets are kept like the watcher's, that plates and tripwires find.
+    private static ServerPlayer player(ServerLevel level) throws Exception {
+        var player = new ServerPlayer(server, level, new GameProfile(UUID.randomUUID(), "ContactPlayer"),
+            ClientInformation.createDefault());
+        var connection = recorder(new ArrayList<>());
+        var chunkSender = ServerGamePacketListenerImpl.class.getDeclaredField("chunkSender");
+        chunkSender.setAccessible(true);
+        chunkSender.set(connection, new net.minecraft.server.network.PlayerChunkSender(false));
+        player.connection = connection;
+        return player;
     }
 
     private static JsonObject checkpoint(ServerLevel level, BlockPos min, BlockPos max, int tick,

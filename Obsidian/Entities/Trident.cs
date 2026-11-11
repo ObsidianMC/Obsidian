@@ -33,7 +33,7 @@ public sealed partial class Trident : Arrow
             return;
         }
         NoClip = true;
-        var difference = owner.Position + new VectorD(0, 1.62, 0) - Position;
+        var difference = PlayerBase.EyePosition(owner) - Position;
         var distance = difference.Magnitude;
         if (distance < 1.5 && PickupItem != null && await owner.ReceiveProjectileAsync(PickupItem, Pickup == ArrowPickup.CreativeOnly))
         {

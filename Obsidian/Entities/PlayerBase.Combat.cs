@@ -102,7 +102,7 @@ public partial class PlayerBase
         AcceptedDamageCount++;
         LastDamageKind = kind;
         if (kind is CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion
-            or CombatDamageKind.FireContact or CombatDamageKind.HotFloor
+            or CombatDamageKind.FireContact or CombatDamageKind.HotFloor or CombatDamageKind.SweetBerryBush
             or CombatDamageKind.Lightning or CombatDamageKind.Thorns or CombatDamageKind.FallingStalactite)
         {
             // Worn items' armour is in the attributes' modifiers.
@@ -150,6 +150,7 @@ public partial class PlayerBase
         [CombatDamageKind.Thorns] = "minecraft:thorns",
         [CombatDamageKind.Drowning] = "minecraft:drown",
         [CombatDamageKind.FallingStalactite] = "minecraft:falling_stalactite",
+        [CombatDamageKind.SweetBerryBush] = "minecraft:sweet_berry_bush",
         [CombatDamageKind.Lightning] = "minecraft:lightning_bolt",
     };
 
@@ -239,7 +240,7 @@ public partial class PlayerBase
     {
         if (!Alive || Respawning || GameMode == GameMode.Spectator || target.Level != Level || ReferenceEquals(target, this))
             return false;
-        var eye = Position + new VectorD(0, 1.62, 0);
+        var eye = EyePosition(this);
         var range = CombatItems.Component(item ?? GetHeldItem(), "attack_range");
         var reach = range.ValueKind == System.Text.Json.JsonValueKind.Object
             ? CombatItems.Number(range, GameMode == GameMode.Creative ? "max_creative_reach" : "max_reach", 4.5f)
