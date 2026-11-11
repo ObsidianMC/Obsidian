@@ -47,6 +47,91 @@ public sealed partial class ArmorStand : Living
     // Vanilla's ArmorStand.thunderHit does nothing: lightning neither burns nor hurts it.
     internal override ValueTask ThunderHitAsync(LightningBolt bolt) => ValueTask.CompletedTask;
 
+    /// <summary>A campfire first lights the stand for five seconds, then deals 0.15 health per contact.</summary>
+    internal ValueTask BurnFromCampfireAsync()
+    {
+        if (this.IsRemoved || this.Marker || this.Invisible)
+            return default;
+
+        if (this.ContactFireTicks <= 0)
+        {
+            this.Ignite(5);
+            return default;
+        }
+
+        return this.DamageByBurningAsync(0.15f);
+    }
+
+    internal bool IsRemoved { get; private set; }
+
+    public override ValueTask RemoveAsync()
+    {
+        this.IsRemoved = true;
+        return base.RemoveAsync();
+    }
+
+    internal ValueTask DamageByBurningAsync(float amount)
+    {
+        if (this.IsRemoved || this.Marker || this.Invisible)
+            return default;
+
+        var remaining = this.Health - amount;
+        if (remaining <= 0.5f)
+            return this.BreakFromBurningAsync();
+
+        this.Health = remaining;
+        if (this.Level is WorldData.AbstractLevel world)
+            world.EmitGameEvent(WorldData.MobGameEvent.EntityDamage, this.Position);
+
+        return default;
+    }
+
+    private ValueTask BreakFromBurningAsync()
+    {
+        if (this.Level is WorldData.AbstractLevel world)
+        {
+            WorldData.LevelSounds.Play(world, this.Position, "minecraft:entity.armor_stand.break", SoundCategory.Neutral);
+            var dropEquipment = world.LevelData.GetBooleanRule("block_drops");
+            foreach (var (slot, _) in savedSlots)
+            {
+                ItemStack? item;
+                lock (this.equipment)
+                    this.equipment.Remove(slot, out item);
+
+                if (item is null || CombatEffects.HasEnchantment(item, EnchantmentsRegistry.VanishingCurse.Id))
+                    continue;
+
+                // Vanilla's popResource draws three level doubles per drop, in equipment order. The new item's
+                // motion uses its own random and must not consume the level or the stand's random.
+                var random = world.GrowthRandom;
+                var block = (Vector)this.Position.Floor() + Vector.Up;
+                var point = new VectorD(block.X + 0.25 + random.NextDouble() * 0.5,
+                    block.Y + 0.125 + random.NextDouble() * 0.5, block.Z + 0.25 + random.NextDouble() * 0.5);
+                // popResource still makes those location draws when block_drops suppresses the item spawn.
+                if (!dropEquipment)
+                    continue;
+
+                world.DropItemAt(point, item,
+                    new VectorD(Globals.Random.NextDouble() * 0.2 - 0.1, 0.2, Globals.Random.NextDouble() * 0.2 - 0.1));
+            }
+            world.EmitGameEvent(WorldData.MobGameEvent.EntityDie, this.Position, this);
+        }
+        return this.RemoveAsync();
+    }
+
+    internal void FreezeFromPowderSnow()
+    {
+        foreach (var (slot, _) in savedSlots)
+        {
+            if (slot is EquipmentSlot.MainHand or EquipmentSlot.OffHand or EquipmentSlot.Saddle)
+                continue;
+
+            if (TagsRegistry.Item.FreezeImmuneWearables.Entries.Contains(this.GetEquipment(slot).Holder.Id))
+                return;
+        }
+        this.PowderedSnowTicks = Math.Min(140, this.PowderedSnowTicks + 1);
+    }
+
     /// <summary>A small stand, half the size, like one placed as a baby.</summary>
     public bool Small { get; set; }
 

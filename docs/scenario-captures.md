@@ -759,7 +759,7 @@ both extension and retraction. `CaptureCases` can refresh each of these cases in
 gives its number of `ticks` and starts with empty `checkpoints`; `CaptureCases` records only the exact names supplied,
 and the other cases keep their recordings.
 
-The 117 `contactMoves` scenarios use `Java/BlockContactFixtures.java` on a real dedicated server, with the same
+The 185 `contactMoves` scenarios use `Java/BlockContactFixtures.java` on a real dedicated server, with the same
 scratch-only block-write instrumentation as block uses. They drive native `Entity.move` and
 `applyEffectsFromBlocks` with controlled velocities: falls, stationary contacts, walking and external pushes.
 This boundary exercises native collision, fall accounting, restitution and block hooks without AI or travel forces.
@@ -770,6 +770,20 @@ whose effect is removed before movement. `recordSafeFallDistance: true` also rec
 safe-fall-distance attribute at every checkpoint, including checkpoint zero. The review cases cover water at impact,
 water crossed before a dry landing, fluid touching only the body's edge, slime and bed support outside the centre,
 and Jump Boost I, II, a control fall and effect removal.
+
+The stand fire cases opt into `tickFire: true`, which calls native `Entity.baseTick` before each controlled move
+and records the shared burning flag separately from remaining fire ticks. They cover periodic burn damage, break
+and equipment drops away from the campfire, natural expiry and burn damage despite an active Fire Resistance effect.
+`recordFreeze: true` records frozen ticks to check deferred snow melting and the pre-pass fire/freeze sound snapshot.
+A summon's `equipment` object maps vanilla slot names to item ids, allowing break cases to check every held/worn drop.
+`recordFireResistance: true` also checks the effect is present, including on stands. `blockDrops: false` disables
+`block_drops`; suppressed stand drops still consume their three level-random location draws. `raining: true` supplies
+open-sky rain for the stand burn cases: damage can break the stand before rain extinguishes it, and a surviving
+stand clears its counter before its shared Burning flag updates on the next base tick.
+
+A setup placement's `items` array fills its container with slot/id/count entries. `recordContainers: true` records
+all setup containers, and `tickHoppers: true` runs native hopper ticks after the controlled entity contacts.
+`review_hopper_contact_before_chest_pull` compares the item pickup and chest contents across that phase ordering.
 
 A summon's `feet` puts an item in a living entity's feet slot (leather boots for powder snow), and `sneaking` holds
 its shift key down. A tick event's `jump` runs the named entity's `jumpFromGround` before movement. A summon of
@@ -796,6 +810,17 @@ writes anywhere; drops; sounds in order with category, position, volume and pitc
 game events. It also compares the next level random integer after each case. Sound playback seeds come from an
 independent generator and are not recorded. The initial 16 cases retain their original block/position checkpoints.
 `VanillaBlockContact.ScenariosMatchVanilla` collects all failures across both kinds of case in one test.
+
+The 51 `inside_*` cases add cactus, lit campfires, honey sliding, hopper inside pickup, dripleaf tilting,
+stepped-on shriekers and powder snow's fire/particle effects. `recordInside: true` adds removal, remaining fire,
+item counts, vehicle damage, hopper slots, entity events and the next entity random integer. Particle packets
+record identifier, position, spread, per-axis speed, count, randomization and limiter flags. Honey's entity event
+53 is observed at vanilla's broadcast call, since these controlled moves do not tick network entity tracking.
+`scheduledTicks: true` advances the native block scheduler before movement, without ticking AI or travel.
+Events can `setBlock` with normal updates, `move` to a controlled position, or `remove` an entity. Summons can
+set `fireTicks`, `silent`, item `count` and player `gameMode`; spectators have the physics flag their real tick sets.
+The player's negative fire holdoff is pinned by six exact case names in the replay; see
+[contact gaps](known-gaps/stepped-and-fallen-on-contacts.md). Every other observation compares from checkpoint zero.
 
 For example, to record only a changed contact case:
 

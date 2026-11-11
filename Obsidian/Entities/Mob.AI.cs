@@ -600,7 +600,8 @@ public partial class Mob
         var attacker = IncomingDamageKind.HasValue ? IncomingAttacker : source;
         var kind = IncomingDamageKind ?? (applyArmor ? CombatDamageKind.Melee : CombatDamageKind.Magic);
         applyArmor &= kind is CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion
-            or CombatDamageKind.FireContact or CombatDamageKind.HotFloor or CombatDamageKind.SweetBerryBush
+            or CombatDamageKind.FireContact or CombatDamageKind.Campfire or CombatDamageKind.HotFloor
+            or CombatDamageKind.Cactus or CombatDamageKind.SweetBerryBush
             or CombatDamageKind.Lightning or CombatDamageKind.Thorns or CombatDamageKind.FallingStalactite;
         if (!UsesAi)
         {
@@ -615,7 +616,8 @@ public partial class Mob
         {
             return;
         }
-        if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact or CombatDamageKind.HotFloor &&
+        if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact
+            or CombatDamageKind.Campfire or CombatDamageKind.HotFloor &&
             (IsFireImmune || HasPotionEffect((int)PotionEffect.FireResistance - 1)))
         {
             return;

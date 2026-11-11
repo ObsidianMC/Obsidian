@@ -228,7 +228,10 @@ public abstract partial class AbstractLevel
     /// <summary>
     /// What the level does for its block entities' item access (see <see cref="IContainerItemsHost"/>).
     /// </summary>
-    private bool HoldsTickLock => this.Fluids.TickLock.IsHeldByCurrentThread;
+    // Both locks come after inventory admission. Item access may only try the inventory while either is held;
+    // chunk/entity-grid locks are nested inside the transfer lock on the contact and item-transfer paths.
+    private bool HoldsTickLock => this.Fluids.TickLock.IsHeldByCurrentThread
+        || EntityTransferLock.IsAnyHeldByCurrentThread;
 
     private void OnContainerItemsChanged(ContainerBlockEntity container)
     {

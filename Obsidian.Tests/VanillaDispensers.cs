@@ -78,19 +78,6 @@ public sealed class VanillaDispensers(ITestOutputHelper output)
             reference = reference with { Sounds = ["minecraft:item.bucket.empty_axolotl"] };
         }
 
-        // Powder-snow entity contact doesn't emit its snowflake here yet; retain the captured drop and all events.
-        if (name == "powder_snow_bucket_into_powder_snow" && reference.Tick == 4)
-        {
-            Assert.Equal("minecraft:snowflake 1", Assert.Single(reference.Particles));
-            var particle = "particle minecraft:snowflake 1.503360,1.000000,0.546411 count=1";
-            Assert.Contains(particle, reference.Details);
-            reference = reference with
-            {
-                Particles = [],
-                Details = reference.Details.Where(detail => detail != particle).ToArray()
-            };
-        }
-
         // A grounded no-AI mob keeps its gravity accumulator at -0.0784 in Obsidian, while the no-AI vanilla
         // mooshroom/cow zeroes it. Pin that exact value in this case; compare every other detail unchanged.
         if (name == "shears_mooshroom")

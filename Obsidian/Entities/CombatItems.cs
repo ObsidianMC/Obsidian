@@ -316,5 +316,5 @@ internal static class CombatItems
 internal enum CombatDamageKind
 {
     Melee, Projectile, Fall, Fire, Explosion, Magic, Starvation, Void, SonicBoom, Suffocation, Freezing,
-    FireContact, HotFloor, Thorns, Drowning, FallingStalactite, SweetBerryBush, Lightning
+    FireContact, HotFloor, Thorns, Drowning, FallingStalactite, SweetBerryBush, Lightning, Cactus, Campfire
 }

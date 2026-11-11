@@ -192,9 +192,9 @@ public abstract partial class AbstractLevel
             ? chunk.GetHeight(HeightmapType.MotionBlocking, column.X, column.Z)
             : this.MinY;
 
-    // Vanilla's Level.isRainingAt: the sky is open above the position, nothing below the top of the column is above
-    // it, and its biome has rain there.
-    private bool RainsOn(Vector position)
+    // Vanilla's Level.isRainingAt without its weather check: the sky is open above the position, nothing below the
+    // top of the column is above it, and its biome has rain there.
+    internal bool RainsOn(Vector position)
     {
         if (this.IsOutsideBuildHeight(position.Y))
             return false;

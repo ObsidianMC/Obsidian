@@ -230,10 +230,15 @@ public partial class Living : Entity, ILiving
     private int fireTicks;
     internal int FireTicks { get => fireTicks; set => fireTicks = value; }
 
+    internal override int ContactFireTicks { get => this.fireTicks; set => this.fireTicks = value; }
+
     public void Ignite(int seconds)
     {
         if (!IsFireImmune && seconds > 0)
+        {
             fireTicks = Math.Max(fireTicks, checked(seconds * 20));
+            this.PowderedSnowTicks = 0;
+        }
     }
 
     public Living()
@@ -316,23 +321,32 @@ public partial class Living : Entity, ILiving
             }
         }
 
-        if (!Alive || this is not IPlayer and not Mob { HasAi: true } || !Burning && fireTicks == 0)
+        if (!Alive || this is not IPlayer and not Mob { HasAi: true } and not ArmorStand
+            || this is ArmorStand { IsRemoved: true } || !Burning && fireTicks == 0)
             return;
         var terrain = new MobTerrain(Level);
         var feet = (Vector)(Position + new VectorD(0, 0.1f, 0)).Floor();
-        if (Burning && fireTicks == 0)
+        if (Burning && fireTicks == 0 && this is not ArmorStand)
             fireTicks = 160;
-        if (IsFireImmune || terrain.ContainsFluid(Dimension.CreateBBFromPosition(Position), water: true) ||
-            Level.LevelData.Raining && terrain.GetSkyLight(feet) == 15)
+        if (IsFireImmune || terrain.ContainsFluid(Dimension.CreateBBFromPosition(Position), water: true)
+            || this is not ArmorStand && Level.LevelData.Raining && terrain.GetSkyLight(feet) == 15)
         {
             fireTicks = 0;
         }
 
         if (fireTicks > 0)
         {
-            if (fireTicks % 20 == 0 && !HasPotionEffect((int)PotionEffect.FireResistance - 1))
+            if (fireTicks % 20 == 0)
             {
-                await DamageCombatAsync(this, 1, CombatDamageKind.Fire);
+                // The stand's damage override bypasses living Fire Resistance. Rain is handled after inside
+                // effects, so a due burn can break the stand before rain gets a chance to extinguish it.
+                if (this is ArmorStand stand)
+                {
+                    if (stand.Health > 0.5f)
+                        await stand.DamageByBurningAsync(4);
+                }
+                else if (!HasPotionEffect((int)PotionEffect.FireResistance - 1))
+                    await DamageCombatAsync(this, 1, CombatDamageKind.Fire);
             }
             fireTicks--;
         }
