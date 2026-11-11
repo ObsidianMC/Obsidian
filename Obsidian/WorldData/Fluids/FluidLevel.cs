@@ -113,6 +113,25 @@ internal sealed class FluidLevel
         this.SetBlock(position, block, flags, updateLimit, VanillaShapes.All);
 
     /// <summary>
+    /// Vanilla <c>BlockState.updateNeighbourShapes</c> for a block that stays as it is: each neighbour, in vanilla's
+    /// order, reacts to <paramref name="block"/> at <paramref name="position"/>, as it does when a shulker box's lid
+    /// starts or stops moving. An observer watching it pulses.
+    /// </summary>
+    public void UpdateNeighborShapes(Vector position, IBlock block, BlockUpdateFlags flags)
+    {
+        foreach (var face in updateShapeOrder)
+        {
+            this.neighborUpdater.ShapeUpdate(
+                face.Opposite(),
+                block,
+                position.Offset(face),
+                flags,
+                UpdateLimit - 1,
+                VanillaShapes.All);
+        }
+    }
+
+    /// <summary>
     /// <see cref="SetBlock(Vector, IBlock, BlockUpdateFlags, int)"/> for changes from outside fluid ticks (plugin
     /// blocks' hooks), including vanilla's support and connection rules.
     /// </summary>

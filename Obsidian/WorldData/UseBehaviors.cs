@@ -322,7 +322,9 @@ internal static partial class UseBehaviors
 
     internal static IBlockUseBehavior BarrelBlock { get; } = new MenuUse("minecraft:open_barrel");
 
-    internal static IBlockUseBehavior ShulkerBoxBlock { get; } = new MenuUse("minecraft:open_shulker_box");
+    internal static IBlockUseBehavior ShulkerBoxBlock { get; } = new ShulkerBoxMenuUse();
+
+    internal static IBlockUseBehavior DragonEggBlock { get; } = new DragonEggUse();
 
     internal static IBlockUseBehavior DispenserBlock { get; } = new DispenserMenuUse();
 
@@ -385,4 +387,6 @@ internal static partial class UseBehaviors
 internal static class AttackBehaviors
 {
     internal static IBlockAttackBehavior NoteBlock { get; } = new UseBehaviors.NoteBlockUse();
+
+    internal static IBlockAttackBehavior DragonEggBlock { get; } = new UseBehaviors.DragonEggUse();
 }

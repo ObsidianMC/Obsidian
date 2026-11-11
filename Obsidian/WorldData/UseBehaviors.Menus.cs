@@ -110,6 +110,26 @@ internal static partial class UseBehaviors
         }
     }
 
+    /// <summary>
+    /// Vanilla's <c>ShulkerBoxBlock</c>: a closed box opens only with room for its lid the way it faces (see
+    /// <see cref="ShulkerLids.CanOpen"/>); a box that can't still counts as used.
+    /// </summary>
+    private sealed class ShulkerBoxMenuUse() : MenuUse("minecraft:open_shulker_box")
+    {
+        public override ValueTask<BaseContainer?> CreateAsync(IPlayer player, AbstractLevel level, IBlock block,
+            Vector position)
+        {
+            bool canOpen;
+            lock (level.Fluids.TickLock)
+                canOpen = ShulkerLids.CanOpen(level, block, position);
+
+            if (!canOpen)
+                return ValueTask.FromResult<BaseContainer?>(null);
+
+            return base.CreateAsync(player, level, block, position);
+        }
+    }
+
     /// <summary>Vanilla's <c>DispenserBlock</c>, for dispensers and droppers: a 3×3 menu.</summary>
     private sealed class DispenserMenuUse() : MenuUse(statistic: null)
     {
