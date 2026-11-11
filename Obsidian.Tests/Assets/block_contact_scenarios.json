@@ -175636,6 +175636,396 @@
    }
   },
   {
+   "name": "review_stand_rain_head_only",
+   "contactMoves": true,
+   "recordInside": true,
+   "min": [
+    0,
+    63,
+    0
+   ],
+   "max": [
+    1,
+    66,
+    0
+   ],
+   "ticks": 2,
+   "seed": 0,
+   "setup": [
+    {
+     "pos": [
+      0,
+      63,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      63,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      64,
+      0
+     ],
+     "state": "minecraft:stone_slab[type=bottom]"
+    }
+   ],
+   "entities": [
+    {
+     "tick": 0,
+     "summon": "a",
+     "type": "minecraft:armor_stand",
+     "pos": [
+      1.5,
+      64.5,
+      0.5
+     ],
+     "motion": [
+      0,
+      0,
+      0
+     ],
+     "noGravity": false,
+     "noAi": true,
+     "entitySeed": 123,
+     "feet": "minecraft:diamond_boots",
+     "fireTicks": 20,
+     "health": 9
+    }
+   ],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:stone_slab[type=bottom,waterlogged=false]"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "a": {
+       "position": [
+        1.5,
+        64.5,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": false,
+       "health": 9.0,
+       "damageType": null,
+       "removed": false,
+       "fireTicks": 20,
+       "fireFlag": false
+      }
+     },
+     "drops": [],
+     "containers": [],
+     "entityEvents": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [],
+     "particles": []
+    },
+    {
+     "tick": 1,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:stone_slab[type=bottom,waterlogged=false]"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "a": {
+       "position": [
+        1.5,
+        64.5,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": false,
+       "health": 5.0,
+       "damageType": null,
+       "removed": false,
+       "fireTicks": 0,
+       "fireFlag": true
+      }
+     },
+     "drops": [],
+     "containers": [],
+     "entityEvents": [],
+     "writes": [],
+     "sounds": [
+      "minecraft:entity.generic.extinguish_fire"
+     ],
+     "soundDetails": [
+      {
+       "id": "minecraft:entity.generic.extinguish_fire",
+       "category": "neutral",
+       "volume": 0.7,
+       "pitch": 1.7943721,
+       "position": [
+        1.5,
+        64.5,
+        0.5
+       ]
+      }
+     ],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [
+      "minecraft:entity_damage 1,0,0 none"
+     ],
+     "particles": []
+    },
+    {
+     "tick": 2,
+     "blocks": [
+      {
+       "pos": [
+        0,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:stone_slab[type=bottom,waterlogged=false]"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        1,
+        66,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "a": {
+       "position": [
+        1.5,
+        64.5,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": false,
+       "health": 5.0,
+       "damageType": null,
+       "removed": false,
+       "fireTicks": 0,
+       "fireFlag": false
+      }
+     },
+     "drops": [],
+     "containers": [],
+     "entityEvents": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [],
+     "particles": []
+    }
+   ],
+   "tickFire": true,
+   "raining": true,
+   "nextRandom": -1155484576,
+   "nextEntityRandom": {
+    "a": -39088943
+   }
+  },
+  {
    "name": "review_campfire_stand_fire_resistance",
    "contactMoves": true,
    "recordInside": true,

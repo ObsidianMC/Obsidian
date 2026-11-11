@@ -43,6 +43,15 @@ public partial class Entity
 
     internal void RequestContactExtinguish() => this.contactExtinguishPending = true;
 
+    // Vanilla's isInRain: rain falling on the entity's feet, or on the cell at the top of its box above them.
+    internal bool IsInRain()
+    {
+        var terrain = new AI.MobTerrain(this.Level);
+        var feet = (Vector)this.Position.Floor();
+        var head = new Vector(feet.X, (int)Math.Floor(this.CurrentBox.Max.Y), feet.Z);
+        return terrain.IsRainingAt(feet) || terrain.IsRainingAt(head);
+    }
+
     internal void FinishInsideContact()
     {
         if (this.contactExtinguishPending)
@@ -68,7 +77,7 @@ public partial class Entity
             }
         }
 
-        if (this.NeedsRainContact && new AI.MobTerrain(this.Level).IsRainingAt((Vector)this.Position.Floor()))
+        if (this.NeedsRainContact && this.IsInRain())
             this.ContactFireTicks = 0;
 
         // Vanilla snapshots fire/freeze before visiting cells, but evaluates melting after all their hooks. An
