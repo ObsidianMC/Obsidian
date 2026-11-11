@@ -2525,6 +2525,9 @@ public partial class Region : IRegion
                     continue;
 
                 var blockEntity = BlockEntityNbt.Load(blockEntityCompound, id.Value!, position, pluginInstances: false);
+                if (blockEntity is TrialSpawners.TrialSpawnerBlockEntity spawner)
+                    spawner.LoadState(chunk.GetBlock(position.X, position.Y, position.Z));
+
                 chunk.SetBlockEntity(position.X, position.Y, position.Z, blockEntity);
             }
         }

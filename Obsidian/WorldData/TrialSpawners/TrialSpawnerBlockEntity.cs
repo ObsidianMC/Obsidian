@@ -51,6 +51,16 @@ internal sealed partial class TrialSpawnerBlockEntity : BlockEntity
         set => Volatile.Write(ref this.state, (int)value);
     }
 
+    /// <summary>
+    /// Takes the state from the spawner's block when it loads with its chunk, as vanilla's update tag reads the block:
+    /// clients that get the chunk before the spawner's first tick see an active spawner's next spawn time.
+    /// </summary>
+    internal void LoadState(IBlock block)
+    {
+        if (block.Is(BlockIds.TrialSpawner))
+            this.State = TrialSpawnerStates.Of(block);
+    }
+
     protected internal override void Load(NbtCompound tag)
     {
         var others = new NbtCompound();

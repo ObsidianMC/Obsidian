@@ -244,6 +244,43 @@ public sealed class ChunkSaves
         }
     }
 
+    [Fact(DisplayName = "An active trial spawner loaded with its chunk tells clients its next spawn before it ticks")]
+    public async Task LoadedActiveTrialSpawnerSendsItsNextSpawn()
+    {
+        var folder = Path.Join(Path.GetTempPath(), $"obsidian-chunk-saves-{Guid.NewGuid():N}");
+        var position = new Vector(8, 65, 8);
+        try
+        {
+            await using (var region = new Region(0, 0, folder))
+            {
+                await region.InitAsync();
+                var chunk = Complete(0, 0);
+                chunk.SetBlock(position.X, position.Y, position.Z,
+                    BlocksRegistry.GetDefault(BlockIds.TrialSpawner).WithProperty("trial_spawner_state", "active"));
+                var data = new NbtCompound { new NbtTag<long>("next_mob_spawns_at", 1234) };
+                chunk.SetBlockEntity(position.X, position.Y, position.Z,
+                    BlockEntityNbt.Create("minecraft:trial_spawner", position, data)!);
+                region.SetChunk(chunk);
+                await region.FlushAsync();
+            }
+
+            await using (var reloaded = new Region(0, 0, folder))
+            {
+                await reloaded.InitAsync();
+                var chunk = (Chunk)await reloaded.GetChunkAsync(0, 0);
+                var spawner = (BlockEntity)chunk.GetBlockEntity(position.X, position.Y, position.Z);
+                var update = spawner.GetUpdateData();
+                Assert.NotNull(update);
+                Assert.True(update.TryGetTag<NbtTag<long>>("next_mob_spawns_at", out var next));
+                Assert.Equal(1234, next.Value);
+            }
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
+
     [Fact(DisplayName = "An autosave lets the level tick while it writes, and keeps changes made meanwhile")]
     public async Task LevelTicksWhileTheSaveWrites()
     {
