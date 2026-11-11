@@ -11,6 +11,19 @@ internal static class BlockCollisionShapes
     public static IReadOnlyList<BoundingBox> Get(ILevel level, Vector position, IBlock block) =>
         WorldData.BlockEntityShapes.GetCollision(level, position, block) ?? Get(block);
 
+    /// <summary>
+    /// The block's collision for <paramref name="entity"/> moving into it, which differs from the entity-free shape
+    /// only for powder snow and scaffolding (see <see cref="EntityCollisionShapes"/>); without an entity, the
+    /// entity-free shape.
+    /// </summary>
+    public static IReadOnlyList<BoundingBox> Get(ILevel level, Vector position, IBlock block, Entity? entity)
+    {
+        if (entity is not null && EntityCollisionShapes.DependsOnEntity(block))
+            return EntityCollisionShapes.Get(position, block, entity, entity.Position.Y);
+
+        return Get(level, position, block);
+    }
+
     public static IReadOnlyList<BoundingBox> Get(IBlock block) => Get(block.State?.Id ?? block.DefaultId);
 
     public static IReadOnlyList<BoundingBox> Get(int stateId)

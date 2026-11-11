@@ -27,6 +27,14 @@ replaces only what vanilla produced.
   move items into and out of the blocks that hold them, each read by a comparator into a dust: the shelf's slots
   and the last slot used, and how full the pot is. A scenario naming an `item` also records in each checkpoint the total count of that item lying as item
   entities within two blocks of its box, and the replay counts Obsidian's the same way, so it must be `level`.
+  Consumers and sources with no other capture each have one: `doors_open_from_power` (an oak and an iron door,
+  powered beside either half), `tnt_primed_by_power` (beside a new redstone block, and placed beside one),
+  `rails_powered_along_a_line` (ten powered and ten activator rails, the last of each out of reach),
+  `crafter_crafts_into_chest`, `dropper_pushes_into_chest` and `hopper_pushes_into_chest` (each read through a
+  comparator into a dust), `copper_bulb_toggles_comparator`, `bell_powered_by_redstone`,
+  `sculk_sensor_reads_note_frequency` (a note block's vibration, whose frequency a comparator reads while the sensor
+  is active) and `calibrated_sculk_sensor_filters_frequency` (only the sensor whose back signal matches the note's
+  frequency activates). The capture kills TNT a scenario primed when it ends, so it can't explode during a later one.
 - `fluid_scenarios.json` (`VanillaFluids`) defines the box, setup fills, actions, dimension and checkpoint ticks; the
   capture records the checkpoints.
 - `daylight_detector.json` (`DaylightDetectorTests`) defines the clock times to sample; the capture records the
@@ -313,8 +321,13 @@ replaces only what vanilla produced.
   the result. The original 92 cases retain their captured bytes. Another 285 cases cover buckets (72), chest
   obstructions (73), lighting (63) and the blocks that hold items (77: flower pots, chiseled bookshelves, decorated
   pots, including ones still waiting for their loot table, lodestone compasses and jukeboxes), including ordered block writes with every flag bit and successful block
-  destructions. These cases observe all writes, including positions absent from their setup; an unexpected position
-  fails the replay. The older 92 cases compare final block states only. Extending ordered-write checks to those
+  destructions. Fourteen redstone cases do too: opening a single and a double trapped chest powers the dust beside
+  it and, through the block below, the dust beside that; clicking a comparator into subtract mode reads a chest
+  under a sitting and a standing cat, a command block's `SuccessCount`, an active, a cooling and a calibrated sculk
+  sensor's last frequency, a lit copper bulb and a copper golem statue's pose; and a lever rings a bell, flips a
+  copper bulb, and extends and retracts a piston, with their sounds and game events. Their ordered writes now
+  compare every flag bit directly with vanilla. These cases observe all writes, including positions absent from
+  their setup; an unexpected position fails the replay. The older 92 cases compare final block states only. Extending ordered-write checks to those
   cases remains an open follow-up. The replay uses the capture's absolute coordinates: translating plant
   outlines changes their position-dependent offsets and can change a bucket ray hit. It also checks whether
   closing effects exist, rather than comparing them only when both sides happened to open a menu.
@@ -402,6 +415,27 @@ replaces only what vanilla produced.
   The replay drives `UseItemOnPacket` in one world and compares every recorded field from the start, ordered writes
   with every flag bit and swings included; two cases pin the door and trapdoor opening flags (see
   [waxing, bells and redstone ore](known-gaps/waxing-bells-and-redstone-ore.md)).
+
+- `food_and_harvest.json` (`VanillaFoodHarvest.ReplayFoodAndHarvestReference`) records phase 2 batch A's
+  123 cake, candle cake, berry, pumpkin, plant-head trim and hive uses, from `Java/FoodHarvestFixtures.java`
+  (`CaptureFixtures=food_and_harvest`). It reuses `BlockUseFixtures`' real server, use dispatcher, packet and game
+  event recorders and the observed jar's ordered writes. All cases compare every existing observable from the
+  start, including every block-write flag bit and unexpected writes. `soundPackets` also checks exact transmitted
+  positions, volume, pitch and category (the independent sound-variant seed is not a replay input).
+  Additional outputs are `foodAfter`,
+  `saturationAfter`, `inventory` (all 41 vanilla inventory slots), `smokey`, and `bees` (occupant count and each bee's
+  target/anger state); every case also compares `dropPositions` exactly. Pumpkin cases compare `dropMotion` too. The spectator bystander hears effects
+  but cannot be chosen as a bee's target. Players are indexed as entities so nearby-bee targeting runs normally;
+  cleanup excludes them. Each case seeds the level random and the four harvest/carve loot streams with
+  `randomSeed`, default 1234. It clears seven cells below the target for smoke range/obstruction cases. The fixture
+  covers age and hunger boundaries, both berry yield outcomes, all six pumpkin faces, broken shears, offhand use,
+  full inventories, creative bottle exchanges, trim criteria before and after the write, occupied and obstructed
+  hives, both campfire types at the smoke boundary, bees at and beyond the harvest search box, and nested codec
+  predicates with array or singleton-object terms, plus omitted tool/location predicates. `shippedAdvancement`
+  reads criteria directly from vanilla's advancement resource; replay verifies those conditions against Obsidian's shipped definition. All recorded fields match without pins
+  (see [food and harvest](known-gaps/food-and-harvest.md)). Capture only this fixture with
+  `dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=food_and_harvest`;
+  `CaptureCases` selects exact `+`-separated names as for `block_use`.
 
 - `cauldrons.json` (`VanillaCauldrons.ReplayCauldronReference`) records using cauldrons, from
   `Java/CauldronFixtures.java` (`CaptureFixtures=cauldrons`), which runs on `BlockUseFixtures.java`'s server, players,
@@ -632,11 +666,22 @@ scenario has checkpoints) and capture again; the tests pick it up.
 For redstone, `CaptureCases` accepts exact `+`-separated scenario names and records only those; the other
 scenarios keep what they hold.
 
+`review_retraction_notifies_base_neighbours` covers the moving base's immediate neighbour notification: a
+quasi-connected piston extends in tick 1. `review_compare_mode_same_output_notifies_front` in `block_use.json`
+covers a compare-mode click with unchanged output waking the piston beyond its front support. The block-use
+replay compares their writes with vanilla's exact flags; no `RedstoneWriteFlags` pins remain.
+
+`calibrated_sensor_frequency_table` records `VibrationSystem.getGameEventFrequency` for the entire game-event
+registry, plus native calibrated-sensor acceptance of landings, bounces, deaths and sensor clicks at matching
+and mismatching filters. The replay checks every event Obsidian exposes and the captured acceptance cases.
+The two `lever_*_piston` cases also opt into seeded pitch, sound packet seed and next level-random checks for
+both extension and retraction. `CaptureCases` can refresh each of these cases independently.
+
 `block_contact` is captured only when named. Its original 16 RCON scenarios take about 15 seconds each. A scenario
 gives its number of `ticks` and starts with empty `checkpoints`; `CaptureCases` records only the exact names supplied,
 and the other cases keep their recordings.
 
-The 81 `contactMoves` scenarios use `Java/BlockContactFixtures.java` on a real dedicated server, with the same
+The 117 `contactMoves` scenarios use `Java/BlockContactFixtures.java` on a real dedicated server, with the same
 scratch-only block-write instrumentation as block uses. They drive native `Entity.move` and
 `applyEffectsFromBlocks` with controlled velocities: falls, stationary contacts, walking and external pushes.
 This boundary exercises native collision, fall accounting, restitution and block hooks without AI or travel forces.
@@ -647,6 +692,25 @@ whose effect is removed before movement. `recordSafeFallDistance: true` also rec
 safe-fall-distance attribute at every checkpoint, including checkpoint zero. The review cases cover water at impact,
 water crossed before a dry landing, fluid touching only the body's edge, slime and bed support outside the centre,
 and Jump Boost I, II, a control fall and effect removal.
+
+A summon's `feet` puts an item in a living entity's feet slot (leather boots for powder snow), and `sneaking` holds
+its shift key down. A tick event's `jump` runs the named entity's `jumpFromGround` before movement. A summon of
+`minecraft:player` makes a player without a client (its packets are kept, like the watcher's) that plates and
+tripwires find, with `pose` naming its vanilla `Pose` (`STANDING`, `CROUCHING`, `SWIMMING`, `SLEEPING`); the replay
+joins a test player in that pose. The probe never ticks its entities, so their `oldPosition` stays where they were
+summoned; the replay sets the same start position. The `speed_*`, `jump_*`, `cobweb_*`, `berry_bush_*`,
+`powder_snow_*`, `scaffolding_*`, `slime_step_*` and `pose_*` cases cover block speed and jump factors (from the block
+an entity is in and the one below its support), being stuck in cobwebs, berry bushes and powder snow, berry bush
+damage, powder snow and scaffolding collision for the entity moving, slime's step damping, and posed player boxes on
+tripwires and plates. Their boxes are one row of three cells, the smallest that holds each setup.
+
+`stationaryPlayer: true` skips movement entirely so that it cannot hide a stale stored bounding box. An
+`updatePose` event names a player, sets its `sneaking` flag and asks vanilla to choose its pose; `tickAir: true`
+also runs its base tick (the replay runs the player's ordinary tick). These cases record and compare pose,
+both box corners, eye position, the swimming flag and air supply alongside the usual observations. The replay
+checks both the stored and current box, and both eye-position readers. `pose_stationary_crouch_stand` checks
+shrinking and growing without movement. `pose_stationary_auto_crawl_water` checks a non-swimming player forced
+to crawl beneath a ceiling in water: air drops to 299 and then 298 at the crawling eye height.
 
 From checkpoint zero onwards, the replay compares every recorded block, position, velocity, fall distance,
 grounded flag, health and last accepted damage type; ordered block writes with their exact flags; unexpected

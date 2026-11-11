@@ -62,6 +62,8 @@ internal sealed class RedstoneTestWorld : IRedstoneLevel, IBlockTickLevel, IBloc
 
     public bool TntExplodes { get; set; } = true;
 
+    public IRandomSource Random { get; } = new LegacyRandomSource(0);
+
     public List<Vector> PrimedTnt { get; } = [];
 
     /// <summary>Every block tick scheduled through the world, as (position, block, delay), in scheduling order.</summary>
@@ -450,6 +452,19 @@ internal sealed class RedstoneTestWorld : IRedstoneLevel, IBlockTickLevel, IBloc
     {
         this.Commit(position, block);
         return ValueTask.CompletedTask;
+    }
+
+    async ValueTask IRedstoneLevel.WriteAsync(Vector position, IBlock block, BlockUpdateFlags flags)
+    {
+        this.Pipeline.Enqueue(this.Commit(position, block), flags);
+        await this.Pipeline.DrainAsync();
+    }
+
+    async ValueTask IRedstoneLevel.UpdateNeighborShapesAsync(Vector position)
+    {
+        var state = this.GetLoadedBlock(position)!;
+        this.Pipeline.Enqueue(new BlockChange(position, state, state), BlockUpdateFlags.Clients);
+        await this.Pipeline.DrainAsync();
     }
 
     bool IBlockTickLevel.IsChunkLoaded(long key) => this.chunks.ContainsKey(key);

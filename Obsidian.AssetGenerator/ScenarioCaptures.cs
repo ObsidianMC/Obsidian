@@ -32,6 +32,7 @@ internal static class ScenarioCaptures
     public const string Fire = "fire";
     public const string TickingBlocks = "ticking_blocks";
     public const string BlockUse = "block_use";
+    public const string FoodHarvest = "food_and_harvest";
     public const string WaxingBellsOre = "waxing_bells_ore";
     public const string Cauldrons = "cauldrons";
     public const string ProjectileHits = "projectile_hits";
@@ -76,14 +77,14 @@ internal static class ScenarioCaptures
     // The fixtures whose probes record only the cases asked for.
     private static readonly string[] SelectableCases =
         [Redstone, Sulfur, MoreBlocks, StructurePieces, Fire, TickingBlocks, BlockUse, MeltingWeather,
-            EyeblossomGhastPortal, Brushing, ArmorStandUse, WaxingBellsOre, Cauldrons, ProjectileHits, Dispenser,
-            Lightning, SpecialBlocks];
+            EyeblossomGhastPortal, Brushing, ArmorStandUse, WaxingBellsOre, FoodHarvest, Cauldrons,
+            ProjectileHits, Dispenser, Lightning, SpecialBlocks];
 
     public static readonly string[] All =
         [Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps, SavedHeightmaps, Mining,
             Placement, CopperWeathering, Fire, TickingBlocks, BlockUse, TurtleEggs, Frogspawn,
             GrowingPlantTicks, MeltingWeather, FurnaceResults, EyeblossomGhastPortal, Brushing, ArmorStandUse,
-            WaxingBellsOre, Cauldrons, ProjectileHits, Dispenser, Lightning, SpecialBlocks];
+            WaxingBellsOre, FoodHarvest, Cauldrons, ProjectileHits, Dispenser, Lightning, SpecialBlocks];
 
     private const string RedstoneNotes = """
         Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a
@@ -140,8 +141,8 @@ internal static class ScenarioCaptures
             throw new ArgumentException(
                 "Case selection requires CaptureFixtures=redstone, sulfur, more_blocks, structure_pieces, "
                 + "fire, ticking_blocks, block_use, melting_weather, eyeblossom_ghast_portal, brushing, "
-                + "armor_stand_use, waxing_bells_ore, cauldrons, projectile_hits, dispenser, lightning or "
-                + "special_blocks.");
+                + "armor_stand_use, waxing_bells_ore, food_and_harvest, cauldrons, projectile_hits, dispenser, "
+                + "lightning or special_blocks.");
         }
 
         if (fixtures.Contains(CopperWeathering))
@@ -186,6 +187,14 @@ internal static class ScenarioCaptures
         {
             await FixtureDumper.DumpArmorStandUseAsync(server, Path.Combine(assetsDirectory, "armor_stand_use.json"),
                 cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(FoodHarvest))
+        {
+            var path = Path.Combine(assetsDirectory, "food_and_harvest.json");
+            await FixtureDumper.DumpFoodHarvestAsync(server, path, cases);
             if (fixtures.Count == 1)
                 return;
         }
@@ -447,6 +456,7 @@ internal static class ScenarioCaptures
             scenario["checkpoints"] = checkpoints;
             await RemoveEntitiesAsync(vanilla, dimension);
             await KillItemsAsync(vanilla, dimension, box.Grow(2));
+            await KillPrimedTntAsync(vanilla, dimension, box.Grow(2));
             await ClearAsync(vanilla, dimension, box.Grow(1));
         }
     }
@@ -483,14 +493,23 @@ internal static class ScenarioCaptures
         await vanilla.RunInAsync(dimension, $"kill {ItemsIn(area)}");
     }
 
+    // Removes the TNT a scenario primed, so it doesn't explode during a later one.
+    private static async Task KillPrimedTntAsync(ScenarioServer vanilla, string dimension, Box area)
+    {
+        await vanilla.RunInAsync(dimension, $"kill {EntitiesIn(area, "minecraft:tnt")}");
+    }
+
     // The item entities in the area, narrowed by any further selector arguments in filter.
-    private static string ItemsIn(Box area, string filter = "")
+    private static string ItemsIn(Box area, string filter = "") => EntitiesIn(area, "minecraft:item", filter);
+
+    // The entities of the type in the area, narrowed by any further selector arguments in filter.
+    private static string EntitiesIn(Box area, string type, string filter = "")
     {
         var dx = area.Max.X - area.Min.X;
         var dy = area.Max.Y - area.Min.Y;
         var dz = area.Max.Z - area.Min.Z;
         var volume = $"x={area.Min.X},y={area.Min.Y},z={area.Min.Z},dx={dx},dy={dy},dz={dz}";
-        return $"@e[type=minecraft:item,{volume}{filter}]";
+        return $"@e[type={type},{volume}{filter}]";
     }
 
     // A placement's state with its block entity's items as /setblock data: each item's slot, id and count.

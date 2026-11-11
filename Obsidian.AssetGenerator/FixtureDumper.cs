@@ -192,6 +192,10 @@ internal static class FixtureDumper
         IReadOnlyCollection<string>? cases = null) =>
         RunObservedProbeAsync(server, fixture, "waxing-bells-ore", "WaxingBellsOreFixtures.java", cases);
 
+    internal static Task DumpFoodHarvestAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunObservedProbeAsync(server, fixture, "food-harvest", "FoodHarvestFixtures.java", cases);
+
     // An on-request probe like DumpWaxingBellsOreAsync's: cauldrons filled, emptied and washing items.
     internal static Task DumpCauldronsAsync(VanillaServer server, string fixture,
         IReadOnlyCollection<string>? cases = null) =>

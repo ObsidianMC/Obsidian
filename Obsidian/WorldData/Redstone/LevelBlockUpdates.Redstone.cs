@@ -285,7 +285,7 @@ internal sealed partial class LevelBlockUpdates
             Category = SoundCategory.Blocks,
             Volume = volume,
             Pitch = pitch,
-            Seed = this.Random.NextLong()
+            Seed = level.NextSoundSeed()
         };
 
         level.PacketBroadcaster.BroadcastToLevelInRange(level, (VectorD)position + 0.5, packet, excluded);

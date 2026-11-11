@@ -233,6 +233,11 @@ public final class BlockUseFixtures {
 
             if (input.has("randomSeed"))
                 level.getRandom().setSeed(input.get("randomSeed").getAsLong());
+            if (input.has("soundSeed")) {
+                var seeds = net.minecraft.world.level.Level.class.getDeclaredField("soundSeedGenerator");
+                seeds.setAccessible(true);
+                ((net.minecraft.util.RandomSource)seeds.get(level)).setSeed(input.get("soundSeed").getAsLong());
+            }
 
             observeWrites(level, input);
             var result = use(level, user, target, input);
@@ -266,6 +271,48 @@ public final class BlockUseFixtures {
             }
             if (input.has("checkEffects"))
                 recordExtra(input, heard);
+            if (input.has("checkSoundRandom")) {
+                var draws = new JsonArray();
+                for (var packet : heard) {
+                    if (packet instanceof ClientboundSoundPacket sound) {
+                        var draw = new JsonObject();
+                        draw.addProperty("sound", sound.getSound().value().location().toString());
+                        draw.addProperty("pitch", sound.getPitch());
+                        draw.addProperty("seed", sound.getSeed());
+                        draws.add(draw);
+                    }
+                }
+
+                input.add("soundRandom", draws);
+                input.addProperty("nextRandom", level.getRandom().nextInt());
+            }
+            if (input.has("checkVibrationFrequencies")) {
+                var frequencies = new JsonObject();
+                var registry = level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.GAME_EVENT);
+                for (var event : registry.listElements().toList()) {
+                    frequencies.addProperty(event.key().identifier().toString(),
+                        net.minecraft.world.level.gameevent.vibrations.VibrationSystem.getGameEventFrequency(event));
+                }
+
+                input.add("vibrationFrequencies", frequencies);
+
+                var sensor = (net.minecraft.world.level.block.entity.CalibratedSculkSensorBlockEntity)
+                    level.getBlockEntity(target);
+                for (var calibration : input.getAsJsonArray("calibration")) {
+                    var sample = calibration.getAsJsonObject();
+                    var wire = Blocks.REDSTONE_WIRE.defaultBlockState()
+                        .setValue(net.minecraft.world.level.block.RedstoneWireBlock.POWER,
+                            sample.get("filter").getAsInt())
+                        .setValue(net.minecraft.world.level.block.RedstoneWireBlock.NORTH,
+                            net.minecraft.world.level.block.state.properties.RedstoneSide.SIDE);
+                    level.setBlock(target.south(), wire, QuietFlags);
+                    var event = registry.get(Identifier.parse(sample.get("event").getAsString())).orElseThrow();
+                    sample.addProperty("accepts", sensor.getVibrationUser().canReceiveVibration(
+                        level, target.east(), event, GameEvent.Context.of((Entity)null)));
+                }
+
+                level.setBlock(target.south(), Blocks.AIR.defaultBlockState(), QuietFlags);
+            }
             if (input.has("checkSign")) {
                 var clicked = target.offset(position(input.getAsJsonArray("clicked")));
                 var sign = (SignBlockEntity) level.getBlockEntity(clicked);
@@ -450,7 +497,7 @@ public final class BlockUseFixtures {
         // The fixture lists location terms directly; 26.3 encodes that conjunction as an all_of predicate.
         for (var criterion : criteria.entrySet()) {
             var conditions = criterion.getValue().getAsJsonObject().getAsJsonObject("conditions");
-            if (!conditions.has("location"))
+            if (!conditions.has("location") || !conditions.get("location").isJsonArray())
                 continue;
 
             var conjunction = new JsonObject();

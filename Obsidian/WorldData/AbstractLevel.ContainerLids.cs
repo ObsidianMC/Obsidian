@@ -19,6 +19,10 @@ public abstract partial class AbstractLevel
     private readonly PriorityQueue<Vector, long> containerLidDeadlines = new();
     private readonly HashSet<Vector> inactiveContainerLids = [];
 
+    // Each trapped chest half's viewer count, as its redstone signal reads it. Only used under the tick lock, where
+    // signals are read: the lid bookkeeping above runs on the simulation path outside it.
+    private readonly Dictionary<Vector, int> trappedChestViewers = [];
+
     private long nextInactiveContainerLidCheck = long.MaxValue;
 
     internal long ContainerLidViewerScans { get; private set; }
@@ -191,6 +195,7 @@ public abstract partial class AbstractLevel
             if (block is null || !HasContainerOpeners(block))
             {
                 this.openContainerLids.Remove(position);
+                this.ForgetTrappedChestViewers(position);
                 continue;
             }
 
@@ -214,6 +219,11 @@ public abstract partial class AbstractLevel
                     trigger: shulker ? () => this.MoveShulkerLid(position) : null,
                     parameterAtDispatch: () => this.ViewerCount(position));
             }
+
+            if (block.RegistryId == BlockIds.TrappedChest)
+                this.SignalTrappedChestViewers(position, block, count);
+            else
+                this.ForgetTrappedChestViewers(position);
 
             // Vanilla's shulker boxes count their viewers themselves and never recheck them.
             if (count > 0 && shulker)
@@ -276,6 +286,42 @@ public abstract partial class AbstractLevel
 
     private static bool IsShulkerBox(IBlock block) =>
         TagsRegistry.Block.ShulkerBoxes.Entries.Contains(block.RegistryId);
+
+    /// <summary>
+    /// How many viewers the trapped chest half at <paramref name="position"/> has, as its redstone signal reads it.
+    /// </summary>
+    internal int TrappedChestViewers(Vector position)
+    {
+        lock (this.Fluids.TickLock)
+            return this.trappedChestViewers.GetValueOrDefault(position);
+    }
+
+    // Vanilla TrappedChestBlockEntity.signalOpenCount: when a half's viewer count changes, after the lid's block
+    // event, the blocks around it and around the block below it, which it strongly powers, hear of it.
+    private void SignalTrappedChestViewers(Vector position, IBlock block, int count)
+    {
+        lock (this.Fluids.TickLock)
+        {
+            var previous = this.trappedChestViewers.GetValueOrDefault(position);
+            if (previous == count)
+                return;
+
+            if (count > 0)
+                this.trappedChestViewers[position] = count;
+            else
+                this.trappedChestViewers.Remove(position);
+
+            this.UpdateNeighbors(position, block);
+            this.UpdateNeighbors(position + Vector.Down, block);
+        }
+    }
+
+    // A position that no longer holds a trapped chest gives no viewers' power.
+    private void ForgetTrappedChestViewers(Vector position)
+    {
+        lock (this.Fluids.TickLock)
+            this.trappedChestViewers.Remove(position);
+    }
 
     private static bool HasContainerOpeners(IBlock block) =>
         block.RegistryId is BlockIds.Chest or BlockIds.TrappedChest or BlockIds.EnderChest or BlockIds.Barrel
