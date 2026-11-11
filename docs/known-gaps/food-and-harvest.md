@@ -94,8 +94,8 @@ The bounded uses do not establish parity for the subsequent bee lifecycle. In pa
   emergency release is applied, but only the immediate adult release is captured here.
 - Anger time is saved, but its target and the pending first-tick harvest target are not persisted. Bee hive/flower
   positions still use the pre-existing Obsidian NBT fields rather than complete vanilla bee persistence.
-- Capture ticking bee/hive lifecycle scenarios before claiming parity for those paths. Dispenser harvests remain
-  in PR #729's scope, and cave vine bone meal remains separate from this harvest work.
+- Capture ticking bee/hive lifecycle scenarios before claiming parity for those paths. Dispenser harvests are
+  handled by #729, and cave vine bone meal remains separate from this harvest work.
 
 Only `food_and_harvest.json` was re-recorded. Validation for this branch is restricted to affected classes and
 their direct neighbours at the user's request; the user will run the full suite before merging.

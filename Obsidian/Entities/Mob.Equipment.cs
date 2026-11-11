@@ -21,6 +21,9 @@ public partial class Mob
     public float GetEquipmentDropChance(EquipmentSlot slot) => equipmentDropChances.GetValueOrDefault(slot, 0.085f);
     protected void SetEquipmentDropChance(EquipmentSlot slot, float chance) => equipmentDropChances[slot] = chance;
 
+    /// <summary>Vanilla's <c>Mob.setGuaranteedDrop</c>: the mob always drops what it wears in the slot.</summary>
+    internal void GuaranteeDrop(EquipmentSlot slot) => SetEquipmentDropChance(slot, 2);
+
     private static (int Armor, int Durability, float Toughness) GetArmorStats(ItemStack item, EquipmentSlot slot)
     {
         var name = item.Holder.UnlocalizedName.Replace("minecraft:", "", StringComparison.Ordinal);

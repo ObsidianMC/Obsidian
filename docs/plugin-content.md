@@ -1613,7 +1613,8 @@ block), and waits 8 ticks after moving anything. Items reaching an empty hopper 
 7 when another hopper that ticked no later pushed them, so chains move at vanilla's pace whatever order hoppers tick
 in. A dropper or dispenser fires 4 ticks after a redstone signal reaches it or the block above, picking a slot like
 vanilla; a dropper puts the item into the block it faces when it has item access (keeping it when it doesn't fit),
-and otherwise both drop it.
+and otherwise drops it, and a dispenser fires it with vanilla's behaviour for the item (shooting it, using it on the
+block or mob in front, or dropping it; see [dispenser behaviours](known-gaps/dispenser-behaviours.md)).
 
 ## Particles
 

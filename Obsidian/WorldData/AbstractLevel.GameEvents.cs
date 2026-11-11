@@ -10,7 +10,7 @@ internal enum MobGameEvent
     Step, Land, Bounce, Swim, ProjectileShoot, ProjectileLand, BlockPlace, BlockDestroy, BlockChange,
     EntityDamage, EntityDie, EntityInteract, NoteBlockPlay, JukeboxPlay, JukeboxStop, SculkSensorClick,
     BlockActivate, BlockDeactivate, BlockOpen, BlockClose, ContainerOpen, ContainerClose, Eat, FluidPickup,
-    FluidPlace, PrimeFuse, EntityPlace, ItemInteractFinish, ItemInteractStart, Equip, Unequip, Explode, Shear
+    FluidPlace, PrimeFuse, EntityPlace, ItemInteractFinish, ItemInteractStart, Shear, Equip, Unequip, Explode
 }
 
 internal static class MobGameEvents

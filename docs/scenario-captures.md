@@ -387,6 +387,29 @@ replaces only what vanilla produced.
   interrupted or raced exchange neither loses nor duplicates an item or a level, and a busy inventory is waited for
   outside the level's locks.
 
+- `dispenser.json` (`VanillaDispensers.ReplayDispenserReference`) records what a dispenser does with each item, from
+  `Java/DispenserFixtures.java` (`CaptureFixtures=dispenser`). Like the block use probe it runs a dedicated server of
+  its own in a flat world of air, but frozen and stepped one tick at a time, with random ticks and mob griefing off.
+  A case is its input: the dispenser's facing and items, the blocks set up around it without updates, and the mobs
+  standing in front (without AI; `tamed` and `canPickUpLoot` set). The probe powers the dispenser with a redstone block
+  placed behind it, with every update, and after each of the case's ticks (6 by default; it fires on the fourth)
+  records the blocks within 3 of the dispenser that changed since before the redstone block, the dispenser's items,
+  the entities within 5 (dropped items summed by item, since item entities merge, or only their ids, or only that
+  some dropped, where a case's `drops` says vanilla's are random; primed TNT with its fuse; mobs with their equipment
+  and whether they can be sheared), and the sounds (positioned and following an entity, without mobs' ambient
+  sounds), level events and particles a player beside the dispenser received and the game events within 16 blocks
+  during that tick. The replay builds each case in one world of empty chunks, places the same redstone block and runs
+  whole ticks of the level, comparing every field of every tick; game events are seen as they're emitted
+  (`AbstractLevel.GameEventQueued`), since the level dispatches them later in the tick. Its mobs are spawned standing
+  on their floor. Projectile positions aren't recorded: vanilla draws their spread from each projectile's own random.
+  Three cases pin exact output values for their documented gaps, while every other field still compares with vanilla.
+  Opt-in `details: true` cases compare full component payloads (an input item's optional `nbt` is its saved stack),
+  shulker contents, equipment, rocket state, deterministic sound details/positions, particle positions and velocities.
+  `flightMotion` records projectile velocity: the initial comparison permits spread, then subsequent ticks compare
+  the captured drag and vertical acceleration against Obsidian's own previous velocity. Only exact random flight
+  coordinates, sound seeds, random arrow-hit pitch and TNT's random horizontal impulse are omitted (see
+  [dispenser behaviours](known-gaps/dispenser-behaviours.md)).
+
 - `projectile_block_hits.json` (`VanillaProjectileHits.ReplayProjectileHitReference`) records projectiles hitting
   blocks, from `Java/ProjectileHitFixtures.java` (`CaptureFixtures=projectile_hits`). Like the block use probe it
   runs a dedicated server of its own in a flat world of air, at easy, with mob griefing off and time, weather and
@@ -531,6 +554,7 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=waxing_bells_ore
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=projectile_hits
 
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=dispenser
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=cauldrons
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=eyeblossom_ghast_portal
@@ -605,6 +629,10 @@ Append new inputs, select only their names, and verify existing case text is unc
 same selection as its second argument when run directly with the cached server and libraries on its classpath.
 `scheduled` records scheduling attempts: the first request per position/type remains pending, even when later
 attempts use another delay. The pending-coral case records delays 85 and 88, but only the first is pending.
+
+For `dispenser`, `CaptureCases` accepts exact `+`-separated names in `dispenser.json` and records only those cases;
+the others keep theirs. Add a case with empty `checkpoints` and capture it on its own. The whole capture takes about
+20 seconds after the server starts.
 
 For `eyeblossom_ghast_portal`, `CaptureCases` accepts exact `+`-separated names in
 `eyeblossom_ghast_portal_ticks.json` and records only those cases; the others keep theirs. The capture takes about ten
@@ -709,7 +737,7 @@ The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft 
 <scratch directory> <test assets directory>
 [redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+heightmaps+saved_heightmaps+mining+placement+
 copper_weathering+fire+ticking_blocks+block_use+waxing_bells_ore+cauldrons+turtle_eggs+frogspawn+growing_plant_ticks+
-melting_weather+furnace_results+brushing+armor_stand_use+projectile_hits]
+melting_weather+furnace_results+brushing+armor_stand_use+projectile_hits+dispenser]
 [case names]`.
 
 ## How it captures
