@@ -168,9 +168,11 @@ internal sealed class PluginEventDispatcher(IEventDispatcher dispatcher, PluginC
 /// <param name="plugin">The plugin.</param>
 /// <param name="services">The plugin's host services, which its command handler resolves from.</param>
 internal sealed class PluginServer(Server server, PluginContainer plugin, IServiceProvider services)
-    : IServer, IPluginScopedServer
+    : IServer, IPluginScopedServer, IPlayerListOrder
 {
     IServer IPluginScopedServer.ForCurrentCall() => ((IPluginScopedServer)server).ForCurrentCall();
+
+    IReadOnlyList<IPlayer> IPlayerListOrder.PlayersInListOrder => server.PlayersInListOrder;
 
     private readonly PluginCommandHandler commandHandler = new(server.CommandHandler, plugin, services);
 

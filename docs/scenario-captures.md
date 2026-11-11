@@ -508,11 +508,12 @@ replaces only what vanilla produced.
   wall-clock time. It also records the chat the operator received as text: `/say`, operators' `[@: …]` notices and
   the editor's "Command set". After the last tick it records what each block saves (vanilla's `saveCustomOnly`,
   which the editor is sent), with `LastExecution` relative to the game time before the first tick. A second player,
-  not an operator, is online for selectors to find after the operator. The 24 cases
+  not an operator, is online for selectors to find after the operator. The 25 cases
   cover:
   - impulse blocks on rising edges, including one powered before it was placed, which waits for an update;
   - commands that succeed, fail and are empty; untracked output; each rule; and Searge's easter egg;
-  - `execute as @a run say hi` with both players online, whose success count of 2 a comparator reads;
+  - `execute as @a run say hi` and `execute as @a if entity @s` with both players online, whose success counts of 2
+    a comparator reads, and whose per-branch "Test passed. Count: 1" operators aren't told of;
   - repeating blocks, always active and while powered;
   - chains in order, past an inactive chain block and powered by redstone, conditional chains after a success and a
     failure, the sequence length, and a loop, which ends when it reaches a block that already ran this tick;

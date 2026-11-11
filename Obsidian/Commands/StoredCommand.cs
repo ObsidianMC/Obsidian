@@ -196,7 +196,7 @@ internal sealed partial class StoredCommand
         var rules = run.Level.LevelData;
         var feedback = rules.GetBooleanRule("send_command_feedback");
         ChatMessage? output = null;
-        foreach (var message in sender.Messages)
+        foreach (var (message, toOperators) in sender.Messages)
         {
             // A failure is always kept; a success only with feedback on, which operators are told of too.
             if (!context.Succeeded)
@@ -209,7 +209,7 @@ internal sealed partial class StoredCommand
                 continue;
 
             output = Timed(message);
-            if (rules.GetBooleanRule("command_block_output"))
+            if (toOperators && rules.GetBooleanRule("command_block_output"))
                 await InformOperatorsAsync(server, sender.Name, message);
         }
 
@@ -351,7 +351,7 @@ internal sealed class CommandBlockSender(string name) : ICommandSender, IPermiss
     // Vanilla's LevelBasedPermissionSet.GAMEMASTER.
     private const int GameMasterLevel = 2;
 
-    private readonly List<ChatMessage> messages = [];
+    private readonly List<(ChatMessage Message, bool ToOperators)> messages = [];
 
     public CommandIssuers Issuer => CommandIssuers.Console;
 
@@ -362,8 +362,11 @@ internal sealed class CommandBlockSender(string name) : ICommandSender, IPermiss
     /// <summary>The name commands show for the block: its custom name, or "@".</summary>
     public string Name => name;
 
-    /// <summary>What the command said, in order.</summary>
-    public IReadOnlyList<ChatMessage> Messages
+    /// <summary>
+    /// What the command said, in order, and whether operators may be told of it: vanilla's <c>sendSuccess</c> says with
+    /// its <c>broadcastToAdmins</c>.
+    /// </summary>
+    public IReadOnlyList<(ChatMessage Message, bool ToOperators)> Messages
     {
         get
         {
@@ -372,10 +375,17 @@ internal sealed class CommandBlockSender(string name) : ICommandSender, IPermiss
         }
     }
 
-    public Task SendMessageAsync(ChatMessage message)
+    public Task SendMessageAsync(ChatMessage message) => this.Add(message, toOperators: true);
+
+    /// <summary>
+    /// Records a success operators aren't told of, like vanilla's <c>sendSuccess(message, false)</c>.
+    /// </summary>
+    public Task SendUnbroadcastAsync(ChatMessage message) => this.Add(message, toOperators: false);
+
+    private Task Add(ChatMessage message, bool toOperators)
     {
         lock (this.messages)
-            this.messages.Add(message);
+            this.messages.Add((message, toOperators));
 
         return Task.CompletedTask;
     }

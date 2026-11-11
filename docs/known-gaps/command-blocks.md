@@ -23,8 +23,14 @@ game rule, which is what Obsidian honours.
 - **Output and operators.** Vanilla tells each message apart as a success (kept with `send_command_feedback`, and told
   to operators with `command_block_output`) or a failure (always kept). Obsidian's command sender can't, so every
   message of a command that succeeded counts as a success, and every message of one that failed as a failure.
-  Commands vanilla doesn't tell operators about (successes sent without logging) are told here.
+  Of the successes vanilla sends without telling operators (`sendSuccess(message, false)`), only `/execute`'s
+  "Test passed" is kept from them (`CommandFeedback.UnbroadcastSuccessAsync`); other commands' are told here.
   `log_admin_commands` doesn't write command block successes to the server log.
+- **Selectors with a position or distance.** Vanilla's `@a`, `@p` and `@r` go through the server's player list,
+  whose order Obsidian keeps (joining appends a player, respawning after death or the End moves them to its end).
+  But with `x`, `y`, `z`, `distance`, `dx`, `dy` or `dz` vanilla goes through the level's own player list instead,
+  in the order players arrived in that level, and only that level's players. Obsidian still uses the server's list
+  there, so `@a[distance=..5,limit=1]` and equal distances can pick another player.
 - **Colours and chat types.** Obsidian's failures carry their red as a `§c` code in the text, and are saved that way
   in `LastOutput`, where vanilla saves a style. A command block's `/say` reaches players as system chat reading
   `[@] text`, where vanilla sends disguised chat of the announcement type; players see the same line.

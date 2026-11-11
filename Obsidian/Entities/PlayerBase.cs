@@ -895,6 +895,16 @@ public abstract partial class PlayerBase : Avatar, IPlayer
     public Task RespawnAsync(DataKept dataKept = DataKept.Metadata) =>
         DeferredInventoryWork.RunOrDeferAsync(() => new ValueTask(this.RespawnAfterDeathAsync(dataKept))).AsTask();
 
+    /// <summary>
+    /// Moves the player to the end of the server's player list, as vanilla's <c>PlayerList.respawn</c> does to a player
+    /// respawning after death or leaving the End; selectors such as <c>@a</c> go by that order.
+    /// </summary>
+    internal void MoveToEndOfPlayerList()
+    {
+        if (this.Server is Server server)
+            server.MoveToEndOfPlayerList(this);
+    }
+
     private async Task RespawnAfterDeathAsync(DataKept dataKept)
     {
         while (true)
@@ -954,6 +964,7 @@ public abstract partial class PlayerBase : Avatar, IPlayer
             {
                 // Death respawns must create fresh client state rather than retain the dead player's metadata.
                 dataKept = DataKept.None;
+                this.MoveToEndOfPlayerList();
                 // Death completed before taking chunkUpdates; never drain items again during respawn.
                 API.Data.AttachmentStorage.For(this).Respawn(this);
                 await this.StopSleepingAsync();

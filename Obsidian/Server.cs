@@ -28,7 +28,7 @@ using System.Threading;
 
 namespace Obsidian;
 
-public sealed partial class Server : IServer, IPluginScopedServer
+public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOrder
 {
     private static int EntityCounter;
 
@@ -84,6 +84,10 @@ public sealed partial class Server : IServer, IPluginScopedServer
     public IWorldManager WorldManager { get; }
 
     public ConcurrentDictionary<Guid, IPlayer> OnlinePlayers { get; } = [];
+
+    // The online players in the order of vanilla's PlayerList.players, which selectors such as @a go through: a player
+    // is appended on joining and moved to the end on respawning. Locked on itself.
+    private readonly List<IPlayer> playerList = [];
     private ConcurrentDictionary<string, Guid> UsernameToUuidMappings { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     public HashSet<string> RegisteredChannels { get; } = [];
@@ -842,10 +846,62 @@ public sealed partial class Server : IServer, IPluginScopedServer
 
         // The name must map to this player alone; undo the registration rather than leave lookups disagreeing.
         if (this.UsernameToUuidMappings.TryAdd(player.Username, player.Uuid))
+        {
+            // Like vanilla's placeNewPlayer, joining puts the player at the end of the player list.
+            lock (this.playerList)
+                this.playerList.Add(player);
+
             return true;
+        }
 
         this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player));
         return false;
+    }
+
+    /// <summary>
+    /// The online players in vanilla's player list order: the order they joined in, but a player who respawned (after
+    /// dying or leaving the End) comes after those who didn't since. Players a plugin put in
+    /// <see cref="OnlinePlayers"/> itself come last, by entity id.
+    /// </summary>
+    internal IReadOnlyList<IPlayer> PlayersInListOrder
+    {
+        get
+        {
+            IPlayer[] listed;
+            lock (this.playerList)
+                listed = [.. this.playerList];
+
+            var online = listed.Where(this.IsOnline).ToList();
+            var unlisted = this.OnlinePlayers.Values
+                .Where(player => !listed.Contains(player, ReferenceEqualityComparer.Instance))
+                .OrderBy(player => player.EntityId);
+            online.AddRange(unlisted);
+            return online;
+        }
+    }
+
+    IReadOnlyList<IPlayer> IPlayerListOrder.PlayersInListOrder => this.PlayersInListOrder;
+
+    /// <summary>
+    /// Moves an online player to the end of the player list, as vanilla's <c>PlayerList.respawn</c> does: it takes the
+    /// player out of the list and adds the respawned one at its end.
+    /// </summary>
+    internal void MoveToEndOfPlayerList(IPlayer player)
+    {
+        lock (this.playerList)
+        {
+            if (this.playerList.Remove(player))
+                this.playerList.Add(player);
+        }
+    }
+
+    private bool IsOnline(IPlayer player) =>
+        this.OnlinePlayers.TryGetValue(player.Uuid, out var online) && ReferenceEquals(online, player);
+
+    private void RemoveFromPlayerList(IPlayer player)
+    {
+        lock (this.playerList)
+            this.playerList.Remove(player);
     }
 
     public Task<IPlayer> AddServerPlayerAsync(Guid uuid, string username, IWorld? world = null) =>
@@ -980,6 +1036,7 @@ public sealed partial class Server : IServer, IPluginScopedServer
     private void ReleaseRegistrations(IPlayer player)
     {
         this.UsernameToUuidMappings.TryRemove(new KeyValuePair<string, Guid>(player.Username, player.Uuid));
+        this.RemoveFromPlayerList(player);
 
         // Under the transfer lock of the level that owns the player, so a level change can't move it on meanwhile. Only
         // the registration goes: a player still connected (one a plugin unregistered, say) may be registered again and
