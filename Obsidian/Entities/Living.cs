@@ -72,7 +72,7 @@ public partial class Living : Entity, ILiving
         if (!float.IsFinite(amount) || amount <= 0 || this.Health <= 0 || source.Level != level)
             return;
 
-        if (this is IPlayer immune && immune.GameMode is GameMode.Creative or GameMode.Spectator)
+        if (this.IsDamageImmune || this is IPlayer { GameMode: GameMode.Creative or GameMode.Spectator })
             return;
 
         if (this.TryCommitDamage(level, source, amount, out var healthTaken) && healthTaken)
@@ -120,13 +120,33 @@ public partial class Living : Entity, ILiving
         }
     }
 
-    // Call under level's transfer lock. Travel names the new level under the old one's lock, so the entity's level is
-    // what tells a hit it travelled. Not region membership: that lags the position while the entity moves, and a hit
-    // that lands mid-move (stepping onto magma, say) is still a hit in its level.
+    /// <summary>
+    /// Whether the entity takes no damage at all now, whatever hits it: a player in Creative, say. A hit checks this
+    /// again when it commits, as it may have awaited since it began.
+    /// </summary>
+    private protected virtual bool IsDamageImmune => false;
+
+    // The guard every hit shares, after each await and at its commit: the entity and the hit's source are still in
+    // level, and the entity can still be hurt. Call under level's transfer lock, which travel and removal take too.
     private bool StillIn(ILevel level, IEntity source) =>
         ReferenceEquals(this.Level, level)
         && ReferenceEquals(source.Level, level)
-        && this is not Mob { IsRemoved: true };
+        && this.IsAmongEntitiesOf(level)
+        && !this.IsDamageImmune;
+
+    // Whether the entity is still among level's: a player among its players, which leaving the server or the level
+    // takes it out of; anything else in its entity grid, which removal (DestroyEntityAsync among others) and travel
+    // take it out of. Not its region's entities: those lag the position while the entity moves, and a hit that lands
+    // mid-move (stepping onto magma, say) is still a hit in its level.
+    private bool IsAmongEntitiesOf(ILevel level)
+    {
+        if (this is IPlayer)
+            return level.Players.TryGetValue(this.Uuid, out var player) && ReferenceEquals(player, this);
+
+        return level is WorldData.AbstractLevel owned
+            && ReferenceEquals(this.Grid, owned.EntityGrid)
+            && this is not Mob { IsRemoved: true };
+    }
 
     /// <summary>
     /// What a hit that took health shows, once committed (see <see cref="TryCommitDamage"/>) in

@@ -387,15 +387,53 @@ public sealed class PluginMobs
         Assert.Null(behavior.Last.DirectEntity);
     }
 
+    [Fact]
+    public async Task PluginMobDeathIgnoresAHitItsHookCancelled()
+    {
+        await using var context = TestServerFactory.CreateServer($"cancelled-damage-{Guid.NewGuid():N}");
+        await BlockUpdates.AddChunksAsync(context.World);
+        var owner = new PluginContainer
+        {
+            Info = new PluginInfo("cancelleddamage"),
+            Archive = PluginArchive.Open("cancelleddamage.obby", PluginArchives.Zip(new Dictionary<string, byte[]>
+            {
+                [PluginMetadata.FileName] = PluginArchives.Metadata("cancelleddamage", "1.0.0", "Cancelled damage")
+            }))
+        };
+        var behavior = new DamageSourceRecorder();
+        var definition = EntityDefinitionsRegistry.Register("cancelleddamage:mob", EntityKind.Mob);
+        Assert.True(EntityDefinitionsRegistry.TryBind(definition, new EntityProperties { Behavior = behavior },
+            owner, () => false));
+        var mob = Assert.IsType<PluginMob>(PluginEntity.Create(definition, context.World));
+        mob.EntityId = Server.GetNextEntityId();
+        mob.Position = new VectorD(8.5, 71, 8.5);
+        context.World.SpawnEntity(mob);
+        var attacker = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Attacker");
+
+        // The hook cancels the player's hit, so a death in the same tick is an outright kill, not the player's.
+        await mob.DamageCombatAsync(attacker, 1, CombatDamageKind.Melee);
+        Assert.Equal("minecraft:player_attack", behavior.Last!.Type);
+        await mob.KillAsync(mob);
+
+        Assert.Equal("minecraft:generic_kill", behavior.Death!.Type);
+    }
+
     private sealed class DamageSourceRecorder : IEntityBehavior
     {
         public DamageSource? Last { get; private set; }
+        public DamageSource? Death { get; private set; }
         public bool CancelDamage { get; set; } = true;
 
         public ValueTask HurtAsync(IEntity entity, EntityDamage damage)
         {
             this.Last = damage.Source;
             damage.Cancelled = this.CancelDamage;
+            return ValueTask.CompletedTask;
+        }
+
+        public ValueTask DiedAsync(IEntity entity, DamageSource source)
+        {
+            this.Death = source;
             return ValueTask.CompletedTask;
         }
     }

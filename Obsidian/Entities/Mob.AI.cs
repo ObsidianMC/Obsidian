@@ -580,6 +580,14 @@ public partial class Mob
         CombatDamageKind kind) => ValueTask.FromResult<float?>(amount);
 
     /// <summary>
+    /// Called once a hit the mob took has committed (see <see cref="Living.TryCommitDamage"/>), before its effects and
+    /// any death it causes: a hit that a hook cancelled, or that the mob travelled away from, never gets here.
+    /// </summary>
+    private protected virtual void OnDamageCommitted(IEntity source, CombatDamageKind kind)
+    {
+    }
+
+    /// <summary>
     /// The player who hurt the mob in the last 100 ticks, like vanilla's <c>lastHurtByPlayer</c>, which loot tables'
     /// <c>killed_by_player</c> conditions test.
     /// </summary>
@@ -679,6 +687,7 @@ public partial class Mob
         if (!recentlyHurt)
             lastDamageTick = AiTick;
         AbsorptionHealth -= absorbed;
+        OnDamageCommitted(source, kind);
 
         if (healthTaken)
             await ShowDamageAsync(level, source);

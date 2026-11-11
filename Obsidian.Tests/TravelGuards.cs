@@ -1,5 +1,6 @@
 using Obsidian.API;
 using Obsidian.API.Entities;
+using Obsidian.API.Inventory;
 using Obsidian.API.Plugins;
 using Obsidian.API.Registries;
 using Obsidian.Entities;
@@ -13,16 +14,18 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
+using ServerPlayer = Obsidian.Entities.Player;
 
 namespace Obsidian.Tests;
 
 /// <summary>
 /// Work that awaits between finding an entity and changing it must not change it once it has travelled to another
-/// level meanwhile. Each test completes the travel at the exact point between the two, held there by a gate.
+/// level, or otherwise stopped being something it may change, meanwhile. Each test makes that happen at the exact
+/// point between the two, held there by a gate.
 /// </summary>
 public sealed class TravelGuards
 {
-    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    [Fact]
     public async Task DamageSkipsMobTransferredWhileAPluginHookAwaits()
     {
         await using var source = TestServerFactory.CreateServer($"damage-travel-source-{Guid.NewGuid():N}");
@@ -58,7 +61,74 @@ public sealed class TravelGuards
         Assert.Same(local, mob.LastAttacker);
     }
 
-    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    [Fact]
+    public async Task DamageSkipsMobDestroyedWhileAPluginHookAwaits()
+    {
+        await using var context = TestServerFactory.CreateServer($"damage-destroyed-{Guid.NewGuid():N}");
+        WorldBlockEntities.AddEmptyChunk(context.World);
+        var hook = new GatedHurtBehavior();
+        var mob = SpawnPluginMob(context.World, hook);
+        var attacker = Spawn(context.World, new VectorD(10.5, 70, 8.5));
+        var health = mob.Health;
+
+        // The level takes the mob out while the hook holds the hit; nothing marks the mob itself as removed.
+        var hit = mob.DamageCombatAsync(attacker, 6, CombatDamageKind.Melee).AsTask();
+        await hook.Reached.Task;
+        Assert.True(await context.World.DestroyEntityAsync(mob));
+        Assert.False(mob.IsRemoved);
+        hook.Release.SetResult();
+        await hit;
+
+        Assert.Equal(health, mob.Health);
+        Assert.Equal(VectorD.Zero, mob.Motion);
+        Assert.Equal(0, mob.AcceptedDamageCount);
+    }
+
+    [Fact]
+    public async Task PlayerHitSkipsPlayerTurnedCreativeDuringArmourWear()
+    {
+        await using var context = TestServerFactory.CreateServer($"damage-creative-{Guid.NewGuid():N}");
+        WorldBlockEntities.AddEmptyChunk(context.World);
+        var player = await JoinArmouredPlayerAsync(context);
+        var attacker = Spawn(context.World, new VectorD(10.5, 70, 8.5));
+
+        // The hit passes every check before the wear, then waits to wear the chestplate; the player turns Creative.
+        var hold = await InventoryHold.TakeAsync(player);
+        var hit = player.DamageCombatAsync(attacker, 4, CombatDamageKind.Melee).AsTask();
+        Assert.False(hit.IsCompleted);
+        player.GameMode = GameMode.Creative;
+        await hold.ReleaseAsync();
+        await hit;
+
+        Assert.Equal(20, player.Health);
+        Assert.Equal(0, player.HurtTime);
+        Assert.Equal(0, player.AcceptedDamageCount);
+    }
+
+    [Fact]
+    public async Task PlayerHitDuringArmourWearYieldsToAHitThatLandedMeanwhile()
+    {
+        await using var context = TestServerFactory.CreateServer($"damage-cooldown-{Guid.NewGuid():N}");
+        WorldBlockEntities.AddEmptyChunk(context.World);
+        var player = await JoinArmouredPlayerAsync(context);
+        var attacker = Spawn(context.World, new VectorD(10.5, 70, 8.5));
+
+        // The first hit waits to wear the chestplate; a hit that wears nothing lands meanwhile.
+        var hold = await InventoryHold.TakeAsync(player);
+        var first = player.DamageCombatAsync(attacker, 4, CombatDamageKind.Melee).AsTask();
+        Assert.False(first.IsCompleted);
+        await player.DamageCombatAsync(attacker, 4, CombatDamageKind.Magic);
+        Assert.Equal(16, player.Health);
+
+        // The first hit is no bigger than the one that landed, so the hurt cooldown takes all of it.
+        await hold.ReleaseAsync();
+        await first;
+
+        Assert.Equal(16, player.Health);
+        Assert.Equal(1, player.AcceptedDamageCount);
+    }
+
+    [Fact]
     public async Task PistonSkipsEntityTransferredBeforePushCommit()
     {
         await using var source = TestServerFactory.CreateServer($"piston-travel-source-{Guid.NewGuid():N}");
@@ -97,6 +167,46 @@ public sealed class TravelGuards
         Assert.Same(destination.World, zombie.Level);
     }
 
+    [Fact]
+    public async Task SlimePistonSkipsLaunchingEntityTransferredMeanwhile()
+    {
+        await using var source = TestServerFactory.CreateServer($"slime-travel-source-{Guid.NewGuid():N}");
+        await using var destination = TestServerFactory.CreateServer($"slime-travel-destination-{Guid.NewGuid():N}");
+        WorldBlockEntities.AddEmptyChunk(source.World);
+        WorldBlockEntities.AddEmptyChunk(destination.World);
+        var slime = BlocksRegistry.GetDefault(BlockIds.SlimeBlock);
+        var piston = new MovingPistonBlockEntity { BlockPosition = new Vector(8, 70, 8) };
+        piston.Configure(source.World, slime, BlockFace.East, extending: true, source: false);
+        var pushed = Spawn(source.World, new VectorD(8.6, 70, 8.5));
+        var traveller = Spawn(source.World, new VectorD(8.6, 70, 8.5));
+
+        // The first zombie's push waits while the second, already found in the slime's path, travels away.
+        var gate = new CommitGate();
+        piston.BeforePushCommit = entity =>
+        {
+            if (ReferenceEquals(entity, pushed))
+                gate.Pause(entity);
+        };
+        var tick = Task.Run(async () => await piston.TickAsync());
+        var arrival = traveller.Position;
+        try
+        {
+            Assert.Same(gate.Reached.Task, await Task.WhenAny(gate.Reached.Task, tick));
+            await traveller.TeleportAsync(destination.World, arrival);
+            Assert.Same(destination.World, traveller.Level);
+        }
+        finally
+        {
+            gate.Release.TrySetResult();
+            piston.BeforePushCommit = null;
+            await tick;
+        }
+
+        Assert.Equal(1, pushed.Motion.X);
+        Assert.Equal(VectorD.Zero, traveller.Motion);
+        Assert.Equal(arrival, traveller.Position);
+    }
+
     private static Zombie Spawn(WorldData.World world, VectorD position)
     {
         var zombie = new Zombie
@@ -131,6 +241,48 @@ public sealed class TravelGuards
         mob.NoGravity = true;
         world.SpawnEntity(mob);
         return mob;
+    }
+
+    private static async Task<ServerPlayer> JoinArmouredPlayerAsync(RealServerContext context)
+    {
+        var player = TestServerFactory.CreateConnectedPlayer(
+            context.Server,
+            context.World,
+            "Armoured",
+            new VectorD(8.5, 70, 8.5));
+        await TestServerFactory.JoinConnectedPlayerAsync(context.Server, player);
+        player.GameMode = GameMode.Survival;
+        player.Inventory.SetItem(6, new ItemStack(ItemsRegistry.IronChestplate));
+        return player;
+    }
+
+    // Holds a player's inventory from another flow, so a hit wearing their armour waits for it.
+    private sealed class InventoryHold
+    {
+        private readonly TaskCompletionSource release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private Task holder = Task.CompletedTask;
+
+        internal static async Task<InventoryHold> TakeAsync(ServerPlayer player)
+        {
+            var hold = new InventoryHold();
+            var held = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            hold.holder = Task.Run(async () =>
+            {
+                using (await player.Inventory.LockAsync())
+                {
+                    held.SetResult();
+                    await hold.release.Task;
+                }
+            });
+            await held.Task;
+            return hold;
+        }
+
+        internal Task ReleaseAsync()
+        {
+            this.release.TrySetResult();
+            return this.holder;
+        }
     }
 
     // A plugin's damage hook that, while closed, waits for the test before letting the hit go on.

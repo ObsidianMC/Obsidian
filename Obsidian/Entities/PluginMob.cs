@@ -228,11 +228,14 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
             Amount = amount
         };
 
-        this.lastDamage = (damage.Source, this.AiTick);
         await this.RunBehaviorAsync(behavior => behavior.HurtAsync(this, damage));
 
         return damage.Cancelled ? null : damage.Amount;
     }
+
+    // Only a hit that landed decides a death's source and loot: not one the hook cancelled or that never committed.
+    private protected override void OnDamageCommitted(IEntity source, CombatDamageKind kind) =>
+        this.lastDamage = (this.SourceOf(source, kind), this.AiTick);
 
     protected override async ValueTask OnDeathAsync(IEntity source)
     {

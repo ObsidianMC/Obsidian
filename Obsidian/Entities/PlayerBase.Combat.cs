@@ -60,6 +60,11 @@ public partial class PlayerBase
         });
     }
 
+    private protected override bool IsDamageImmune =>
+        Respawning
+        || GameMode is GameMode.Creative or GameMode.Spectator
+        || Abilities.HasFlag(PlayerAbility.Invulnerable);
+
     public override ValueTask DamageAsync(IEntity source, float amount = 1)
         => DamageCombatAsync(source, amount, ReferenceEquals(source, this) ? CombatDamageKind.Magic : CombatDamageKind.Melee);
 
@@ -75,11 +80,8 @@ public partial class PlayerBase
 
         // The level the hit is dealt in: it lands there or nowhere, as the player may travel while the hit awaits.
         var level = Level;
-        if (!float.IsFinite(amount) || amount <= 0 || !Alive || Respawning || source.Level != level ||
-            GameMode is GameMode.Creative or GameMode.Spectator || Abilities.HasFlag(PlayerAbility.Invulnerable))
-        {
+        if (!float.IsFinite(amount) || amount <= 0 || !Alive || source.Level != level || IsDamageImmune)
             return;
-        }
 
         if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact or CombatDamageKind.HotFloor
             && HasPotionEffect((int)PotionEffect.FireResistance - 1))
