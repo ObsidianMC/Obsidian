@@ -268,6 +268,7 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
             CombatDamageKind.Freezing => "minecraft:freeze",
             CombatDamageKind.Thorns => "minecraft:thorns",
             CombatDamageKind.Drowning => "minecraft:drown",
+            CombatDamageKind.SweetBerryBush => "minecraft:sweet_berry_bush",
             _ => "minecraft:magic"
         };
 

@@ -83,7 +83,13 @@ public partial class VanillaBlockContact
                             continue;
                         }
 
-                        var entity = Summon(world, entry);
+                        if (entry.TryGetProperty("jump", out var jumper))
+                        {
+                            Jump((Mob)entities[jumper.GetString()!], terrain);
+                            continue;
+                        }
+
+                        var entity = IsPlayer(entry) ? await this.JoinPlayerAsync(entry) : Summon(world, entry);
                         PrepareContactEntity(entity, entry);
                         entities[entry.GetProperty("summon").GetString()!] = entity;
                     }
@@ -105,7 +111,12 @@ public partial class VanillaBlockContact
             {
                 world.Fluids.BlockStored = null;
                 foreach (var entity in entities.Values)
-                    await world.DestroyEntityAsync(entity);
+                {
+                    if (entity is Obsidian.Entities.Player player)
+                        world.TryRemovePlayer(player);
+                    else
+                        await world.DestroyEntityAsync(entity);
+                }
             }
 
             var nextRandom = world.GrowthRandom.NextInt();
@@ -116,8 +127,45 @@ public partial class VanillaBlockContact
             return differences;
         }
 
+        private static bool IsPlayer(JsonElement entry) =>
+            entry.GetProperty("type").GetString() == "minecraft:player";
+
+        // A player like the capture's: joined, posed, with the motion and gravity the entry gives.
+        private async Task<Entity> JoinPlayerAsync(JsonElement entry)
+        {
+            var world = this.context.World;
+            var position = ReadLocation(entry.GetProperty("pos"));
+            var name = $"Posed{world.Players.Count}";
+            var player = TestServerFactory.CreateConnectedPlayer(this.context.Server, world, name, position);
+            await TestServerFactory.JoinConnectedPlayerAsync(this.context.Server, player);
+
+            player.Position = position;
+            player.MovementFlags = MovementFlags.None;
+            player.Motion = ReadLocation(entry.GetProperty("motion"));
+            player.NoGravity = entry.GetProperty("noGravity").GetBoolean();
+            player.Pose = entry.GetProperty("pose").GetString() switch
+            {
+                "CROUCHING" => Pose.Sneaking,
+                "SWIMMING" => Pose.Swimming,
+                "SLEEPING" => Pose.Sleeping,
+                _ => Pose.Standing,
+            };
+            return player;
+        }
+
+        // The capture's jump event: vanilla's jumpFromGround, with the jump the mob would make where it stands.
+        private static void Jump(Mob mob, MobTerrain terrain)
+        {
+            var motion = mob.Motion;
+            var power = EntityMovement.JumpPower(mob, terrain);
+            mob.Motion = new VectorD(motion.X, Math.Max(power, motion.Y), motion.Z);
+        }
+
         private static void PrepareContactEntity(Entity entity, JsonElement entry)
         {
+            // The capture never ticks its entities, so where their tick began stays where they were summoned.
+            entity.TickStartPosition = entity.Position;
+
             if (entity is Living living && entry.TryGetProperty("health", out var health))
                 living.Health = health.GetSingle();
 
@@ -142,6 +190,9 @@ public partial class VanillaBlockContact
 
                 if (entry.TryGetProperty("fireResistance", out _))
                     mob.AddPotionEffect((int)PotionEffect.FireResistance - 1, 1000);
+
+                if (entry.TryGetProperty("feet", out var feet))
+                    mob.SetEquipment(EquipmentSlot.Boots, new ItemStack(ItemsRegistry.Get(feet.GetString()!), 1));
 
                 if (entry.TryGetProperty("frostWalker", out _))
                 {
@@ -197,6 +248,7 @@ public partial class VanillaBlockContact
                         null => null,
                         CombatDamageKind.Fall => "minecraft:fall",
                         CombatDamageKind.HotFloor => "minecraft:hot_floor",
+                        CombatDamageKind.SweetBerryBush => "minecraft:sweet_berry_bush",
                         _ => $"unexpected:{living.LastDamageKind}"
                     };
                     var expectedType = expected.GetProperty("damageType").GetString();

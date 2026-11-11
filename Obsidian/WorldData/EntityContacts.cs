@@ -327,7 +327,7 @@ internal sealed class EntityContactPass(IContactLevel level)
         if (!AnyFlagged(ref blocks, box, stepY, flag))
             return null;
 
-        var cell = SupportCellOf(ref blocks, box, position, stepY);
+        var cell = SupportCellOf(ref blocks, entity, box, position, stepY);
 
         if (blocks.Read(cell) is not IBlock state || (ContactFlags.Of(state) & flag) == 0)
             return null;
@@ -341,12 +341,32 @@ internal sealed class EntityContactPass(IContactLevel level)
         var blocks = new ChunkCursor(level);
         var box = entity.Dimension.CreateBBFromPosition(position);
         var stepY = (int)Math.Floor(position.Y - StepDepth);
-        var cell = SupportCellOf(ref blocks, box, position, stepY);
+        var cell = SupportCellOf(ref blocks, entity, box, position, stepY);
         return blocks.Read(cell) is IBlock state ? (cell, state) : null;
     }
 
-    private static Vector SupportCellOf(ref ChunkCursor blocks, BoundingBox box, VectorD position, int stepY) =>
-        SupportOf(ref blocks, box, position) is Vector support
+    /// <summary>
+    /// The cell of the block below an entity on the ground that affects how it moves, like vanilla's
+    /// <c>getBlockPosBelowThatAffectsMyMovement</c>: the block holding it up, in the row <paramref name="belowY"/>
+    /// half a block under its feet, or the support itself for a wall or fence gate (not a fence, unlike the block
+    /// stepped on).
+    /// </summary>
+    internal static Vector MovementCellAt(IContactLevel level, Entity entity, VectorD position, int belowY)
+    {
+        var blocks = new ChunkCursor(level);
+        var box = entity.Dimension.CreateBBFromPosition(position);
+        if (SupportOf(ref blocks, entity, box, position) is not Vector support)
+            return new Vector((int)Math.Floor(position.X), belowY, (int)Math.Floor(position.Z));
+
+        var state = blocks.Read(support);
+        var keepsSupport = state is not null
+            && (TagsRegistry.Block.Walls.Entries.Contains(state.RegistryId) || state.BlockClass() == "FenceGateBlock");
+        return keepsSupport ? support : new Vector(support.X, belowY, support.Z);
+    }
+
+    private static Vector SupportCellOf(
+        ref ChunkCursor blocks, Entity entity, BoundingBox box, VectorD position, int stepY) =>
+        SupportOf(ref blocks, entity, box, position) is Vector support
             ? SteppedCell(ref blocks, support, stepY)
             : new Vector((int)Math.Floor(position.X), stepY, (int)Math.Floor(position.Z));
 
@@ -382,7 +402,7 @@ internal sealed class EntityContactPass(IContactLevel level)
 
     // Vanilla's findSupportingBlock: of the blocks whose collision meets the slab just under the box, the nearest by
     // the distance from its centre to the entity's position, ties going to the greatest by y, then z, then x.
-    private static Vector? SupportOf(ref ChunkCursor blocks, BoundingBox box, VectorD position)
+    private static Vector? SupportOf(ref ChunkCursor blocks, Entity entity, BoundingBox box, VectorD position)
     {
         var slabMin = new VectorD(box.Min.X, box.Min.Y - SupportDepth, box.Min.Z);
         var slabMax = new VectorD(box.Max.X, box.Min.Y, box.Max.Z);
@@ -395,7 +415,7 @@ internal sealed class EntityContactPass(IContactLevel level)
                 for (var x = (int)Math.Floor(slabMin.X) - 1; x <= (int)Math.Floor(slabMax.X) + 1; x++)
                 {
                     var cell = new Vector(x, y, z);
-                    if (blocks.Read(cell) is not IBlock state || !Collides(state, cell, slabMin, slabMax))
+                    if (blocks.Read(cell) is not IBlock state || !Collides(state, entity, cell, slabMin, slabMax))
                         continue;
 
                     var dx = x + 0.5 - position.X;
@@ -423,8 +443,12 @@ internal sealed class EntityContactPass(IContactLevel level)
         return cell.Z != than.Z ? cell.Z > than.Z : cell.X > than.X;
     }
 
-    private static bool Collides(IBlock state, Vector cell, VectorD min, VectorD max)
+    // Whether the block's collision for the entity meets the box from min to max.
+    private static bool Collides(IBlock state, Entity entity, Vector cell, VectorD min, VectorD max)
     {
+        if (Entities.AI.EntityCollisionShapes.DependsOnEntity(state))
+            return CollidesForEntity(state, entity, cell, min, max);
+
         var stateId = state.GetHashCode();
         var offset = BlockPhysics.ShapeOffset(stateId, cell.X, cell.Z);
         foreach (var shape in BlockPhysics.ShapeBoxes(stateId))
@@ -432,6 +456,23 @@ internal sealed class EntityContactPass(IContactLevel level)
             var meets = cell.X + offset.X + shape[0] < max.X && cell.X + offset.X + shape[3] > min.X
                 && cell.Y + offset.Y + shape[1] < max.Y && cell.Y + offset.Y + shape[4] > min.Y
                 && cell.Z + offset.Z + shape[2] < max.Z && cell.Z + offset.Z + shape[5] > min.Z;
+            if (meets)
+                return true;
+        }
+
+        return false;
+    }
+
+    // The box's bottom is where the entity's feet are now, which vanilla reads for the block holding it up.
+    private static bool CollidesForEntity(IBlock state, Entity entity, Vector cell, VectorD min, VectorD max)
+    {
+        var shapes = Entities.AI.EntityCollisionShapes.Get(cell, state, entity, max.Y);
+        for (var index = 0; index < shapes.Count; index++)
+        {
+            var shape = shapes[index];
+            var meets = cell.X + shape.Min.X < max.X && cell.X + shape.Max.X > min.X
+                && cell.Y + shape.Min.Y < max.Y && cell.Y + shape.Max.Y > min.Y
+                && cell.Z + shape.Min.Z < max.Z && cell.Z + shape.Max.Z > min.Z;
             if (meets)
                 return true;
         }

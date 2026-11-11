@@ -97,7 +97,7 @@ public sealed partial class PrimedTnt : Entity
 
         var bounds = this.Dimension.CreateBBFromPosition(this.Position);
         var displacement = EntityMovement.Collide(terrain, bounds, velocity, 0,
-            this.MovementFlags.HasFlag(MovementFlags.OnGround));
+            this.MovementFlags.HasFlag(MovementFlags.OnGround), this);
         var onGround = velocity.Y < 0 && Math.Abs(displacement.Y - velocity.Y) > 0.00001;
         this.MovementFlags = onGround ? MovementFlags.OnGround : MovementFlags.None;
 

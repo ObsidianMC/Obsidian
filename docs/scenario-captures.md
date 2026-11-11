@@ -545,7 +545,7 @@ scenarios keep what they hold.
 gives its number of `ticks` and starts with empty `checkpoints`; `CaptureCases` records only the exact names supplied,
 and the other cases keep their recordings.
 
-The 81 `contactMoves` scenarios use `Java/BlockContactFixtures.java` on a real dedicated server, with the same
+The 115 `contactMoves` scenarios use `Java/BlockContactFixtures.java` on a real dedicated server, with the same
 scratch-only block-write instrumentation as block uses. They drive native `Entity.move` and
 `applyEffectsFromBlocks` with controlled velocities: falls, stationary contacts, walking and external pushes.
 This boundary exercises native collision, fall accounting, restitution and block hooks without AI or travel forces.
@@ -556,6 +556,17 @@ whose effect is removed before movement. `recordSafeFallDistance: true` also rec
 safe-fall-distance attribute at every checkpoint, including checkpoint zero. The review cases cover water at impact,
 water crossed before a dry landing, fluid touching only the body's edge, slime and bed support outside the centre,
 and Jump Boost I, II, a control fall and effect removal.
+
+A summon's `feet` puts an item in a living entity's feet slot (leather boots for powder snow), and `sneaking` holds
+its shift key down. A tick event's `jump` runs the named entity's `jumpFromGround` before movement. A summon of
+`minecraft:player` makes a player without a client (its packets are kept, like the watcher's) that plates and
+tripwires find, with `pose` naming its vanilla `Pose` (`STANDING`, `CROUCHING`, `SWIMMING`, `SLEEPING`); the replay
+joins a test player in that pose. The probe never ticks its entities, so their `oldPosition` stays where they were
+summoned; the replay sets the same start position. The `speed_*`, `jump_*`, `cobweb_*`, `berry_bush_*`,
+`powder_snow_*`, `scaffolding_*`, `slime_step_*` and `pose_*` cases cover block speed and jump factors (from the block
+an entity is in and the one below its support), being stuck in cobwebs, berry bushes and powder snow, berry bush
+damage, powder snow and scaffolding collision for the entity moving, slime's step damping, and posed player boxes on
+tripwires and plates. Their boxes are one row of three cells, the smallest that holds each setup.
 
 From checkpoint zero onwards, the replay compares every recorded block, position, velocity, fall distance,
 grounded flag, health and last accepted damage type; ordered block writes with their exact flags; unexpected

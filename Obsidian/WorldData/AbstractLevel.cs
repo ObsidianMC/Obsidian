@@ -1183,6 +1183,11 @@ public abstract partial class AbstractLevel : ILevel
                 if (GetRegionForLocation(entity.Position)?.Entities.ContainsKey(entity.EntityId) == true)
                 {
                     this.tickingEntity = entity;
+
+                    // Vanilla's setOldPosAndRot before the tick; a player's client moves them before it instead.
+                    if (entity is Entity starting && entity is not IPlayer)
+                        starting.TickStartPosition = starting.Position;
+
                     await entity.TickAsync();
 
                     // Like vanilla's entity movement, the blocks it touches react now, before the next entity ticks;
@@ -1195,6 +1200,9 @@ public abstract partial class AbstractLevel : ILevel
                     {
                         await this.EntityContacts.TouchAsync(toucher);
                     }
+
+                    if (entity is PlayerBase moved)
+                        moved.TickStartPosition = moved.Position;
 
                     if (entity is Entity concrete && entity is not IPlayer && entity.Level == this)
                         await concrete.TickEntityPortalAsync();

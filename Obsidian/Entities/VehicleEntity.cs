@@ -365,7 +365,7 @@ public abstract class VehicleEntity : Entity, IPlayerInteractable
     {
         var bounds = this.Dimension.CreateBBFromPosition(this.Position);
         var onGround = this.MovementFlags.HasFlag(MovementFlags.OnGround);
-        var displacement = EntityMovement.Collide(this.Terrain, bounds, delta, 0, onGround);
+        var displacement = EntityMovement.Collide(this.Terrain, bounds, delta, 0, onGround, this);
 
         var collidedX = Math.Abs(displacement.X - delta.X) > 1.0E-5;
         var collidedY = Math.Abs(displacement.Y - delta.Y) > 1.0E-5;

@@ -320,6 +320,12 @@ internal static class EntityInsideBehaviors
 
     internal static IEntityInsideBehavior ButtonBlock { get; } = new ButtonContact();
 
+    internal static IEntityInsideBehavior WebBlock { get; } = new CobwebContactBehavior();
+
+    internal static IEntityInsideBehavior SweetBerryBushBlock { get; } = new SweetBerryBushContactBehavior();
+
+    internal static IEntityInsideBehavior PowderSnowBlock { get; } = PowderSnowContactBehavior.Instance;
+
     // The redstone blocks run their level's own instance, which holds what they need from the level.
     private sealed class PressurePlateContact : IEntityInsideBehavior
     {
@@ -355,6 +361,8 @@ internal static class StepOnBehaviors
     internal static IStepOnBehavior MagmaBlock { get; } = new MagmaContactBehavior();
 
     internal static IStepOnBehavior TurtleEggBlock { get; } = new TurtleEggContactBehavior();
+
+    internal static IStepOnBehavior SlimeBlock { get; } = new SlimeStepBehavior();
 }
 
 /// <summary>
@@ -375,4 +383,6 @@ internal static class FallOnBehaviors
 
     // Beds inherit Block.fallOn in 26.3; their property halves distance before the safe distance is subtracted.
     internal static IFallOnBehavior BedBlock { get; } = new SoftLandingBehavior(1, distanceScale: 0.5f);
+
+    internal static IFallOnBehavior PowderSnowBlock { get; } = PowderSnowContactBehavior.Instance;
 }

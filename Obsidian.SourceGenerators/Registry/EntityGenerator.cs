@@ -93,6 +93,24 @@ public sealed partial class EntityGenerator : IIncrementalGenerator
 
     }
 
+    // Whether the type works out its dimensions itself: it declares Dimension, or a base class seals it.
+    private static bool HasOwnDimension(INamedTypeSymbol type)
+    {
+        if (type.GetMembers("Dimension").Any(member => member is IPropertySymbol))
+            return true;
+
+        for (var baseType = type.BaseType; baseType is not null; baseType = baseType.BaseType)
+        {
+            foreach (var member in baseType.GetMembers("Dimension"))
+            {
+                if (member is IPropertySymbol { IsSealed: true })
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
     private void GenerateClasses(List<TypeInformation> classes, JsonDocument document, SourceProductionContext context)
     {
         var element = document.RootElement;
@@ -122,18 +140,22 @@ public sealed partial class EntityGenerator : IIncrementalGenerator
                 .Line()
                 .Type($"public partial class {@class.Symbol.Name}");
 
-            builder.Indent().Append("private EntityDimension baseDimension = new() { ")
-                .Append($"Width = {widthElement.GetSingle().ToString(CultureInfo.InvariantCulture)}f, ")
-                .Append($"Height = {heightElement.GetSingle().ToString(CultureInfo.InvariantCulture)}f }}; ")
-                .Line()
-                .Line();
+            // A type that works out its dimensions itself keeps them (a player's come from their pose).
+            if (!HasOwnDimension(@class.Symbol))
+            {
+                builder.Indent().Append("private EntityDimension baseDimension = new() { ")
+                    .Append($"Width = {widthElement.GetSingle().ToString(CultureInfo.InvariantCulture)}f, ")
+                    .Append($"Height = {heightElement.GetSingle().ToString(CultureInfo.InvariantCulture)}f }}; ")
+                    .Line()
+                    .Line();
 
-            builder.Line("public override EntityDimension Dimension")
-                .Line("{")
-                .Line("    get => ScaleDimensions(baseDimension.Width, baseDimension.Height);")
-                .Line("    protected set => baseDimension = value;")
-                .Line("}")
-                .Line();
+                builder.Line("public override EntityDimension Dimension")
+                    .Line("{")
+                    .Line("    get => ScaleDimensions(baseDimension.Width, baseDimension.Height);")
+                    .Line("    protected set => baseDimension = value;")
+                    .Line("}")
+                    .Line();
+            }
 
             if (entityElement.TryGetProperty("is_fire_immune", out var fireImmuneElement))
             {

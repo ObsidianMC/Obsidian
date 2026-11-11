@@ -205,7 +205,7 @@ internal sealed class ClientVehicleControl
         var bounds = vehicle.Dimension.CreateBBFromPosition(from);
         var delta = target - from;
         var stepHeight = Math.Clamp(vehicle.GetAttributeValue("minecraft:step_height"), 0, 10);
-        var displacement = EntityMovement.Collide(terrain, bounds, delta, stepHeight, wasOnGround);
+        var displacement = EntityMovement.Collide(terrain, bounds, delta, stepHeight, wasOnGround, vehicle);
         var moved = from + displacement;
         var missX = target.X - moved.X;
         var missZ = target.Z - moved.Z;

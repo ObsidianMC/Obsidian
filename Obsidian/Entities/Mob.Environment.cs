@@ -76,12 +76,6 @@ public partial class Mob
             await DamageCombatAsync(this, 1, CombatDamageKind.FireContact);
         }
 
-        if (this is not Fox && feet?.RegistryId == BlockIds.SweetBerryBush && !IsRemoved &&
-            (LastPosition - Position).MagnitudeSquared() > 0.000025f)
-        {
-            await ApplyDamageAsync(this, 1, true);
-        }
-
         await TickBlockHazardsAsync(feet);
     }
 
@@ -110,8 +104,9 @@ public partial class Mob
         if (Silent || SoundName == null || kind == "ambient" && this is Creeper or Slime)
             return;
         var baby = this is IAgeable { IsBaby: true };
-        if (kind == "hurt" && IncomingDamageKind is CombatDamageKind.Fall or CombatDamageKind.HotFloor
-            && Level is AbstractLevel world)
+        var blockDamage = IncomingDamageKind
+            is CombatDamageKind.Fall or CombatDamageKind.HotFloor or CombatDamageKind.SweetBerryBush;
+        if (kind == "hurt" && blockDamage && Level is AbstractLevel world)
         {
             var pitch = (Random.NextSingle() - Random.NextSingle()) * 0.2f + (baby ? 1.5f : 1);
             LevelSounds.Play(world, Position, $"minecraft:entity.{SoundName}.hurt", MobSoundCategory, 1, pitch);

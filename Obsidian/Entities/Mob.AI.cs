@@ -556,7 +556,7 @@ public partial class Mob
     {
         var kind = IncomingDamageKind ?? (applyArmor ? CombatDamageKind.Melee : CombatDamageKind.Magic);
         applyArmor &= kind is CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion
-            or CombatDamageKind.FireContact or CombatDamageKind.HotFloor
+            or CombatDamageKind.FireContact or CombatDamageKind.HotFloor or CombatDamageKind.SweetBerryBush
             or CombatDamageKind.Thorns or CombatDamageKind.FallingStalactite;
         if (!UsesAi)
         {
