@@ -307,10 +307,9 @@ registry.RegisterBlock("ruby:ruby_sapling", new BlockProperties
     Hardness = 0,
     TreeGrower = new TreeGrower
     {
-        Tree = "ruby:ruby_tree",
-        MegaTree = "ruby:huge_ruby_tree",
-        SecondaryTree = "minecraft:fancy_oak",
-        SecondaryChance = 0.1f
+        Trees = [new WeightedFeature("ruby:ruby_tree", 9), new WeightedFeature("minecraft:fancy_oak", 1)],
+        MegaTrees = [new WeightedFeature("ruby:huge_ruby_tree", 1)],
+        ShortestTree = "ruby:ruby_tree"
     }
 });
 ```
@@ -320,15 +319,18 @@ time in 7, and with bone meal 45% of the time, it grows a step. With a `stage` p
 and the second grows the tree; without one, every step grows it. Its trees are configured features named by
 identifier: vanilla's, or a plugin's or data pack's from `worldgen/configured_feature` files (see
 [World generation features](#world-generation-features)), looked up as the sapling grows, so a reload or override
-applies at once. Like vanilla's, four saplings of the block in a square grow its `MegaTree` from their north-west
-corner, a flower within two blocks makes it grow its `Flowers` tree, and `SecondaryChance` picks the secondary tree
-of either; a sapling whose feature is missing, or can't be placed, stays a sapling. Like vanilla's, random ticks only
+applies at once. Like vanilla 26.3's, four saplings of the block in a square grow one of its `MegaTrees` from their
+north-west corner, a flower within two blocks makes it grow one of its `FlowerTrees`, and otherwise it grows one of
+its `Trees`, each picked by weight; bone meal takes only where `ShortestTree`'s trunk fits below the build limit. A
+sapling whose feature is missing, or can't be placed, stays a sapling. The older shape (`Tree`, `MegaTree` and
+`Flowers`, each with a secondary tree taking `SecondaryChance`) still works when the weighted lists are empty. Like vanilla's, random ticks only
 reach chunks near players whose neighbours are loaded, and a tree that would reach a chunk that isn't loaded doesn't
 grow. The grower belongs to the plugin like the block's behaviour: its saplings stop growing when it unloads, and a
 reload replaces it.
 
 Vanilla's saplings, azaleas and the mangrove propagule grow the same way into vanilla's trees, and bone meal grows
-crops, grass blocks (with vanilla's `minecraft:grass_bonemeal` and the biome's flowers) and short grass and ferns.
+crops, grass blocks (with vanilla's `minecraft:grass_bonemeal` and the biome's flowers), short grass and ferns, and
+most other vanilla plants (see [plant growth](known-gaps/plant-growth-beyond-saplings.md)).
 Bone meal is used on the level's next tick, on the block there then: it's used up (outside creative mode) only if
 that block still takes it.
 

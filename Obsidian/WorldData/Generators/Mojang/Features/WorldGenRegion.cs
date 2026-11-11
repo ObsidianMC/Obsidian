@@ -365,6 +365,14 @@ internal sealed class WorldGenRegion : IWorldGenLevel
             generated.BlockTicks.Schedule(position, block.UnlocalizedName, delay);
     }
 
+    /// <summary>
+    /// Whether a tick of <paramref name="block"/>'s block is scheduled at <paramref name="position"/> in the chunk
+    /// holding it, if the region holds it.
+    /// </summary>
+    internal bool HasScheduledBlockTick(Vector position, IBlock block) =>
+        this.FindChunk(position.X >> 4, position.Z >> 4) is Chunk generated
+        && generated.BlockTicks.Contains(position, block.UnlocalizedName);
+
     public void MarkForPostProcessing(Vector position)
     {
         if (this.FindChunk(position.X >> 4, position.Z >> 4) is Chunk generated)

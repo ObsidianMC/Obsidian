@@ -99,16 +99,31 @@ internal sealed class BambooStalkBlockBehavior : IScheduledTickBehavior, IShapeU
 /// The shape updates and support checks of kelp and the cave, weeping and twisting vines, heads and bodies. Only kelp
 /// breaks when its support check finds it can't stay.
 /// </summary>
-internal sealed class KelpBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior
+internal sealed class KelpBlockBehavior : IScheduledTickBehavior, IShapeUpdateBehavior, IPostProcessBehavior
 {
     private static readonly IShapeUpdateBehavior sharedPassRule = new KelpShapeRule();
 
     /// <summary>
-    /// The shared pass only turns a kelp head with kelp above into a stem, as its copy of the rule always did: it
-    /// schedules no support check, which chunk completion would otherwise save in the region's ticks. The cave,
+    /// The shared pass only turns a kelp head with kelp above into a stem, as its copy of the rule always did, and
+    /// schedules nothing: chunk completion schedules the support check (see <see cref="PostProcess"/>). The cave,
     /// weeping and twisting vines bound to the same classes keep their state there.
     /// </summary>
     public IShapeUpdateBehavior? SharedPassRule => sharedPassRule;
+
+    /// <summary>
+    /// Chunk completion (vanilla's <c>LevelChunk.postProcessGeneration</c>) runs the rule against the live level, so a
+    /// plant that lost its support during generation checks it a tick after the chunk is full: after the shared pass,
+    /// the update from the support side schedules that in the chunk's ticks.
+    /// </summary>
+    public void PostProcess(Generators.Mojang.Features.WorldGenRegion level, Vector position, IBlock state)
+    {
+        var current = level.GetBlock(position);
+        foreach (var side in (ReadOnlySpan<BlockFace>)[BlockFace.Down, BlockFace.Up])
+        {
+            if (GrowingPlantShapes.NeedsSupportCheck(current, side, level.GetBlock(position.Offset(side))))
+                level.ScheduleBlockTick(position, current, 1);
+        }
+    }
 
     /// <summary>
     /// Vanilla's <c>updateShape</c> (see <see cref="GrowingPlantShapes"/>): an update from the support side schedules

@@ -148,6 +148,8 @@ internal static class TickBehaviors
 
     internal static IScheduledTickBehavior FrostedIceBlock { get; } = new FrostedIceBlockBehavior();
 
+    internal static IScheduledTickBehavior SculkCatalystBlock { get; } = new SculkCatalystBlockBehavior();
+
     internal static IScheduledTickBehavior LightningRodBlock => LightningRodBehavior.Instance;
 }
 

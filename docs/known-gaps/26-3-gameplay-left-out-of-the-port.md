@@ -9,7 +9,6 @@ mobs exist and sync to clients, but some can't be used and some biomes lack mobs
 - **Blocks.** Golden dandelion interactions and age locking; straw bed placement and its own sleep rules; shelf
   storage, quick swapping and connections for every wood. See [26.3 blocks](26-3-blocks.md). These are now
   scheduled in the [block interactions plan](../block-interactions-plan.md), phase 2 batch G.
-- **Saplings.** Poplar saplings don't grow. See [saplings that 26.3 added](saplings-that-26-3-added.md).
 - **New entities.** The Sulfur Cube (archetypes, absorbing blocks, shearing, splitting, buckets, dispensers) and the
   cushion (seating) have metadata but no behavior. Natural spawning skips Sulfur Cubes, so Sulfur Caves have none.
   See [26.3 entities](26-3-entities.md); no plan covers them yet.

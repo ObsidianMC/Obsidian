@@ -168,6 +168,23 @@ internal sealed partial class FeatureRegistry
         }
     }
 
+    /// <summary>
+    /// The definition of the configured feature <paramref name="id"/> (a plugin's or data pack's override, or
+    /// vanilla's), flattened as features read it, for what reads a feature's settings without placing it: a sapling's
+    /// trunk height, a huge mushroom's cap. Null when there's no such feature.
+    /// </summary>
+    internal JsonElement? FeatureDefinition(string id)
+    {
+        id = WorldgenData.Qualify(id);
+        lock (this.compiling)
+        {
+            if (!this.pluginEntries.ContainsKey(("feature", id)) && !this.Data.Ids("feature").Contains(id))
+                return null;
+
+            return FlattenFeature(this.Entry("feature", id));
+        }
+    }
+
     internal LegacyPlacedFeature? FindPlaced(string id)
     {
         try

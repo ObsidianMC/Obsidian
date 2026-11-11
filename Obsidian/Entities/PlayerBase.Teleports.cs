@@ -127,6 +127,18 @@ public partial class PlayerBase
         }
     }
 
+    // A block tick already owns transfer. Geometry was prepared before that lock; only host state and packet
+    // queueing run here, under the same teleport gate used by normal movement corrections.
+    internal void SendBlockLift(VectorD position, BoundingBox storedBox, VectorD offset)
+    {
+        lock (this.teleportStateGate)
+        {
+            this.SetBlockLiftPosition(position, storedBox, offset);
+            this.movementGeneration++;
+            _ = this.QueueTeleportUnderLock(this.Motion, PositionFlags.None);
+        }
+    }
+
     private ValueTask QueueTeleportUnderLock(VectorD delta, PositionFlags relativeFlags)
     {
         // Vanilla skips int.MaxValue: the counter runs 1..int.MaxValue-1, 0, 1...

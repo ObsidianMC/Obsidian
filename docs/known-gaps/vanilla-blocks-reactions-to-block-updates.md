@@ -135,7 +135,9 @@ Three kinds of block have their class's rule but miss part of it:
   never breaks; vanilla's crops also need light, which no crop checks yet. The `more_blocks` probe can't record
   crops: their survival reads light, and its bounded level has no light engine. Phase 5.
 - Mushrooms (`VegetationBlock`) read the live level's light; generation's shape pass reads 15, as it always has.
-- Pointed dripstone, sulfur spikes and kelp only reshape in the shared pass: one that has lost its support during
-  chunk completion keeps its state and gets no tick. Vanilla's completion (`LevelChunk.postProcessGeneration`) runs
-  `updateFromNeighbourShapes` against the live level, so vanilla would schedule the fall, break or support check
-  there. Obsidian keeps what it always did until a completion capture shows the ticks. Phase 5.
+- Pointed dripstone, sulfur spikes, kelp and the vines only reshape in generation's shared pass. Chunk completion
+  schedules what vanilla's `LevelChunk.postProcessGeneration` schedules against the live level for one that lost its
+  support (a stalactite's fall, a stalagmite's break, a plant's support check), through their
+  `IPostProcessBehavior`, as `ticking_blocks.json`'s `completion_*` cases capture. A vine or kelp stem whose plant
+  ahead is gone still keeps its state at completion: vanilla turns it into a head with an age drawn from the live
+  level's random, which completion doesn't have.

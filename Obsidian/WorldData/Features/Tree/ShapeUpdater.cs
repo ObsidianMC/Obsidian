@@ -99,7 +99,7 @@ internal static class ShapeUpdater
 
     /// <summary>
     /// The fluid tick vanilla's <c>updateShape</c> schedules: liquids when they or the changed neighbor are a source, every
-    /// waterlogged block, and seagrass, kelp and bubble columns (always full of water).
+    /// waterlogged block, and seagrass, kelp (heads and stems) and bubble columns (always full of water).
     /// </summary>
     internal static void ScheduleFluidTick(IWorldGenLevel level, IBlock state, Vector position, IBlock neighbor)
     {
@@ -109,7 +109,7 @@ internal static class ShapeUpdater
                 level.ScheduleFluidTick(position);
         }
         else if (state.GetProperty("waterlogged") == "true"
-            || state.RegistryId is BlockIds.Seagrass or BlockIds.Kelp or BlockIds.BubbleColumn)
+            || state.RegistryId is BlockIds.Seagrass or BlockIds.Kelp or BlockIds.KelpPlant or BlockIds.BubbleColumn)
         {
             level.ScheduleFluidTick(position);
         }
