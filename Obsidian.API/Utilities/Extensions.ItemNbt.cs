@@ -190,6 +190,13 @@ public partial class Extensions
     /// Reads a text component saved by vanilla's <c>ComponentSerialization.CODEC</c>: a plain string, a compound, or
     /// a list whose first component has the rest as extras.
     /// </summary>
+    /// <summary>
+    /// Writes a text component as vanilla's <c>ComponentSerialization.CODEC</c> saves it: a plain, unstyled text as a
+    /// bare string, anything else as a compound. <see cref="TextFromNbt"/> reads it back.
+    /// </summary>
+    internal static INbtTag TextToNbt(this ChatMessage text, string name) =>
+        IsPlainText(text) ? new NbtTag<string>(name, text.Text!) : text.ToNbt(name);
+
     // A text with nothing but its literal: no style, events, translation or children.
     private static bool IsPlainText(ChatMessage? text) =>
         text is { Text: not null, Translate: null, Keybind: null, Color: null, Bold: null, Italic: null,

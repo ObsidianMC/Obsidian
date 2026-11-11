@@ -130,8 +130,10 @@ public sealed partial class EntitySelector
 
         var origin = this.Origin(context);
 
+        // Players in vanilla's player list order, which the server keeps (the online players' dictionary has none);
+        // a stable sort keeps it among equals.
         IEnumerable<IEntity> candidates = this.playersOnly
-            ? context.Server.OnlinePlayers.Values
+            ? PlayersInListOrder(context.Server)
             : context.Level?.GetEntitiesInRange(origin, float.MaxValue) ?? [];
 
         var matches = candidates.Where(entity => this.Matches(entity, context, origin));
@@ -154,6 +156,10 @@ public sealed partial class EntitySelector
     /// Finds the players the selector selects, leaving out other entities.
     /// </summary>
     public IReadOnlyList<IPlayer> SelectPlayers(CommandContext context) => [.. this.Select(context).OfType<IPlayer>()];
+
+    private static IEnumerable<IPlayer> PlayersInListOrder(IServer server) => server is IPlayerListOrder ordered
+        ? ordered.PlayersInListOrder
+        : server.OnlinePlayers.Values.OrderBy(player => player.EntityId);
 
     private VectorD Origin(CommandContext context)
     {

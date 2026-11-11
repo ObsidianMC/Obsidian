@@ -7,6 +7,7 @@ using Obsidian.Entities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
@@ -36,7 +37,8 @@ public sealed class FakeServer : IServer
 
     public ProtocolVersion Protocol => default;
 
-    public IOperatorList Operators => throw new NotImplementedException();
+    // Kept in memory: the server's own list writes ops.json.
+    public IOperatorList Operators { get; } = new FakeOperatorList();
 
     public IWorld DefaultWorld { get; }
 
@@ -128,5 +130,24 @@ public sealed class FakeServer : IServer
     {
         player = this.GetPlayer(entityId);
         return player is not null;
+    }
+
+    /// <summary>Operators kept in memory, with no requests and nothing told to clients.</summary>
+    private sealed class FakeOperatorList : IOperatorList
+    {
+        private readonly ConcurrentDictionary<Guid, IPlayer> operators = [];
+
+        public void AddOperator(IPlayer player, int level = 4, bool bypassesPlayerLimit = false) =>
+            this.operators[player.Uuid] = player;
+
+        public bool CreateRequest(IPlayer player) => false;
+
+        public bool ProcessRequest(IPlayer player, string code) => false;
+
+        public void RemoveOperator(IPlayer player) => this.operators.TryRemove(player.Uuid, out _);
+
+        public bool IsOperator(IPlayer p) => this.operators.ContainsKey(p.Uuid);
+
+        public ImmutableList<IPlayer> GetOnlineOperators() => [.. this.operators.Values];
     }
 }

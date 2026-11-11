@@ -19,8 +19,8 @@ What follows is what still differs.
   lid's block event, as in vanilla.
 - **Analog outputs.** Comparators read 0 from shelves (#736) and creaking hearts. A heart's output is how near its
   creaking is, and Obsidian's hearts don't tick: they neither spawn a creaking nor keep track of one, so they read 0
-  as vanilla's do without a creaking. Command blocks give their saved `SuccessCount`, which nothing changes yet,
-  since Obsidian doesn't run them.
+  as vanilla's do without a creaking. Command blocks give their `SuccessCount`, which their runs change and
+  comparators then read again, as captured in `command_blocks.json` (see [command blocks](command-blocks.md)).
 - **Sculk.** Calibrated sensors hear only the frequency of the signal behind them, when there is one, and stay
   active for 10 ticks. Their frequency table matches vanilla 26.3, including landings and bounces (2),
   deaths (15), and events with no frequency entry (0). A sensor dates a vibration from when it was emitted, so one

@@ -111,6 +111,11 @@ public abstract partial class AbstractLevel
         if (type is not null)
         {
             var created = prepared ?? BlockEntityNbt.Create(type, position, logger: this.Logger);
+
+            // Vanilla's CommandBlock.newBlockEntity: a new chain command block is always active.
+            if (prepared is null && created is CommandBlockEntity commandBlock)
+                commandBlock.Automatic = CommandBlocks.StartsAutomatic(block);
+
             this.AttachBlockEntity(created);
             chunk.SetBlockEntity(position.X, position.Y, position.Z, created);
             if (prepared is null)

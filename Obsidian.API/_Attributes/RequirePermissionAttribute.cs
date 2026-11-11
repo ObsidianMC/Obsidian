@@ -19,6 +19,10 @@ public sealed class RequirePermissionAttribute : BaseExecutionCheckAttribute
 
     public override Task<bool> RunChecksAsync(CommandContext context)
     {
+        // A sender with a level of its own (a command block) runs these only at the console's level.
+        if (context.Sender is Commands.IPermissionLevelSender leveled)
+            return Task.FromResult(leveled.PermissionLevel >= 4);
+
         if (context.Sender.Issuer is CommandIssuers.Console or CommandIssuers.RemoteConsole)
             return Task.FromResult(true);
 
