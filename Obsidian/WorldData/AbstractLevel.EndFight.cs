@@ -28,34 +28,23 @@ public abstract partial class AbstractLevel
     private int resurrectionTicks = -1;
     private Guid[] resurrectionCrystals = [];
     private int ticksWithoutDragon;
-    private readonly Dictionary<Guid, int> endPortalCooldowns = [];
-
-    // Vanilla TheEndGatewayBlockEntity's 40-tick cooldown after it sends a non-player entity, keyed by gateway.
-    private const int GatewayCooldown = 40;
-    private readonly Dictionary<Vector, int> gatewayCooldowns = [];
 
     /// <summary>
-    /// Starts the gateway's cooldown and returns true, or returns false while it's still cooling down from the last
-    /// entity it sent.
+    /// Vanilla's <c>EndGatewayBlock.entityInside</c> for the gateway at <paramref name="gateway"/>: starts its
+    /// cooldown and returns true, or returns false while it's still cooling down or isn't a gateway. Its block event
+    /// goes to <paramref name="eventAt"/>, the gateway itself by default (see <see cref="EndGateways.EventPosition"/>).
     /// </summary>
-    internal bool TryUseEndGateway(Vector gateway)
-    {
-        if (!gatewayCooldowns.TryAdd(gateway, GatewayCooldown))
-            return false;
-
-        this.QueueBlockEvent(gateway, BlockIds.EndGateway, 1, 0);
-        return true;
-    }
+    internal bool TryUseEndGateway(Vector gateway, Vector? eventAt = null) =>
+        this.GetResidentBlockEntity(gateway) is EndGatewayBlockEntity entity
+        && entity.TryUse(this, eventAt ?? gateway);
 
     private bool HasEndFight => DimensionName == "minecraft:the_end" && Generator is not MobTestGenerator;
 
     internal async ValueTask TickEndFightAsync()
     {
-        TickGatewayCooldowns();
         if (!HasEndFight)
             return;
 
-        await TickEndPortalsAsync();
         if (!AnyPlayerNearEndIsland())
             return;
 
@@ -74,15 +63,6 @@ public abstract partial class AbstractLevel
         }
 
         await TickDragonResurrectionAsync(entities);
-    }
-
-    private void TickGatewayCooldowns()
-    {
-        foreach (var gateway in gatewayCooldowns.Keys.ToArray())
-        {
-            if (--gatewayCooldowns[gateway] <= 0)
-                gatewayCooldowns.Remove(gateway);
-        }
     }
 
     private bool AnyPlayerNearEndIsland() => Players.Values.Any(player =>
@@ -294,65 +274,28 @@ public abstract partial class AbstractLevel
         CreateFightDragon();
     }
 
-    private async ValueTask TickEndPortalsAsync()
-    {
-        foreach (var id in endPortalCooldowns.Keys.ToArray())
-        {
-            if (--endPortalCooldowns[id] <= 0)
-                endPortalCooldowns.Remove(id);
-        }
-
-        foreach (var player in Players.Values.ToArray())
-        {
-            if (player.GameMode == GameMode.Spectator || endPortalCooldowns.ContainsKey(player.Uuid))
-                continue;
-
-            var position = (Vector)player.Position.Floor();
-            var block = await GetBlockAsync(position);
-            if (block?.RegistryId == BlockIds.EndGateway)
-            {
-                if (await FindEndGatewayExitAsync(position) is not Vector destination)
-                    continue;
-
-                this.QueueBlockEvent(position, BlockIds.EndGateway, 1, 0);
-                endPortalCooldowns[player.Uuid] = 100;
-                await player.TeleportAsync(new VectorD(destination.X + 0.5, destination.Y, destination.Z + 0.5));
-
-                // Like vanilla's gateway trips, a player's places a portal ticket where they came out.
-                if (player.Level == this)
-                    this.AddPortalTicket(player.Position);
-            }
-        }
-    }
-
     /// <summary>
-    /// The block an entity entering the End gateway at <paramref name="gateway"/> arrives in, building the far
-    /// gateway and its platform the first time; null while there is no exit or its chunk isn't generated.
+    /// Where the End gateway at <paramref name="gateway"/> leads and whether exactly there (see
+    /// <see cref="EndGateways.Arrival"/>), building the far gateway and its platform the first time a gateway of the
+    /// End without one is used; null while there is no exit or its chunk isn't generated.
     /// </summary>
-    internal async ValueTask<Vector?> FindEndGatewayExitAsync(Vector gateway)
+    internal async ValueTask<(Vector Exit, bool Exact)?> FindEndGatewayExitAsync(Vector gateway)
     {
-        var data = await GetBlockEntityAsync(gateway) as DataBlockEntity;
-        Vector destination;
-        if (data != null
-            && data.Data.TryGetTag<NbtArray<int>>("exit_portal", out var savedExit)
-            && savedExit.Count == 3)
-        {
-            var values = savedExit.GetArray();
-            destination = new Vector(values[0], values[1], values[2]);
-        }
-        else if (await BuildEndGatewayExitAsync(gateway) is Vector built)
-        {
-            destination = built;
-        }
+        if (await GetBlockEntityAsync(gateway) is not EndGatewayBlockEntity entity)
+            return null;
+
+        (Vector Exit, bool Exact) exit;
+        if (entity.ExitPortal is Vector known)
+            exit = (known, entity.ExactTeleport);
+        else if (DimensionName == "minecraft:the_end" && await BuildEndGatewayExitAsync(gateway) is Vector built)
+            exit = (built, true);
         else
-        {
-            return null;
-        }
-
-        if (await GetChunkAsync(destination.X >> 4, destination.Z >> 4) is not { IsGenerated: true })
             return null;
 
-        return destination;
+        if (await GetChunkAsync(exit.Exit.X >> 4, exit.Exit.Z >> 4) is not { IsGenerated: true })
+            return null;
+
+        return exit;
     }
 
     /// <summary>
@@ -402,11 +345,8 @@ public abstract partial class AbstractLevel
 
     private async ValueTask StoreGatewayExitAsync(Vector gateway, Vector destination)
     {
-        var data = await GetBlockEntityAsync(gateway) as DataBlockEntity;
-        data ??= new DataBlockEntity { Id = "minecraft:end_gateway", BlockPosition = gateway };
-        data.Set(new NbtArray<int>("exit_portal", [destination.X, destination.Y, destination.Z]));
-        data.Set("ExactTeleport", true);
-        await SetBlockEntity(gateway, data);
+        if (await GetOrCreateBlockEntityAsync(gateway) is EndGatewayBlockEntity entity)
+            entity.SetExit(destination, exact: true);
     }
 
     private void CreateFightDragon()
@@ -456,11 +396,7 @@ public abstract partial class AbstractLevel
             }
         }
 
-        if (await GetBlockEntityAsync(gateway) == null)
-        {
-            var data = new DataBlockEntity { Id = "minecraft:end_gateway", BlockPosition = gateway };
-            await SetBlockEntity(gateway, data);
-        }
+        await GetOrCreateBlockEntityAsync(gateway);
 
         PacketBroadcaster.QueuePacketToLevel(this, new LevelEventPacket(3000, gateway, 0));
     }

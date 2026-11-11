@@ -120,6 +120,16 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
     }
 
     /// <summary>
+    /// Vanilla <c>BlockState.updateNeighbourShapes</c> for a block that didn't change: its neighbours react to it as
+    /// it is (see <see cref="FluidLevel.UpdateNeighborShapes"/>).
+    /// </summary>
+    internal void UpdateNeighborShapes(Vector position, IBlock state, BlockUpdateFlags flags)
+    {
+        lock (fluids.TickLock)
+            updates.UpdateNeighborShapes(position, state, flags);
+    }
+
+    /// <summary>
     /// Vanilla <c>ServerLevel.tickBlock</c>: runs a scheduled tick if the block is still the one it was scheduled
     /// for. Plugin blocks run their <see cref="IBlockBehavior.Tick"/>, vanilla blocks their overrides, and vanilla's
     /// falling blocks fall; other vanilla blocks' ticks (an observer's, from a vanilla save) do nothing yet.

@@ -49,9 +49,10 @@ internal sealed partial class FurnaceBlockEntity : VanillaContainerBlockEntity
 
 /// <summary>
 /// A shulker box's block entity, which keeps its items when broken and, like vanilla's
-/// (<c>ShulkerBoxBlockEntity.canPlaceItemThroughFace</c>), takes no shulker box through item access.
+/// (<c>ShulkerBoxBlockEntity.canPlaceItemThroughFace</c>), takes no shulker box through item access. Its lid opens
+/// and closes on the server too (see ShulkerLids.cs).
 /// </summary>
-internal sealed class ShulkerBoxBlockEntity(Container box) : VanillaContainerBlockEntity(box)
+internal sealed partial class ShulkerBoxBlockEntity(Container box) : VanillaContainerBlockEntity(box)
 {
     protected internal override bool CanInsert(int slot, ItemStack stack, BlockFace? side) =>
         !TagsRegistry.Item.ShulkerBoxes.Entries.Contains(stack.Holder.Id);

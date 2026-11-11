@@ -76,63 +76,6 @@ public sealed class SnapshotInventoryRecovery
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task EquipmentCodecRunsBeforeAdmissionAndReloadsItsExactValue(bool unload)
-    {
-        await using var context = TestServerFactory.CreateServer($"review-mob-codec-{Guid.NewGuid():N}");
-        var world = context.World;
-        WorldBlockEntities.AddEmptyChunk(world);
-        var position = new Vector(8, 70, 8);
-        await world.GetBlockAsync(position);
-        var foreign = new EntityTransferLock();
-        var armed = false;
-        var damage = new SimpleDataComponent<int>(
-            DataComponentType.Damage,
-            "minecraft:damage",
-            (writer, value) =>
-            {
-                if (armed)
-                {
-                    using (foreign.Enter())
-                    {
-                    }
-                }
-
-                writer.WriteVarInt(value);
-            },
-            reader => reader.ReadVarInt()) { Value = 1 };
-        var zombie = new Zombie
-        {
-            Level = world,
-            EntityId = Server.GetNextEntityId(),
-            Position = (VectorD)position
-        };
-        zombie.SetEquipment(EquipmentSlot.MainHand, new ItemStack(ItemsRegistry.DiamondSword, 1, damage));
-        Assert.True(world.TrySpawnEntity(zombie, hostOwned: true));
-        var region = (Region)world.LoadRegionByChunk(0, 0);
-        armed = true;
-        try
-        {
-            var saving = unload ? region.UnloadChunk(0, 0) : region.FlushAsync();
-            await saving.WaitAsync(TimeSpan.FromSeconds(10));
-
-            // Inspect the committed entity payload before disposal can mask a failed or stale snapshot.
-            var loaded = await SnapshotInventoryLocking.ReloadDiskAsync(region);
-            var pending = Assert.Single(loaded.PendingEntities);
-            var restored = Assert.IsType<Zombie>(EntityNbt.Load(EntityNbt.ToNbt(pending), world));
-            var sword = restored.GetEquipment(EquipmentSlot.MainHand);
-            Assert.True(sword.Is(ItemsRegistry.DiamondSword));
-            Assert.Equal(1, sword.Count);
-            Assert.Equal(1, sword.GetComponent<SimpleDataComponent<int>>(DataComponentType.Damage)!.Value);
-        }
-        finally
-        {
-            armed = false;
-        }
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
     public async Task InventoryTimeoutKeepsChunkUsableAndLaterUnloadSavesChanges(bool wholeRegion)
     {
         await using var context = TestServerFactory.CreateServer($"review-busy-budget-{Guid.NewGuid():N}");

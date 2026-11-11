@@ -33,6 +33,7 @@ and where to start.
 - [Sculk catalysts](sculk-catalysts.md)
 - [Stepped and fallen-on contacts](stepped-and-fallen-on-contacts.md)
 - [Sign interactions](sign-interactions.md)
+- [Special blocks](special-blocks.md)
 - [Tilling and other block transformers](tilling-and-other-block-transformers.md)
 - [Trial spawners and vaults](trial-spawners.md)
 - [Vanilla blocks' reactions to block updates](vanilla-blocks-reactions-to-block-updates.md)

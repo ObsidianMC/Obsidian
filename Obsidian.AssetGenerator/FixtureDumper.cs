@@ -280,6 +280,12 @@ internal static class FixtureDumper
         IReadOnlyCollection<string>? cases = null) =>
         RunObservedProbeAsync(server, fixture, "trial-spawners", "TrialSpawnerFixtures.java", cases);
 
+    // An on-request probe like DumpWaxingBellsOreAsync's: ender chests, shulker boxes, dragon eggs, conduits and End
+    // gateways, used and ticked.
+    internal static Task DumpSpecialBlocksAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunObservedProbeAsync(server, fixture, "special-blocks", "SpecialBlockFixtures.java", cases);
+
     // An on-request probe of controlled entity contacts, on block_use's observed copy of the vanilla jar.
     internal static Task DumpBlockContactsAsync(VanillaServer server, string fixture,
         IReadOnlyCollection<string> cases) =>
