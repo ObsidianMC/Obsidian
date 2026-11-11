@@ -2,6 +2,7 @@ using Obsidian.API.Effects;
 using Obsidian.API.Inventory;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData;
 using Obsidian.Entities.AI;
 
 namespace Obsidian.Entities;
@@ -524,7 +525,33 @@ public partial class Living : Entity, ILiving
     internal virtual void UpdateInvisibilityStatus()
     {
         var spectator = this is IPlayer { GameMode: GameMode.Spectator };
-        Invisible = spectator || HasPotionEffect((int)PotionEffect.Invisibility - 1);
+        ApplyInvisible(spectator || HasPotionEffect((int)PotionEffect.Invisibility - 1));
+    }
+
+    /// <summary>
+    /// Sets the invisible flag and, when it changes on an entity the level holds, sends its data to the players in
+    /// range, as the burning flag is sent. An entity still being built, loaded or spawned is not sent.
+    /// </summary>
+    private protected void ApplyInvisible(bool invisible)
+    {
+        if (Invisible == invisible)
+            return;
+
+        Invisible = invisible;
+        if (IsLiveInLevel())
+            PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SetEntityDataPacket { EntityId = EntityId, Entity = this });
+    }
+
+    // A mob is live once its level's regions hold it. A player is kept in the level's player table instead.
+    private bool IsLiveInLevel()
+    {
+        if (Level is not AbstractLevel level)
+            return false;
+
+        if (this is IPlayer)
+            return level.Players.TryGetValue(Uuid, out var resident) && ReferenceEquals(resident, this);
+
+        return IsMemberOf(level);
     }
 
     internal void RestorePotionEffect(int id, int duration, int amplifier)

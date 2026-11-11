@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Obsidian.API;
 using Obsidian.API.Effects;
 using Obsidian.Entities;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
 using Xunit;
@@ -73,6 +74,29 @@ public class InvisibilityEffects
 
         Assert.False(pig.HasPotionEffect(InvisibilityId));
         Assert.False(pig.Invisible);
+    }
+
+    [Fact(DisplayName = "A mob's invisibility change is sent to the players watching it", Timeout = TestServerFactory.TestTimeout)]
+    public async Task InvisibilityChangesAreSentToWatchers()
+    {
+        await using var context = TestServerFactory.CreateServer($"invisibility-watchers-{Guid.NewGuid():N}");
+        WorldBlockEntities.AddEmptyChunk(context.World);
+        var position = new VectorD(8, 64, 8);
+        var viewer = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "InvisibilityWatcher", position);
+        await TestServerFactory.JoinConnectedPlayerAsync(context.Server, viewer);
+        viewer.LoadedChunks.Add(0L);
+        var pig = Assert.IsType<Pig>(context.World.SpawnEntity(position, EntityType.Pig));
+        var client = (TestClient)viewer.Client;
+        client.ClearPackets();
+
+        pig.AddPotionEffect(InvisibilityId, 200);
+
+        Assert.Contains(client.SentPackets, packet => packet is SetEntityDataPacket data && data.EntityId == pig.EntityId);
+
+        client.ClearPackets();
+        pig.RemovePotionEffect(InvisibilityId);
+
+        Assert.Contains(client.SentPackets, packet => packet is SetEntityDataPacket data && data.EntityId == pig.EntityId);
     }
 
     [Fact]

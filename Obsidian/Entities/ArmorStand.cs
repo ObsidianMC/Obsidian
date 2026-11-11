@@ -29,7 +29,7 @@ public sealed partial class ArmorStand : Living
     /// Vanilla's <c>ArmorStand.updateInvisibilityStatus</c>: the stand keeps its own invisible flag, so an effect
     /// neither hides a visible stand nor shows an invisible one.
     /// </summary>
-    internal override void UpdateInvisibilityStatus() => base.Invisible = ownInvisible;
+    internal override void UpdateInvisibilityStatus() => ApplyInvisible(ownInvisible);
 
     // Vanilla's default pose, which saves leave out (ArmorStand.ArmorStandPose.DEFAULT).
     private static readonly VectorF defaultHead = new(0, 0, 0);
