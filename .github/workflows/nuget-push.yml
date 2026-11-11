@@ -74,7 +74,9 @@ jobs:
           if ! git cat-file -e "$built^{commit}" 2>/dev/null; then
             skip "the latest build's commit $built isn't in this history"
           fi
-          unbuilt=$(changed "$built" HEAD "${code[@]}")
+          # Only what dotnet.yml builds counts here, so a docs-only commit after a green build doesn't hold it.
+          unbuilt=$(changed "$built" HEAD "${code[@]}" \
+            | awk '/\.(cs|csproj|java)$/ || $0 == "Directory.Build.props" || $0 == "Obsidian.Nbt"')
           if [ -n "$unbuilt" ]; then
             skip "the packages' code changed after the latest passing build: $(echo $unbuilt)"
           fi
@@ -97,6 +99,11 @@ jobs:
             fi
           done
 
+          # A full page of 1,000 runs without a publish can't tell "never published" from "published longer ago",
+          # so it waits for a manual run rather than guessing.
+          if [ -z "$last" ] && [ "$(printf '%s\n' $runs | grep -c .)" -ge 1000 ]; then
+            skip "no nightly in the last 1,000 runs of $BRANCH; publish with a manual run"
+          fi
           if [ -z "$last" ]; then
             publish "no earlier nightly of $BRANCH found"
           fi
