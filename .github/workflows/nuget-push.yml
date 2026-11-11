@@ -36,10 +36,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           EVENT: ${{ github.event_name }}
-          # The asset generator's vanilla capture tooling, which only the tests use. Every *Fixtures.java probe
-          # writes a test fixture, except JoinFixtures.java, which also writes synced_registries.json into the API.
+          # The asset generator's vanilla capture tooling, which only the tests use: the scenario and worldgen
+          # captures, and every *Fixtures.java probe except those asset generation runs (see below).
           CAPTURE_ONLY: >-
-            ^Obsidian\.AssetGenerator/(Captures/|Scenario[^/]*\.cs$|WorldgenCaptures\.cs$|WorldgenFixtureFiles\.cs$|Java/BlockUseInstrumentation\.java$|Java/[^/]*-(input|cases|samples)\.json$|Java/[^/]*Fixtures\.java$)
+            ^Obsidian\.AssetGenerator/(Captures/|Scenario[^/]*\.cs$|WorldgenCaptures\.cs$|WorldgenFixtureFiles\.cs$|Java/BlockUseInstrumentation\.java$|Java/[^/]*Fixtures\.java$)
         run: |
           skip() { echo "Not publishing: $1"; echo "publish=false" >> "$GITHUB_OUTPUT"; exit 0; }
           publish() { echo "Publishing: $1"; echo "publish=true" >> "$GITHUB_OUTPUT"; exit 0; }
@@ -53,10 +53,18 @@ jobs:
           # Files the packages carry as they are.
           packed=(README.md LICENSE icon.png)
 
+          # The fixture probes asset generation runs (FixtureDumper.DumpServerAsync). Some also write assets the API
+          # embeds (synced_registries.json, component_registry_ids.json, enums.json), so all of them count. If the
+          # method can't be read, every probe counts.
+          GENERATING=$(sed -n '/DumpServerAsync(/,/^    }/p' Obsidian.AssetGenerator/FixtureDumper.cs \
+            | { grep -o '[A-Za-z]*Fixtures\.java' || true; } | sort -u | paste -sd '|' -)
+          export GENERATING="${GENERATING:-[A-Za-z]*Fixtures.java}"
+          echo "Probes asset generation runs: $GENERATING"
+
           # The package files that changed between two commits, without the capture tooling.
           changed() {
             git diff --name-only "$1" "$2" -- "${@:3}" \
-              | awk '$0 ~ /\/JoinFixtures\.java$/ || $0 !~ ENVIRON["CAPTURE_ONLY"]'
+              | awk '$0 ~ ("/(" ENVIRON["GENERATING"] ")$") || $0 !~ ENVIRON["CAPTURE_ONLY"]'
           }
 
           # The branch's latest build (cancelled runs aside) must have finished, passed, and built the packages' code
@@ -76,7 +84,8 @@ jobs:
           fi
           # Only what dotnet.yml builds counts here, so a docs-only commit after a green build doesn't hold it.
           unbuilt=$(changed "$built" HEAD "${code[@]}" \
-            | awk '/\.(cs|csproj|java)$/ || $0 == "Directory.Build.props" || $0 == "Obsidian.Nbt"')
+            | awk '/\.(cs|csproj|java)$/ || /^Obsidian\.AssetGenerator\/.*\.json$/ \
+              || $0 == "Directory.Build.props" || $0 == "Obsidian.Nbt"')
           if [ -n "$unbuilt" ]; then
             skip "the packages' code changed after the latest passing build: $(echo $unbuilt)"
           fi
