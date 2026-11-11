@@ -96,7 +96,8 @@ public class AbstractHorse : Animal, IRideable
 
             Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + heal);
             Temper = Math.Min(MaximumTemper, Temper + (breedingFood ? 5 : 3));
-            if (IsBaby)
+            // Vanilla's AbstractHorse.handleEating: a locked baby eats without growing.
+            if (IsBaby && !AgeLocked)
             {
                 Age = Math.Min(0, Age + (food == ItemsRegistry.HayBlock ? 3600 : 1200));
             }
