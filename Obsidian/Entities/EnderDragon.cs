@@ -585,7 +585,7 @@ public sealed partial class EnderDragon : BossMob
 
     public override async ValueTask DamageAsync(IEntity source, float amount = 1)
     {
-        using (EnterDispatched())
+        using (EnterDispatched(HandOffTo.Damage))
             await DamagePartAsync(source, amount, 2);
     }
 

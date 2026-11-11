@@ -3,6 +3,7 @@ using Obsidian.API.Entities;
 using Obsidian.API.Inventory;
 using Obsidian.API.Plugins;
 using Obsidian.API.Registries;
+using Obsidian.API.World;
 using Obsidian.Entities;
 using Obsidian.Plugins;
 using Obsidian.Plugins.Archives;
@@ -12,6 +13,7 @@ using Obsidian.Tests.Utilities;
 using Obsidian.WorldData.Pistons;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
 using ServerPlayer = Obsidian.Entities.Player;
@@ -149,6 +151,64 @@ public sealed class TravelGuards
 
         Assert.Equal(16, player.Health);
         Assert.Equal(1, player.AcceptedDamageCount);
+    }
+
+    [Fact]
+    public async Task PlayerHitThatWaitedWhileThePlayerDiedChangesNothing()
+    {
+        await using var context = TestServerFactory.CreateServer($"damage-died-{Guid.NewGuid():N}");
+        WorldBlockEntities.AddEmptyChunk(context.World);
+        var player = await JoinArmouredPlayerAsync(context);
+        var attacker = Spawn(context.World, new VectorD(10.5, 70, 8.5));
+
+        // A hit waits to wear the chestplate; the player dies meanwhile. Not by a hit: a death waits for the
+        // inventory, which the test holds.
+        var hold = await InventoryHold.TakeAsync(player);
+        var waiting = player.DamageCombatAsync(attacker, 6, CombatDamageKind.Melee).AsTask();
+        Assert.False(waiting.IsCompleted);
+        player.Health = 0;
+        var accepted = player.AcceptedDamageCount;
+        var motion = player.Motion;
+
+        // Past the hurt cooldown, but on a dead player: no knockback, nothing counted.
+        await hold.ReleaseAsync();
+        await waiting;
+
+        Assert.Equal(accepted, player.AcceptedDamageCount);
+        Assert.Equal(motion, player.Motion);
+    }
+
+    [Fact]
+    public async Task FireHitSkipsMobThatTookFireResistanceWhileAPluginHookAwaits()
+    {
+        await using var context = TestServerFactory.CreateServer($"damage-fire-resistance-{Guid.NewGuid():N}");
+        WorldBlockEntities.AddEmptyChunk(context.World);
+        var hook = new GatedHurtBehavior();
+        var mob = SpawnPluginMob(context.World, hook);
+        var health = mob.Health;
+
+        // The hook holds the burn; the mob drinks Fire Resistance meanwhile.
+        var hit = mob.DamageCombatAsync(null, 2, CombatDamageKind.Fire).AsTask();
+        await hook.Reached.Task;
+        mob.AddPotionEffect((int)PotionEffect.FireResistance - 1, 200);
+        hook.Release.SetResult();
+        await hit;
+
+        Assert.Equal(health, mob.Health);
+        Assert.Equal(0, mob.AcceptedDamageCount);
+    }
+
+    [Fact]
+    public async Task DamageLandsOnEntityInAPluginsOwnLevel()
+    {
+        // A plugin's ILevel, which travel admits entities to through TryAddEntity; it has no entity grid of ours.
+        var level = DispatchProxy.Create<ILevel, PluginLevelProxy>();
+        var stand = new ArmorStand { Level = level };
+        var source = new Zombie { Level = level };
+
+        await stand.DamageAsync(source, 4);
+
+        Assert.Equal(16, stand.Health);
     }
 
     [Fact]
@@ -324,6 +384,20 @@ public sealed class TravelGuards
 
             this.Reached.SetResult();
             await this.Release.Task;
+        }
+    }
+
+    // A level a plugin implements itself, which answers every call with its return type's default, but for a packet
+    // broadcaster that sends nothing.
+    public class PluginLevelProxy : DispatchProxy
+    {
+        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
+        {
+            var type = targetMethod!.ReturnType;
+            if (type == typeof(IPacketBroadcaster))
+                return Create<IPacketBroadcaster, PluginLevelProxy>();
+
+            return type.IsValueType && type != typeof(void) ? Activator.CreateInstance(type) : null;
         }
     }
 

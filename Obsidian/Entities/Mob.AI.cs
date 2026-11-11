@@ -567,7 +567,7 @@ public partial class Mob
 
     public override async ValueTask DamageAsync(IEntity source, float amount = 1)
     {
-        using (EnterDispatched())
+        using (EnterDispatched(HandOffTo.Damage))
             await ApplyDamageAsync(source, amount, true);
     }
 
@@ -614,6 +614,9 @@ public partial class Mob
 
     private protected virtual bool TryAbsorbDamage(float amount, CombatDamageKind kind) => false;
 
+    // Fire doesn't hurt the mob: it's immune, or has Fire Resistance.
+    private bool FireProof => IsFireImmune || HasPotionEffect((int)PotionEffect.FireResistance - 1);
+
     private async ValueTask ApplyDamageAsync(IEntity source, float amount, bool applyArmor, bool ignoreHurtCooldown = false)
     {
         // This hit's own scoped attacker, kind and weapon, read once: another hit on the mob may overlap this one's
@@ -638,12 +641,10 @@ public partial class Mob
         {
             return;
         }
-        if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact
-            or CombatDamageKind.Campfire or CombatDamageKind.HotFloor &&
-            (IsFireImmune || HasPotionEffect((int)PotionEffect.FireResistance - 1)))
-        {
+        var fire = kind is CombatDamageKind.Fire or CombatDamageKind.FireContact
+            or CombatDamageKind.Campfire or CombatDamageKind.HotFloor;
+        if (fire && FireProof)
             return;
-        }
 
         if (await FilterIncomingDamageAsync(source, amount, kind, hit) is not float filtered)
             return;
@@ -656,6 +657,8 @@ public partial class Mob
         if (!IsStillHitIn(level, source))
             return;
 
+        // A first look at the hurt cooldown, which skips a hit it takes all of before anything wears; the commit
+        // decides (see Settle).
         var incoming = amount;
         var recentlyHurt = !ignoreHurtCooldown && AiTick - lastDamageTick < 10;
         VectorD? knockback = null;
@@ -674,28 +677,55 @@ public partial class Mob
         // these come before the commit; the rest of the hit follows it.
         var absorbedByEquipment = TryAbsorbDamage(amount, kind);
         if (absorbedByEquipment) amount = 0;
+        var armor = 0f;
+        var toughness = 0f;
         if (applyArmor && !absorbedByEquipment)
         {
-            var armor = GetAttributeValue("minecraft:generic.armor") + EquipmentArmor;
-            var toughness = GetAttributeValue("minecraft:generic.armor_toughness") + EquipmentToughness;
-            amount = CombatItems.ReduceArmor(amount, armor, toughness,
-                1 - 0.15f * CombatItems.EnchantmentLevel(hit?.Weapon, EnchantmentsRegistry.Breach));
+            armor = GetAttributeValue("minecraft:generic.armor") + EquipmentArmor;
+            toughness = GetAttributeValue("minecraft:generic.armor_toughness") + EquipmentToughness;
             foreach (var slot in armorSlots)
                 DamageEquipment(slot, Math.Max(1, (int)(incoming / 4)));
             DamageEquipment(EquipmentSlot.Body, Math.Max(1, (int)(incoming / 4)));
         }
-        amount = CombatEffects.Protect(this, amount, kind);
-        var absorbed = Math.Min(AbsorptionHealth, amount);
-        amount -= absorbed;
+
+        var absorbed = 0f;
+
+        // The hit as it commits: the mob may have become fire-proof while a hook held the hit, and another hit may
+        // have landed meanwhile, or beside it on another thread, which the cooldown then counts first.
+        float? Settle()
+        {
+            if (fire && FireProof)
+                return null;
+
+            recentlyHurt = !ignoreHurtCooldown && AiTick - lastDamageTick < 10;
+            if (recentlyHurt && incoming <= lastDamage)
+                return null;
+
+            var taken = recentlyHurt ? incoming - lastDamage : incoming;
+            if (absorbedByEquipment)
+                taken = 0;
+            else if (applyArmor)
+            {
+                taken = CombatItems.ReduceArmor(taken, armor, toughness,
+                    1 - 0.15f * CombatItems.EnchantmentLevel(hit?.Weapon, EnchantmentsRegistry.Breach));
+            }
+            taken = CombatEffects.Protect(this, taken, kind);
+            absorbed = Math.Min(AbsorptionHealth, taken);
+            AbsorptionHealth -= absorbed;
+            lastDamage = incoming;
+            if (!recentlyHurt)
+                lastDamageTick = AiTick;
+            amount = taken - absorbed;
+            return amount;
+        }
 
         var previousHealth = Health;
-        if (!TryCommitDamage(level, source, amount, out var healthTaken))
+        if (!TryCommitDamage(level, source, Settle, out var healthTaken))
             return;
 
-        if (knockback is VectorD motion)
+        if (!recentlyHurt && knockback is VectorD motion)
             Motion = motion;
 
-        lastDamage = incoming;
         AcceptedDamageCount++;
         despawnAge = 0;
         if (source is IPlayer player)
@@ -708,9 +738,6 @@ public partial class Mob
             LastAttacker = attacker;
             LastHurtTick = AiTick;
         }
-        if (!recentlyHurt)
-            lastDamageTick = AiTick;
-        AbsorptionHealth -= absorbed;
         if (hit is not null)
             LastDamageKind = kind;
         OnDamageCommitted(source, kind, hit);
@@ -731,7 +758,7 @@ public partial class Mob
             return;
 
         // The death keeps the hit, through KillAsync, which plugins may override.
-        using (HandOff(hit, endsHit: false))
+        using (HandOff(hit, HandOffTo.Death))
             await KillAsync(source);
     }
 
@@ -784,7 +811,7 @@ public partial class Mob
     /// </summary>
     public override async ValueTask KillAsync(IEntity source)
     {
-        using (EnterDispatched())
+        using (EnterDispatched(HandOffTo.Death))
             await DieAsync(source);
     }
 

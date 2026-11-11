@@ -598,6 +598,56 @@ public sealed class PluginMobs
         Assert.Equal(CombatDamageKind.Projectile, zombie.LastDamageKind);
     }
 
+    [Fact]
+    public async Task MobSubclassKillingInsteadOfDamageKillsWithItsOwnSource()
+    {
+        await using var context = TestServerFactory.CreateServer($"override-kill-{Guid.NewGuid():N}");
+        await BlockUpdates.AddChunksAsync(context.World);
+        var zombie = SpawnRecordingZombie(context.World);
+        var shooter = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Shooter");
+        var other = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Other");
+        var arrow = new Arrow { Level = context.World };
+
+        // The override kills the zombie outright, before (and instead of) the base DamageAsync, which the arrow's hit
+        // was handed to: the kill must not take it.
+        zombie.KillOnDamage = other;
+        await zombie.DamageCombatAsync(shooter, 1, CombatDamageKind.Projectile, directSource: arrow);
+
+        Assert.False(zombie.Alive);
+        Assert.Same(other, zombie.DeathSource);
+        Assert.Same(other, zombie.DeathDirect);
+    }
+
+    [Fact]
+    public async Task MobHitBesideAnotherIsDecidedByTheHurtCooldownAtItsCommit()
+    {
+        await using var context = TestServerFactory.CreateServer($"overlapping-cooldown-{Guid.NewGuid():N}");
+        await BlockUpdates.AddChunksAsync(context.World);
+        var zombie = SpawnRecordingZombie(context.World);
+        var first = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "First");
+        var second = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Second");
+
+        // A hit on another thread passes the cooldown and is held just before its commit; a bigger hit lands meanwhile.
+        var reached = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        zombie.BeforeAbsorb = () =>
+        {
+            reached.SetResult();
+            release.Task.GetAwaiter().GetResult();
+        };
+        var smaller = Task.Run(() => zombie.DamageCombatAsync(first, 3, CombatDamageKind.Melee).AsTask());
+        await reached.Task;
+        await zombie.DamageCombatAsync(second, 5, CombatDamageKind.Melee);
+        var health = zombie.Health;
+
+        // Like vanilla, the cooldown the bigger hit started takes all of the smaller one.
+        release.SetResult();
+        await smaller;
+
+        Assert.Equal(health, zombie.Health);
+        Assert.Equal(1, zombie.AcceptedDamageCount);
+    }
+
     private static RecordingZombie SpawnRecordingZombie(WorldData.World world)
     {
         var zombie = new RecordingZombie
@@ -616,6 +666,8 @@ public sealed class PluginMobs
     private sealed class RecordingZombie : Zombie
     {
         public Gate? HurtGate { get; set; }
+        public IEntity? KillOnDamage { get; set; }
+        public Action? BeforeAbsorb { get; set; }
         public int DamageCalls { get; private set; }
         public IEntity? DeathSource { get; private set; }
         public IEntity? DeathDirect { get; private set; }
@@ -623,7 +675,19 @@ public sealed class PluginMobs
         public override ValueTask DamageAsync(IEntity source, float amount = 1)
         {
             this.DamageCalls++;
+            if (this.KillOnDamage is { } killer)
+                return this.KillAsync(killer);
+
             return base.DamageAsync(source, amount);
+        }
+
+        // Runs once, on the hit's thread, between the hit's first look at the hurt cooldown and its commit.
+        private protected override bool TryAbsorbDamage(float amount, CombatDamageKind kind)
+        {
+            var before = this.BeforeAbsorb;
+            this.BeforeAbsorb = null;
+            before?.Invoke();
+            return base.TryAbsorbDamage(amount, kind);
         }
 
         protected override async ValueTask OnHurtAsync(IEntity source)

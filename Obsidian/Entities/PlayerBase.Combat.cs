@@ -83,9 +83,9 @@ public partial class PlayerBase
         if (!float.IsFinite(amount) || amount <= 0 || !Alive || source.Level != level || IsDamageImmune)
             return;
 
-        if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact
-            or CombatDamageKind.Campfire or CombatDamageKind.HotFloor
-            && HasPotionEffect((int)PotionEffect.FireResistance - 1))
+        var fire = kind is CombatDamageKind.Fire or CombatDamageKind.FireContact
+            or CombatDamageKind.Campfire or CombatDamageKind.HotFloor;
+        if (fire && HasPotionEffect((int)PotionEffect.FireResistance - 1))
             return;
 
         var incomingFrom = sourcePosition ?? (directSource ?? source).Position;
@@ -117,34 +117,44 @@ public partial class PlayerBase
                 await DamageInventoryItemAsync(slot, Math.Max(1, (int)(incoming / 4)), true);
         }
 
-        // Another hit may have landed while the armour wore.
-        var freshHit = damageCooldown <= 0;
-        if (PastHurtCooldown(incoming) is not float cooled)
-            return;
-
-        amount = cooled;
-        if (armored)
+        // The hit as it commits: another hit may have landed while the armour wore, or beside it on another thread,
+        // which the cooldown then counts first, and the player may have taken Fire Resistance meanwhile.
+        var freshHit = false;
+        var absorbed = 0f;
+        float? Settle()
         {
-            amount = CombatItems.ReduceArmor(amount, armor, toughness,
-                1 - 0.15f * CombatItems.EnchantmentLevel(weapon, EnchantmentsRegistry.Breach));
+            if (fire && HasPotionEffect((int)PotionEffect.FireResistance - 1))
+                return null;
+
+            freshHit = damageCooldown <= 0;
+            if (PastHurtCooldown(incoming) is not float cooled)
+                return null;
+
+            var taken = cooled;
+            if (armored)
+            {
+                taken = CombatItems.ReduceArmor(taken, armor, toughness,
+                    1 - 0.15f * CombatItems.EnchantmentLevel(weapon, EnchantmentsRegistry.Breach));
+            }
+            taken = CombatEffects.Protect(this, taken, kind);
+            absorbed = Math.Min(Absorption, taken);
+            if (freshHit)
+            {
+                damageCooldown = 10;
+                HurtTime = 10;
+            }
+            lastIncomingDamage = incoming;
+            Absorption -= absorbed;
+            amount = taken - absorbed;
+            return amount;
         }
-        amount = CombatEffects.Protect(this, amount, kind);
-        var absorbed = Math.Min(Absorption, amount);
-        amount -= absorbed;
 
         var previousHealth = Health;
-        if (!TryCommitDamage(level, source, amount, out var healthTaken))
+        if (!TryCommitDamage(level, source, Settle, out var healthTaken))
             return;
 
-        if (freshHit)
-        {
-            damageCooldown = 10;
-            HurtTime = 10;
-        }
-        lastIncomingDamage = incoming;
         AcceptedDamageCount++;
         LastDamageKind = kind;
-        Absorption -= absorbed;
         if (absorbed > 0)
             SyncFoodMetadata();
         if (kind is CombatDamageKind.Melee or CombatDamageKind.Projectile && !ReferenceEquals(source, this))

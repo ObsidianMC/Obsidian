@@ -41,17 +41,33 @@ public partial class Living : Entity, ILiving
     // by whichever hit finished first.
     private static readonly System.Threading.AsyncLocal<IncomingScope?> incomingHits = new();
 
-    // A null Hit is damage dealt outright, which hides any hit on the same entity further out. A scope that hands its
-    // hit off (see HandOff) gives it to the first DamageAsync or KillAsync on the entity that claims it.
-    private protected sealed class IncomingScope(Living target, IncomingHit? hit, IncomingScope? outer, bool handOff)
+    /// <summary>What a scope hands its hit to (see <see cref="HandOff"/>), which alone may claim it.</summary>
+    private protected enum HandOffTo
     {
-        private int unclaimed = handOff ? 1 : 0;
+        None,
+
+        /// <summary>
+        /// The entity's <see cref="Entity.DamageAsync"/>, as <see cref="DamageCombatAsync"/> calls it.
+        /// </summary>
+        Damage,
+
+        /// <summary>The entity's <see cref="Entity.KillAsync(IEntity)"/>, for the death the hit caused.</summary>
+        Death
+    }
+
+    // A null Hit is damage dealt outright, which hides any hit on the same entity further out. A scope that hands its
+    // hit off (see HandOff) gives it to the first DamageAsync or KillAsync on the entity that claims it, whichever it
+    // was handed to: a kill never takes a hit handed to damage, nor damage one handed to a death.
+    private protected sealed class IncomingScope(Living target, IncomingHit? hit, IncomingScope? outer, HandOffTo to)
+    {
+        private int unclaimed = to == HandOffTo.None ? 0 : 1;
 
         public Living Target { get; } = target;
         public IncomingHit? Hit { get; } = hit;
         public IncomingScope? Outer { get; } = outer;
 
-        public bool TryClaim() => System.Threading.Interlocked.Exchange(ref this.unclaimed, 0) == 1;
+        public bool TryClaim(HandOffTo by) =>
+            by == to && System.Threading.Interlocked.Exchange(ref this.unclaimed, 0) == 1;
     }
 
     /// <summary>
@@ -76,34 +92,36 @@ public partial class Living : Entity, ILiving
     /// damage dealt outright, which must never read a hit that the flow it was called from is dealing. Every way in
     /// to damage opens one, so no damage inherits another's.
     /// </summary>
-    private protected HitScope BeginHit(IncomingHit? hit) => this.Push(hit, false, hit);
+    private protected HitScope BeginHit(IncomingHit? hit) => this.Push(hit, HandOffTo.None, hit);
 
     /// <summary>
     /// Opens a scope that hands <paramref name="hit"/> to the entity's <see cref="Entity.DamageAsync"/> or
     /// <see cref="Entity.KillAsync(IEntity)"/>, called next: they're public and virtual, so a plugin's override may
-    /// run first, and only the base implementation, through <see cref="EnterDispatched"/>, takes the hit.
+    /// run first, and only the base implementation, through <see cref="EnterDispatched"/>, takes the hit. A hit handed
+    /// to damage ends with the scope; one handed to a death is within the hit that caused it, which ends it.
     /// </summary>
-    /// <param name="endsHit">Whether the hit ends with the scope: not for a death, within the hit that caused it.</param>
-    private protected HitScope HandOff(IncomingHit? hit, bool endsHit) => this.Push(hit, true, endsHit ? hit : null);
+    private protected HitScope HandOff(IncomingHit? hit, HandOffTo to) =>
+        this.Push(hit, to, to == HandOffTo.Damage ? hit : null);
 
     /// <summary>
     /// Opens the scope that <see cref="Entity.DamageAsync"/> or <see cref="Entity.KillAsync(IEntity)"/> takes effect
     /// in: the hit handed to it (see <see cref="HandOff"/>), only the first time, or else an empty one. So a call from
     /// a plugin's damage hook, or from a task it started, inherits no hit, even while that hit is still being dealt.
     /// </summary>
-    private protected HitScope EnterDispatched()
+    /// <param name="by">What's claiming the hit: only a hit handed to it is taken.</param>
+    private protected HitScope EnterDispatched(HandOffTo by)
     {
         var current = incomingHits.Value;
-        if (current is not null && ReferenceEquals(current.Target, this) && current.TryClaim())
+        if (current is not null && ReferenceEquals(current.Target, this) && current.TryClaim(by))
             return new HitScope(null, current);
 
         return this.BeginHit(null);
     }
 
-    private HitScope Push(IncomingHit? hit, bool handOff, IncomingHit? ending)
+    private HitScope Push(IncomingHit? hit, HandOffTo to, IncomingHit? ending)
     {
         var outer = incomingHits.Value;
-        incomingHits.Value = new IncomingScope(this, hit, outer, handOff);
+        incomingHits.Value = new IncomingScope(this, hit, outer, to);
         return new HitScope(ending, outer);
     }
 
@@ -148,7 +166,7 @@ public partial class Living : Entity, ILiving
 
         // Through DamageAsync, which plugins may override, so they see every hit. A mob records the hit's kind when
         // the hit commits (see Mob.ApplyDamageAsync).
-        using (this.HandOff(hit, endsHit: true))
+        using (this.HandOff(hit, HandOffTo.Damage))
             await this.DamageAsync(source ?? this, amount);
     }
 
@@ -158,7 +176,7 @@ public partial class Living : Entity, ILiving
     /// </summary>
     public override async ValueTask DamageAsync(IEntity source, float amount = 1.0f)
     {
-        using (this.EnterDispatched())
+        using (this.EnterDispatched(HandOffTo.Damage))
             await this.DamageOutrightAsync(source, amount);
     }
 
@@ -190,28 +208,39 @@ public partial class Living : Entity, ILiving
             return this.StillIn(level, source);
     }
 
+    private protected bool TryCommitDamage(ILevel level, IEntity source, float amount, out bool healthTaken) =>
+        this.TryCommitDamage(level, source, () => amount, out healthTaken);
+
     /// <summary>
     /// A hit's commit point: under the transfer lock of <paramref name="level"/>, the level the entity was hit in,
-    /// takes <paramref name="amount"/> off its health, unless it or <paramref name="source"/> left that level or it was
-    /// removed. Travel commits under the same lock, so a hit that commits lands in the level it was dealt in.
+    /// settles the hit and takes what it deals off the entity's health, unless it or <paramref name="source"/> left
+    /// that level, it was removed, or it's dead. Travel commits under the same lock, so a hit that commits lands in the
+    /// level it was dealt in.
     /// </summary>
     /// <remarks>
-    /// Nothing but the health write happens under the lock: knockback, events, packets, death and drops follow once
-    /// it's released, and only for a committed hit. A hit that isn't committed must change nothing.
+    /// Nothing but settling the hit and the health write happens under the lock: knockback, events, packets, death and
+    /// drops follow once it's released, and only for a committed hit. A hit that isn't committed must change nothing.
     /// </remarks>
-    /// <param name="healthTaken">
-    /// Whether health was written: not for a hit absorbed entirely, or for an entity that died meanwhile.
+    /// <param name="settle">
+    /// Decides the hit as it commits, from the entity's state then: what it takes off health, after the hurt cooldown
+    /// and the entity's reductions, or null to reject it. It records the hit in the cooldown, so hits that overlap are
+    /// decided one at a time, like vanilla's. Field reads and writes only: no awaits, events or packets.
     /// </param>
+    /// <param name="healthTaken">Whether health was written: not for a hit absorbed entirely.</param>
     /// <returns>Whether the hit was committed.</returns>
-    private protected bool TryCommitDamage(ILevel level, IEntity source, float amount, out bool healthTaken)
+    private protected bool TryCommitDamage(ILevel level, IEntity source, Func<float?> settle, out bool healthTaken)
     {
         healthTaken = false;
         using (TransferLockOf(level).Enter())
         {
-            if (!this.StillIn(level, source))
+            // A dead entity takes no more hits: one that waited (for armour wear, say) while it died changes nothing.
+            if (!this.StillIn(level, source) || this.Health <= 0)
                 return false;
 
-            if (!float.IsFinite(amount) || amount <= 0 || this.Health <= 0)
+            if (settle() is not float amount)
+                return false;
+
+            if (!float.IsFinite(amount) || amount <= 0)
                 return true;
 
             this.Health -= amount;
@@ -243,9 +272,15 @@ public partial class Living : Entity, ILiving
         if (this is IPlayer)
             return level.Players.TryGetValue(this.Uuid, out var player) && ReferenceEquals(player, this);
 
-        return level is WorldData.AbstractLevel owned
-            && ReferenceEquals(this.Grid, owned.EntityGrid)
-            && this is not Mob { IsRemoved: true };
+        if (this is Mob { IsRemoved: true })
+            return false;
+
+        // A plugin's own level (see ILevel.TryAddEntity) keeps its entities its own way: there, only the entity's
+        // Level, which StillIn checks, and a mob's removal tell.
+        if (level is not WorldData.AbstractLevel owned)
+            return true;
+
+        return ReferenceEquals(this.Grid, owned.EntityGrid);
     }
 
     /// <summary>
