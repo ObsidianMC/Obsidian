@@ -406,10 +406,13 @@ internal sealed class MobTerrain(ILevel level) : IPathTerrain
     /// <summary>
     /// Like vanilla's <c>Level.clip</c> with visual shapes and no fluids, which is what decides whether something can
     /// be seen: the first visual box the segment from <paramref name="start"/> to <paramref name="end"/> crosses, or
-    /// <c>null</c> when it crosses none before it ends or reaches an unloaded chunk. Glass and leaves, say, have none.
+    /// <c>null</c> when it crosses none before it ends. Glass and leaves, say, have none, and neither has the void air
+    /// above and below the level. Vanilla's clip loads a chunk it reaches that isn't loaded, which can't be waited for
+    /// under the tick's locks: the clip stops there instead, with <paramref name="unloaded"/> set.
     /// </summary>
-    public API.Blocks.BlockShapeHit? RaycastVisual(VectorD start, VectorD end)
+    public API.Blocks.BlockShapeHit? RaycastVisual(VectorD start, VectorD end, out bool unloaded)
     {
+        unloaded = false;
         var direction = end - start;
         if (!double.IsFinite(direction.X + direction.Y + direction.Z + start.X + start.Y + start.Z)
             || direction.MagnitudeSquared() < 1e-12)
@@ -419,8 +422,14 @@ internal sealed class MobTerrain(ILevel level) : IPathTerrain
 
         foreach (var cell in CellsAlong(start, end))
         {
+            if (level is AbstractLevel concrete && concrete.IsOutsideBuildHeight(cell.Y))
+                continue;
+
             if (GetBlock(cell) is not IBlock block)
+            {
+                unloaded = true;
                 return null;
+            }
 
             var state = block.GetHashCode();
             var (offsetX, offsetY, offsetZ) = BlockPhysics.ShapeOffset(state, cell.X, cell.Z);

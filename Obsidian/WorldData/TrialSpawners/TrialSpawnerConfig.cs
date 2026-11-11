@@ -188,8 +188,12 @@ internal sealed record TrialSpawnerConfig(
         && config.SimultaneousMobsAddedPerPlayer >= 0
         && config.TicksBetweenSpawn >= 0;
 
-    // Vanilla's SpawnData codec: an entity compound, and optional spawn rules and equipment of their own shapes.
-    private static NbtCompound? SpawnDataOf(INbtTag data)
+    /// <summary>
+    /// Vanilla's <c>SpawnData</c> codec: an entity compound, and optional spawn rules and equipment of their own
+    /// shapes, or null when it doesn't read. The equipment's loot table is written back with its namespace, as vanilla
+    /// writes it.
+    /// </summary>
+    internal static NbtCompound? SpawnDataOf(INbtTag data)
     {
         if (data is not NbtCompound spawnData || !spawnData.TryGetTag<NbtCompound>("entity", out _))
             return null;
@@ -197,26 +201,54 @@ internal sealed record TrialSpawnerConfig(
         if (spawnData.TryGetTag("custom_spawn_rules", out var rules) && rules is not NbtCompound)
             return null;
 
+        string? table = null;
         if (spawnData.TryGetTag("equipment", out var equipment)
-            && (equipment is not NbtCompound table || !table.TryGetTagValue<string>("loot_table", out var id)
-                || !IsIdentifier(id)))
+            && (equipment is not NbtCompound saved || !saved.TryGetTagValue<string>("loot_table", out var id)
+                || (table = LootTableId(id)) is null))
         {
             return null;
         }
 
-        return DataBlockEntity.Copy(spawnData);
+        var copy = DataBlockEntity.Copy(spawnData);
+        if (table is not null && copy.TryGetTag<NbtCompound>("equipment", out var copied)
+            && copied.TryGetTagValue<string>("loot_table", out var written) && written != table)
+        {
+            Entities.EntityNbt.Set(copied, new NbtTag<string>("loot_table", table));
+        }
+
+        return copy;
     }
 
     private static string? LootTableOf(INbtTag data) =>
-        data is NbtTag<string> { Value: string id } && IsIdentifier(id) ? id : null;
+        data is NbtTag<string> { Value: string id } ? LootTableId(id) : null;
 
-    // Vanilla's Identifier: an optional namespace of [a-z0-9_.-] and a colon, then a path that may also hold slashes.
+    /// <summary>
+    /// Vanilla's <c>ResourceKey</c> codec for a loot table: an identifier, in the <c>minecraft</c> namespace when it
+    /// names none, which vanilla saves with its namespace. Null when it isn't an identifier.
+    /// </summary>
+    internal static string? LootTableId(string id)
+    {
+        if (!IsIdentifier(id))
+            return null;
+
+        var colon = id.IndexOf(':');
+        return colon switch
+        {
+            < 0 => "minecraft:" + id,
+            0 => "minecraft" + id,
+            _ => id
+        };
+    }
+
+    // Vanilla's Identifier: an optional namespace of [a-z0-9_.-] (but not "..") and a colon, then a path that may also
+    // hold slashes.
     private static bool IsIdentifier(string id)
     {
         var colon = id.IndexOf(':');
         var space = colon < 0 ? string.Empty : id[..colon];
         var path = colon < 0 ? id : id[(colon + 1)..];
-        return space.All(character => IsIdentifierCharacter(character, slash: false))
+        return space != ".."
+            && space.All(character => IsIdentifierCharacter(character, slash: false))
             && path.All(character => IsIdentifierCharacter(character, slash: true));
     }
 
@@ -288,10 +320,10 @@ internal sealed record TrialSpawnerConfig(
                 ? JsonWeighted(potentials, SpawnDataFromJson)
                 : Default.SpawnPotentials,
             LootTablesToEject = json.TryGetProperty("loot_tables_to_eject", out var tables)
-                ? JsonWeighted(tables, data => data.GetString()!)
+                ? JsonWeighted(tables, data => LootTableId(data.GetString()!) ?? data.GetString()!)
                 : Default.LootTablesToEject,
             ItemsToDropWhenOminous = json.TryGetProperty("items_to_drop_when_ominous", out var ominous)
-                ? ominous.GetString()!
+                ? LootTableId(ominous.GetString()!) ?? ominous.GetString()!
                 : Default.ItemsToDropWhenOminous
         };
 
@@ -334,7 +366,8 @@ internal sealed record TrialSpawnerConfig(
     {
         var equipment = new NbtCompound("equipment")
         {
-            new NbtTag<string>("loot_table", json.GetProperty("loot_table").GetString())
+            new NbtTag<string>("loot_table", LootTableId(json.GetProperty("loot_table").GetString()!)
+                ?? json.GetProperty("loot_table").GetString())
         };
 
         if (!json.TryGetProperty("slot_drop_chances", out var chances))

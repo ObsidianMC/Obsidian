@@ -370,11 +370,12 @@ internal sealed partial class TrialSpawnerBlockEntity
     }
 
     // Vanilla's inLineOfSight: a visual-shape clip from the far end back to the spawner's centre that reaches the
-    // spawner's own block, or hits nothing.
+    // spawner's own block, or hits nothing. Vanilla's clip would load a chunk on the way that isn't loaded and look
+    // through it; that can't be waited for here, so a line through one counts as blocked until it's loaded.
     private static bool InLineOfSight(MobTerrain terrain, VectorD spawnerCenter, VectorD from)
     {
-        var hit = terrain.RaycastVisual(from, spawnerCenter);
-        return hit is null || hit.Value.Position == (Vector)spawnerCenter.Floor();
+        var hit = terrain.RaycastVisual(from, spawnerCenter, out var unloaded);
+        return !unloaded && (hit is null || hit.Value.Position == (Vector)spawnerCenter.Floor());
     }
 
     /// <summary>
@@ -429,6 +430,7 @@ internal sealed partial class TrialSpawnerBlockEntity
         entity.Yaw = random.NextFloat() * 360f;
         entity.Pitch = 0;
 
+        var companions = default(SpawnCompanions);
         if (entity is Mob mob)
         {
             if (!TrialSpawnRules.IsUnobstructed(level, mob))
@@ -438,13 +440,24 @@ internal sealed partial class TrialSpawnerBlockEntity
             // finalizeSpawn draws it; any more and it's taken as given. Loading the mob already set up its AI.
             var bare = entityData.Count == 1;
             if (bare)
-                mob.FinalizeBareSpawn(level, random);
+                companions = mob.FinalizeBareSpawn(level, random);
 
             mob.PersistenceRequired = true;
         }
 
+        // A jockey the setup made: vanilla adds a baby zombie's chicken during its setup, before the mob, and a
+        // spider's skeleton with it, after it (addFreshEntityWithPassengers).
+        if (companions.Vehicle is Mob vehicle && !level.TrySpawnEntity(vehicle, hostOwned: true))
+            companions = companions with { Vehicle = null };
+
         if (!level.TrySpawnEntity(entity, hostOwned: true))
             return null;
+
+        if (companions.Vehicle is Mob ridden)
+            entity.StartRiding(ridden);
+
+        if (companions.Passenger is Mob passenger && level.TrySpawnEntity(passenger, hostOwned: true))
+            passenger.StartRiding(entity);
 
         var flames = trial.Ominous ? 1 : 0;
         level.BroadcastLevelEvent(SpawnerFlamesEvent, spawner, flames);

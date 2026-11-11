@@ -67,11 +67,12 @@ internal sealed partial class TrialSpawnerBlockEntity : BlockEntity
             CooldownEndsAt = tag.TryGetNumber<long>("cooldown_ends_at", out var cooldown) ? cooldown : 0,
             NextMobSpawnsAt = tag.TryGetNumber<long>("next_mob_spawns_at", out var next) ? next : 0,
             TotalMobsSpawned = tag.TryGetNumber<int>("total_mobs_spawned", out var total) && total >= 0 ? total : 0,
-            NextSpawnData = tag.TryGetTag<NbtCompound>("spawn_data", out var spawnData)
-                && spawnData.TryGetTag<NbtCompound>("entity", out _)
-                    ? DataBlockEntity.Copy(spawnData)
-                    : null,
-            EjectingLootTable = tag.TryGetTagValue<string>("ejecting_loot_table", out var table) ? table : null
+            NextSpawnData = tag.TryGetTag("spawn_data", out var spawnData)
+                ? TrialSpawnerConfig.SpawnDataOf(spawnData)
+                : null,
+            EjectingLootTable = tag.TryGetTagValue<string>("ejecting_loot_table", out var table)
+                ? TrialSpawnerConfig.LootTableId(table)
+                : null
         };
 
         this.Data = ReadFullConfig(tag, loaded, others) with { Others = others };
