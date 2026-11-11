@@ -8,6 +8,8 @@ on:
       - "**/*.cs"
       - "**/*.csproj"
       - "**/*.java"
+      - "Directory.Build.props"
+      - "Obsidian.Nbt"
       - ".github/workflows/dotnet.yml"
   pull_request:
     branches: [ "1.*", "26.*" ]
@@ -15,6 +17,8 @@ on:
       - "**/*.cs"
       - "**/*.csproj"
       - "**/*.java"
+      - "Directory.Build.props"
+      - "Obsidian.Nbt"
       - ".github/workflows/dotnet.yml"
 
 jobs:
