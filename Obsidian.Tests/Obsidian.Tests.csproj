@@ -42,6 +42,7 @@
 		<EmbeddedResource Include="Assets\turtle_eggs.json" />
 		<EmbeddedResource Include="Assets\frogspawn.json" />
 		<EmbeddedResource Include="Assets\eyeblossom_ghast_portal_ticks.json" />
+		<EmbeddedResource Include="Assets\lightning_bolts.json" />
 		<EmbeddedResource Include="Assets\growing_plant_ticks.json" />
 		<EmbeddedResource Include="Assets\melting_weather.json" />
 		<EmbeddedResource Include="Assets\block_contact_scenarios.json" />

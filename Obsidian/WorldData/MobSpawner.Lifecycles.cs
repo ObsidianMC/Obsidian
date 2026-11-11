@@ -124,25 +124,6 @@ internal sealed partial class MobSpawner
         });
     }
 
-    private void TickThunder(IChunk chunk)
-    {
-        if (level.DimensionName != "minecraft:overworld" || !level.LevelData.Thundering || !level.LevelData.Raining || random.Next(100000) != 0)
-            return;
-        var x = chunk.X * 16 + random.Next(16);
-        var z = chunk.Z * 16 + random.Next(16);
-        var y = GetSpawnHeight(chunk, x, z);
-        var terrain = new MobTerrain(level);
-        var position = new VectorD(x + 0.5f, y, z + 0.5f);
-        if (!terrain.IsRainingAt(new Vector(x, y, z)) || !terrain.IsFree(new EntityDimension { Width = 1.4f, Height = 1.6f }.CreateBBFromPosition(position)))
-            return;
-        var horse = new SkeletonHorse { Level = level, EntityId = Server.GetNextEntityId(), Position = position, SkeletonTrap = true };
-        horse.InitializeAi();
-        var inhabited = chunk is Chunk concrete ? concrete.InhabitedTime : 0;
-        var difficulty = Mob.CalculateDifficulty(level.LevelData.Difficulty, level.LevelData.GameTime, inhabited, 1);
-        if (level.LevelData.Difficulty != Difficulty.Peaceful && random.NextSingle() < difficulty * 0.01f)
-            level.SpawnEntity(horse);
-    }
-
     private void SpawnVillageCats(List<Mob> mobs)
     {
         foreach (var villager in mobs.OfType<Villager>().Where(villager => !villager.IsBaby).OrderBy(_ => random.Next()).Take(1))

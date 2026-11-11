@@ -134,7 +134,7 @@ public partial class Entity
     // Membership is authoritative for ordinary removal and unloading saves; item pickup and mob death may mark
     // removal before their dictionary entry is taken out, and a player's leave before its leave event takes it out.
     // Read and revalidate under the level's transfer lock.
-    private protected bool IsTravelResident(ILevel level)
+    internal bool IsTravelResident(ILevel level)
     {
         using (TransferLockOf(level).Enter())
         {

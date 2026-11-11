@@ -1,4 +1,6 @@
-﻿namespace Obsidian.Entities;
+﻿using Obsidian.WorldData;
+
+namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:trident")]
 public sealed partial class Trident : Arrow
@@ -50,18 +52,25 @@ public sealed partial class Trident : Arrow
         { EntityId = EntityId, Position = Position, Delta = Motion, Yaw = Yaw, Pitch = Pitch, OnGround = false });
     }
 
-    protected override async ValueTask OnImpactAsync(IEntity? target, bool damaged)
+    protected override ValueTask OnImpactAsync(IEntity? target, bool damaged)
     {
         dealtDamage = true;
         embedded = true;
         Motion *= -0.01;
-        if (damaged && target is Living living && CombatItems.EnchantmentLevel(Weapon, EnchantmentsRegistry.Channeling) > 0 &&
-            Level.LevelData.Thundering && new Obsidian.Entities.AI.MobTerrain(Level).GetSkyLight((Vector)target.Position.Floor()) == 15)
-        {
-            Level.SpawnEntity(target.Position, EntityType.LightningBolt);
-            await living.DamageCombatAsync(Owner ?? this, 5, CombatDamageKind.Fire);
-            living.Ignite(8);
-        }
+        if (damaged && target is not null && Level is AbstractLevel level && Channels(level, target))
+            this.CallLightning(level, target.Position);
+
+        return ValueTask.CompletedTask;
+    }
+
+    // Channeling's post_attack requirements: an enchanted trident, a thunderstorm, and a victim under the open sky.
+    // The bolt it calls strikes the victim; the trident does no more to it.
+    private bool Channels(AbstractLevel level, IEntity target)
+    {
+        if (CombatItems.EnchantmentLevel(Weapon, EnchantmentsRegistry.Channeling) <= 0 || !level.IsThundering())
+            return false;
+
+        return new Obsidian.Entities.AI.MobTerrain(level).GetSkyLight((Vector)target.Position.Floor()) == 15;
     }
 
     internal override void WriteNbt(Obsidian.Nbt.NbtCompound tag)

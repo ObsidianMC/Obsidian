@@ -16,6 +16,7 @@ public partial class Living : Entity, ILiving
     internal CombatDamageKind? LastDamageKind { get; set; }
 
     internal ItemStack? IncomingWeapon { get; private set; }
+    internal IEntity? IncomingAttacker { get; private set; }
     internal IEntity? IncomingDirectSource { get; private set; }
     internal int AcceptedDamageCount { get; set; }
 
@@ -23,37 +24,54 @@ public partial class Living : Entity, ILiving
     /// Damages the entity as <paramref name="kind"/> of damage that <paramref name="source"/> deals, through
     /// <paramref name="directSource"/> (a projectile, say) when that isn't the source itself.
     /// </summary>
+    /// <param name="source">The attacker, or null for damage without an attacking entity.</param>
     /// <param name="sourcePosition">
     /// Where the damage comes from when that isn't the direct source's position, like an explosion's centre; players
     /// block with shields facing it (vanilla's <c>DamageSource.getSourcePosition</c>).
     /// </param>
     internal virtual async ValueTask DamageCombatAsync(
-        IEntity source,
+        IEntity? source,
         float amount,
         CombatDamageKind kind,
         ItemStack? weapon = null,
         IEntity? directSource = null,
         VectorD? sourcePosition = null)
     {
+        var previousAttacker = IncomingAttacker;
         var previousKind = IncomingDamageKind;
         var previousWeapon = IncomingWeapon;
         var previousDirectSource = IncomingDirectSource;
+        IncomingAttacker = ReferenceEquals(source, this) ? null : source;
         IncomingDamageKind = kind;
         IncomingWeapon = weapon;
         IncomingDirectSource = directSource;
         var acceptedBefore = this.AcceptedDamageCount;
         try
         {
-            await DamageAsync(source, amount);
+            await DamageAsync(source ?? this, amount);
             if (this.AcceptedDamageCount != acceptedBefore)
                 this.LastDamageKind = kind;
         }
         finally
         {
+            IncomingAttacker = previousAttacker;
             IncomingDamageKind = previousKind;
             IncomingWeapon = previousWeapon;
             IncomingDirectSource = previousDirectSource;
         }
+    }
+
+    /// <summary>
+    /// Vanilla's <c>Entity.thunderHit</c>: one more tick of fire (eight seconds of it when that brings the count to
+    /// zero, which only an entity holding off fire reaches) and five lightning damage.
+    /// </summary>
+    internal override async ValueTask ThunderHitAsync(LightningBolt bolt)
+    {
+        this.fireTicks++;
+        if (this.fireTicks == 0)
+            this.Ignite(8);
+
+        await this.DamageCombatAsync(null, 5, CombatDamageKind.Lightning);
     }
 
     public LivingBitMask LivingBitMask { get; set; }
