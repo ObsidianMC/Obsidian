@@ -1024,6 +1024,11 @@ public abstract partial class PlayerBase : Avatar, IPlayer
             await this.QueuePacketAsync(new SetHealthPacket(Health, FoodLevel, FoodSaturationLevel));
             await SendPlayerInfoAsync();
 
+            // Like vanilla's respawn and teleport to another level: the client's new player has no permission level
+            // until it's told again, without which it won't open command blocks' editors.
+            if (this.Server.Operators is OperatorList operators)
+                await operators.SendPermissionLevelAsync(this);
+
             // Vanilla's respawn sends the experience the new player starts with.
             if (died)
                 await this.QueuePacketAsync(new SetExperiencePacket(this.XpP, this.XpLevel, this.XpTotal));

@@ -316,6 +316,8 @@ internal static partial class UseBehaviors
 
     internal static IBlockUseBehavior LecternBlock { get; } = new LecternUse();
 
+    internal static IBlockUseBehavior CommandBlock { get; } = new CommandBlockUse();
+
     internal static IBlockUseBehavior ChestBlock { get; } = new ChestMenuUse();
 
     internal static IBlockUseBehavior EnderChestBlock { get; } = new EnderChestMenuUse();

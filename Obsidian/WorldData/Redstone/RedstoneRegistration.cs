@@ -47,6 +47,7 @@ internal static class RedstoneRegistration
         RedstoneHopper.Register(world, neighbors, engine);
         ShelfConnections.Register(world, neighbors, engine);
         RedstoneBell.Register(world, neighbors, engine);
+        CommandBlocks.Register(world, ticks, neighbors, engine);
         var tripwires = TripWire.Register(world, ticks, redstone, neighbors);
         var targets = TargetBlock.Register(world, ticks, redstone);
         LightningRods.Register(redstone, neighbors);

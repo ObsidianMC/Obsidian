@@ -210,8 +210,14 @@ public sealed class AdminCommandModule : CommandModuleBase
         }
     }
 
-    // The name commands show for whoever ran them, as vanilla's do: the executing entity's, or Server for the console.
-    private string SourceName => this.CommandContext.Executor is IEntity executor ? NameOf(executor) : "Server";
+    // The name commands show for whoever ran them, as vanilla's do: the executing entity's, a command block's ("@" or
+    // its custom name), or Server for the console.
+    private string SourceName => this.CommandContext.Executor switch
+    {
+        IEntity executor => NameOf(executor),
+        _ when this.Sender is CommandBlockSender block => block.Name,
+        _ => "Server"
+    };
 
     /// <summary>
     /// The players a ban names: those a selector selects, or one player by name, online or not.

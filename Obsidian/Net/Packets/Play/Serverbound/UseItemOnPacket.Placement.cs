@@ -120,6 +120,7 @@ public partial class UseItemOnPacket
             BlockSoundPlayback.Play(placeLevel, block, position, breaking: false, player.EntityId);
 
         Signs.OnPlacedByPlayer(placeLevel, position, block, player);
+        CommandBlocks.OnPlacedByPlayer(placeLevel, position, block, use.UsedItem);
 
         var center = (VectorD)position + new VectorD(0.5, 0.5, 0.5);
         placeLevel.EmitGameEvent(MobGameEvent.BlockPlace, center, player, affectedBlock: block);

@@ -1,0 +1,1502 @@
+{
+  "origin": [8, 64, 8],
+  "cases": [
+    {
+      "name": "impulse_runs_once_per_rising_edge",
+      "ticks": 9,
+      "setup": [
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:redstone_wire"
+        }
+      ],
+      "commandBlocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:command_block[facing=up]",
+          "command": "setblock ~ ~2 ~ minecraft:stone"
+        }
+      ],
+      "actions": [
+        {
+          "tick": 1,
+          "offset": [-1, 0, 0],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "tick": 4,
+          "offset": [-1, 0, 0],
+          "state": "minecraft:air"
+        },
+        {
+          "tick": 6,
+          "offset": [-1, 0, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=Changed the block at 8, 66, 8"
+          ],
+          "chat": [
+            "[@: Changed the block at 8, 66, 8]"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=Changed the block at 8, 66, 8"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;1,0,0=minecraft:comparator[facing=west,powered=true];2,0,0=minecraft:redstone_wire[east=side,power=1,west=side];0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=Changed the block at 8, 66, 8"
+          ]
+        },
+        {
+          "tick": 4,
+          "changes": "1,0,0=minecraft:comparator[facing=west,powered=true];2,0,0=minecraft:redstone_wire[east=side,power=1,west=side];0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=false conditionMet=true auto=false output=Changed the block at 8, 66, 8"
+          ]
+        },
+        {
+          "tick": 5,
+          "changes": "1,0,0=minecraft:comparator[facing=west,powered=true];2,0,0=minecraft:redstone_wire[east=side,power=1,west=side];0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=false conditionMet=true auto=false output=Changed the block at 8, 66, 8"
+          ]
+        },
+        {
+          "tick": 6,
+          "changes": "-1,0,0=minecraft:redstone_block;1,0,0=minecraft:comparator[facing=west,powered=true];2,0,0=minecraft:redstone_wire[east=side,power=1,west=side];0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=true conditionMet=true auto=false output=Could not set the block"
+          ]
+        },
+        {
+          "tick": 7,
+          "changes": "-1,0,0=minecraft:redstone_block;1,0,0=minecraft:comparator[facing=west,powered=true];2,0,0=minecraft:redstone_wire[east=side,power=1,west=side];0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=true conditionMet=true auto=false output=Could not set the block"
+          ]
+        },
+        {
+          "tick": 8,
+          "changes": "-1,0,0=minecraft:redstone_block;2,0,0=minecraft:redstone_wire[east=side,west=side];0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=true conditionMet=true auto=false output=Could not set the block"
+          ]
+        },
+        {
+          "tick": 9,
+          "changes": "-1,0,0=minecraft:redstone_block;2,0,0=minecraft:redstone_wire[east=side,west=side];0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=true conditionMet=true auto=false output=Could not set the block"
+          ]
+        }
+      ],
+      "saved": [
+        "0,0,0 Command=setblock ~ ~2 ~ minecraft:stone LastExecution=6 LastOutput=Could not set the block SuccessCount=0 TrackOutput=1b UpdateLastExecution=1b auto=0b conditionMet=1b powered=1b"
+      ]
+    },
+    {
+      "name": "impulse_powered_before_placement_waits_for_an_update",
+      "ticks": 4,
+      "setup": [
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "commandBlocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:command_block[facing=up]",
+          "command": "say powered late"
+        }
+      ],
+      "actions": [
+        {
+          "tick": 2,
+          "offset": [0, 0, 1],
+          "state": "minecraft:stone"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "commandBlocks": [
+            "0,0,0 success=0 powered=false conditionMet=false auto=false output=-"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "0,0,1=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=-"
+          ],
+          "chat": [
+            "[@] powered late"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "0,0,1=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=-"
+          ]
+        },
+        {
+          "tick": 4,
+          "changes": "0,0,1=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=-"
+          ]
+        }
+      ],
+      "saved": [
+        "0,0,0 Command=say powered late LastExecution=2 SuccessCount=1 TrackOutput=1b UpdateLastExecution=1b auto=0b conditionMet=1b powered=1b"
+      ]
+    },
+    {
+      "name": "impulse_say_reaches_players",
+      "ticks": 3,
+      "commandBlocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:command_block[facing=up]",
+          "command": "say hello"
+        }
+      ],
+      "actions": [
+        {
+          "tick": 1,
+          "offset": [-1, 0, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=-"
+          ],
+          "chat": [
+            "[@] hello"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=-"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=-"
+          ]
+        }
+      ],
+      "saved": [
+        "0,0,0 Command=say hello LastExecution=1 SuccessCount=1 TrackOutput=1b UpdateLastExecution=1b auto=0b conditionMet=1b powered=1b"
+      ]
+    },
+    {
+      "name": "impulse_without_a_command",
+      "ticks": 3,
+      "commandBlocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:command_block[facing=up]",
+          "command": ""
+        }
+      ],
+      "actions": [
+        {
+          "tick": 1,
+          "offset": [-1, 0, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=true conditionMet=true auto=false output=-"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=true conditionMet=true auto=false output=-"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=true conditionMet=true auto=false output=-"
+          ]
+        }
+      ],
+      "saved": [
+        "0,0,0 Command= SuccessCount=0 TrackOutput=1b UpdateLastExecution=1b auto=0b conditionMet=1b powered=1b"
+      ]
+    },
+    {
+      "name": "impulse_without_tracked_output",
+      "ticks": 3,
+      "commandBlocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:command_block[facing=up]",
+          "command": "setblock ~ ~2 ~ minecraft:stone",
+          "trackOutput": false
+        }
+      ],
+      "actions": [
+        {
+          "tick": 1,
+          "offset": [-1, 0, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=-"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=-"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=-"
+          ]
+        }
+      ],
+      "saved": [
+        "0,0,0 Command=setblock ~ ~2 ~ minecraft:stone LastExecution=1 SuccessCount=1 TrackOutput=0b UpdateLastExecution=1b auto=0b conditionMet=1b powered=1b"
+      ]
+    },
+    {
+      "name": "impulse_failure_output",
+      "ticks": 3,
+      "commandBlocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:command_block[facing=up]",
+          "command": "setblock ~ ~2 ~ minecraft:air"
+        }
+      ],
+      "actions": [
+        {
+          "tick": 1,
+          "offset": [-1, 0, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=true conditionMet=true auto=false output=Could not set the block"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=true conditionMet=true auto=false output=Could not set the block"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=true conditionMet=true auto=false output=Could not set the block"
+          ]
+        }
+      ],
+      "saved": [
+        "0,0,0 Command=setblock ~ ~2 ~ minecraft:air LastExecution=1 LastOutput=Could not set the block SuccessCount=0 TrackOutput=1b UpdateLastExecution=1b auto=0b conditionMet=1b powered=1b"
+      ]
+    },
+    {
+      "name": "command_block_output_off",
+      "ticks": 3,
+      "rules": {
+        "command_block_output": "false"
+      },
+      "commandBlocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:command_block[facing=up]",
+          "command": "setblock ~ ~2 ~ minecraft:stone"
+        }
+      ],
+      "actions": [
+        {
+          "tick": 1,
+          "offset": [-1, 0, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=Changed the block at 8, 66, 8"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=Changed the block at 8, 66, 8"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=Changed the block at 8, 66, 8"
+          ]
+        }
+      ],
+      "saved": [
+        "0,0,0 Command=setblock ~ ~2 ~ minecraft:stone LastExecution=1 LastOutput=Changed the block at 8, 66, 8 SuccessCount=1 TrackOutput=1b UpdateLastExecution=1b auto=0b conditionMet=1b powered=1b"
+      ]
+    },
+    {
+      "name": "send_command_feedback_off",
+      "ticks": 3,
+      "rules": {
+        "send_command_feedback": "false"
+      },
+      "commandBlocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:command_block[facing=up]",
+          "command": "setblock ~ ~2 ~ minecraft:stone"
+        }
+      ],
+      "actions": [
+        {
+          "tick": 1,
+          "offset": [-1, 0, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=-"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=-"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=-"
+          ]
+        }
+      ],
+      "saved": [
+        "0,0,0 Command=setblock ~ ~2 ~ minecraft:stone LastExecution=1 SuccessCount=1 TrackOutput=1b UpdateLastExecution=1b auto=0b conditionMet=1b powered=1b"
+      ]
+    },
+    {
+      "name": "command_blocks_work_off",
+      "ticks": 3,
+      "rules": {
+        "command_blocks_work": "false"
+      },
+      "commandBlocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:command_block[facing=up]",
+          "command": "setblock ~ ~2 ~ minecraft:stone"
+        }
+      ],
+      "actions": [
+        {
+          "tick": 1,
+          "offset": [-1, 0, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=true conditionMet=true auto=false output=-"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=true conditionMet=true auto=false output=-"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=true conditionMet=true auto=false output=-"
+          ]
+        }
+      ],
+      "saved": [
+        "0,0,0 Command=setblock ~ ~2 ~ minecraft:stone LastExecution=1 SuccessCount=0 TrackOutput=1b UpdateLastExecution=1b auto=0b conditionMet=1b powered=1b"
+      ]
+    },
+    {
+      "name": "searge",
+      "ticks": 2,
+      "commandBlocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:command_block[facing=up]",
+          "command": "Searge"
+        }
+      ],
+      "actions": [
+        {
+          "tick": 1,
+          "offset": [-1, 0, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=#itzlipofutzli"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=#itzlipofutzli"
+          ]
+        }
+      ],
+      "saved": [
+        "0,0,0 Command=Searge LastOutput=#itzlipofutzli SuccessCount=1 TrackOutput=1b UpdateLastExecution=1b auto=0b conditionMet=1b powered=1b"
+      ]
+    },
+    {
+      "name": "repeat_always_active",
+      "ticks": 4,
+      "setup": [
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:redstone_wire"
+        }
+      ],
+      "commandBlocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:repeating_command_block[facing=up]",
+          "command": "setblock ~ ~2 ~ minecraft:stone",
+          "auto": true
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=false conditionMet=true auto=true output=Changed the block at 8, 66, 8"
+          ],
+          "chat": [
+            "[@: Changed the block at 8, 66, 8]"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=false conditionMet=true auto=true output=Could not set the block"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=false conditionMet=true auto=true output=Could not set the block"
+          ]
+        },
+        {
+          "tick": 4,
+          "changes": "0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=false conditionMet=true auto=true output=Could not set the block"
+          ]
+        }
+      ],
+      "saved": [
+        "0,0,0 Command=setblock ~ ~2 ~ minecraft:stone LastExecution=4 LastOutput=Could not set the block SuccessCount=0 TrackOutput=1b UpdateLastExecution=1b auto=1b conditionMet=1b powered=0b"
+      ]
+    },
+    {
+      "name": "repeat_while_powered",
+      "ticks": 7,
+      "commandBlocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:repeating_command_block[facing=up]",
+          "command": "say again"
+        }
+      ],
+      "actions": [
+        {
+          "tick": 1,
+          "offset": [-1, 0, 0],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "tick": 4,
+          "offset": [-1, 0, 0],
+          "state": "minecraft:air"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=-"
+          ],
+          "chat": [
+            "[@] again"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=-"
+          ],
+          "chat": [
+            "[@] again"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=-"
+          ],
+          "chat": [
+            "[@] again"
+          ]
+        },
+        {
+          "tick": 4,
+          "commandBlocks": [
+            "0,0,0 success=1 powered=false conditionMet=true auto=false output=-"
+          ],
+          "chat": [
+            "[@] again"
+          ]
+        },
+        {
+          "tick": 5,
+          "commandBlocks": [
+            "0,0,0 success=1 powered=false conditionMet=true auto=false output=-"
+          ]
+        },
+        {
+          "tick": 6,
+          "commandBlocks": [
+            "0,0,0 success=1 powered=false conditionMet=true auto=false output=-"
+          ]
+        },
+        {
+          "tick": 7,
+          "commandBlocks": [
+            "0,0,0 success=1 powered=false conditionMet=true auto=false output=-"
+          ]
+        }
+      ],
+      "saved": [
+        "0,0,0 Command=say again LastExecution=4 SuccessCount=1 TrackOutput=1b UpdateLastExecution=1b auto=0b conditionMet=1b powered=0b"
+      ]
+    },
+    {
+      "name": "chain_runs_in_order",
+      "ticks": 3,
+      "commandBlocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:command_block[facing=east]",
+          "command": "setblock ~ ~2 ~ minecraft:stone"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:chain_command_block[facing=east]",
+          "command": "setblock ~ ~2 ~ minecraft:oak_planks",
+          "auto": true
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:chain_command_block[facing=east]",
+          "command": "say second",
+          "auto": true
+        },
+        {
+          "offset": [3, 0, 0],
+          "state": "minecraft:chain_command_block[facing=east]",
+          "command": "say needs redstone"
+        },
+        {
+          "offset": [4, 0, 0],
+          "state": "minecraft:chain_command_block[facing=east]",
+          "command": "say fourth",
+          "auto": true
+        }
+      ],
+      "actions": [
+        {
+          "tick": 1,
+          "offset": [-1, 0, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone;1,2,0=minecraft:oak_planks",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=Changed the block at 8, 66, 8",
+            "1,0,0 success=1 powered=false conditionMet=true auto=true output=Changed the block at 9, 66, 8",
+            "2,0,0 success=1 powered=false conditionMet=true auto=true output=-",
+            "3,0,0 success=0 powered=false conditionMet=false auto=false output=-",
+            "4,0,0 success=1 powered=false conditionMet=true auto=true output=-"
+          ],
+          "chat": [
+            "[@: Changed the block at 8, 66, 8]",
+            "[@: Changed the block at 9, 66, 8]",
+            "[@] second",
+            "[@] fourth"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone;1,2,0=minecraft:oak_planks",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=Changed the block at 8, 66, 8",
+            "1,0,0 success=1 powered=false conditionMet=true auto=true output=Changed the block at 9, 66, 8",
+            "2,0,0 success=1 powered=false conditionMet=true auto=true output=-",
+            "3,0,0 success=0 powered=false conditionMet=false auto=false output=-",
+            "4,0,0 success=1 powered=false conditionMet=true auto=true output=-"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone;1,2,0=minecraft:oak_planks",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=Changed the block at 8, 66, 8",
+            "1,0,0 success=1 powered=false conditionMet=true auto=true output=Changed the block at 9, 66, 8",
+            "2,0,0 success=1 powered=false conditionMet=true auto=true output=-",
+            "3,0,0 success=0 powered=false conditionMet=false auto=false output=-",
+            "4,0,0 success=1 powered=false conditionMet=true auto=true output=-"
+          ]
+        }
+      ],
+      "saved": [
+        "0,0,0 Command=setblock ~ ~2 ~ minecraft:stone LastExecution=1 LastOutput=Changed the block at 8, 66, 8 SuccessCount=1 TrackOutput=1b UpdateLastExecution=1b auto=0b conditionMet=1b powered=1b",
+        "1,0,0 Command=setblock ~ ~2 ~ minecraft:oak_planks LastExecution=1 LastOutput=Changed the block at 9, 66, 8 SuccessCount=1 TrackOutput=1b UpdateLastExecution=1b auto=1b conditionMet=1b powered=0b",
+        "2,0,0 Command=say second LastExecution=1 SuccessCount=1 TrackOutput=1b UpdateLastExecution=1b auto=1b conditionMet=1b powered=0b",
+        "3,0,0 Command=say needs redstone SuccessCount=0 TrackOutput=1b UpdateLastExecution=1b auto=0b conditionMet=0b powered=0b",
+        "4,0,0 Command=say fourth LastExecution=1 SuccessCount=1 TrackOutput=1b UpdateLastExecution=1b auto=1b conditionMet=1b powered=0b"
+      ]
+    },
+    {
+      "name": "chain_powered_by_redstone",
+      "ticks": 3,
+      "setup": [
+        {
+          "offset": [1, 1, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "commandBlocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:command_block[facing=east]",
+          "command": "say first"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:chain_command_block[facing=east]",
+          "command": "say powered chain"
+        }
+      ],
+      "actions": [
+        {
+          "tick": 1,
+          "offset": [1, 0, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "tick": 2,
+          "offset": [-1, 0, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "1,0,1=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=false conditionMet=false auto=false output=-",
+            "1,0,0 success=0 powered=true conditionMet=false auto=false output=-"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block;1,0,1=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=-",
+            "1,0,0 success=1 powered=true conditionMet=true auto=false output=-"
+          ],
+          "chat": [
+            "[@] first",
+            "[@] powered chain"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;1,0,1=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=-",
+            "1,0,0 success=1 powered=true conditionMet=true auto=false output=-"
+          ]
+        }
+      ],
+      "saved": [
+        "0,0,0 Command=say first LastExecution=2 SuccessCount=1 TrackOutput=1b UpdateLastExecution=1b auto=0b conditionMet=1b powered=1b",
+        "1,0,0 Command=say powered chain LastExecution=2 SuccessCount=1 TrackOutput=1b UpdateLastExecution=1b auto=0b conditionMet=1b powered=1b"
+      ]
+    },
+    {
+      "name": "chain_conditional_after_success",
+      "ticks": 3,
+      "commandBlocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:command_block[facing=east]",
+          "command": "setblock ~ ~2 ~ minecraft:stone"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:chain_command_block[facing=east,conditional=true]",
+          "command": "say conditional",
+          "auto": true
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:chain_command_block[facing=east]",
+          "command": "say always",
+          "auto": true
+        }
+      ],
+      "actions": [
+        {
+          "tick": 1,
+          "offset": [-1, 0, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=Changed the block at 8, 66, 8",
+            "1,0,0 success=1 powered=false conditionMet=true auto=true output=-",
+            "2,0,0 success=1 powered=false conditionMet=true auto=true output=-"
+          ],
+          "chat": [
+            "[@: Changed the block at 8, 66, 8]",
+            "[@] conditional",
+            "[@] always"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=Changed the block at 8, 66, 8",
+            "1,0,0 success=1 powered=false conditionMet=true auto=true output=-",
+            "2,0,0 success=1 powered=false conditionMet=true auto=true output=-"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=Changed the block at 8, 66, 8",
+            "1,0,0 success=1 powered=false conditionMet=true auto=true output=-",
+            "2,0,0 success=1 powered=false conditionMet=true auto=true output=-"
+          ]
+        }
+      ],
+      "saved": [
+        "0,0,0 Command=setblock ~ ~2 ~ minecraft:stone LastExecution=1 LastOutput=Changed the block at 8, 66, 8 SuccessCount=1 TrackOutput=1b UpdateLastExecution=1b auto=0b conditionMet=1b powered=1b",
+        "1,0,0 Command=say conditional LastExecution=1 SuccessCount=1 TrackOutput=1b UpdateLastExecution=1b auto=1b conditionMet=1b powered=0b",
+        "2,0,0 Command=say always LastExecution=1 SuccessCount=1 TrackOutput=1b UpdateLastExecution=1b auto=1b conditionMet=1b powered=0b"
+      ]
+    },
+    {
+      "name": "chain_conditional_after_failure",
+      "ticks": 3,
+      "commandBlocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:command_block[facing=east]",
+          "command": "setblock ~ ~2 ~ minecraft:air"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:chain_command_block[facing=east,conditional=true]",
+          "command": "say conditional",
+          "auto": true
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:chain_command_block[facing=east]",
+          "command": "say always",
+          "auto": true
+        }
+      ],
+      "actions": [
+        {
+          "tick": 1,
+          "offset": [-1, 0, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=true conditionMet=true auto=false output=Could not set the block",
+            "1,0,0 success=0 powered=false conditionMet=false auto=true output=-",
+            "2,0,0 success=1 powered=false conditionMet=true auto=true output=-"
+          ],
+          "chat": [
+            "[@] always"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=true conditionMet=true auto=false output=Could not set the block",
+            "1,0,0 success=0 powered=false conditionMet=false auto=true output=-",
+            "2,0,0 success=1 powered=false conditionMet=true auto=true output=-"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=true conditionMet=true auto=false output=Could not set the block",
+            "1,0,0 success=0 powered=false conditionMet=false auto=true output=-",
+            "2,0,0 success=1 powered=false conditionMet=true auto=true output=-"
+          ]
+        }
+      ],
+      "saved": [
+        "0,0,0 Command=setblock ~ ~2 ~ minecraft:air LastExecution=1 LastOutput=Could not set the block SuccessCount=0 TrackOutput=1b UpdateLastExecution=1b auto=0b conditionMet=1b powered=1b",
+        "1,0,0 Command=say conditional SuccessCount=0 TrackOutput=1b UpdateLastExecution=1b auto=1b conditionMet=0b powered=0b",
+        "2,0,0 Command=say always LastExecution=1 SuccessCount=1 TrackOutput=1b UpdateLastExecution=1b auto=1b conditionMet=1b powered=0b"
+      ]
+    },
+    {
+      "name": "chain_stops_at_sequence_length",
+      "ticks": 2,
+      "rules": {
+        "max_command_sequence_length": "2"
+      },
+      "commandBlocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:command_block[facing=east]",
+          "command": "say start"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:chain_command_block[facing=east]",
+          "command": "say one",
+          "auto": true
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:chain_command_block[facing=east]",
+          "command": "say two",
+          "auto": true
+        },
+        {
+          "offset": [3, 0, 0],
+          "state": "minecraft:chain_command_block[facing=east]",
+          "command": "say three",
+          "auto": true
+        }
+      ],
+      "actions": [
+        {
+          "tick": 1,
+          "offset": [-1, 0, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=-",
+            "1,0,0 success=1 powered=false conditionMet=true auto=true output=-",
+            "2,0,0 success=1 powered=false conditionMet=true auto=true output=-",
+            "3,0,0 success=0 powered=false conditionMet=false auto=true output=-"
+          ],
+          "chat": [
+            "[@] start",
+            "[@] one",
+            "[@] two"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=-",
+            "1,0,0 success=1 powered=false conditionMet=true auto=true output=-",
+            "2,0,0 success=1 powered=false conditionMet=true auto=true output=-",
+            "3,0,0 success=0 powered=false conditionMet=false auto=true output=-"
+          ]
+        }
+      ],
+      "saved": [
+        "0,0,0 Command=say start LastExecution=1 SuccessCount=1 TrackOutput=1b UpdateLastExecution=1b auto=0b conditionMet=1b powered=1b",
+        "1,0,0 Command=say one LastExecution=1 SuccessCount=1 TrackOutput=1b UpdateLastExecution=1b auto=1b conditionMet=1b powered=0b",
+        "2,0,0 Command=say two LastExecution=1 SuccessCount=1 TrackOutput=1b UpdateLastExecution=1b auto=1b conditionMet=1b powered=0b",
+        "3,0,0 Command=say three SuccessCount=0 TrackOutput=1b UpdateLastExecution=1b auto=1b conditionMet=0b powered=0b"
+      ]
+    },
+    {
+      "name": "chain_loop_runs_each_block_once",
+      "ticks": 2,
+      "commandBlocks": [
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:command_block[facing=east]",
+          "command": "say start"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chain_command_block[facing=south]",
+          "command": "say a",
+          "auto": true
+        },
+        {
+          "offset": [0, 0, 1],
+          "state": "minecraft:chain_command_block[facing=east]",
+          "command": "say b",
+          "auto": true
+        },
+        {
+          "offset": [1, 0, 1],
+          "state": "minecraft:chain_command_block[facing=north]",
+          "command": "say c",
+          "auto": true
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:chain_command_block[facing=west]",
+          "command": "say d",
+          "auto": true
+        }
+      ],
+      "actions": [
+        {
+          "tick": 1,
+          "offset": [-1, 1, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,1,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "-1,0,0 success=1 powered=true conditionMet=true auto=false output=-",
+            "0,0,0 success=1 powered=false conditionMet=true auto=true output=-",
+            "1,0,0 success=1 powered=false conditionMet=true auto=true output=-",
+            "0,0,1 success=1 powered=false conditionMet=true auto=true output=-",
+            "1,0,1 success=1 powered=false conditionMet=true auto=true output=-"
+          ],
+          "chat": [
+            "[@] start",
+            "[@] a",
+            "[@] b",
+            "[@] c",
+            "[@] d"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,1,0=minecraft:redstone_block",
+          "commandBlocks": [
+            "-1,0,0 success=1 powered=true conditionMet=true auto=false output=-",
+            "0,0,0 success=1 powered=false conditionMet=true auto=true output=-",
+            "1,0,0 success=1 powered=false conditionMet=true auto=true output=-",
+            "0,0,1 success=1 powered=false conditionMet=true auto=true output=-",
+            "1,0,1 success=1 powered=false conditionMet=true auto=true output=-"
+          ]
+        }
+      ],
+      "saved": [
+        "-1,0,0 Command=say start LastExecution=1 SuccessCount=1 TrackOutput=1b UpdateLastExecution=1b auto=0b conditionMet=1b powered=1b",
+        "0,0,0 Command=say a LastExecution=1 SuccessCount=1 TrackOutput=1b UpdateLastExecution=1b auto=1b conditionMet=1b powered=0b",
+        "1,0,0 Command=say d LastExecution=1 SuccessCount=1 TrackOutput=1b UpdateLastExecution=1b auto=1b conditionMet=1b powered=0b",
+        "0,0,1 Command=say b LastExecution=1 SuccessCount=1 TrackOutput=1b UpdateLastExecution=1b auto=1b conditionMet=1b powered=0b",
+        "1,0,1 Command=say c LastExecution=1 SuccessCount=1 TrackOutput=1b UpdateLastExecution=1b auto=1b conditionMet=1b powered=0b"
+      ]
+    },
+    {
+      "name": "edit_impulse_to_repeat_always_active",
+      "ticks": 5,
+      "commandBlocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:command_block[facing=up]",
+          "command": "say looping"
+        }
+      ],
+      "actions": [
+        {
+          "tick": 2,
+          "edit": {
+            "offset": [0, 0, 0],
+            "command": "say looping",
+            "mode": "auto",
+            "auto": true
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "commandBlocks": [
+            "0,0,0 success=0 powered=false conditionMet=false auto=false output=-"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "0,0,0=minecraft:repeating_command_block[facing=up]",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=false conditionMet=true auto=true output=-"
+          ],
+          "chat": [
+            "Command set: say looping",
+            "[@] looping"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "0,0,0=minecraft:repeating_command_block[facing=up]",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=false conditionMet=true auto=true output=-"
+          ],
+          "chat": [
+            "[@] looping"
+          ]
+        },
+        {
+          "tick": 4,
+          "changes": "0,0,0=minecraft:repeating_command_block[facing=up]",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=false conditionMet=true auto=true output=-"
+          ],
+          "chat": [
+            "[@] looping"
+          ]
+        },
+        {
+          "tick": 5,
+          "changes": "0,0,0=minecraft:repeating_command_block[facing=up]",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=false conditionMet=true auto=true output=-"
+          ],
+          "chat": [
+            "[@] looping"
+          ]
+        }
+      ],
+      "saved": [
+        "0,0,0 Command=say looping LastExecution=5 SuccessCount=1 TrackOutput=1b UpdateLastExecution=1b auto=1b conditionMet=1b powered=0b"
+      ]
+    },
+    {
+      "name": "edit_resets_success_count",
+      "ticks": 5,
+      "setup": [
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:redstone_wire"
+        }
+      ],
+      "commandBlocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:command_block[facing=up]",
+          "command": "setblock ~ ~2 ~ minecraft:stone"
+        }
+      ],
+      "actions": [
+        {
+          "tick": 1,
+          "offset": [-1, 0, 0],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "tick": 3,
+          "edit": {
+            "offset": [0, 0, 0],
+            "command": "say edited",
+            "mode": "redstone"
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=Changed the block at 8, 66, 8"
+          ],
+          "chat": [
+            "[@: Changed the block at 8, 66, 8]"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=Changed the block at 8, 66, 8"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=true conditionMet=true auto=false output=Changed the block at 8, 66, 8"
+          ],
+          "chat": [
+            "Command set: say edited"
+          ]
+        },
+        {
+          "tick": 4,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=true conditionMet=true auto=false output=Changed the block at 8, 66, 8"
+          ]
+        },
+        {
+          "tick": 5,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=true conditionMet=true auto=false output=Changed the block at 8, 66, 8"
+          ]
+        }
+      ],
+      "saved": [
+        "0,0,0 Command=say edited LastExecution=1 LastOutput=Changed the block at 8, 66, 8 SuccessCount=0 TrackOutput=1b UpdateLastExecution=1b auto=0b conditionMet=1b powered=1b"
+      ]
+    },
+    {
+      "name": "edit_track_output_off_clears_output",
+      "ticks": 4,
+      "commandBlocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:command_block[facing=up]",
+          "command": "setblock ~ ~2 ~ minecraft:stone"
+        }
+      ],
+      "actions": [
+        {
+          "tick": 1,
+          "offset": [-1, 0, 0],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "tick": 3,
+          "edit": {
+            "offset": [0, 0, 0],
+            "command": "setblock ~ ~2 ~ minecraft:stone",
+            "mode": "redstone",
+            "trackOutput": false
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=Changed the block at 8, 66, 8"
+          ],
+          "chat": [
+            "[@: Changed the block at 8, 66, 8]"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=1 powered=true conditionMet=true auto=false output=Changed the block at 8, 66, 8"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=true conditionMet=true auto=false output=-"
+          ],
+          "chat": [
+            "Command set: setblock ~ ~2 ~ minecraft:stone"
+          ]
+        },
+        {
+          "tick": 4,
+          "changes": "-1,0,0=minecraft:redstone_block;0,2,0=minecraft:stone",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=true conditionMet=true auto=false output=-"
+          ]
+        }
+      ],
+      "saved": [
+        "0,0,0 Command=setblock ~ ~2 ~ minecraft:stone LastExecution=1 SuccessCount=0 TrackOutput=0b UpdateLastExecution=1b auto=0b conditionMet=1b powered=1b"
+      ]
+    },
+    {
+      "name": "edit_chain_to_conditional",
+      "ticks": 4,
+      "commandBlocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:command_block[facing=east]",
+          "command": "setblock ~ ~2 ~ minecraft:air"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:chain_command_block[facing=east]",
+          "command": "say chained",
+          "auto": true
+        }
+      ],
+      "actions": [
+        {
+          "tick": 1,
+          "edit": {
+            "offset": [1, 0, 0],
+            "command": "say chained",
+            "mode": "sequence",
+            "conditional": true,
+            "auto": true
+          }
+        },
+        {
+          "tick": 2,
+          "offset": [-1, 0, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "changes": "1,0,0=minecraft:chain_command_block[conditional=true,facing=east]",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=false conditionMet=false auto=false output=-",
+            "1,0,0 success=0 powered=false conditionMet=false auto=true output=-"
+          ],
+          "chat": [
+            "Command set: say chained"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "-1,0,0=minecraft:redstone_block;1,0,0=minecraft:chain_command_block[conditional=true,facing=east]",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=true conditionMet=true auto=false output=Could not set the block",
+            "1,0,0 success=0 powered=false conditionMet=false auto=true output=-"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "-1,0,0=minecraft:redstone_block;1,0,0=minecraft:chain_command_block[conditional=true,facing=east]",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=true conditionMet=true auto=false output=Could not set the block",
+            "1,0,0 success=0 powered=false conditionMet=false auto=true output=-"
+          ]
+        },
+        {
+          "tick": 4,
+          "changes": "-1,0,0=minecraft:redstone_block;1,0,0=minecraft:chain_command_block[conditional=true,facing=east]",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=true conditionMet=true auto=false output=Could not set the block",
+            "1,0,0 success=0 powered=false conditionMet=false auto=true output=-"
+          ]
+        }
+      ],
+      "saved": [
+        "0,0,0 Command=setblock ~ ~2 ~ minecraft:air LastExecution=2 LastOutput=Could not set the block SuccessCount=0 TrackOutput=1b UpdateLastExecution=1b auto=0b conditionMet=1b powered=1b",
+        "1,0,0 Command=say chained SuccessCount=0 TrackOutput=1b UpdateLastExecution=1b auto=1b conditionMet=0b powered=0b"
+      ]
+    },
+    {
+      "name": "edit_repeat_to_impulse_stops",
+      "ticks": 4,
+      "commandBlocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:repeating_command_block[facing=up]",
+          "command": "say looping",
+          "auto": true
+        }
+      ],
+      "actions": [
+        {
+          "tick": 2,
+          "edit": {
+            "offset": [0, 0, 0],
+            "command": "say looping",
+            "mode": "redstone",
+            "auto": true
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "commandBlocks": [
+            "0,0,0 success=1 powered=false conditionMet=true auto=true output=-"
+          ],
+          "chat": [
+            "[@] looping"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "0,0,0=minecraft:command_block[facing=up]",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=false conditionMet=true auto=true output=-"
+          ],
+          "chat": [
+            "Command set: say looping"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "0,0,0=minecraft:command_block[facing=up]",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=false conditionMet=true auto=true output=-"
+          ]
+        },
+        {
+          "tick": 4,
+          "changes": "0,0,0=minecraft:command_block[facing=up]",
+          "commandBlocks": [
+            "0,0,0 success=0 powered=false conditionMet=true auto=true output=-"
+          ]
+        }
+      ],
+      "saved": [
+        "0,0,0 Command=say looping LastExecution=1 SuccessCount=0 TrackOutput=1b UpdateLastExecution=1b auto=1b conditionMet=1b powered=0b"
+      ]
+    }
+  ],
+  "version": "26.3"
+}
