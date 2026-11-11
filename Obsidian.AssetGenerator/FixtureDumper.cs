@@ -131,9 +131,18 @@ internal static class FixtureDumper
     }
 
     // An on-request gameplay probe: vanilla's randomTick against each case's block view, with a seeded random.
-    internal static Task DumpGrowingPlantTicksAsync(VanillaServer server, string fixture) =>
-        VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
-            Source("GrowingPlantTickFixtures.java"), fixture);
+    internal static Task DumpGrowingPlantTicksAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null)
+    {
+        var arguments = new List<string>
+        {
+            "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("GrowingPlantTickFixtures.java"), fixture
+        };
+        if (cases is not null)
+            arguments.Add(string.Join('+', cases));
+
+        return VanillaServer.RunJavaAsync(server.ScratchDirectory, arguments.ToArray());
+    }
 
     // An on-request gameplay probe: what cooking machines give a player taking their result, or drop when broken.
     internal static Task DumpFurnaceResultsAsync(VanillaServer server, string fixture) =>

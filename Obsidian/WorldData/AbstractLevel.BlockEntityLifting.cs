@@ -23,9 +23,21 @@ public abstract partial class AbstractLevel
             if (entity is IPlayer { GameMode: GameMode.Spectator })
                 continue;
 
-            var distance = max.Y - entity.CurrentBox.Min.Y;
-            if (distance is > 0 and <= 1 && entity.Level == this)
-                entity.LiftForBlockChange(distance);
+            // Virtual geometry getters may belong to plugins. Read them before entering transfer, then validate
+            // ownership and position together with the lift so travel cannot move it into another level mid-write.
+            var observedPosition = entity.Position;
+            var box = entity.CurrentBox;
+            var storedBox = entity is PlayerBase ? box : entity.BoundingBox;
+            var movementFlags = entity.MovementFlags;
+            using (this.TransferLock.Enter())
+            {
+                if (entity.Level != this || entity.Position != observedPosition)
+                    continue;
+
+                var distance = max.Y - box.Min.Y;
+                if (distance is > 0 and <= 1)
+                    entity.LiftForBlockChange(distance, storedBox, movementFlags);
+            }
         }
     }
 }

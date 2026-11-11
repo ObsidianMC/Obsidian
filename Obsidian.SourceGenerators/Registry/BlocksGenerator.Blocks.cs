@@ -84,9 +84,7 @@ public partial class BlocksGenerator
             // association (the hooks below).
             if (block.TreeGrower is { } grower)
             {
-                var initializer = string.Join(", ", grower.Select(entry => entry.Key == "secondaryChance"
-                    ? $"SecondaryChance = {entry.Value}"
-                    : $"{entry.Key.ToPascalCase()} = \"{entry.Value}\""));
+                var initializer = string.Join(", ", grower.Select(entry => $"{entry.Key} = {entry.Value}"));
                 treeGrowers.Indent().Append($"[{block.RegistryId}] = new Obsidian.API.Blocks.TreeGrower {{ {initializer} }},").Line();
             }
 

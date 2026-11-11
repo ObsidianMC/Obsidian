@@ -18,6 +18,9 @@ using Obsidian.Tests.Fakes;
 using Obsidian.Tests.Utilities;
 using Obsidian.Utilities;
 using Obsidian.WorldData;
+using Obsidian.WorldData.Generators.Biomes;
+using Obsidian.WorldData.Generators.Density;
+using Obsidian.WorldData.Generators.Features;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -75,6 +78,12 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
 
     private static async Task ReplayAsync(JsonElement probe)
     {
+        if (probe.GetProperty("call").GetString() == "postProcess")
+        {
+            ReplayCompletion(probe);
+            return;
+        }
+
         await using var context = TestServerFactory.CreateServer($"ticking-blocks-{Guid.NewGuid():N}");
         var world = context.World;
         if (probe.TryGetProperty("dimension", out var dimension))
@@ -86,6 +95,15 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
             world.LevelData.GameRules["entity_drops"] = entityDrops.GetBoolean() ? "true" : "false";
 
         await AddEmptyChunksAsync(world);
+
+        if (probe.GetProperty("call").GetString() == "catalystCredit")
+        {
+            var creditDifferences = new List<string>();
+            await CatalystCreditAsync(creditDifferences, probe, world, context.Server,
+                Position(probe.GetProperty("origin")));
+            Assert.True(creditDifferences.Count == 0, string.Join("\n", creditDifferences));
+            return;
+        }
 
         // A player with the nine chunks, who gets the level events sent there.
         var listener = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Listener",
@@ -137,6 +155,9 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
                 break;
             case "landing":
                 await LandAsync(differences, probe, world, origin);
+                break;
+            case "catalyst":
+                Catalyst(differences, probe, world, origin);
                 break;
             case "findTip":
                 var tip = SulfurSpikeBehavior.FindTip(world.BlockUpdates, origin, world.BlockUpdates.GetBlock(origin),
@@ -196,6 +217,64 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
             throw new Xunit.Sdk.XunitException(string.Join("\n", differences));
     }
 
+    // Chunk completion for the origin as a marked position, through Obsidian's own completion
+    // (BiomeTerrain.PostProcess) over nine empty chunks holding the case's blocks: the blocks and the ticks saved in
+    // the chunk must be vanilla's (its scheduled list, the first request of each position and type).
+    private static void ReplayCompletion(JsonElement probe)
+    {
+        var pipeline = completionPipeline.Value;
+        var area = new Dictionary<(int X, int Z), IChunk>();
+        for (var chunkX = -1; chunkX <= 1; chunkX++)
+        {
+            for (var chunkZ = -1; chunkZ <= 1; chunkZ++)
+            {
+                var chunk = new Chunk(chunkX, chunkZ, pipeline.MinY, pipeline.Height);
+                chunk.SetChunkStatus(ChunkGenStage.features);
+                area[(chunkX, chunkZ)] = chunk;
+            }
+        }
+
+        foreach (var placement in probe.GetProperty("setup").EnumerateArray())
+        {
+            var position = Position(placement.GetProperty("pos"));
+            var state = VanillaSulfurBlocks.ParseState(placement.GetProperty("state").GetString()!);
+            area[(position.X >> 4, position.Z >> 4)].SetBlock(position, state);
+        }
+
+        var center = (Chunk)area[(0, 0)];
+        center.PostProcessing.Add(Position(probe.GetProperty("origin")));
+        pipeline.PostProcess(area, 0, 0);
+
+        var differences = new List<string>();
+        foreach (var placement in probe.GetProperty("after").EnumerateArray())
+        {
+            var position = Position(placement.GetProperty("pos"));
+            var expected = placement.GetProperty("state").GetString()!;
+            var actual = area[(position.X >> 4, position.Z >> 4)].GetBlock(position);
+            if (!VanillaSulfurBlocks.ParseState(expected).IsSameState(actual))
+                differences.Add($"{position}: vanilla {expected}, Obsidian {actual}");
+        }
+
+        var vanilla = probe.GetProperty("scheduled").EnumerateArray()
+            .DistinctBy(tick => (Position(tick.GetProperty("pos")), tick.GetProperty("type").GetString()))
+            .Select(tick => Tick(Position(tick.GetProperty("pos")), tick.GetProperty("type").GetString()!,
+                tick.GetProperty("delay").GetInt32()))
+            .Order(StringComparer.Ordinal)
+            .ToList();
+        var blockTicks = center.BlockTicks.Pack().Select(tick => Tick(tick.Position, tick.Block, tick.Delay));
+        var fluidTicks = center.FluidTicks.Pack()
+            .Select(tick => Tick(tick.Position, FluidName(tick.Type), tick.Delay));
+        var obsidian = blockTicks.Concat(fluidTicks).Order(StringComparer.Ordinal).ToList();
+        ExpectSequence(differences, "ticks", vanilla, obsidian);
+
+        if (differences.Count > 0)
+            throw new Xunit.Sdk.XunitException(string.Join("\n", differences));
+    }
+
+    // The overworld's completion, shared by the cases: only its build range and fluid rules matter here.
+    private static readonly Lazy<BiomeTerrain> completionPipeline = new(() => BiomeTerrain.Create(
+        WorldgenDimension.Vanilla("minecraft:overworld"), 0, new FeatureRegistry(WorldgenData.Vanilla)));
+
     // AbstractLevel.TickChunkBlocks: only a randomly ticking state ticks, through its generated owner.
     private static void RandomTick(
         List<string> differences,
@@ -234,6 +313,88 @@ public sealed class VanillaTickingBlocks(ITestOutputHelper output)
         }
 
         behavior.Tick(world.BlockUpdates, origin, block, random);
+    }
+
+    // Replay real hits and a death against the native catalyst's captured last-attacker eligibility.
+    private static async Task CatalystCreditAsync(List<string> differences, JsonElement probe,
+        WorldData.World world, Server server, Vector origin)
+    {
+        var player = TestServerFactory.CreateConnectedPlayer(server, world, "Attacker", (VectorD)origin);
+        var victim = new Pig { Level = world, Position = (VectorD)origin + new VectorD(2, 0, 0) };
+        victim.InitializeAi(false);
+        var wolf = new Wolf { Level = world, Position = victim.Position };
+        wolf.InitializeAi(false);
+
+        foreach (var entry in probe.GetProperty("attackers").EnumerateArray())
+        {
+            IEntity attacker = entry.GetString() switch
+            {
+                "player" => player,
+                "wolf" => wolf,
+                _ => throw new InvalidOperationException($"Unknown attacker {entry}")
+            };
+            await victim.DamageMagicAsync(attacker, 1, ignoreHurtCooldown: true);
+        }
+
+        // Install the catalyst after the hits so only the death can feed it.
+        world.BlockUpdates.SetBlock(origin, BlocksRegistry.SculkCatalyst);
+        await victim.KillAsync(victim);
+        await server.BackgroundWork.DrainAsync();
+        Expect(differences, "player credit", probe.GetProperty("playerCredit").GetBoolean(),
+            player.Advancements.IsDone("minecraft:adventure/kill_mob_near_sculk_catalyst"));
+    }
+
+    // The sculk catalyst at the origin takes each death as a mob dying there would offer it, then its block entity
+    // ticks; its charge cursors must be vanilla's afterwards.
+    private static void Catalyst(List<string> differences, JsonElement probe, WorldData.World world, Vector origin)
+    {
+        if (world.GetResidentBlockEntity(origin) is not SculkCatalystBlockEntity catalyst)
+        {
+            differences.Add("The catalyst has no block entity");
+            return;
+        }
+
+        foreach (var death in probe.GetProperty("deaths").EnumerateArray())
+        {
+            var at = death.GetProperty("pos");
+            var position = new VectorD(at[0].GetDouble(), at[1].GetDouble(), at[2].GetDouble());
+            var experience = death.GetProperty("experience").GetInt32();
+            var taken = world.OfferDeathToSculkCatalysts(position, () => experience, out _);
+            var expectedTaken = !death.TryGetProperty("taken", out var captured) || captured.GetBoolean();
+            Expect(differences, "death taken", expectedTaken, taken);
+        }
+
+        var ticks = probe.GetProperty("catalystTicks").GetInt32();
+        for (var tick = 0; tick < ticks; tick++)
+            catalyst.Tick(world);
+
+        var vanilla = probe.GetProperty("cursors").EnumerateArray().Select(VanillaCursor);
+        var obsidian = catalyst.Charge.Cursors.Select(ObsidianCursor);
+        ExpectSequence(differences, "cursors", vanilla, obsidian);
+    }
+
+    private static string VanillaCursor(JsonElement cursor)
+    {
+        var facings = cursor.GetProperty("facings");
+        var faces = facings.ValueKind == JsonValueKind.Null
+            ? "null"
+            : string.Join(",", facings.EnumerateArray().Select(face => face.GetString()));
+
+        return $"{Position(cursor.GetProperty("pos"))} charge {cursor.GetProperty("charge").GetInt32()} "
+            + $"decay {cursor.GetProperty("decayDelay").GetInt32()} update {cursor.GetProperty("updateDelay").GetInt32()} "
+            + $"facings {faces}";
+    }
+
+    private static string ObsidianCursor(SculkCharge.Cursor cursor)
+    {
+        var faces = cursor.Facings is int packed
+            ? string.Join(",", Enum.GetValues<BlockFace>()
+                .Where(face => (packed >> (int)face & 1) != 0)
+                .Select(face => face.ToString().ToLowerInvariant()))
+            : "null";
+
+        return $"{cursor.Position} charge {cursor.Charge} decay {cursor.DecayDelay} update {cursor.UpdateDelay} "
+            + $"facings {faces}";
     }
 
     // A falling block of the case's state dropped onto the origin from a few blocks up, ticked until it lands, and

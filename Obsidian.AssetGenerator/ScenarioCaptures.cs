@@ -79,7 +79,7 @@ internal static class ScenarioCaptures
 
     // The fixtures whose probes record only the cases asked for.
     private static readonly string[] SelectableCases =
-        [Redstone, Sulfur, MoreBlocks, StructurePieces, Fire, TickingBlocks, BlockUse, MeltingWeather,
+        [Redstone, Sulfur, MoreBlocks, StructurePieces, Fire, TickingBlocks, BlockUse, MeltingWeather, GrowingPlantTicks,
             EyeblossomGhastPortal, Brushing, ArmorStandUse, WaxingBellsOre, FoodHarvest, Cauldrons,
             ProjectileHits, Dispenser, Shelves, StrawBeds, GoldenDandelions, Lightning, CommandBlocks];
 
@@ -146,7 +146,8 @@ internal static class ScenarioCaptures
                 "Case selection requires CaptureFixtures=redstone, sulfur, more_blocks, structure_pieces, "
                 + "fire, ticking_blocks, block_use, melting_weather, eyeblossom_ghast_portal, brushing, "
                 + "armor_stand_use, waxing_bells_ore, food_and_harvest, cauldrons, projectile_hits, dispenser, "
-                + "shelves, straw_beds, golden_dandelions, lightning or command_blocks.");
+                + "shelves, straw_beds, golden_dandelions, lightning, growing_plant_ticks or "
+                + "command_blocks.");
         }
 
         if (fixtures.Contains(CopperWeathering))
@@ -320,7 +321,7 @@ internal static class ScenarioCaptures
         if (fixtures.Contains(GrowingPlantTicks))
         {
             var path = Path.Combine(assetsDirectory, "growing_plant_ticks.json");
-            await FixtureDumper.DumpGrowingPlantTicksAsync(server, path);
+            await FixtureDumper.DumpGrowingPlantTicksAsync(server, path, cases);
             if (fixtures.Count == 1)
                 return;
         }
