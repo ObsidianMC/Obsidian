@@ -14,18 +14,35 @@ public partial class Living : Entity, ILiving
     /// A hit <see cref="DamageCombatAsync"/> is dealing: who dealt it (null for none, or for the entity itself), its
     /// kind, the weapon and the direct source (a projectile, say).
     /// </summary>
-    internal readonly record struct IncomingHit(
-        IEntity? Attacker,
-        CombatDamageKind Kind,
-        ItemStack? Weapon,
-        IEntity? DirectSource);
+    internal sealed class IncomingHit(
+        IEntity? attacker,
+        CombatDamageKind kind,
+        ItemStack? weapon,
+        IEntity? directSource)
+    {
+        private volatile bool active = true;
 
-    // The hits DamageCombatAsync is dealing in the current async flow, innermost first. Hits can await (plugin hooks,
-    // armour wear) and overlap on one entity, so each must read its own hit, never another's: fields on the entity
-    // would be restored by whichever hit finished first.
+        public IEntity? Attacker { get; } = attacker;
+        public CombatDamageKind Kind { get; } = kind;
+        public ItemStack? Weapon { get; } = weapon;
+        public IEntity? DirectSource { get; } = directSource;
+
+        /// <summary>
+        /// Whether the hit is still being dealt. A task the hit started keeps the flow's scope after the hit is done,
+        /// so a done hit must read as no hit at all.
+        /// </summary>
+        public bool Active => this.active;
+
+        internal void End() => this.active = false;
+    }
+
+    // The hits being dealt in the current async flow, innermost first. Hits can await (plugin hooks, armour wear) and
+    // overlap on one entity, so each must read its own hit, never another's: fields on the entity would be restored
+    // by whichever hit finished first.
     private static readonly System.Threading.AsyncLocal<IncomingScope?> incomingHits = new();
 
-    private sealed record IncomingScope(Living Target, IncomingHit Hit, IncomingScope? Outer);
+    // A null Hit is damage dealt outright, which hides any hit on the same entity further out.
+    private protected sealed record IncomingScope(Living Target, IncomingHit? Hit, IncomingScope? Outer);
 
     /// <summary>
     /// The hit being dealt to this entity in the current flow, if any (see <see cref="DamageCombatAsync"/>).
@@ -37,10 +54,32 @@ public partial class Living : Entity, ILiving
             for (var scope = incomingHits.Value; scope is not null; scope = scope.Outer)
             {
                 if (ReferenceEquals(scope.Target, this))
-                    return scope.Hit;
+                    return scope.Hit is { Active: true } hit ? hit : null;
             }
 
             return null;
+        }
+    }
+
+    /// <summary>
+    /// Opens the scope of a hit on the entity in the current flow, until disposed: <paramref name="hit"/>, or null for
+    /// damage dealt outright, which must never read a hit that the flow it was called from is dealing. Every way in
+    /// to damage opens one, so no damage inherits another's.
+    /// </summary>
+    private protected HitScope BeginHit(IncomingHit? hit)
+    {
+        var outer = incomingHits.Value;
+        incomingHits.Value = new IncomingScope(this, hit, outer);
+        return new HitScope(hit, outer);
+    }
+
+    private protected readonly struct HitScope(IncomingHit? hit, IncomingScope? outer) : IDisposable
+    {
+        // Ends the hit too, for any task it started, whose flow still holds its scope.
+        public void Dispose()
+        {
+            hit?.End();
+            incomingHits.Value = outer;
         }
     }
 
@@ -72,25 +111,28 @@ public partial class Living : Entity, ILiving
         VectorD? sourcePosition = null)
     {
         var hit = new IncomingHit(ReferenceEquals(source, this) ? null : source, kind, weapon, directSource);
-        var outer = incomingHits.Value;
-        incomingHits.Value = new IncomingScope(this, hit, outer);
-        try
-        {
-            // A mob records the hit's kind when the hit commits (see Mob.ApplyDamageAsync).
-            await DamageAsync(source ?? this, amount);
-        }
-        finally
-        {
-            incomingHits.Value = outer;
-        }
+
+        // A mob records the hit's kind when the hit commits (see Mob.ApplyDamageAsync).
+        using (this.BeginHit(hit))
+            await this.TakeDamageAsync(source ?? this, amount);
     }
 
     /// <summary>
-    /// Damages a living entity outright, like <see cref="Entity.DamageAsync"/>, with its health write as the commit
-    /// point (see <see cref="TryCommitDamage"/>). Mobs and players take damage through their own paths, which commit
-    /// the same way.
+    /// Damages the entity outright, like <see cref="Entity.DamageAsync"/>: as no hit, even when called while one is
+    /// being dealt (from a plugin's damage hook, say). Entities take damage in <see cref="TakeDamageAsync"/>.
     /// </summary>
-    public override async ValueTask DamageAsync(IEntity source, float amount = 1.0f)
+    public sealed override async ValueTask DamageAsync(IEntity source, float amount = 1.0f)
+    {
+        using (this.BeginHit(null))
+            await this.TakeDamageAsync(source, amount);
+    }
+
+    /// <summary>
+    /// Takes damage, in the scope of the hit dealing it, if any (see <see cref="Incoming"/>), with its health write as
+    /// the commit point (see <see cref="TryCommitDamage"/>). Mobs and players take damage through their own paths,
+    /// which commit the same way.
+    /// </summary>
+    private protected virtual async ValueTask TakeDamageAsync(IEntity source, float amount)
     {
         var level = this.Level;
         if (!float.IsFinite(amount) || amount <= 0 || this.Health <= 0 || source.Level != level)
@@ -152,7 +194,7 @@ public partial class Living : Entity, ILiving
 
     // The guard every hit shares, after each await and at its commit: the entity and the hit's source are still in
     // level, and the entity can still be hurt. Call under level's transfer lock, which travel and removal take too.
-    private bool StillIn(ILevel level, IEntity source) =>
+    private protected bool StillIn(ILevel level, IEntity source) =>
         ReferenceEquals(this.Level, level)
         && ReferenceEquals(source.Level, level)
         && this.IsAmongEntitiesOf(level)

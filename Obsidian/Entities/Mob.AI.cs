@@ -565,10 +565,21 @@ public partial class Mob
     internal void SynchronizeMetadata() => PacketBroadcaster.QueuePacketToLevelInRange(Level, Position,
         new SetEntityDataPacket { EntityId = EntityId, Entity = this }, EntityId);
 
-    public override ValueTask DamageAsync(IEntity source, float amount = 1) => ApplyDamageAsync(source, amount, true);
+    private protected override ValueTask TakeDamageAsync(IEntity source, float amount) =>
+        ApplyDamageAsync(source, amount, true);
 
-    internal ValueTask DamageEnvironmentAsync(float amount) => ApplyDamageAsync(this, amount, false);
-    internal ValueTask DamageMagicAsync(IEntity source, float amount, bool ignoreHurtCooldown = false) => ApplyDamageAsync(source, amount, false, ignoreHurtCooldown);
+    // Like DamageAsync, these deal damage outright, as no hit.
+    internal async ValueTask DamageEnvironmentAsync(float amount)
+    {
+        using (BeginHit(null))
+            await ApplyDamageAsync(this, amount, false);
+    }
+
+    internal async ValueTask DamageMagicAsync(IEntity source, float amount, bool ignoreHurtCooldown = false)
+    {
+        using (BeginHit(null))
+            await ApplyDamageAsync(source, amount, false, ignoreHurtCooldown);
+    }
     protected virtual bool CanTakeDamage(IEntity? source) => true;
 
     /// <summary>
@@ -613,7 +624,7 @@ public partial class Mob
             or CombatDamageKind.Lightning or CombatDamageKind.Thorns or CombatDamageKind.FallingStalactite;
         if (!UsesAi)
         {
-            await base.DamageAsync(source, amount);
+            await base.TakeDamageAsync(source, amount);
             return;
         }
 

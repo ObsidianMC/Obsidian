@@ -65,7 +65,7 @@ public partial class PlayerBase
         || GameMode is GameMode.Creative or GameMode.Spectator
         || Abilities.HasFlag(PlayerAbility.Invulnerable);
 
-    public override ValueTask DamageAsync(IEntity source, float amount = 1)
+    private protected override ValueTask TakeDamageAsync(IEntity source, float amount)
         => DamageCombatAsync(source, amount, ReferenceEquals(source, this) ? CombatDamageKind.Magic : CombatDamageKind.Melee);
 
     internal override async ValueTask DamageCombatAsync(

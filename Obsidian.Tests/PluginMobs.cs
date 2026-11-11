@@ -465,6 +465,83 @@ public sealed class PluginMobs
         Assert.Equal(CombatDamageKind.Projectile, mob.LastDamageKind);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PluginMobHitFromATaskAHookStartedIsNotTheHooksHit(bool whileTheHitWaits)
+    {
+        await using var context = TestServerFactory.CreateServer($"background-damage-{Guid.NewGuid():N}");
+        await BlockUpdates.AddChunksAsync(context.World);
+        var owner = new PluginContainer
+        {
+            Info = new PluginInfo("backgrounddamage"),
+            Archive = PluginArchive.Open("backgrounddamage.obby", PluginArchives.Zip(new Dictionary<string, byte[]>
+            {
+                [PluginMetadata.FileName] = PluginArchives.Metadata("backgrounddamage", "1.0.0", "Background damage")
+            }))
+        };
+        var behavior = new GatedHurtBehavior();
+        var definition = EntityDefinitionsRegistry.Register($"backgrounddamage:mob_{whileTheHitWaits}", EntityKind.Mob);
+        Assert.True(EntityDefinitionsRegistry.TryBind(definition, new EntityProperties { Behavior = behavior },
+            owner, () => false));
+        var mob = Assert.IsType<PluginMob>(PluginEntity.Create(definition, context.World));
+        mob.EntityId = Server.GetNextEntityId();
+        mob.Position = new VectorD(8.5, 71, 8.5);
+        context.World.SpawnEntity(mob);
+        var shooter = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Shooter");
+        var other = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Other");
+        var arrow = new Arrow { Level = context.World };
+
+        // The arrow's hook starts work that waits, then reads the mob's hit and deals it a lethal hit outright.
+        var go = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task? background = null;
+        IEntity? seenAttacker = null;
+        CombatDamageKind? seenKind = null;
+        var shot = new GatedHurtBehavior.Call(cancel: true)
+        {
+            Started = () => background = Task.Run(async () =>
+            {
+                await go.Task;
+                seenAttacker = mob.IncomingAttacker;
+                seenKind = mob.IncomingDamageKind;
+                await mob.DamageAsync(other, 100);
+            })
+        };
+        var lethal = new GatedHurtBehavior.Call(cancel: false);
+        lethal.Release.SetResult();
+        behavior.Calls.Enqueue(shot);
+        behavior.Calls.Enqueue(lethal);
+        var hit = mob.DamageCombatAsync(shooter, 1, CombatDamageKind.Projectile, directSource: arrow).AsTask();
+        await shot.Reached.Task;
+
+        if (whileTheHitWaits)
+        {
+            // The lethal hit lands while the arrow's hit still waits in its hook, then the arrow's hit is cancelled.
+            go.SetResult();
+            await background!;
+            shot.Release.SetResult();
+            await hit;
+        }
+        else
+        {
+            // The arrow's hit is cancelled and done before the work goes on.
+            shot.Release.SetResult();
+            await hit;
+            go.SetResult();
+            await background!;
+            Assert.Null(seenAttacker);
+            Assert.Null(seenKind);
+        }
+
+        Assert.False(mob.Alive);
+        Assert.Equal("minecraft:player_attack", behavior.Death!.Type);
+        Assert.Same(other, behavior.Death.Attacker);
+        Assert.Same(other, behavior.Death.DirectEntity);
+
+        // Damage dealt outright records no kind; the cancelled arrow's must not stand in for it.
+        Assert.Null(mob.LastDamageKind);
+    }
+
     // A damage hook that holds each hit until the test lets it go on, then cancels it or lets it through.
     private sealed class GatedHurtBehavior : IEntityBehavior
     {
@@ -475,6 +552,7 @@ public sealed class PluginMobs
         public async ValueTask HurtAsync(IEntity entity, EntityDamage damage)
         {
             var call = this.Calls.Dequeue();
+            call.Started?.Invoke();
             call.Reached.SetResult();
             await call.Release.Task;
             damage.Cancelled = call.Cancel;
@@ -489,6 +567,9 @@ public sealed class PluginMobs
         internal sealed class Call(bool cancel)
         {
             public bool Cancel { get; } = cancel;
+
+            // Runs in the hook when the hit reaches it, as the hook would.
+            public Action? Started { get; init; }
 
             public TaskCompletionSource Reached { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 

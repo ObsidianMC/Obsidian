@@ -30,7 +30,8 @@ public sealed partial class Armadillo : FarmAnimal
     }
 
     internal bool Rolled => state != 0;
-    public override ValueTask DamageAsync(IEntity source, float amount = 1) => base.DamageAsync(source, Rolled ? Math.Max(0, (amount - 1) / 2) : amount);
+    private protected override ValueTask TakeDamageAsync(IEntity source, float amount) =>
+        base.TakeDamageAsync(source, Rolled ? Math.Max(0, (amount - 1) / 2) : amount);
 
     private void SetState(int value)
     {

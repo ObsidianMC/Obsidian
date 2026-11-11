@@ -85,6 +85,29 @@ public sealed class TravelGuards
     }
 
     [Fact]
+    public async Task BurnSkipsArmorStandTheLevelDestroyed()
+    {
+        await using var context = TestServerFactory.CreateServer($"burn-destroyed-{Guid.NewGuid():N}");
+        WorldBlockEntities.AddEmptyChunk(context.World);
+        var stand = new ArmorStand
+        {
+            EntityId = Server.GetNextEntityId(),
+            Level = context.World,
+            Position = new VectorD(8.5, 70, 8.5)
+        };
+        context.World.SpawnEntity(stand);
+        await stand.DamageByBurningAsync(4);
+        Assert.Equal(16, stand.Health);
+
+        // The level takes the stand out without marking it removed; burning has no await, so it's burnt after.
+        Assert.True(await context.World.DestroyEntityAsync(stand));
+        Assert.False(stand.IsRemoved);
+        await stand.DamageByBurningAsync(4);
+
+        Assert.Equal(16, stand.Health);
+    }
+
+    [Fact]
     public async Task PlayerHitSkipsPlayerTurnedCreativeDuringArmourWear()
     {
         await using var context = TestServerFactory.CreateServer($"damage-creative-{Guid.NewGuid():N}");
