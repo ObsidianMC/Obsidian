@@ -87,7 +87,12 @@ public class VanillaLoot
             mob.InitializeAi(false);
             var byPlayer = row.GetProperty("player").GetBoolean();
             if (byPlayer)
+            {
+                // Only a mob in its level takes the hit.
+                mob.EntityId = Obsidian.Server.GetNextEntityId();
+                Assert.True(server.World.TryAddEntity(mob));
                 await mob.DamageCombatAsync(player, 1, CombatDamageKind.Melee);
+            }
 
             var table = LootTables.All[$"minecraft:entities/{row.GetProperty("type").GetString()}"];
             var random = table.CreateRandom(row.GetProperty("seed").GetInt64());

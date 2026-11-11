@@ -26,8 +26,14 @@ public sealed class SculkCatalysts
         AddFloor(world);
         world.BlockUpdates.SetBlock(new Vector(8, 64, 8), BlocksRegistry.SculkCatalyst);
         var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Attacker");
-        var pig = new Pig { Level = world, Position = new VectorD(10.5, 64, 8.5) };
+        var pig = new Pig
+        {
+            Level = world,
+            EntityId = Server.GetNextEntityId(),
+            Position = new VectorD(10.5, 64, 8.5)
+        };
         pig.InitializeAi(false);
+        Assert.True(world.TryAddEntity(pig));
         await pig.DamageAsync(player, 1);
 
         var held = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);

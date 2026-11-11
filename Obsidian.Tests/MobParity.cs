@@ -29,13 +29,18 @@ public sealed class MobParity
             var pig = new Pig
             {
                 Level = context.World,
+                EntityId = Server.GetNextEntityId(),
                 Position = new VectorD(8, 70, 8)
             };
             pig.InitializeAi(false);
             pig.AddPotionEffect((int)PotionEffect.Absorption - 1, 100);
+            Assert.True(context.World.TryAddEntity(pig));
 
+            // Only an entity in its level takes damage, so the saved copy takes the original's place there.
             await pig.DamageCombatAsync(pig, 1.5f, CombatDamageKind.Magic);
             var loaded = Assert.IsType<Pig>(EntityNbt.Load(EntityNbt.Save(pig)!, context.World));
+            await pig.RemoveAsync();
+            Assert.True(context.World.TryAddEntity(loaded));
             Assert.Equal(2.5f, loaded.AbsorptionHealth);
             Assert.Equal(10, loaded.Health);
             await loaded.DamageCombatAsync(loaded, 3, CombatDamageKind.Magic);

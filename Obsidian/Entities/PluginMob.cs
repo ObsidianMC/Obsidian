@@ -220,19 +220,23 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
     private protected override async ValueTask<float?> FilterIncomingDamageAsync(
         IEntity source,
         float amount,
-        CombatDamageKind kind)
+        CombatDamageKind kind,
+        IncomingHit? hit)
     {
         var damage = new EntityDamage
         {
-            Source = this.SourceOf(source, kind),
+            Source = this.SourceOf(source, kind, hit),
             Amount = amount
         };
 
-        this.lastDamage = (damage.Source, this.AiTick);
         await this.RunBehaviorAsync(behavior => behavior.HurtAsync(this, damage));
 
         return damage.Cancelled ? null : damage.Amount;
     }
+
+    // Only a hit that landed decides a death's source and loot: not one the hook cancelled or that never committed.
+    private protected override void OnDamageCommitted(IEntity source, CombatDamageKind kind, IncomingHit? hit) =>
+        this.lastDamage = (this.SourceOf(source, kind, hit), this.AiTick);
 
     protected override async ValueTask OnDeathAsync(IEntity source)
     {
@@ -245,13 +249,14 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
         this.DropEntityTable(cause.Attacker, cause.DirectEntity);
     }
 
-    // The damage type vanilla would give damage of this kind from this source.
-    private DamageSource SourceOf(IEntity source, CombatDamageKind kind)
+    // The damage type vanilla would give damage of this kind from this source, through the hit's own scoped attacker
+    // and direct source when DamageCombatAsync deals it.
+    private DamageSource SourceOf(IEntity source, CombatDamageKind kind, IncomingHit? hit)
     {
         var attacker = ReferenceEquals(source, this) ? null : source;
-        if (this.IncomingDamageKind.HasValue)
-            attacker = this.IncomingAttacker;
-        var direct = this.IncomingDirectSource ?? attacker;
+        if (hit is IncomingHit scoped)
+            attacker = scoped.Attacker;
+        var direct = hit?.DirectSource ?? attacker;
         var type = kind switch
         {
             CombatDamageKind.Melee when attacker is IPlayer => "minecraft:player_attack",

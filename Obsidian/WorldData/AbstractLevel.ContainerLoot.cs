@@ -158,11 +158,15 @@ public abstract partial class AbstractLevel
         }
     }
 
-    private string? LootOriginBiome(VectorD origin)
+    /// <summary>The biome at a loot origin, without loading chunks while a caller holds the tick lock.</summary>
+    internal string? LootOriginBiome(VectorD origin)
     {
         var x = (int)Math.Floor(origin.X);
         var y = (int)Math.Floor(origin.Y);
         var z = (int)Math.Floor(origin.Z);
+        if (this.IsOutsideBuildHeight(y))
+            return null;
+
         var chunk = this.GetLoadedChunk(x >> 4, z >> 4);
         return chunk?.GetBiome(x, y, z).Name;
     }

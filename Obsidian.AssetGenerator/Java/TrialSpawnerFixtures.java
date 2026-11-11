@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.UUIDUtil;
@@ -52,6 +53,7 @@ import net.minecraft.util.SpecialDates;
 import net.minecraft.util.profiling.Profiler;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.Difficulty;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -65,6 +67,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.TrialSpawnerBlockEntity;
+import net.minecraft.world.level.block.entity.vault.VaultBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.gameevent.BlockPositionSource;
@@ -74,6 +77,7 @@ import net.minecraft.world.level.gameevent.PositionSource;
 import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.storage.TagValueInput;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -140,6 +144,7 @@ public final class TrialSpawnerFixtures {
 
         try {
             runOn(CapturedOn);
+            installLootTables(root);
             startServer();
             level = server.overworld();
             serverThread = server.submit(Thread::currentThread).join();
@@ -172,7 +177,8 @@ public final class TrialSpawnerFixtures {
 
         root.addProperty("version", server.getServerVersion());
         var gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-        Files.writeString(fixturePath, compact(gson.toJson(root)) + "\n", StandardCharsets.UTF_8);
+        Files.writeString(fixturePath, (compact(gson.toJson(root)) + "\n").replace("\n", "\r\n"),
+            StandardCharsets.UTF_8);
         System.out.println("Wrote " + fixturePath);
         System.out.flush();
 
@@ -255,7 +261,7 @@ public final class TrialSpawnerFixtures {
         }
 
         input.add("checkpoints", checkpoints);
-        input.addProperty("finalSaved", server.submit(() -> spawner().saveWithoutMetadata(level.registryAccess()))
+        input.addProperty("finalSaved", server.submit(() -> machine().saveWithoutMetadata(level.registryAccess()))
             .join().toString());
         server.submit(() -> {
             System.getProperties().remove("obsidian.blockUse.writes");
@@ -274,7 +280,10 @@ public final class TrialSpawnerFixtures {
         JsonArray writes) {
         applyRules(input);
         setup(input);
-        placeSpawner(input);
+        if (input.has("vault"))
+            placeVault(input);
+        else
+            placeSpawner(input);
 
         // What the setup left to send goes out now, before anyone listens.
         broadcastChanges();
@@ -314,9 +323,24 @@ public final class TrialSpawnerFixtures {
 
         input.addProperty("startTime", level.getGameTime());
         level.getRandom().setSeed(input.get("seed").getAsLong());
+        if (input.has("vault"))
+            seedSounds(input.get("seed").getAsLong());
+
         observeWrites(writes);
 
         return new Trial(listener, players, gameEventListener, snapshot(), new ArrayList<>(), new HashMap<>());
+    }
+
+    // Packet sound seeds use an independent random. Seeding it makes packet comparison repeatable without
+    // changing any of the vault's gameplay draws (display loot, reward sequences or ejection motion).
+    private static void seedSounds(long seed) {
+        try {
+            var field = net.minecraft.world.level.Level.class.getDeclaredField("soundSeedGenerator");
+            field.setAccessible(true);
+            ((net.minecraft.util.RandomSource) field.get(level)).setSeed(seed);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     // The case's difficulty (normal by default), and whether spawner blocks work (they do by default).
@@ -361,6 +385,31 @@ public final class TrialSpawnerFixtures {
         return (TrialSpawnerBlockEntity) level.getBlockEntity(origin);
     }
 
+    private static BlockEntity machine() {
+        return level.getBlockEntity(origin);
+    }
+
+    private static void placeVault(JsonObject input) {
+        var spec = input.getAsJsonObject("vault");
+        level.setBlock(origin, state(spec.get("state").getAsString()), QuietFlags);
+        var tag = parse(spec.get("nbt").getAsString());
+        if (input.has("rewardedCount")) {
+            var rewarded = new ListTag();
+            for (int index = 0; index < input.get("rewardedCount").getAsInt(); index++) {
+                var uuid = UUIDUtil.createOfflineProfile("Old" + index).id();
+                rewarded.add(new IntArrayTag(UUIDUtil.uuidToIntArray(uuid)));
+            }
+
+            var data = tag.getCompoundOrEmpty("server_data");
+            data.put("rewarded_players", rewarded);
+            tag.put("server_data", data);
+        }
+
+        spec.addProperty("nbt", tag.toString());
+        machine().loadWithComponents(TagValueInput.create(ProblemReporter.DISCARDING, level.registryAccess(), tag));
+        machine().setChanged();
+    }
+
     // What happens before the tick: the case's events, then what each mob does once it has been around long enough.
     private static void act(JsonObject input, Trial state, int tick) {
         if (input.has("events")) {
@@ -376,6 +425,20 @@ public final class TrialSpawnerFixtures {
                 }
                 if (event.has("gameMode"))
                     player.setGameMode(GameType.byName(event.get("gameMode").getAsString()));
+
+                if (event.has("use")) {
+                    var item = ItemStack.CODEC.parse(level.registryAccess().createSerializationContext(
+                        net.minecraft.nbt.NbtOps.INSTANCE), parse(event.get("use").getAsString())).getOrThrow();
+                    player.setItemInHand(InteractionHand.MAIN_HAND, item);
+                    var hit = new BlockHitResult(Vec3.atCenterOf(origin), Direction.NORTH, origin, false);
+                    var result = player.gameMode.useItemOn(player, level, item, InteractionHand.MAIN_HAND, hit);
+                    var resultTag = new JsonObject();
+                    resultTag.addProperty("consumesAction", result.consumesAction());
+                    var encoded = ItemStack.CODEC.encodeStart(level.registryAccess().createSerializationContext(
+                        net.minecraft.nbt.NbtOps.INSTANCE), item);
+                    resultTag.addProperty("hand", item.isEmpty() ? "{}" : encoded.getOrThrow().toString());
+                    event.add("output", resultTag);
+                }
             }
         }
 
@@ -430,10 +493,15 @@ public final class TrialSpawnerFixtures {
             writes.remove(0);
 
         checkpoint.add("changes", changes(state.blocks));
-        checkpoint.addProperty("saved", normalize(spawner().saveWithoutMetadata(level.registryAccess()), state));
+        checkpoint.addProperty("saved", normalize(machine().saveWithoutMetadata(level.registryAccess()), state));
         checkpoint.add("client", client(heard, state));
         checkpoint.add("entities", entities(state));
         checkpoint.add("itemPhases", itemPhases());
+        if (machine() instanceof VaultBlockEntity) {
+            checkpoint.addProperty("updateTag", machine().getUpdateTag(level.registryAccess()).toString());
+            checkpoint.add("itemMotion", itemMotion());
+            checkpoint.add("itemStacks", itemStacks());
+        }
         recordEvents(checkpoint, heard, gameEvents);
         checkpoint.addProperty("random", randomState());
         heard.clear();
@@ -537,6 +605,38 @@ public final class TrialSpawnerFixtures {
         return phases;
     }
 
+    private static JsonArray itemMotion() {
+        var found = new ArrayList<Entity>(
+            level.getEntities((Entity) null, box(), entity -> entity instanceof ItemEntity));
+        found.sort(Comparator.comparingInt(Entity::getId));
+        var motion = new JsonArray();
+        for (var entity : found) {
+            var row = new JsonArray();
+            row.add(entity.getDeltaMovement().x);
+            row.add(entity.getDeltaMovement().y);
+            row.add(entity.getDeltaMovement().z);
+            motion.add(row);
+        }
+
+        return motion;
+    }
+
+    // Vault drops retain their complete saved stack data, including enchantments and other reward components.
+    // Only vaults record this extra field, so trial-spawner captures retain their original item observations.
+    private static JsonArray itemStacks() {
+        var found = new ArrayList<Entity>(
+            level.getEntities((Entity) null, box(), entity -> entity instanceof ItemEntity));
+        found.sort(Comparator.comparingInt(Entity::getId));
+        var stacks = new JsonArray();
+        var ops = level.registryAccess().createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE);
+        for (var entity : found) {
+            var item = ((ItemEntity) entity).getItem();
+            stacks.add(ItemStack.CODEC.encodeStart(ops, item).getOrThrow().toString());
+        }
+
+        return stacks;
+    }
+
     // An entity as "<type> <x,y,z>", then a mob's yaw (the spawner draws it), name and what it holds and wears, its
     // health, whether it must persist, and the item it is. An item's yaw comes from its own unseeded random, so it
     // isn't recorded.
@@ -575,8 +675,12 @@ public final class TrialSpawnerFixtures {
                     continue;
 
                 var at = new Vec3(sound.getX(), sound.getY(), sound.getZ()).subtract(Vec3.atLowerCornerOf(origin));
-                sounds.add(sound.getSound().value().location() + " " + number(at.x, 3) + "," + number(at.y, 3) + ","
-                    + number(at.z, 3) + " volume " + number(sound.getVolume(), 2));
+                var description = sound.getSound().value().location() + " " + number(at.x, 3) + "," + number(at.y, 3)
+                    + "," + number(at.z, 3) + " volume " + number(sound.getVolume(), 2);
+                if (machine() instanceof VaultBlockEntity)
+                    description += " pitchBits " + Float.floatToIntBits(sound.getPitch()) + " seed " + sound.getSeed();
+
+                sounds.add(description);
             } else if (packet instanceof ClientboundLevelEventPacket event) {
                 levelEvents.add(event.getType() + " " + offset(event.getPos()) + " " + event.getData());
             } else if (packet instanceof ClientboundLevelParticlesPacket particle) {
@@ -935,6 +1039,36 @@ public final class TrialSpawnerFixtures {
 
         matcher.appendTail(result);
         return result.toString();
+    }
+
+    // Load fixture tables through vanilla's data-pack loader, so location predicates run on the real server level.
+    private static void installLootTables(JsonObject root) throws Exception {
+        if (!root.has("lootTables"))
+            return;
+
+        net.minecraft.SharedConstants.tryDetectVersion();
+        var format = net.minecraft.SharedConstants.getCurrentVersion()
+            .packVersion(net.minecraft.server.packs.PackType.SERVER_DATA);
+        var metadata = new JsonObject();
+        var pack = new JsonObject();
+        pack.addProperty("description", "Vault fixture loot");
+        var version = new JsonArray();
+        version.add(format.major());
+        version.add(format.minor());
+        pack.add("min_format", version);
+        pack.add("max_format", version.deepCopy());
+        metadata.add("pack", pack);
+
+        var folder = Path.of("world", "datapacks", "vault-fixtures");
+        Files.createDirectories(folder);
+        Files.writeString(folder.resolve("pack.mcmeta"), metadata.toString());
+        for (var entry : root.getAsJsonObject("lootTables").entrySet()) {
+            var id = Identifier.parse(entry.getKey());
+            var path = folder.resolve("data").resolve(id.getNamespace()).resolve("loot_table")
+                .resolve(id.getPath() + ".json");
+            Files.createDirectories(path.getParent());
+            Files.writeString(path, entry.getValue().toString());
+        }
     }
 
     private static void startServer() throws Exception {

@@ -650,6 +650,9 @@ public sealed class PluginLoading : IDisposable
         actual.Position = new VectorD(0.5, 64, 0.5);
         actual.OpenedContainer = null;
         actual.Inventory.SetItem(6, new ItemStack(ItemsRegistry.IronChestplate, 1));
+
+        // Only a player among its level's players takes damage.
+        Assert.True(world.Players.TryAdd(actual.Uuid, actual));
         AppContext.SetData(ProbePlugin.TicksKey, "");
 
         try
