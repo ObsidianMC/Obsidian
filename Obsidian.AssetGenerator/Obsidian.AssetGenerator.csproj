@@ -39,10 +39,12 @@
 		<VanillaDumperInput Remove="Java\BlockContactFixtures.java" />
 		<VanillaDumperInput Remove="Java\ProjectileHitFixtures.java" />
 		<VanillaDumperInput Remove="Java\WaxingBellsOreFixtures.java" />
+		<VanillaDumperInput Remove="Java\CauldronFixtures.java" />
 		<VanillaDumperInput Remove="Java\HatchingFixtures.java" />
 		<VanillaDumperInput Remove="Java\EyeblossomGhastPortalFixtures.java" />
 		<VanillaDumperInput Remove="Java\GrowingPlantTickFixtures.java" />
 		<VanillaDumperInput Remove="Java\FurnaceFixtures.java" />
+		<VanillaDumperInput Remove="Java\DispenserFixtures.java" />
 		<VanillaDumperInput Remove="Java\BrushingFixtures.java" />
 		<VanillaDumperInput Remove="Java\ArmorStandFixtures.java" />
 		<VanillaDumperInput Remove="Java\ShelfFixtures.java" />
@@ -63,11 +65,13 @@
 		<None Update="Java\BlockContactFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\ProjectileHitFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\WaxingBellsOreFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\CauldronFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\HatchingFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\EyeblossomGhastPortalFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\GrowingPlantTickFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\MeltingWeatherFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\FurnaceFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\DispenserFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\BrushingFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\ArmorStandFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\ShelfFixtures.java" CopyToOutputDirectory="PreserveNewest" />

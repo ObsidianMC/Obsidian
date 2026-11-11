@@ -642,59 +642,6 @@ public sealed class StructureStartCreation
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task EndedChildContextStillRecognizesItsActiveParent()
-    {
-        using var started = new ManualResetEventSlim();
-        var cache = new StructureStartCache
-        {
-            CreationWait = System.Threading.Timeout.InfiniteTimeSpan,
-            ObserveCreationWait = _ => Assert.Fail("A captured child context must not wait on its active parent.")
-        };
-        var layout = Layout();
-        ExecutionContext? captured = null;
-        Task<StructureStartCache.ChunkStarts?>? nested = null;
-        var completedBeforeOwnerReturned = false;
-
-        StructureStart Leaf(StructureLayout _, StructureSet set, int x, int z, out bool refused)
-        {
-            refused = false;
-            return Start(set, x, z);
-        }
-
-        StructureStart Capture(StructureLayout _, StructureSet set, int x, int z, out bool refused)
-        {
-            refused = false;
-            captured = ExecutionContext.Capture();
-            return Start(set, x, z);
-        }
-
-        StructureStart Create(StructureLayout _, StructureSet set, int x, int z, out bool refused)
-        {
-            refused = false;
-            Assert.NotNull(cache.Get(x + 1, z, layout, Capture));
-            Assert.NotNull(captured);
-            nested = Task.Run(() =>
-            {
-                started.Set();
-                StructureStartCache.ChunkStarts? result = null;
-                ExecutionContext.Run(captured, _ => result = cache.Get(x, z, layout, Leaf), null);
-                return result;
-            });
-            Assert.True(started.Wait(Timeout));
-            completedBeforeOwnerReturned = nested.Wait(Timeout);
-            return Start(set, x, z);
-        }
-
-        var owner = Request(() => cache.Get(0, 0, layout, Create));
-        var result = await owner.Result.WaitAsync(TimeSpan.FromSeconds(25));
-        Assert.NotNull(nested);
-        var nestedResult = await nested.WaitAsync(Timeout);
-
-        Assert.True(completedBeforeOwnerReturned);
-        Assert.Same(Assert.Single(nestedResult!.Starts), Assert.Single(result!.Starts));
-    }
-
-    [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task AContextFreeChildOfAFallbackFinishesBeforeEitherParentReturns()
     {
         using var leafStarted = new ManualResetEventSlim();

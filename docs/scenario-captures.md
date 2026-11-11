@@ -346,6 +346,49 @@ replaces only what vanilla produced.
   with every flag bit and swings included; two cases pin the door and trapdoor opening flags (see
   [waxing, bells and redstone ore](known-gaps/waxing-bells-and-redstone-ore.md)).
 
+- `cauldrons.json` (`VanillaCauldrons.ReplayCauldronReference`) records using cauldrons, from
+  `Java/CauldronFixtures.java` (`CaptureFixtures=cauldrons`), which runs on `BlockUseFixtures.java`'s server, players,
+  recorders and write observer by reflection, as the waxing probe does. Its cases take `block_use.json`'s inputs and
+  three of their own: `components` and `offhandComponents`, SNBT component patches for each hand's stack (a water
+  bottle's potion, dye, banner patterns, a shulker box's contents), and `carried`, further stacks put into inventory
+  slots by vanilla's numbers. Every case records what a `block_use` case records with `checkWrites`, `checkEffects`
+  and `checkInventory`, plus `userEffects`, both hands (`hand`, `otherHand`) and dropped items, each stack with its
+  components. The 95 cases pour each bucket into each kind of cauldron, pour lava and powder snow under water,
+  flowing water, a waterlogged slab and lava, fill buckets from full and part-full cauldrons, pour and fill water and
+  glass bottles at each level, wash dyed leather and wolf armor, banners with one and two patterns and dyed shulker
+  boxes with contents, and hold things the table doesn't know; with stacked hands, a full inventory, the off hand,
+  creative mode with and without the result already carried, adventure, spectator, sneaking and criteria. A bucket
+  that doesn't fill goes on to its own use (`rayUse`). Cauldrons keep vanilla's quirk of awarding
+  `minecraft:used minecraft:air` for the last water bottle poured into a water cauldron. The replay drives
+  `UseItemOnPacket` (then `UseItemPacket`, with the capture's exact rotation) in one world and compares every
+  recorded field from the start; three cases pin an empty bucket's own use, which Obsidian aims with a rotation held
+  in 256ths of a turn (see [cauldrons](known-gaps/cauldrons.md)). `CauldronExchanges` checks what vanilla can't: an
+  interrupted or raced exchange neither loses nor duplicates an item or a level, and a busy inventory is waited for
+  outside the level's locks.
+
+- `dispenser.json` (`VanillaDispensers.ReplayDispenserReference`) records what a dispenser does with each item, from
+  `Java/DispenserFixtures.java` (`CaptureFixtures=dispenser`). Like the block use probe it runs a dedicated server of
+  its own in a flat world of air, but frozen and stepped one tick at a time, with random ticks and mob griefing off.
+  A case is its input: the dispenser's facing and items, the blocks set up around it without updates, and the mobs
+  standing in front (without AI; `tamed` and `canPickUpLoot` set). The probe powers the dispenser with a redstone block
+  placed behind it, with every update, and after each of the case's ticks (6 by default; it fires on the fourth)
+  records the blocks within 3 of the dispenser that changed since before the redstone block, the dispenser's items,
+  the entities within 5 (dropped items summed by item, since item entities merge, or only their ids, or only that
+  some dropped, where a case's `drops` says vanilla's are random; primed TNT with its fuse; mobs with their equipment
+  and whether they can be sheared), and the sounds (positioned and following an entity, without mobs' ambient
+  sounds), level events and particles a player beside the dispenser received and the game events within 16 blocks
+  during that tick. The replay builds each case in one world of empty chunks, places the same redstone block and runs
+  whole ticks of the level, comparing every field of every tick; game events are seen as they're emitted
+  (`AbstractLevel.GameEventQueued`), since the level dispatches them later in the tick. Its mobs are spawned standing
+  on their floor. Projectile positions aren't recorded: vanilla draws their spread from each projectile's own random.
+  Three cases pin exact output values for their documented gaps, while every other field still compares with vanilla.
+  Opt-in `details: true` cases compare full component payloads (an input item's optional `nbt` is its saved stack),
+  shulker contents, equipment, rocket state, deterministic sound details/positions, particle positions and velocities.
+  `flightMotion` records projectile velocity: the initial comparison permits spread, then subsequent ticks compare
+  the captured drag and vertical acceleration against Obsidian's own previous velocity. Only exact random flight
+  coordinates, sound seeds, random arrow-hit pitch and TNT's random horizontal impulse are omitted (see
+  [dispenser behaviours](known-gaps/dispenser-behaviours.md)).
+
 - `projectile_block_hits.json` (`VanillaProjectileHits.ReplayProjectileHitReference`) records projectiles hitting
   blocks, from `Java/ProjectileHitFixtures.java` (`CaptureFixtures=projectile_hits`). Like the block use probe it
   runs a dedicated server of its own in a flat world of air, at easy, with mob griefing off and time, weather and
@@ -532,6 +575,9 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=waxing_bells_ore
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=projectile_hits
 
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=dispenser
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=cauldrons
+
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=shelves
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=straw_beds
@@ -611,6 +657,10 @@ same selection as its second argument when run directly with the cached server a
 `scheduled` records scheduling attempts: the first request per position/type remains pending, even when later
 attempts use another delay. The pending-coral case records delays 85 and 88, but only the first is pending.
 
+For `dispenser`, `CaptureCases` accepts exact `+`-separated names in `dispenser.json` and records only those cases;
+the others keep theirs. Add a case with empty `checkpoints` and capture it on its own. The whole capture takes about
+20 seconds after the server starts.
+
 For `eyeblossom_ghast_portal`, `CaptureCases` accepts exact `+`-separated names in
 `eyeblossom_ghast_portal_ticks.json` and records only those cases; the others keep theirs. The capture takes about ten
 seconds.
@@ -681,6 +731,9 @@ not used as a fixed drop reference.
 For `waxing_bells_ore`, `CaptureCases` likewise takes exact `+`-separated names in
 `waxing_bells_redstone_ore.json` and records only those cases; the others keep what they hold.
 
+For `cauldrons`, `CaptureCases` likewise takes exact `+`-separated names in `cauldrons.json`. The capture takes about
+15 seconds.
+
 For `projectile_hits`, `CaptureCases` accepts exact `+`-separated names in `projectile_block_hits.json` and records
 only those cases; the others keep theirs. The capture takes about 15 seconds after the server starts.
 
@@ -714,8 +767,9 @@ other dumpers, so editing it regenerates the assets once.
 The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft version> <cache directory>
 <scratch directory> <test assets directory>
 [redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+heightmaps+saved_heightmaps+mining+placement+
-copper_weathering+fire+ticking_blocks+block_use+waxing_bells_ore+turtle_eggs+frogspawn+growing_plant_ticks+
-melting_weather+furnace_results+brushing+armor_stand_use+projectile_hits+shelves+straw_beds+golden_dandelions]
+copper_weathering+fire+ticking_blocks+block_use+waxing_bells_ore+cauldrons+turtle_eggs+frogspawn+growing_plant_ticks+
+melting_weather+furnace_results+brushing+armor_stand_use+projectile_hits+dispenser+shelves+straw_beds+
+golden_dandelions]
 [case names]`.
 
 ## How it captures

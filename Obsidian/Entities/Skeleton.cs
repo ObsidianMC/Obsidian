@@ -242,7 +242,7 @@ public sealed partial class Stray : Skeleton
     internal override int ArrowEffectDuration => 600;
 }
 
-public sealed class Bogged : Skeleton
+public sealed class Bogged : Skeleton, IShearable
 {
     public Bogged()
     {
@@ -251,6 +251,25 @@ public sealed class Bogged : Skeleton
     }
     public bool Sheared { get; set; }
     protected override string? SoundName => "bogged";
+
+    /// <inheritdoc/>
+    public bool ReadyForShearing => Alive && !Sheared;
+
+    /// <summary>Vanilla's <c>Bogged.shear</c>: its shearing sound, then two mushrooms, each red or brown.</summary>
+    public ValueTask ShearAsync(SoundCategory category)
+    {
+        Shearing.PlaySound(this, "minecraft:entity.bogged.shear", category);
+        DropMushrooms();
+        Sheared = true;
+        SynchronizeMetadata();
+        return default;
+    }
+
+    private void DropMushrooms()
+    {
+        for (var index = 0; index < 2; index++)
+            DropItem(Random.Next(2) == 0 ? ItemsRegistry.RedMushroom : ItemsRegistry.BrownMushroom);
+    }
     public override string? TranslationKey { get; protected set; } = "entity.minecraft.bogged";
     internal override int ArrowEffect => 18;
     internal override int ArrowEffectDuration => 100;
@@ -267,8 +286,7 @@ public sealed class Bogged : Skeleton
         if (held is not { Count: > 0, Holder.Id: ItemIds.Shears })
             return false;
         Sheared = true;
-        for (var index = 0; index < 2; index++)
-            DropItem(Random.Next(2) == 0 ? ItemsRegistry.RedMushroom : ItemsRegistry.BrownMushroom);
+        DropMushrooms();
         await DamageInteractionToolAsync(player, hand);
         SynchronizeMetadata();
         return true;

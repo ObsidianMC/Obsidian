@@ -36,6 +36,7 @@
 		<EmbeddedResource Include="Assets\armor_stand_use.json" />
 		<EmbeddedResource Include="Assets\projectile_block_hits.json" />
 		<EmbeddedResource Include="Assets\waxing_bells_redstone_ore.json" />
+		<EmbeddedResource Include="Assets\cauldrons.json" />
 		<EmbeddedResource Include="Assets\shelves.json" />
 		<EmbeddedResource Include="Assets\straw_bed_sleep.json" />
 		<EmbeddedResource Include="Assets\golden_dandelions.json" />
@@ -46,6 +47,7 @@
 		<EmbeddedResource Include="Assets\melting_weather.json" />
 		<EmbeddedResource Include="Assets\block_contact_scenarios.json" />
 		<EmbeddedResource Include="Assets\furnace_results.json" />
+		<EmbeddedResource Include="Assets\dispenser.json" />
 
 		<EmbeddedResource Include="Assets\heightmaps.json" />
 		<EmbeddedResource Include="Assets\saved_heightmaps.json" />

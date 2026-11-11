@@ -7,8 +7,8 @@ What follows is what still differs.
 
 - **Consumers.** Bells don't react to power. Doors, trapdoors and fence gates, note blocks, powered and activator
   rails, TNT, copper bulbs, pistons, hoppers, droppers, dispensers and crafters do; copper bulbs make no
-  sound, and dispensers only dispense boats and minecarts and drop everything else (see
-  [item access](item-access-beyond-containers.md)).
+  sound, and dispensers still drop buckets, bottles, honeycomb and a few other items they'd use (see
+  [dispenser behaviours](dispenser-behaviours.md)).
 - **Sources.** Trapped chests and lightning rods give no power, though dust connects to them as to any signal
   source, and a jukebox gives none while it plays, where vanilla's gives 15 (`JukeboxBlock.isSignalSource`).
   Observers, daylight detectors, target blocks (hit by arrows, spectral arrows and tridents only), tripwire
