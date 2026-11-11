@@ -1,0 +1,3562 @@
+{
+  "version": "26.3",
+  "seed": 12345,
+  "origin": [0, 80, 0],
+  "notes": "Real 26.3 jigsaw packets, saves and update tags, editor use, placement and Generate. Custom pool/template inputs keep block results deterministic. No output pins.",
+  "pools": {
+    "test:root": {
+      "fallback": "minecraft:empty",
+      "elements": [
+        {
+          "weight": 1,
+          "element": {
+            "element_type": "minecraft:single_pool_element",
+            "location": "test:root",
+            "processors": "minecraft:empty",
+            "projection": "rigid"
+          }
+        }
+      ]
+    },
+    "test:child": {
+      "fallback": "minecraft:empty",
+      "elements": [
+        {
+          "weight": 1,
+          "element": {
+            "element_type": "minecraft:single_pool_element",
+            "location": "test:child",
+            "processors": "minecraft:empty",
+            "projection": "rigid"
+          }
+        }
+      ]
+    },
+    "test:joint_child": {
+      "fallback": "minecraft:empty",
+      "elements": [
+        {
+          "weight": 1,
+          "element": {
+            "element_type": "minecraft:single_pool_element",
+            "location": "test:joint_child",
+            "processors": "minecraft:empty",
+            "projection": "rigid"
+          }
+        }
+      ]
+    },
+    "test:joint_aligned": {
+      "fallback": "minecraft:empty",
+      "elements": [
+        {
+          "weight": 1,
+          "element": {
+            "element_type": "minecraft:single_pool_element",
+            "location": "test:joint_aligned",
+            "processors": "minecraft:empty",
+            "projection": "rigid"
+          }
+        }
+      ]
+    },
+    "test:joint_rollable": {
+      "fallback": "minecraft:empty",
+      "elements": [
+        {
+          "weight": 1,
+          "element": {
+            "element_type": "minecraft:single_pool_element",
+            "location": "test:joint_rollable",
+            "processors": "minecraft:empty",
+            "projection": "rigid"
+          }
+        }
+      ]
+    },
+    "test:selection_a": {
+      "fallback": "minecraft:empty",
+      "elements": [
+        {
+          "weight": 1,
+          "element": {
+            "element_type": "minecraft:single_pool_element",
+            "location": "test:selection_a",
+            "processors": "minecraft:empty",
+            "projection": "rigid"
+          }
+        }
+      ]
+    },
+    "test:selection_b": {
+      "fallback": "minecraft:empty",
+      "elements": [
+        {
+          "weight": 1,
+          "element": {
+            "element_type": "minecraft:single_pool_element",
+            "location": "test:selection_b",
+            "processors": "minecraft:empty",
+            "projection": "rigid"
+          }
+        }
+      ]
+    },
+    "test:placement_a": {
+      "fallback": "minecraft:empty",
+      "elements": [
+        {
+          "weight": 1,
+          "element": {
+            "element_type": "minecraft:single_pool_element",
+            "location": "test:placement_a",
+            "processors": "minecraft:empty",
+            "projection": "rigid"
+          }
+        }
+      ]
+    },
+    "test:placement_b": {
+      "fallback": "minecraft:empty",
+      "elements": [
+        {
+          "weight": 1,
+          "element": {
+            "element_type": "minecraft:single_pool_element",
+            "location": "test:placement_b",
+            "processors": "minecraft:empty",
+            "projection": "rigid"
+          }
+        }
+      ]
+    },
+    "test:wide_a": {
+      "fallback": "minecraft:empty",
+      "elements": [
+        {
+          "weight": 1,
+          "element": {
+            "element_type": "minecraft:single_pool_element",
+            "location": "test:wide_a",
+            "processors": "minecraft:empty",
+            "projection": "rigid"
+          }
+        }
+      ]
+    },
+    "test:wide_b": {
+      "fallback": "minecraft:empty",
+      "elements": [
+        {
+          "weight": 1,
+          "element": {
+            "element_type": "minecraft:single_pool_element",
+            "location": "test:wide_b",
+            "processors": "minecraft:empty",
+            "projection": "rigid"
+          }
+        }
+      ]
+    },
+    "test:left": {
+      "fallback": "minecraft:empty",
+      "elements": [
+        {
+          "weight": 1,
+          "element": {
+            "element_type": "minecraft:single_pool_element",
+            "location": "test:left",
+            "processors": "minecraft:empty",
+            "projection": "rigid"
+          }
+        }
+      ]
+    },
+    "test:right": {
+      "fallback": "minecraft:empty",
+      "elements": [
+        {
+          "weight": 1,
+          "element": {
+            "element_type": "minecraft:single_pool_element",
+            "location": "test:right",
+            "processors": "minecraft:empty",
+            "projection": "rigid"
+          }
+        }
+      ]
+    },
+    "test:bridge_a": {
+      "fallback": "minecraft:empty",
+      "elements": [
+        {
+          "weight": 1,
+          "element": {
+            "element_type": "minecraft:single_pool_element",
+            "location": "test:bridge_a",
+            "processors": "minecraft:empty",
+            "projection": "rigid"
+          }
+        }
+      ]
+    },
+    "test:bridge_b": {
+      "fallback": "minecraft:empty",
+      "elements": [
+        {
+          "weight": 1,
+          "element": {
+            "element_type": "minecraft:single_pool_element",
+            "location": "test:bridge_b",
+            "processors": "minecraft:empty",
+            "projection": "rigid"
+          }
+        }
+      ]
+    },
+    "test:chain": {
+      "fallback": "minecraft:empty",
+      "elements": [
+        {
+          "weight": 1,
+          "element": {
+            "element_type": "minecraft:single_pool_element",
+            "location": "test:child",
+            "processors": "minecraft:empty",
+            "projection": "rigid"
+          }
+        }
+      ]
+    }
+  },
+  "templates": {
+    "test:root": {
+      "size": [3, 1, 1],
+      "blocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"test:start\",target:\"empty\",pool:\"empty\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:gold_block"
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:jigsaw[orientation=east_up]",
+          "nbt": "{name:\"empty\",target:\"test:entry\",pool:\"test:chain\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ]
+    },
+    "test:child": {
+      "size": [3, 1, 1],
+      "blocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=west_up]",
+          "nbt": "{name:\"test:entry\",target:\"empty\",pool:\"empty\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:diamond_block"
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:jigsaw[orientation=east_up]",
+          "nbt": "{name:\"empty\",target:\"test:entry\",pool:\"test:chain\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ]
+    },
+    "test:joint_child": {
+      "size": [2, 1, 1],
+      "blocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=down_east]",
+          "nbt": "{name:\"test:entry\",target:\"empty\",pool:\"empty\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:emerald_block"
+        }
+      ]
+    },
+    "test:joint_aligned": {
+      "size": [2, 1, 1],
+      "blocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"test:start\",target:\"empty\",pool:\"empty\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:jigsaw[orientation=up_north]",
+          "nbt": "{name:\"empty\",target:\"test:entry\",pool:\"test:joint_child\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ]
+    },
+    "test:joint_rollable": {
+      "size": [2, 1, 1],
+      "blocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"test:start\",target:\"empty\",pool:\"empty\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:jigsaw[orientation=up_north]",
+          "nbt": "{name:\"empty\",target:\"test:entry\",pool:\"test:joint_child\",joint:\"rollable\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ]
+    },
+    "test:selection_a": {
+      "size": [3, 1, 3],
+      "blocks": [
+        {
+          "offset": [0, 0, 1],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"test:start\",target:\"empty\",pool:\"empty\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:jigsaw[orientation=east_up]",
+          "nbt": "{name:\"empty\",target:\"test:entry\",pool:\"test:wide_a\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:10,placement_priority:0}"
+        },
+        {
+          "offset": [2, 0, 2],
+          "state": "minecraft:jigsaw[orientation=east_up]",
+          "nbt": "{name:\"empty\",target:\"test:entry\",pool:\"test:wide_b\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:-10,placement_priority:0}"
+        }
+      ]
+    },
+    "test:selection_b": {
+      "size": [3, 1, 3],
+      "blocks": [
+        {
+          "offset": [0, 0, 1],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"test:start\",target:\"empty\",pool:\"empty\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:jigsaw[orientation=east_up]",
+          "nbt": "{name:\"empty\",target:\"test:entry\",pool:\"test:wide_a\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:-10,placement_priority:0}"
+        },
+        {
+          "offset": [2, 0, 2],
+          "state": "minecraft:jigsaw[orientation=east_up]",
+          "nbt": "{name:\"empty\",target:\"test:entry\",pool:\"test:wide_b\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:10,placement_priority:0}"
+        }
+      ]
+    },
+    "test:placement_a": {
+      "size": [5, 1, 1],
+      "blocks": [
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"test:start\",target:\"empty\",pool:\"empty\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"empty\",target:\"test:entry\",pool:\"test:left\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:10}"
+        },
+        {
+          "offset": [4, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"empty\",target:\"test:entry\",pool:\"test:right\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:-10}"
+        }
+      ]
+    },
+    "test:placement_b": {
+      "size": [5, 1, 1],
+      "blocks": [
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"test:start\",target:\"empty\",pool:\"empty\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"empty\",target:\"test:entry\",pool:\"test:left\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:-10}"
+        },
+        {
+          "offset": [4, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"empty\",target:\"test:entry\",pool:\"test:right\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:10}"
+        }
+      ]
+    },
+    "test:wide_a": {
+      "size": [3, 1, 3],
+      "blocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=west_up]",
+          "nbt": "{name:\"test:entry\",target:\"empty\",pool:\"empty\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        },
+        {
+          "offset": [1, 0, 1],
+          "state": "minecraft:gold_block"
+        }
+      ]
+    },
+    "test:wide_b": {
+      "size": [3, 1, 3],
+      "blocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=west_up]",
+          "nbt": "{name:\"test:entry\",target:\"empty\",pool:\"empty\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        },
+        {
+          "offset": [1, 0, 1],
+          "state": "minecraft:emerald_block"
+        }
+      ]
+    },
+    "test:left": {
+      "size": [1, 1, 3],
+      "blocks": [
+        {
+          "offset": [0, 0, 2],
+          "state": "minecraft:jigsaw[orientation=south_up]",
+          "nbt": "{name:\"test:entry\",target:\"empty\",pool:\"empty\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=east_up]",
+          "nbt": "{name:\"empty\",target:\"test:entry\",pool:\"test:bridge_a\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ]
+    },
+    "test:right": {
+      "size": [1, 1, 3],
+      "blocks": [
+        {
+          "offset": [0, 0, 2],
+          "state": "minecraft:jigsaw[orientation=south_up]",
+          "nbt": "{name:\"test:entry\",target:\"empty\",pool:\"empty\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=west_up]",
+          "nbt": "{name:\"empty\",target:\"test:entry\",pool:\"test:bridge_b\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ]
+    },
+    "test:bridge_a": {
+      "size": [3, 1, 1],
+      "blocks": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=west_up]",
+          "nbt": "{name:\"test:entry\",target:\"empty\",pool:\"empty\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:gold_block"
+        }
+      ]
+    },
+    "test:bridge_b": {
+      "size": [3, 1, 1],
+      "blocks": [
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:jigsaw[orientation=east_up]",
+          "nbt": "{name:\"test:entry\",target:\"empty\",pool:\"empty\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:emerald_block"
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "name": "fresh_default",
+      "min": [-12, -2, -12],
+      "max": [16, 5, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw"
+        }
+      ],
+      "actions": [
+        {
+          "use": true
+        },
+        {
+          "reload": true
+        }
+      ],
+      "checkpoints": [
+        {
+          "consumes": true,
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "rollable",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "rollable",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              }
+            }
+          }
+        },
+        {
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "rollable",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "rollable",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "load_missing_horizontal",
+      "min": [-12, -2, -12],
+      "max": [16, 5, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw",
+          "nbt": "{}"
+        }
+      ],
+      "actions": [
+        {
+          "use": true
+        },
+        {
+          "reload": true
+        }
+      ],
+      "checkpoints": [
+        {
+          "consumes": true,
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              }
+            }
+          }
+        },
+        {
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "load_missing_vertical",
+      "min": [-12, -2, -12],
+      "max": [16, 5, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=up_east]",
+          "nbt": "{}"
+        }
+      ],
+      "actions": [
+        {
+          "use": true
+        },
+        {
+          "reload": true
+        }
+      ],
+      "checkpoints": [
+        {
+          "consumes": true,
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw[orientation=up_east]"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "rollable",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "rollable",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              }
+            }
+          }
+        },
+        {
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw[orientation=up_east]"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "rollable",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "rollable",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "load_invalid_fields",
+      "min": [-12, -2, -12],
+      "max": [16, 5, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw",
+          "nbt": "{name:\"UPPER\",target:3,pool:\"bad pool\",joint:\"unknown\",final_state:4,placement_priority:\"wrong\",selection_priority:8.75d}"
+        }
+      ],
+      "actions": [
+        {
+          "use": true
+        },
+        {
+          "reload": true
+        }
+      ],
+      "checkpoints": [
+        {
+          "consumes": true,
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:8",
+                "target": "minecraft:empty"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:8",
+                "target": "minecraft:empty"
+              }
+            }
+          }
+        },
+        {
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:8",
+                "target": "minecraft:empty"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:8",
+                "target": "minecraft:empty"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "load_values_and_priorities",
+      "min": [-12, -2, -12],
+      "max": [16, 5, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"local\",target:\":target\",pool:\"unknown:pool\",joint:\"aligned\",final_state:\"stone[bad=state]\",selection_priority:-2147483648,placement_priority:2147483647}"
+        }
+      ],
+      "actions": [
+        {
+          "use": true
+        },
+        {
+          "reload": true
+        }
+      ],
+      "checkpoints": [
+        {
+          "consumes": true,
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "stone[bad=state]",
+                "joint": "aligned",
+                "name": "minecraft:local",
+                "placement_priority": "3:2147483647",
+                "pool": "unknown:pool",
+                "selection_priority": "3:-2147483648",
+                "target": "minecraft:target"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "stone[bad=state]",
+                "joint": "aligned",
+                "name": "minecraft:local",
+                "placement_priority": "3:2147483647",
+                "pool": "unknown:pool",
+                "selection_priority": "3:-2147483648",
+                "target": "minecraft:target"
+              }
+            }
+          }
+        },
+        {
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "stone[bad=state]",
+                "joint": "aligned",
+                "name": "minecraft:local",
+                "placement_priority": "3:2147483647",
+                "pool": "unknown:pool",
+                "selection_priority": "3:-2147483648",
+                "target": "minecraft:target"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "stone[bad=state]",
+                "joint": "aligned",
+                "name": "minecraft:local",
+                "placement_priority": "3:2147483647",
+                "pool": "unknown:pool",
+                "selection_priority": "3:-2147483648",
+                "target": "minecraft:target"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "edit_and_reload",
+      "min": [-12, -2, -12],
+      "max": [16, 5, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw"
+        }
+      ],
+      "actions": [
+        {
+          "edit": {
+            "name": "test:editor",
+            "target": "test:start",
+            "pool": "test:root",
+            "finalState": "minecraft:stone",
+            "joint": "rollable",
+            "selectionPriority": 7,
+            "placementPriority": -9
+          }
+        },
+        {
+          "reload": true
+        },
+        {
+          "edit": {
+            "name": "test:editor",
+            "target": "test:start",
+            "pool": "minecraft:empty",
+            "finalState": "minecraft:stone",
+            "joint": "aligned",
+            "selectionPriority": -2147483648,
+            "placementPriority": 2147483647
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:stone",
+                "joint": "rollable",
+                "name": "test:editor",
+                "placement_priority": "3:-9",
+                "pool": "test:root",
+                "selection_priority": "3:7",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:stone",
+                "joint": "rollable",
+                "name": "test:editor",
+                "placement_priority": "3:-9",
+                "pool": "test:root",
+                "selection_priority": "3:7",
+                "target": "test:start"
+              }
+            }
+          }
+        },
+        {
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:stone",
+                "joint": "rollable",
+                "name": "test:editor",
+                "placement_priority": "3:-9",
+                "pool": "test:root",
+                "selection_priority": "3:7",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:stone",
+                "joint": "rollable",
+                "name": "test:editor",
+                "placement_priority": "3:-9",
+                "pool": "test:root",
+                "selection_priority": "3:7",
+                "target": "test:start"
+              }
+            }
+          }
+        },
+        {
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:stone",
+                "joint": "aligned",
+                "name": "test:editor",
+                "placement_priority": "3:2147483647",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:-2147483648",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:stone",
+                "joint": "aligned",
+                "name": "test:editor",
+                "placement_priority": "3:2147483647",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:-2147483648",
+                "target": "test:start"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "packet_unknown_joint_and_empty_ids",
+      "min": [-12, -2, -12],
+      "max": [16, 5, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw"
+        }
+      ],
+      "actions": [
+        {
+          "edit": {
+            "name": "",
+            "target": ":local",
+            "pool": ":unknown",
+            "finalState": "not a block",
+            "joint": "ALIGNED",
+            "selectionPriority": 7,
+            "placementPriority": -9
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "not a block",
+                "joint": "aligned",
+                "name": "minecraft:",
+                "placement_priority": "3:-9",
+                "pool": "minecraft:unknown",
+                "selection_priority": "3:7",
+                "target": "minecraft:local"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "not a block",
+                "joint": "aligned",
+                "name": "minecraft:",
+                "placement_priority": "3:-9",
+                "pool": "minecraft:unknown",
+                "selection_priority": "3:7",
+                "target": "minecraft:local"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "permission_non_operator",
+      "min": [-12, -2, -12],
+      "max": [16, 5, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"empty\",target:\"test:start\",pool:\"test:root\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ],
+      "actions": [
+        {
+          "edit": {
+            "name": "test:editor",
+            "target": "test:start",
+            "pool": "test:root",
+            "finalState": "minecraft:stone",
+            "joint": "rollable",
+            "selectionPriority": 7,
+            "placementPriority": -9
+          },
+          "permission": 0
+        },
+        {
+          "generate": {
+            "levels": 1,
+            "keepJigsaws": false
+          },
+          "permission": 0
+        },
+        {
+          "use": true,
+          "permission": 0
+        }
+      ],
+      "checkpoints": [
+        {
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        },
+        {
+          "levels": 1,
+          "error": false,
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        },
+        {
+          "consumes": false,
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "permission_operator_level_one",
+      "min": [-12, -2, -12],
+      "max": [16, 5, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"empty\",target:\"test:start\",pool:\"test:root\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ],
+      "actions": [
+        {
+          "edit": {
+            "name": "test:editor",
+            "target": "test:start",
+            "pool": "test:root",
+            "finalState": "minecraft:stone",
+            "joint": "rollable",
+            "selectionPriority": 7,
+            "placementPriority": -9
+          },
+          "permission": 1
+        },
+        {
+          "generate": {
+            "levels": 1,
+            "keepJigsaws": false
+          },
+          "permission": 1
+        },
+        {
+          "use": true,
+          "permission": 1
+        }
+      ],
+      "checkpoints": [
+        {
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        },
+        {
+          "levels": 1,
+          "error": false,
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        },
+        {
+          "consumes": false,
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "permission_survival",
+      "min": [-12, -2, -12],
+      "max": [16, 5, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"empty\",target:\"test:start\",pool:\"test:root\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ],
+      "actions": [
+        {
+          "edit": {
+            "name": "test:editor",
+            "target": "test:start",
+            "pool": "test:root",
+            "finalState": "minecraft:stone",
+            "joint": "rollable",
+            "selectionPriority": 7,
+            "placementPriority": -9
+          },
+          "mode": "survival"
+        },
+        {
+          "generate": {
+            "levels": 1,
+            "keepJigsaws": false
+          },
+          "mode": "survival"
+        },
+        {
+          "use": true,
+          "mode": "survival"
+        }
+      ],
+      "checkpoints": [
+        {
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        },
+        {
+          "levels": 1,
+          "error": false,
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        },
+        {
+          "consumes": false,
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "permission_spectator",
+      "min": [-12, -2, -12],
+      "max": [16, 5, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"empty\",target:\"test:start\",pool:\"test:root\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ],
+      "actions": [
+        {
+          "edit": {
+            "name": "test:editor",
+            "target": "test:start",
+            "pool": "test:root",
+            "finalState": "minecraft:stone",
+            "joint": "rollable",
+            "selectionPriority": 7,
+            "placementPriority": -9
+          },
+          "mode": "spectator"
+        },
+        {
+          "generate": {
+            "levels": 1,
+            "keepJigsaws": false
+          },
+          "mode": "spectator"
+        },
+        {
+          "use": true,
+          "mode": "spectator"
+        }
+      ],
+      "checkpoints": [
+        {
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        },
+        {
+          "levels": 1,
+          "error": false,
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        },
+        {
+          "consumes": false,
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "permission_level_two",
+      "min": [-12, -2, -12],
+      "max": [16, 5, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw"
+        }
+      ],
+      "actions": [
+        {
+          "edit": {
+            "name": "test:editor",
+            "target": "test:start",
+            "pool": "test:root",
+            "finalState": "minecraft:stone",
+            "joint": "rollable",
+            "selectionPriority": 7,
+            "placementPriority": -9
+          },
+          "permission": 2
+        },
+        {
+          "use": true,
+          "permission": 2
+        }
+      ],
+      "checkpoints": [
+        {
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:stone",
+                "joint": "rollable",
+                "name": "test:editor",
+                "placement_priority": "3:-9",
+                "pool": "test:root",
+                "selection_priority": "3:7",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:stone",
+                "joint": "rollable",
+                "name": "test:editor",
+                "placement_priority": "3:-9",
+                "pool": "test:root",
+                "selection_priority": "3:7",
+                "target": "test:start"
+              }
+            }
+          }
+        },
+        {
+          "consumes": true,
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:stone",
+                "joint": "rollable",
+                "name": "test:editor",
+                "placement_priority": "3:-9",
+                "pool": "test:root",
+                "selection_priority": "3:7",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:stone",
+                "joint": "rollable",
+                "name": "test:editor",
+                "placement_priority": "3:-9",
+                "pool": "test:root",
+                "selection_priority": "3:7",
+                "target": "test:start"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "wrong_entity",
+      "min": [-12, -2, -12],
+      "max": [16, 5, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:structure_block"
+        }
+      ],
+      "actions": [
+        {
+          "edit": {
+            "name": "test:editor",
+            "target": "test:start",
+            "pool": "test:root",
+            "finalState": "minecraft:stone",
+            "joint": "rollable",
+            "selectionPriority": 7,
+            "placementPriority": -9
+          }
+        },
+        {
+          "generate": {
+            "levels": 1,
+            "keepJigsaws": false
+          }
+        },
+        {
+          "use": true
+        }
+      ],
+      "checkpoints": [
+        {
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:structure_block"
+            ],
+            "saved": {},
+            "updates": {}
+          }
+        },
+        {
+          "levels": 1,
+          "error": false,
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:structure_block"
+            ],
+            "saved": {},
+            "updates": {}
+          }
+        },
+        {
+          "consumes": true,
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:structure_block"
+            ],
+            "saved": {},
+            "updates": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "missing_entity",
+      "min": [-12, -2, -12],
+      "max": [16, 5, 16],
+      "setup": [],
+      "actions": [
+        {
+          "edit": {
+            "name": "test:editor",
+            "target": "test:start",
+            "pool": "test:root",
+            "finalState": "minecraft:stone",
+            "joint": "rollable",
+            "selectionPriority": 7,
+            "placementPriority": -9
+          }
+        },
+        {
+          "generate": {
+            "levels": 1,
+            "keepJigsaws": false
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "world": {
+            "blocks": [],
+            "saved": {},
+            "updates": {}
+          }
+        },
+        {
+          "levels": 1,
+          "error": false,
+          "world": {
+            "blocks": [],
+            "saved": {},
+            "updates": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "generate_levels_negative",
+      "min": [-140, -2, -140],
+      "max": [16, 3, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"empty\",target:\"test:start\",pool:\"test:root\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ],
+      "actions": [
+        {
+          "generate": {
+            "levels": -1,
+            "keepJigsaws": false
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "levels": -1,
+          "error": false,
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "generate_levels_0",
+      "min": [-140, -2, -140],
+      "max": [16, 3, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"empty\",target:\"test:start\",pool:\"test:root\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ],
+      "actions": [
+        {
+          "generate": {
+            "levels": 0,
+            "keepJigsaws": false
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "levels": 0,
+          "error": false,
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "generate_levels_1",
+      "min": [-140, -2, -140],
+      "max": [16, 3, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"empty\",target:\"test:start\",pool:\"test:root\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ],
+      "actions": [
+        {
+          "generate": {
+            "levels": 1,
+            "keepJigsaws": false
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "levels": 1,
+          "error": false,
+          "world": {
+            "blocks": [
+              "0,-1,0=minecraft:gold_block",
+              "0,0,0=minecraft:jigsaw",
+              "0,-1,3=minecraft:diamond_block"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "generate_levels_2",
+      "min": [-140, -2, -140],
+      "max": [16, 3, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"empty\",target:\"test:start\",pool:\"test:root\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ],
+      "actions": [
+        {
+          "generate": {
+            "levels": 2,
+            "keepJigsaws": false
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "levels": 2,
+          "error": false,
+          "world": {
+            "blocks": [
+              "0,-1,0=minecraft:gold_block",
+              "0,0,0=minecraft:jigsaw",
+              "0,-1,3=minecraft:diamond_block",
+              "0,-1,6=minecraft:diamond_block"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "generate_levels_21",
+      "min": [-140, -2, -140],
+      "max": [140, 3, 140],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"empty\",target:\"test:start\",pool:\"test:root\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ],
+      "actions": [
+        {
+          "generate": {
+            "levels": 21,
+            "keepJigsaws": false
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "levels": 21,
+          "error": false,
+          "world": {
+            "blocks": [
+              "0,-1,0=minecraft:gold_block",
+              "0,0,0=minecraft:jigsaw",
+              "0,-1,3=minecraft:diamond_block",
+              "0,-1,6=minecraft:diamond_block",
+              "0,-1,9=minecraft:diamond_block",
+              "0,-1,12=minecraft:diamond_block",
+              "0,-1,15=minecraft:diamond_block",
+              "0,-1,18=minecraft:diamond_block",
+              "0,-1,21=minecraft:diamond_block",
+              "0,-1,24=minecraft:diamond_block",
+              "0,-1,27=minecraft:diamond_block",
+              "0,-1,30=minecraft:diamond_block",
+              "0,-1,33=minecraft:diamond_block",
+              "0,-1,36=minecraft:diamond_block",
+              "0,-1,39=minecraft:diamond_block",
+              "0,-1,42=minecraft:diamond_block",
+              "0,-1,45=minecraft:diamond_block",
+              "0,-1,48=minecraft:diamond_block",
+              "0,-1,51=minecraft:diamond_block",
+              "0,-1,54=minecraft:diamond_block",
+              "0,-1,57=minecraft:diamond_block",
+              "0,-1,60=minecraft:diamond_block",
+              "0,-1,63=minecraft:diamond_block"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "generate_levels_2147483647",
+      "min": [-140, -2, -140],
+      "max": [140, 3, 140],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"empty\",target:\"test:start\",pool:\"test:root\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ],
+      "actions": [
+        {
+          "generate": {
+            "levels": 2147483647,
+            "keepJigsaws": false
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "levels": 2147483647,
+          "error": false,
+          "world": {
+            "blocks": [
+              "0,-1,0=minecraft:gold_block",
+              "0,0,0=minecraft:jigsaw",
+              "0,-1,3=minecraft:diamond_block",
+              "0,-1,6=minecraft:diamond_block",
+              "0,-1,9=minecraft:diamond_block",
+              "0,-1,12=minecraft:diamond_block",
+              "0,-1,15=minecraft:diamond_block",
+              "0,-1,18=minecraft:diamond_block",
+              "0,-1,21=minecraft:diamond_block",
+              "0,-1,24=minecraft:diamond_block",
+              "0,-1,27=minecraft:diamond_block",
+              "0,-1,30=minecraft:diamond_block",
+              "0,-1,33=minecraft:diamond_block",
+              "0,-1,36=minecraft:diamond_block",
+              "0,-1,39=minecraft:diamond_block",
+              "0,-1,42=minecraft:diamond_block",
+              "0,-1,45=minecraft:diamond_block",
+              "0,-1,48=minecraft:diamond_block",
+              "0,-1,51=minecraft:diamond_block",
+              "0,-1,54=minecraft:diamond_block",
+              "0,-1,57=minecraft:diamond_block",
+              "0,-1,60=minecraft:diamond_block",
+              "0,-1,63=minecraft:diamond_block",
+              "0,-1,66=minecraft:diamond_block",
+              "0,-1,69=minecraft:diamond_block",
+              "0,-1,72=minecraft:diamond_block",
+              "0,-1,75=minecraft:diamond_block",
+              "0,-1,78=minecraft:diamond_block",
+              "0,-1,81=minecraft:diamond_block",
+              "0,-1,84=minecraft:diamond_block",
+              "0,-1,87=minecraft:diamond_block",
+              "0,-1,90=minecraft:diamond_block",
+              "0,-1,93=minecraft:diamond_block",
+              "0,-1,96=minecraft:diamond_block",
+              "0,-1,99=minecraft:diamond_block",
+              "0,-1,102=minecraft:diamond_block",
+              "0,-1,105=minecraft:diamond_block",
+              "0,-1,108=minecraft:diamond_block",
+              "0,-1,111=minecraft:diamond_block",
+              "0,-1,114=minecraft:diamond_block",
+              "0,-1,117=minecraft:diamond_block",
+              "0,-1,120=minecraft:diamond_block",
+              "0,-1,123=minecraft:diamond_block",
+              "0,-1,126=minecraft:diamond_block"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "generate_keep_jigsaws",
+      "min": [-12, -2, -12],
+      "max": [16, 5, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"empty\",target:\"test:start\",pool:\"test:root\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ],
+      "actions": [
+        {
+          "generate": {
+            "levels": 2,
+            "keepJigsaws": true
+          }
+        },
+        {
+          "reload": true
+        }
+      ],
+      "checkpoints": [
+        {
+          "levels": 2,
+          "error": false,
+          "world": {
+            "blocks": [
+              "0,-1,-1=minecraft:jigsaw[orientation=east_up]",
+              "0,-1,0=minecraft:gold_block",
+              "0,0,0=minecraft:jigsaw",
+              "0,-1,1=minecraft:jigsaw[orientation=south_up]",
+              "0,-1,2=minecraft:jigsaw",
+              "0,-1,3=minecraft:diamond_block",
+              "0,-1,4=minecraft:jigsaw[orientation=south_up]",
+              "0,-1,5=minecraft:jigsaw",
+              "0,-1,6=minecraft:diamond_block",
+              "0,-1,7=minecraft:jigsaw[orientation=south_up]"
+            ],
+            "saved": {
+              "0,-1,-1": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:start",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              },
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              },
+              "0,-1,1": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:chain",
+                "selection_priority": "3:0",
+                "target": "test:entry"
+              },
+              "0,-1,2": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:entry",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              },
+              "0,-1,4": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:chain",
+                "selection_priority": "3:0",
+                "target": "test:entry"
+              },
+              "0,-1,5": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:entry",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              },
+              "0,-1,7": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:chain",
+                "selection_priority": "3:0",
+                "target": "test:entry"
+              }
+            },
+            "updates": {
+              "0,-1,-1": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:start",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              },
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              },
+              "0,-1,1": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:chain",
+                "selection_priority": "3:0",
+                "target": "test:entry"
+              },
+              "0,-1,2": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:entry",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              },
+              "0,-1,4": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:chain",
+                "selection_priority": "3:0",
+                "target": "test:entry"
+              },
+              "0,-1,5": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:entry",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              },
+              "0,-1,7": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:chain",
+                "selection_priority": "3:0",
+                "target": "test:entry"
+              }
+            }
+          }
+        },
+        {
+          "world": {
+            "blocks": [
+              "0,-1,-1=minecraft:jigsaw[orientation=east_up]",
+              "0,-1,0=minecraft:gold_block",
+              "0,0,0=minecraft:jigsaw",
+              "0,-1,1=minecraft:jigsaw[orientation=south_up]",
+              "0,-1,2=minecraft:jigsaw",
+              "0,-1,3=minecraft:diamond_block",
+              "0,-1,4=minecraft:jigsaw[orientation=south_up]",
+              "0,-1,5=minecraft:jigsaw",
+              "0,-1,6=minecraft:diamond_block",
+              "0,-1,7=minecraft:jigsaw[orientation=south_up]"
+            ],
+            "saved": {
+              "0,-1,-1": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:start",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              },
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              },
+              "0,-1,1": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:chain",
+                "selection_priority": "3:0",
+                "target": "test:entry"
+              },
+              "0,-1,2": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:entry",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              },
+              "0,-1,4": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:chain",
+                "selection_priority": "3:0",
+                "target": "test:entry"
+              },
+              "0,-1,5": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:entry",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              },
+              "0,-1,7": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:chain",
+                "selection_priority": "3:0",
+                "target": "test:entry"
+              }
+            },
+            "updates": {
+              "0,-1,-1": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:start",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              },
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              },
+              "0,-1,1": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:chain",
+                "selection_priority": "3:0",
+                "target": "test:entry"
+              },
+              "0,-1,2": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:entry",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              },
+              "0,-1,4": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:chain",
+                "selection_priority": "3:0",
+                "target": "test:entry"
+              },
+              "0,-1,5": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:entry",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              },
+              "0,-1,7": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:chain",
+                "selection_priority": "3:0",
+                "target": "test:entry"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "generate_missing_target",
+      "min": [-12, -2, -12],
+      "max": [16, 5, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"empty\",target:\"test:absent\",pool:\"test:root\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ],
+      "actions": [
+        {
+          "generate": {
+            "levels": 1,
+            "keepJigsaws": false
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "levels": 1,
+          "error": false,
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:absent"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:absent"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "generate_empty_pool",
+      "min": [-12, -2, -12],
+      "max": [16, 5, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"empty\",target:\"test:start\",pool:\"minecraft:empty\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ],
+      "actions": [
+        {
+          "generate": {
+            "levels": 1,
+            "keepJigsaws": false
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "levels": 1,
+          "error": false,
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "generate_unknown_pool",
+      "min": [-12, -2, -12],
+      "max": [16, 5, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"empty\",target:\"test:start\",pool:\"test:missing\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ],
+      "actions": [
+        {
+          "generate": {
+            "levels": 1,
+            "keepJigsaws": false
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "levels": 1,
+          "error": true,
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:missing",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:missing",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "generate_across_chunk_edge",
+      "min": [-2, -2, -12],
+      "max": [24, 4, 16],
+      "setup": [
+        {
+          "offset": [15, 0, 0],
+          "state": "minecraft:jigsaw[orientation=east_up]",
+          "nbt": "{name:\"empty\",target:\"test:start\",pool:\"test:root\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ],
+      "actions": [
+        {
+          "generate": {
+            "levels": 1,
+            "keepJigsaws": true
+          },
+          "offset": [15, 0, 0]
+        }
+      ],
+      "checkpoints": [
+        {
+          "levels": 1,
+          "error": false,
+          "world": {
+            "blocks": [
+              "16,-1,0=minecraft:jigsaw",
+              "17,-1,0=minecraft:gold_block",
+              "18,-1,0=minecraft:jigsaw[orientation=east_up]",
+              "19,-1,0=minecraft:jigsaw[orientation=west_up]",
+              "20,-1,0=minecraft:diamond_block",
+              "21,-1,0=minecraft:jigsaw[orientation=east_up]",
+              "15,0,0=minecraft:jigsaw[orientation=east_up]"
+            ],
+            "saved": {
+              "16,-1,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:start",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              },
+              "18,-1,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:chain",
+                "selection_priority": "3:0",
+                "target": "test:entry"
+              },
+              "19,-1,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:entry",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              },
+              "21,-1,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:chain",
+                "selection_priority": "3:0",
+                "target": "test:entry"
+              },
+              "15,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "16,-1,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:start",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              },
+              "18,-1,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:chain",
+                "selection_priority": "3:0",
+                "target": "test:entry"
+              },
+              "19,-1,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:entry",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              },
+              "21,-1,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:chain",
+                "selection_priority": "3:0",
+                "target": "test:entry"
+              },
+              "15,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:root",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "generate_joint_aligned",
+      "min": [-12, -2, -12],
+      "max": [16, 5, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"empty\",target:\"test:start\",pool:\"test:joint_aligned\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ],
+      "actions": [
+        {
+          "generate": {
+            "levels": 1,
+            "keepJigsaws": true
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "levels": 1,
+          "error": false,
+          "world": {
+            "blocks": [
+              "0,-1,-1=minecraft:jigsaw[orientation=east_up]",
+              "0,-1,0=minecraft:jigsaw[orientation=up_east]",
+              "0,0,0=minecraft:jigsaw[orientation=down_east]",
+              "1,0,0=minecraft:emerald_block"
+            ],
+            "saved": {
+              "0,-1,-1": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:start",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              },
+              "0,-1,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:joint_child",
+                "selection_priority": "3:0",
+                "target": "test:entry"
+              },
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:entry",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              }
+            },
+            "updates": {
+              "0,-1,-1": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:start",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              },
+              "0,-1,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:joint_child",
+                "selection_priority": "3:0",
+                "target": "test:entry"
+              },
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:entry",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "generate_joint_rollable",
+      "min": [-12, -2, -12],
+      "max": [16, 5, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"empty\",target:\"test:start\",pool:\"test:joint_rollable\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ],
+      "actions": [
+        {
+          "generate": {
+            "levels": 1,
+            "keepJigsaws": true
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "levels": 1,
+          "error": false,
+          "world": {
+            "blocks": [
+              "0,-1,-1=minecraft:jigsaw[orientation=east_up]",
+              "0,0,-1=minecraft:emerald_block",
+              "0,-1,0=minecraft:jigsaw[orientation=up_east]",
+              "0,0,0=minecraft:jigsaw[orientation=down_north]"
+            ],
+            "saved": {
+              "0,-1,-1": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:start",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              },
+              "0,-1,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "rollable",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:joint_child",
+                "selection_priority": "3:0",
+                "target": "test:entry"
+              },
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:entry",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              }
+            },
+            "updates": {
+              "0,-1,-1": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:start",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              },
+              "0,-1,0": {
+                "final_state": "minecraft:air",
+                "joint": "rollable",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:joint_child",
+                "selection_priority": "3:0",
+                "target": "test:entry"
+              },
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "test:entry",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "generate_selection_priority_a",
+      "min": [-12, -2, -12],
+      "max": [16, 5, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"empty\",target:\"test:start\",pool:\"test:selection_a\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ],
+      "actions": [
+        {
+          "generate": {
+            "levels": 2,
+            "keepJigsaws": false
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "levels": 2,
+          "error": false,
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw",
+              "0,-1,3=minecraft:gold_block"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:selection_a",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:selection_a",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "generate_selection_priority_b",
+      "min": [-12, -2, -12],
+      "max": [16, 5, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"empty\",target:\"test:start\",pool:\"test:selection_b\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ],
+      "actions": [
+        {
+          "generate": {
+            "levels": 2,
+            "keepJigsaws": false
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "levels": 2,
+          "error": false,
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw",
+              "-2,-1,3=minecraft:emerald_block"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:selection_b",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:selection_b",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "generate_placement_priority_a",
+      "min": [-12, -2, -12],
+      "max": [16, 5, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"empty\",target:\"test:start\",pool:\"test:placement_a\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ],
+      "actions": [
+        {
+          "generate": {
+            "levels": 2,
+            "keepJigsaws": false
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "levels": 2,
+          "error": false,
+          "world": {
+            "blocks": [
+              "3,-1,-1=minecraft:gold_block",
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:placement_a",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:placement_a",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "generate_placement_priority_b",
+      "min": [-12, -2, -12],
+      "max": [16, 5, 16],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw[orientation=north_up]",
+          "nbt": "{name:\"empty\",target:\"test:start\",pool:\"test:placement_b\",joint:\"aligned\",final_state:\"minecraft:air\",selection_priority:0,placement_priority:0}"
+        }
+      ],
+      "actions": [
+        {
+          "generate": {
+            "levels": 2,
+            "keepJigsaws": false
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "levels": 2,
+          "error": false,
+          "world": {
+            "blocks": [
+              "3,-1,-1=minecraft:emerald_block",
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {},
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:placement_b",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "test:placement_b",
+                "selection_priority": "3:0",
+                "target": "test:start"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "placement_orientations",
+      "min": [-12, -2, -12],
+      "max": [16, 5, 16],
+      "setup": [],
+      "actions": [
+        {
+          "placement": {
+            "face": "north",
+            "yaw": 0
+          }
+        },
+        {
+          "placement": {
+            "face": "south",
+            "yaw": 0
+          }
+        },
+        {
+          "placement": {
+            "face": "east",
+            "yaw": 0
+          }
+        },
+        {
+          "placement": {
+            "face": "west",
+            "yaw": 0
+          }
+        },
+        {
+          "placement": {
+            "face": "up",
+            "yaw": 0
+          }
+        },
+        {
+          "placement": {
+            "face": "up",
+            "yaw": 90
+          }
+        },
+        {
+          "placement": {
+            "face": "up",
+            "yaw": 180
+          }
+        },
+        {
+          "placement": {
+            "face": "up",
+            "yaw": 270
+          }
+        },
+        {
+          "placement": {
+            "face": "down",
+            "yaw": 0
+          }
+        },
+        {
+          "placement": {
+            "face": "down",
+            "yaw": 90
+          }
+        },
+        {
+          "placement": {
+            "face": "down",
+            "yaw": 180
+          }
+        },
+        {
+          "placement": {
+            "face": "down",
+            "yaw": 270
+          }
+        }
+      ],
+      "checkpoints": [
+        {
+          "placement": "minecraft:jigsaw",
+          "world": {
+            "blocks": [],
+            "saved": {},
+            "updates": {}
+          }
+        },
+        {
+          "placement": "minecraft:jigsaw[orientation=south_up]",
+          "world": {
+            "blocks": [],
+            "saved": {},
+            "updates": {}
+          }
+        },
+        {
+          "placement": "minecraft:jigsaw[orientation=east_up]",
+          "world": {
+            "blocks": [],
+            "saved": {},
+            "updates": {}
+          }
+        },
+        {
+          "placement": "minecraft:jigsaw[orientation=west_up]",
+          "world": {
+            "blocks": [],
+            "saved": {},
+            "updates": {}
+          }
+        },
+        {
+          "placement": "minecraft:jigsaw[orientation=up_north]",
+          "world": {
+            "blocks": [],
+            "saved": {},
+            "updates": {}
+          }
+        },
+        {
+          "placement": "minecraft:jigsaw[orientation=up_east]",
+          "world": {
+            "blocks": [],
+            "saved": {},
+            "updates": {}
+          }
+        },
+        {
+          "placement": "minecraft:jigsaw[orientation=up_south]",
+          "world": {
+            "blocks": [],
+            "saved": {},
+            "updates": {}
+          }
+        },
+        {
+          "placement": "minecraft:jigsaw[orientation=up_west]",
+          "world": {
+            "blocks": [],
+            "saved": {},
+            "updates": {}
+          }
+        },
+        {
+          "placement": "minecraft:jigsaw[orientation=down_north]",
+          "world": {
+            "blocks": [],
+            "saved": {},
+            "updates": {}
+          }
+        },
+        {
+          "placement": "minecraft:jigsaw[orientation=down_east]",
+          "world": {
+            "blocks": [],
+            "saved": {},
+            "updates": {}
+          }
+        },
+        {
+          "placement": "minecraft:jigsaw[orientation=down_south]",
+          "world": {
+            "blocks": [],
+            "saved": {},
+            "updates": {}
+          }
+        },
+        {
+          "placement": "minecraft:jigsaw[orientation=down_west]",
+          "world": {
+            "blocks": [],
+            "saved": {},
+            "updates": {}
+          }
+        }
+      ]
+    },
+    {
+      "name": "load_components",
+      "min": [-2, -1, -2],
+      "max": [2, 2, 2],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:jigsaw",
+          "nbt": "{components:{\"minecraft:custom_data\":{probe:\"retained\"}}}"
+        }
+      ],
+      "actions": [
+        {
+          "use": true
+        },
+        {
+          "edit": {
+            "name": "test:editor",
+            "target": "test:start",
+            "pool": "test:root",
+            "finalState": "minecraft:stone",
+            "joint": "rollable",
+            "selectionPriority": 7,
+            "placementPriority": -9
+          }
+        },
+        {
+          "reload": true
+        }
+      ],
+      "checkpoints": [
+        {
+          "consumes": true,
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {
+                  "minecraft:custom_data": {
+                    "probe": "retained"
+                  }
+                },
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:air",
+                "joint": "aligned",
+                "name": "minecraft:empty",
+                "placement_priority": "3:0",
+                "pool": "minecraft:empty",
+                "selection_priority": "3:0",
+                "target": "minecraft:empty"
+              }
+            }
+          }
+        },
+        {
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {
+                  "minecraft:custom_data": {
+                    "probe": "retained"
+                  }
+                },
+                "final_state": "minecraft:stone",
+                "joint": "rollable",
+                "name": "test:editor",
+                "placement_priority": "3:-9",
+                "pool": "test:root",
+                "selection_priority": "3:7",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:stone",
+                "joint": "rollable",
+                "name": "test:editor",
+                "placement_priority": "3:-9",
+                "pool": "test:root",
+                "selection_priority": "3:7",
+                "target": "test:start"
+              }
+            }
+          }
+        },
+        {
+          "world": {
+            "blocks": [
+              "0,0,0=minecraft:jigsaw"
+            ],
+            "saved": {
+              "0,0,0": {
+                "components": {
+                  "minecraft:custom_data": {
+                    "probe": "retained"
+                  }
+                },
+                "final_state": "minecraft:stone",
+                "joint": "rollable",
+                "name": "test:editor",
+                "placement_priority": "3:-9",
+                "pool": "test:root",
+                "selection_priority": "3:7",
+                "target": "test:start"
+              }
+            },
+            "updates": {
+              "0,0,0": {
+                "final_state": "minecraft:stone",
+                "joint": "rollable",
+                "name": "test:editor",
+                "placement_priority": "3:-9",
+                "pool": "test:root",
+                "selection_priority": "3:7",
+                "target": "test:start"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

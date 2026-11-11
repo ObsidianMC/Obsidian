@@ -544,6 +544,26 @@ replaces only what vanilla produced.
   coordinates, sound seeds, random arrow-hit pitch and TNT's random horizontal impulse are omitted (see
   [dispenser behaviours](known-gaps/dispenser-behaviours.md)).
 
+- `jigsaw_blocks.json` (`VanillaJigsawBlocks.ReplayJigsawBlockReference`) records the 26.3 jigsaw editor through
+  `Java/JigsawBlockFixtures.java` (`CaptureFixtures=jigsaw_blocks`). The probe starts a dedicated server in a
+  temporary flat air world with seed 12345. Its input pools are installed as a data pack; input templates are
+  captured from blocks in that world through vanilla's template manager. It decodes real SetJigsawBlock and
+  JigsawGenerate wire bytes, calls the native permission gates, and observes each completed action with the game
+  frozen. Other actions reload the entity, use the block's empty-hand hook or ask its placement hook for a state.
+
+  Cases cover fresh and legacy defaults, malformed saved fields, identifier qualification, arbitrary final states,
+  unrestricted pool names and priorities, packet joint fallback, creative/operator permissions, wrong and missing
+  block entities, negative/zero/ordinary/above-UI-limit levels, keepJigsaws, named-anchor rejection, empty and unknown
+  pools, chunk crossings, joint alignment, overlapping selection-priority choices and competing placement-priority
+  branches. Checkpoints contain every nonair block and every jigsaw's saved fields/components and custom-only update
+  tag, preserving primitive NBT types. The replay compares all cases without pins. Existing jigsaw placement orientation and
+  game-master item placement behavior are reused.
+
+  Capture only these cases with
+  `dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=jigsaw_blocks`.
+  `-p:CaptureCases=edit_and_reload+generate_keep_jigsaws` selects exact names. The fixture remains indented CRLF JSON.
+  See [jigsaw blocks](known-gaps/jigsaw-blocks.md) for asynchronous placement and inherited worldgen coverage limits.
+
 - `structure_blocks.json` (`VanillaStructureBlocks.ReplayStructureBlockReference`) records structure blocks from
   `Java/StructureBlockFixtures.java` (`CaptureFixtures=structure_blocks`). A dedicated 26.3 server in a temporary
   flat air world handles each case on its server thread. Setup writes use quiet flags; optional `nbt` is loaded

@@ -13,7 +13,7 @@ namespace Obsidian.WorldData;
 /// Places a template into a live level with the structure editor's update flags. Use only under the tick lock,
 /// after loading its chunks. Unlike a worldgen view, placed entities spawn in the live level.
 /// </summary>
-internal sealed class StructureBlockLevel(AbstractLevel level, bool strict) : IWorldGenLevel
+internal sealed class StructureBlockLevel(AbstractLevel level, bool strict, bool knownShape = false) : IWorldGenLevel
 {
     private readonly LiveFeatureLevel reads = new(level);
 
@@ -38,6 +38,9 @@ internal sealed class StructureBlockLevel(AbstractLevel level, bool strict) : IW
             return false;
 
         var flags = BlockUpdateFlags.Clients;
+        if (knownShape)
+            flags |= BlockUpdateFlags.KnownShape;
+
         if (strict)
         {
             flags |= BlockUpdateFlags.KnownShape | BlockUpdateFlags.SuppressDrops

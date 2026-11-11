@@ -26,6 +26,7 @@ and where to start.
 - [Comparators reading unopened loot containers](comparators-reading-unopened-loot-containers.md)
 - [Dispenser behaviours](dispenser-behaviours.md)
 - [Eyeblossoms, dried ghasts and portal piglins](eyeblossoms-dried-ghasts-and-portal-piglins.md)
+- [Jigsaw blocks](jigsaw-blocks.md)
 - [Player break effects](player-break-effects.md)
 - [Plant growth beyond saplings](plant-growth-beyond-saplings.md)
 - [Projectile block hits](projectile-block-hits.md)
