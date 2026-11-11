@@ -22,7 +22,7 @@ internal sealed class MobProjectile : Entity
     /// <summary>The potion item a player threw, shown to clients; a mob's splash shows its own potion.</summary>
     internal ItemStack? SplashItem { get; set; }
 
-    internal IEntity? Owner { get; private set; }
+    internal IEntity? Owner { get; set; }
 
     private Guid ownerUuid;
     private VectorD acceleration;
@@ -36,7 +36,8 @@ internal sealed class MobProjectile : Entity
         Type = type;
         var size = type == EntityType.Fireball ? 1 : 0.3125f;
         Dimension = new EntityDimension { Width = size, Height = size };
-        NoGravity = type is not (EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion);
+        NoGravity = type is not (EntityType.Snowball or EntityType.LlamaSpit
+            or EntityType.SplashPotion or EntityType.LingeringPotion);
     }
 
     [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
@@ -60,9 +61,11 @@ internal sealed class MobProjectile : Entity
         };
 
         Motion = direction * (speed ?? defaultSpeed);
-        var thrown = type is EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion;
+        var thrown = type is EntityType.Snowball or EntityType.LlamaSpit
+            or EntityType.SplashPotion or EntityType.LingeringPotion;
         acceleration = thrown ? VectorD.Zero : direction * 0.1f;
-        NoGravity = type is not (EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion);
+        NoGravity = type is not (EntityType.Snowball or EntityType.LlamaSpit
+            or EntityType.SplashPotion or EntityType.LingeringPotion);
     }
 
     /// <summary>
@@ -78,7 +81,8 @@ internal sealed class MobProjectile : Entity
         BoundingBox = Dimension.CreateBBFromPosition(Position);
         Motion = motion;
 
-        var thrown = type is EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion;
+        var thrown = type is EntityType.Snowball or EntityType.LlamaSpit
+            or EntityType.SplashPotion or EntityType.LingeringPotion;
         acceleration = thrown || motion.Magnitude < 0.0001f ? VectorD.Zero : motion / motion.Magnitude * 0.1f;
     }
 
@@ -149,10 +153,11 @@ internal sealed class MobProjectile : Entity
             return;
         }
 
-        if (Type is EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion)
+        if (Type is EntityType.Snowball or EntityType.LlamaSpit
+            or EntityType.SplashPotion or EntityType.LingeringPotion)
         {
             // Vanilla throwable flight applies gravity before air drag; arrows use the opposite order.
-            var gravity = Type == EntityType.SplashPotion ? 0.05 : 0.03;
+            var gravity = Type is EntityType.SplashPotion or EntityType.LingeringPotion ? 0.05 : 0.03;
             Motion = (Motion - new VectorD(0, gravity, 0)) * 0.99;
         }
         else
@@ -367,7 +372,8 @@ internal sealed class MobProjectile : Entity
             age = Math.Clamp(life, 0, 600);
 
         var hasAcceleration = EntityNbt.TryReadVector(tag, "ObsidianAcceleration", out acceleration);
-        var accelerates = Type is not (EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion);
+        var accelerates = Type is not (EntityType.Snowball or EntityType.LlamaSpit
+            or EntityType.SplashPotion or EntityType.LingeringPotion);
         if (!hasAcceleration && accelerates && Motion.Magnitude > 0.001f)
             acceleration = Motion / Motion.Magnitude * 0.1f;
 
@@ -380,7 +386,7 @@ internal sealed class MobProjectile : Entity
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        if (Type != EntityType.SplashPotion)
+        if (Type is not (EntityType.SplashPotion or EntityType.LingeringPotion))
             return;
 
         writer.WriteEntityMetadataType(8, EntityMetadataType.Slot);

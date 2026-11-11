@@ -46,6 +46,8 @@ public partial class Mob : Living
         if (HasAi)
             ReadSave(tag);
 
+        this.ReadVanillaEquipment(tag);
+
         if (tag.TryGetBool("LeftHanded", out var leftHanded) && leftHanded)
             this.MobBitMask |= MobBitmask.LeftHanded;
         if (tag.TryGetBool("NoAI", out var noAi) && noAi)

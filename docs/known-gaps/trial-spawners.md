@@ -11,15 +11,14 @@ display loot, accept the configured key once per player and eject rewards, inclu
 `vaults.json` capture checks their block changes, saved and client data, world-dependent loot, full dropped stacks
 (including components), timings, item motion, sounds and level events every tick. Vanilla's client draws the
 connection, activation and idle particles from those updates; the
-server sends no particle packets. What's left:
+server sends no particle packets. Ominous trials convert Bad Omen during a spawner's player scan (18,000 ticks per
+level, Trial Omen amplifier zero), switch configs with level event 3020, discard the old mobs while dropping their
+preserved equipment, and create ominous item spawners above eligible players or mobs. Spawn-data equipment tables
+equip their loot and apply their slot drop chances. `ominous_trials.json` checks these changes, the item spawners'
+saved and client item data, timers, sounds, release events and random draws against 26.3. What's left:
 
 ## Left for later trial work
 
-- **Ominous trials.** A spawner never becomes ominous: Bad Omen isn't turned into Trial Omen, a Trial Omen doesn't
-  make the spawner ominous (level event 3020, mobs removed with their preserved equipment), and no ominous item
-  spawners drop `items_to_drop_when_ominous`. A spawner whose block is already ominous does use its ominous config, its
-  ominous detection event (3019) and the ominous flame, and goes back to normal at the end of its cooldown. Vanilla
-  picks an ominous item's target from the spawner's player and mob sets by their order, which `UuidSet` already gives.
 - **Spawn eggs on trial spawners.** Vanilla's `setEntityId` replaces both configs' spawn potentials and resets the
   trial; a spawn egg on a trial spawner does nothing special yet.
 
@@ -36,8 +35,7 @@ server sends no particle packets. What's left:
   one of them spawns. The captures follow the draws through 43 zombies and husks and 36 spiders, but none of them was
   a baby with a chicken jockey, a spider jockey or a spider with an effect, so those branches are checked against
   vanilla's code only.
-- **Spawn data equipment and passengers.** A spawn data's `equipment` loot table (the ominous ranged configs') isn't
-  rolled onto the mob, and its entity's passengers aren't spawned with it.
+- **Spawn data passengers.** A spawn data entity's passengers aren't spawned with it.
 - **Other mobs' spawn rules.** A monster may spawn anywhere it fits in sight but in peaceful, as every monster's rule
   says for a trial spawner. Other mobs (a data pack's config could spawn animals) keep the floor rule spawners use
   (`MobSpawner.FitsVanillaPlacement`), not their own predicates.
@@ -49,8 +47,6 @@ server sends no particle packets. What's left:
 - **Sight lines through unloaded chunks.** Vanilla's sight line (a visual clip) loads a chunk it crosses that isn't
   loaded, and looks through it. Obsidian can't wait for a chunk under the tick's locks, so a line through one counts as
   blocked: no mob spawns, and no player is detected, through it until something else loads it.
-- **Players found in the same scan.** They join the spawner's set in the order of the level's player dictionary rather
-  than vanilla's player list, which only matters when two of them share a bucket of vanilla's hash set.
 
 ## Clients
 
@@ -59,6 +55,9 @@ server sends no particle packets. What's left:
 
 ## Found along the way
 
+- **Released projectile impacts.** Ominous item releases are checked at birth, then the probe discards the released
+  entities before flight. Subsequent flight and impacts use the existing projectile runtime; lingering potions still
+  don't create their area-effect clouds. Those effects need their own implementation and capture.
 - **NoAI mobs fall.** Vanilla's NoAI mobs don't move, even under gravity; Obsidian's still travel. The capture gives
   its mobs `NoGravity` as well, which changes nothing in vanilla.
 - **Tiny moves.** Vanilla's `Entity.move` leaves an entity in place when collision cut its move to under 1e-7 squared,

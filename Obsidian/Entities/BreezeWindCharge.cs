@@ -11,6 +11,16 @@ internal sealed class BreezeWindCharge : Entity
     private Guid ownerUuid;
     private int age;
 
+    internal static BreezeWindCharge FromOminous(OminousItemSpawner spawner, VectorD motion) => new(spawner.Level)
+    {
+        EntityId = Server.GetNextEntityId(),
+        Type = EntityType.WindCharge,
+        Position = spawner.Position,
+        Motion = motion,
+        owner = spawner,
+        ownerUuid = spawner.Uuid
+    };
+
     [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
     internal BreezeWindCharge(ILevel level)
     {

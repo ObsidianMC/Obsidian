@@ -546,6 +546,12 @@ public partial class Living : Entity, ILiving
             return;
         }
 
+        if (!this.HasPotionEffect(effectId)
+            && (effectId == (int)PotionEffect.BadOmen - 1 || effectId == (int)PotionEffect.TrialOmen - 1))
+        {
+            this.PlayOmenSound(effectId);
+        }
+
         var data = new EffectWithCurrentDuration
         {
             CurrentDuration = duration,

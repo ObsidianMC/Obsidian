@@ -43,7 +43,7 @@ public sealed class VaultLootTableCollection
 /// spawners and vaults of a trial chamber vanilla placed.
 /// </summary>
 [Collection(VaultLootTableCollection.Name)]
-public sealed class VanillaTrialSpawners(ITestOutputHelper output)
+public sealed partial class VanillaTrialSpawners(ITestOutputHelper output)
 {
     // The cases run this far apart along x, each in a chunk of its own, around the middle of that chunk.
     private const int Spacing = 32;
@@ -362,6 +362,7 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
         ApplyRules(level, probe);
         Setup(level, probe, origin);
         var isVault = probe.TryGetProperty("vault", out _);
+        var isOminous = probe.TryGetProperty("ominous", out var ominous) && ominous.GetBoolean();
         var spawner = isVault ? PlaceVault(level, probe, origin) : (IBlockEntity)PlaceSpawner(level, probe, origin);
         var players = replay.AddPlayers(probe, origin);
         var listener = replay.Listen(origin + ListenerOffset, Name(probe));
@@ -383,7 +384,7 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
         level.LevelData.GameTime = probe.GetProperty("startTime").GetInt64();
         var random = new LegacyRandomSource(probe.GetProperty("seed").GetInt64());
         level.GrowthRandom = random;
-        if (isVault)
+        if (isVault || isOminous)
             level.SoundSeedRandom = new LegacyRandomSource(probe.GetProperty("seed").GetInt64());
 
         var differences = new List<string>();
@@ -395,12 +396,20 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
         for (var tick = 1; tick <= checkpoints.Length; tick++)
         {
             var checkpoint = checkpoints[tick - 1];
-            if (isVault)
+            if (isOminous)
+                await DiscardReleasedAsync(level, origin);
+
+            if (isVault || isOminous)
                 await ActVaultAsync(replay, probe, players, origin, tick, differences);
 
             await ActAsync(probe, mobs, tick);
             await level.DoWorldTickAsync();
             mobs.Observe(level, origin, tick);
+            if (isOminous)
+            {
+                for (var index = 0; index < mobs.Count; index++)
+                    mobs[index].Mob.Silent = true;
+            }
             TakeItemPhases(level, origin, checkpoint.GetProperty("itemPhases"), phased);
 
             var actual = new Dictionary<string, List<string>>
@@ -408,13 +417,16 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
                 ["writes"] = [.. writes],
                 ["changes"] = Changes(level, origin, blocks),
                 ["entities"] = Entities(level, origin, mobs),
-                ["sounds"] = Sounds(level, listener.Client, origin, isVault),
+                ["sounds"] = Sounds(level, listener.Client, origin, isVault || isOminous, isOminous),
                 ["levelEvents"] = LevelEvents(listener.Client, origin),
                 ["particles"] = Particles(listener.Client, origin),
                 ["gameEvents"] = [.. gameEvents]
             };
             foreach (var (field, obsidian) in actual)
                 Compare(differences, $"tick {tick} {field}", Strings(checkpoint.GetProperty(field)), obsidian);
+
+            if (isOminous)
+                CompareOminous(differences, tick, checkpoint.GetProperty("ominous"), level, origin, players, mobs);
 
             var saved = Canonical(checkpoint.GetProperty("saved").GetString()!);
             var ours = spawner is TrialSpawnerBlockEntity trial ? NormalizedSave(trial, mobs) : Saved(spawner);
@@ -520,7 +532,22 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
             if (action.GetProperty("tick").GetInt32() != tick)
                 continue;
 
+            if (action.TryGetProperty("spawn", out var spawned))
+            {
+                var entity = EntityNbt.Load(SnbtReader.ReadCompound(spawned.GetString()!), replay.Level)!;
+                entity.Position = (VectorD)origin + BlockProbes.Point(action.GetProperty("pos"));
+                Assert.True(replay.Level.TrySpawnEntity(entity, hostOwned: true));
+                continue;
+            }
+
             var player = players.Single(player => player.Username == action.GetProperty("player").GetString());
+            if (action.TryGetProperty("effect", out var effect))
+            {
+                var id = effect.GetProperty("id").GetString() == "bad_omen" ? PotionEffect.BadOmen : PotionEffect.TrialOmen;
+                player.AddPotionEffect((int)id - 1, effect.GetProperty("duration").GetInt32(),
+                    effect.GetProperty("amplifier").GetInt32(),
+                    EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon);
+            }
             if (action.TryGetProperty("pos", out var position))
                 player.Position = (VectorD)origin + BlockProbes.Point(position);
 
@@ -798,7 +825,8 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
 
     // The sounds the listener heard, at the entity's position for those that follow one. Mobs' ambient sounds are left
     // out, as the probe leaves them out (their own randoms decide them).
-    private static List<string> Sounds(AbstractLevel level, TestClient client, Vector origin, bool exact = false)
+    private static List<string> Sounds(AbstractLevel level, TestClient client, Vector origin, bool exact = false,
+        bool categories = false)
     {
         var sounds = new List<string>();
         foreach (var packet in client.SentPackets)
@@ -817,6 +845,18 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
             var description = $"{id} {Number(at.X, 3)},{Number(at.Y, 3)},{Number(at.Z, 3)} volume {Number(volume, 2)}";
             if (exact && packet is SoundPacket positioned)
                 description += $" pitchBits {BitConverter.SingleToInt32Bits(positioned.Pitch)} seed {positioned.Seed}";
+
+            if (categories && packet is SoundPacket categorized)
+            {
+                var category = categorized.Category switch
+                {
+                    SoundCategory.Players => "player",
+                    SoundCategory.Blocks => "block",
+                    SoundCategory.Records => "record",
+                    _ => categorized.Category.ToString().ToLowerInvariant()
+                };
+                description += $" category {category}";
+            }
 
             sounds.Add(description);
         }
@@ -1036,7 +1076,7 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
         public void RemovePlayers(List<Entities.Player> players)
         {
             foreach (var player in players)
-                this.Level.Players.TryRemove(player.Uuid, out _);
+                this.Level.TryRemovePlayer(player);
         }
 
         /// <summary>
@@ -1045,7 +1085,7 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
         public Listener Listen(VectorD position, string name)
         {
             if (this.current is Listener previous)
-                this.Level.Players.TryRemove(previous.Player.Uuid, out _);
+                this.Level.TryRemovePlayer(previous.Player);
 
             var player = this.Join(name.Length > 16 ? name[..16] : name, position, Guid.NewGuid());
             player.GameMode = GameMode.Spectator;
@@ -1063,7 +1103,7 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
             foreach (var (chunkX, chunkZ) in this.Chunks())
                 player.LoadedChunks.Add(NumericsHelper.IntsToLong(chunkX, chunkZ));
 
-            this.Level.Players.TryAdd(player.Uuid, player);
+            this.Level.TryAddPlayer(player);
             return player;
         }
 

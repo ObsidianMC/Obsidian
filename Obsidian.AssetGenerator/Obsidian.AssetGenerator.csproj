@@ -130,6 +130,7 @@
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)block_loot_tables.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\blocks.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\entities.json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\equipment.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\harvest.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\carve.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)predicate.json" />

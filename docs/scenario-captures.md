@@ -346,6 +346,20 @@ replaces only what vanilla produced.
   Capture the whole file in one run: its reward tables' random sequences are shared across cases, so selecting an
   isolated case that rolls rewards changes the sequence inputs. No trial-spawner capture is changed by this run.
 
+- `ominous_trials.json` (`VanillaTrialSpawners.ReplayOminousTrialReference`) records ominous trials independently
+  through `Java/TrialSpawnerFixtures.java` (`CaptureFixtures=ominous_trials`). It retains the trial replay's complete
+  tick observations, adds Bad Omen and Trial Omen durations, amplifiers and display flags, full equipment stacks and
+  drop chances, and ominous item spawners' saved items and delays. Sound observations include pitch bits, category
+  and seed. Cases cover conversion and effect priority, creative players and walls, cooldown activation, mob removal
+  and preserved equipment, empty ominous spawn potentials, position-seeded weighted item loot, player and mob targets,
+  ceilings and collisions, unavailable targets, each projectile from the native loot table, ordinary and empty item
+  releases, and all three ominous ranged configs' equipment. The rooms have roofs and make observed mobs silent:
+  sunlight damage and ambient sounds use unrelated unseeded mob randoms. Released entities are observed at birth,
+  then discarded before flight for the same reason. Four separately seeded native `Projectile.getMovementToShoot`
+  probes check exact release motion and the following random draw. The persistence test also checks that loading
+  restarts an item spawner's unsaved age and preserves its potion components in item metadata. No expected values
+  are pinned; existing trial-spawner and vault reward sequences are untouched.
+
 - `trial_spawners.json` (`VanillaTrialSpawners`) records trial spawners from `Java/TrialSpawnerFixtures.java`
   (`CaptureFixtures=trial_spawners`), on a dedicated server of its own in a flat world of air (plains, seed `test-seed`,
   the replay world's, whose random sequences the rewards roll from), frozen, whose level ticks the probe runs itself. A
