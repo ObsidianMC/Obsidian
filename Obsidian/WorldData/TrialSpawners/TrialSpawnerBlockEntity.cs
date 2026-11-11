@@ -77,47 +77,46 @@ internal sealed partial class TrialSpawnerBlockEntity : BlockEntity
         this.Data = ReadFullConfig(tag, loaded, others) with { Others = others };
     }
 
-    // Vanilla reads the four config fields as one: one that can't be read leaves all four at their defaults. Obsidian
-    // keeps those it couldn't read as they were, so they're saved again.
+    // Vanilla's FullConfig, from its codec's partial result: each of the four fields that doesn't read takes its
+    // default on its own. A config naming a registry entry this server doesn't have is kept as it was and saved again,
+    // where vanilla drops it, since it may be a data pack's; the spawner uses the default config meanwhile.
     private static TrialSpawnerData ReadFullConfig(NbtCompound tag, TrialSpawnerData loaded, NbtCompound others)
     {
-        var normalTag = tag.TryGetTag("normal_config", out var normal) ? DataBlockEntity.Copy(normal) : null;
-        var ominousTag = tag.TryGetTag("ominous_config", out var ominous) ? DataBlockEntity.Copy(ominous) : null;
-        var normalConfig = normalTag is null ? TrialSpawnerConfig.Default : TrialSpawnerConfig.Read(normalTag);
-        var ominousConfig = ominousTag is null ? TrialSpawnerConfig.Default : TrialSpawnerConfig.Read(ominousTag);
+        var (normalTag, normalConfig) = ReadConfig(tag, "normal_config", others);
+        var (ominousTag, ominousConfig) = ReadConfig(tag, "ominous_config", others);
+        var cooldown = tag.TryGetNumber<int>("target_cooldown_length", out var length) && length >= 0
+            ? length
+            : DefaultCooldownLength;
+        var range = tag.TryGetNumber<int>("required_player_range", out var required) && required is >= 1 and <= 128
+            ? required
+            : DefaultPlayerRange;
 
-        var cooldownRead = !tag.HasTag("target_cooldown_length")
-            || tag.TryGetNumber<int>("target_cooldown_length", out _);
-        var cooldown = tag.TryGetNumber<int>("target_cooldown_length", out var length) ? length : DefaultCooldownLength;
-        var rangeRead = !tag.HasTag("required_player_range") || tag.TryGetNumber<int>("required_player_range", out _);
-        var range = tag.TryGetNumber<int>("required_player_range", out var required) ? required : DefaultPlayerRange;
-
-        var valid = normalConfig is not null
-            && ominousConfig is not null
-            && cooldownRead
-            && cooldown >= 0
-            && rangeRead
-            && range is >= 1 and <= 128;
-        if (valid)
+        return loaded with
         {
-            return loaded with
-            {
-                NormalConfigTag = normalTag,
-                OminousConfigTag = ominousTag,
-                NormalConfig = normalConfig!,
-                OminousConfig = ominousConfig!,
-                TargetCooldownLength = cooldown,
-                RequiredPlayerRange = range
-            };
-        }
+            NormalConfigTag = normalTag,
+            OminousConfigTag = ominousTag,
+            NormalConfig = normalConfig,
+            OminousConfig = ominousConfig,
+            TargetCooldownLength = cooldown,
+            RequiredPlayerRange = range
+        };
+    }
 
-        foreach (var name in fullConfigFields)
-        {
-            if (tag.TryGetTag(name, out var kept))
-                others.Add(name, DataBlockEntity.Copy(kept));
-        }
+    private static (INbtTag? Tag, TrialSpawnerConfig Config) ReadConfig(
+        NbtCompound tag,
+        string name,
+        NbtCompound others)
+    {
+        if (!tag.TryGetTag(name, out var saved))
+            return (null, TrialSpawnerConfig.Default);
 
-        return loaded;
+        if (TrialSpawnerConfig.Read(saved) is TrialSpawnerConfig config)
+            return (DataBlockEntity.Copy(saved), config);
+
+        if (saved is NbtTag<string>)
+            others.Add(name, DataBlockEntity.Copy(saved));
+
+        return (null, TrialSpawnerConfig.Default);
     }
 
     protected internal override void Save(NbtCompound tag)

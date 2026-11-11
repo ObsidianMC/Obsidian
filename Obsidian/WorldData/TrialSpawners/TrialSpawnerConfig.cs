@@ -140,9 +140,9 @@ internal sealed record TrialSpawnerConfig(
 
     /// <summary>
     /// The config a saved <c>normal_config</c> or <c>ominous_config</c> names: a registry entry's id, or a config
-    /// written out inline.
+    /// written out inline, whose fields that don't read take their defaults.
     /// </summary>
-    /// <returns>Null when it can't be read: an unknown id, or a field out of its range.</returns>
+    /// <returns>Null when it can't be read at all: an unknown id, or neither an id nor a config.</returns>
     public static TrialSpawnerConfig? Read(INbtTag saved) => saved switch
     {
         NbtTag<string> id => registry.Value.GetValueOrDefault(id.Value ?? string.Empty),
@@ -150,39 +150,34 @@ internal sealed record TrialSpawnerConfig(
         _ => null
     };
 
-    // Vanilla's DIRECT_CODEC on NBT: each field optional, with its default, and a field out of its range fails the
-    // whole config.
-    private static TrialSpawnerConfig? FromNbt(NbtCompound tag)
+    // Vanilla's DIRECT_CODEC on NBT, as vanilla's block entity reads it (its partial result): each field optional, with
+    // its default, and a field that doesn't read (the wrong type, or out of its range) takes its default too, while
+    // the others keep theirs. A list drops the entries that don't read. Captured by trial_spawners.json's config cases.
+    private static TrialSpawnerConfig FromNbt(NbtCompound tag)
     {
-        var spawnRange = tag.TryGetNumber<int>("spawn_range", out var range) ? range : Default.SpawnRange;
-        var ticks = tag.TryGetNumber<int>("ticks_between_spawn", out var between) ? between : Default.TicksBetweenSpawn;
-        var config = Default with
+        var fields = new LenientFields(tag);
+        return Default with
         {
-            SpawnRange = spawnRange,
-            TotalMobs = Float(tag, "total_mobs", Default.TotalMobs),
-            SimultaneousMobs = Float(tag, "simultaneous_mobs", Default.SimultaneousMobs),
-            TotalMobsAddedPerPlayer = Float(tag, "total_mobs_added_per_player", Default.TotalMobsAddedPerPlayer),
-            SimultaneousMobsAddedPerPlayer = Float(
-                tag,
+            SpawnRange = fields.Number("spawn_range", Default.SpawnRange, range => range is >= 1 and <= 128),
+            TotalMobs = fields.Number("total_mobs", Default.TotalMobs, NotNegative),
+            SimultaneousMobs = fields.Number("simultaneous_mobs", Default.SimultaneousMobs, NotNegative),
+            TotalMobsAddedPerPlayer = fields.Number(
+                "total_mobs_added_per_player",
+                Default.TotalMobsAddedPerPlayer,
+                NotNegative),
+            SimultaneousMobsAddedPerPlayer = fields.Number(
                 "simultaneous_mobs_added_per_player",
-                Default.SimultaneousMobsAddedPerPlayer),
-            TicksBetweenSpawn = ticks,
-            SpawnPotentials = tag.TryGetTag<NbtList>("spawn_potentials", out var potentials)
-                ? Weighted(potentials, data => data is NbtCompound compound ? DataBlockEntity.Copy(compound) : null)
-                : Default.SpawnPotentials,
-            LootTablesToEject = tag.TryGetTag<NbtList>("loot_tables_to_eject", out var tables)
-                ? Weighted(tables, data => (data as NbtTag<string>)?.Value)
-                : Default.LootTablesToEject,
-            ItemsToDropWhenOminous = tag.TryGetTagValue<string>("items_to_drop_when_ominous", out var ominous)
-                ? ominous
-                : Default.ItemsToDropWhenOminous
+                Default.SimultaneousMobsAddedPerPlayer,
+                NotNegative),
+            TicksBetweenSpawn = fields.Number("ticks_between_spawn", Default.TicksBetweenSpawn, ticks => ticks >= 0),
+            SpawnPotentials = fields.Weighted("spawn_potentials", Default.SpawnPotentials, SpawnDataOf),
+            LootTablesToEject = fields.Weighted("loot_tables_to_eject", Default.LootTablesToEject, LootTableOf),
+            ItemsToDropWhenOminous = fields.Identifier("items_to_drop_when_ominous", Default.ItemsToDropWhenOminous)
         };
-
-        return IsValid(config) ? config : null;
     }
 
-    private static float Float(NbtCompound tag, string name, float fallback) =>
-        tag.TryGetNumber<float>(name, out var value) ? value : fallback;
+    // Vanilla's floatRange(0, Float.MAX_VALUE).
+    private static bool NotNegative(float value) => value is >= 0 and <= float.MaxValue;
 
     // The ranges vanilla's codec checks.
     private static bool IsValid(TrialSpawnerConfig config) =>
@@ -193,18 +188,78 @@ internal sealed record TrialSpawnerConfig(
         && config.SimultaneousMobsAddedPerPlayer >= 0
         && config.TicksBetweenSpawn >= 0;
 
-    private static WeightedEntries<T> Weighted<T>(NbtList entries, Func<INbtTag?, T?> read)
-        where T : class
+    // Vanilla's SpawnData codec: an entity compound, and optional spawn rules and equipment of their own shapes.
+    private static NbtCompound? SpawnDataOf(INbtTag data)
     {
-        var values = ImmutableArray.CreateBuilder<(T, int)>();
-        foreach (var entry in entries.OfType<NbtCompound>())
+        if (data is not NbtCompound spawnData || !spawnData.TryGetTag<NbtCompound>("entity", out _))
+            return null;
+
+        if (spawnData.TryGetTag("custom_spawn_rules", out var rules) && rules is not NbtCompound)
+            return null;
+
+        if (spawnData.TryGetTag("equipment", out var equipment)
+            && (equipment is not NbtCompound table || !table.TryGetTagValue<string>("loot_table", out var id)
+                || !IsIdentifier(id)))
         {
-            var data = entry.TryGetTag("data", out var tag) ? read(tag) : null;
-            if (data is not null && entry.TryGetNumber<int>("weight", out var weight) && weight >= 0)
-                values.Add((data, weight));
+            return null;
         }
 
-        return new WeightedEntries<T>(values.ToImmutable());
+        return DataBlockEntity.Copy(spawnData);
+    }
+
+    private static string? LootTableOf(INbtTag data) =>
+        data is NbtTag<string> { Value: string id } && IsIdentifier(id) ? id : null;
+
+    // Vanilla's Identifier: an optional namespace of [a-z0-9_.-] and a colon, then a path that may also hold slashes.
+    private static bool IsIdentifier(string id)
+    {
+        var colon = id.IndexOf(':');
+        var space = colon < 0 ? string.Empty : id[..colon];
+        var path = colon < 0 ? id : id[(colon + 1)..];
+        return space.All(character => IsIdentifierCharacter(character, slash: false))
+            && path.All(character => IsIdentifierCharacter(character, slash: true));
+    }
+
+    private static bool IsIdentifierCharacter(char character, bool slash) =>
+        character is >= 'a' and <= 'z' or >= '0' and <= '9' or '_' or '.' or '-' || slash && character == '/';
+
+    /// <summary>
+    /// Reads a saved config's fields as vanilla's block entity does, from its codec's partial result: a field that's
+    /// missing, or there but doesn't read, takes its default.
+    /// </summary>
+    private sealed class LenientFields(NbtCompound tag)
+    {
+        public T Number<T>(string name, T fallback, Func<T, bool> inRange)
+            where T : struct, System.Numerics.INumberBase<T> =>
+            tag.TryGetTag(name, out var field) && field.TryGetNumber<T>(out var value) && inRange(value)
+                ? value
+                : fallback;
+
+        public string Identifier(string name, string fallback) =>
+            tag.TryGetTag(name, out var field) && LootTableOf(field) is string id ? id : fallback;
+
+        // Vanilla's WeightedList codec: a list of {data, weight}; an entry without readable data or with a weight below
+        // 0 is dropped, and a field that isn't a list takes its default.
+        public WeightedEntries<T> Weighted<T>(string name, WeightedEntries<T> fallback, Func<INbtTag, T?> read)
+            where T : class
+        {
+            if (!tag.TryGetTag(name, out var field) || field is not NbtList entries)
+                return fallback;
+
+            var values = ImmutableArray.CreateBuilder<(T, int)>();
+            foreach (var element in entries.OfType<NbtCompound>())
+            {
+                var data = element.TryGetTag("data", out var saved) ? read(saved) : null;
+                var weight = 0;
+                var weighted = element.TryGetTag("weight", out var savedWeight)
+                    && savedWeight.TryGetNumber(out weight)
+                    && weight >= 0;
+                if (data is not null && weighted)
+                    values.Add((data, weight));
+            }
+
+            return new WeightedEntries<T>(values.ToImmutable());
+        }
     }
 
     private static FrozenDictionary<string, TrialSpawnerConfig> LoadRegistry() =>
