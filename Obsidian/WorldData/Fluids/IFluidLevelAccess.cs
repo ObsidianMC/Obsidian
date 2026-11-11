@@ -45,6 +45,9 @@ internal interface IFluidLevelAccess
     /// <returns>Whether the block could be stored; <c>false</c> outside the build range or the reachable chunks.</returns>
     public bool SetBlock(Vector position, IBlock block);
 
+    /// <summary>Stores a block with its removal flags; generation views have no live removal side effects.</summary>
+    public bool SetBlock(Vector position, IBlock block, BlockUpdateFlags flags) => this.SetBlock(position, block);
+
     /// <summary>
     /// A block was stored with <paramref name="flags"/>, before its updates run: the live level shows it to players
     /// (<see cref="BlockUpdateFlags.Clients"/>) and has portals check their frames

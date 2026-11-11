@@ -9,16 +9,22 @@ using System.Text.Json;
 namespace Obsidian.Commands.Modules;
 
 [RequirePermissionLevel(2)]
-public sealed class PlaceCommandModule : CommandModuleBase
+public sealed partial class PlaceCommandModule : CommandModuleBase
 {
     [Command("place")]
-    [CommandInfo("Places a feature", "/place feature <feature> [pos]")]
+    [CommandInfo("Places a feature or template", "/place <feature|template> <id> [pos]")]
     public async Task<int> PlaceAsync([Remaining] string arguments)
     {
         try
         {
             var input = CommandInput.Arguments(this.CommandContext);
-            input.Expect("feature");
+            var kind = input.Read();
+            if (kind == "template")
+                return await this.PlaceTemplateAsync(input);
+
+            if (kind != "feature")
+                throw new FormatException("Expected feature or template");
+
             var definition = CommandInput.Data(input.Read());
             if (definition.ValueKind == JsonValueKind.String)
                 definition = JsonSerializer.SerializeToElement(CommandInput.Qualify(definition.GetString()!));

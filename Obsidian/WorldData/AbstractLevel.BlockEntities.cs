@@ -116,6 +116,9 @@ public abstract partial class AbstractLevel
             if (prepared is null && created is CommandBlockEntity commandBlock)
                 commandBlock.Automatic = CommandBlocks.StartsAutomatic(block);
 
+            if (prepared is null && created is StructureBlockEntity structureBlock)
+                structureBlock.Settings = structureBlock.Settings with { Mode = StructureBlocks.ModeOf(block) };
+
             this.AttachBlockEntity(created);
             chunk.SetBlockEntity(position.X, position.Y, position.Z, created);
             if (prepared is null)
@@ -182,8 +185,24 @@ public abstract partial class AbstractLevel
     /// next tick, for a caller that can't let go of its locks first, like a fluid tick or a feature placed in the
     /// running level.
     /// </summary>
-    internal void QueueBlockEntityRemoval(BlockEntity removed) =>
-        this.EnqueueEntityAction(() => this.RunBlockEntityRemovalAsync(removed, onLevelTick: true));
+    internal void QueueBlockEntityRemoval(BlockEntity removed, bool skipSideEffects = false) =>
+        this.EnqueueEntityAction(() => skipSideEffects
+            ? this.RetireBlockEntityWithoutEffectsAsync(removed)
+            : this.RunBlockEntityRemovalAsync(removed, onLevelTick: true));
+
+    // Structure placement's strict writes and temporary barriers suppress removal effects, while still closing
+    // removed inventories. This runs on the entity action path, outside the tick and chunk locks.
+    private async ValueTask RetireBlockEntityWithoutEffectsAsync(BlockEntity removed)
+    {
+        await removed.WaitForLiveCallAsync();
+        if (removed is not ContainerBlockEntity container)
+            return;
+
+        using (await container.Inventory.LockAsync())
+            container.Inventory.TryRetire();
+
+        await CloseWindowsAsync(container.Inventory);
+    }
 
     // The level's generated chunks, listed once in a tick: its eggs and its block entities each go over them all.
     private (long Tick, List<Chunk> Chunks)? generatedChunks;

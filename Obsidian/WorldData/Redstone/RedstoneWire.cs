@@ -82,6 +82,10 @@ internal sealed class RedstoneWire(IRedstoneLevel level, RedstoneEngine engine)
             state = shaped;
         }
 
+        // A template can place unsupported wire: shape validation has already removed it.
+        if (!state.Is(BlockIds.RedstoneWire))
+            return;
+
         await this.UpdatePowerAsync(change.Position, state, world);
     }
 

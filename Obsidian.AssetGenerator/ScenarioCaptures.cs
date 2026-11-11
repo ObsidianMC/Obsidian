@@ -48,6 +48,7 @@ internal static class ScenarioCaptures
     public const string StrawBeds = "straw_beds";
     public const string GoldenDandelions = "golden_dandelions";
     public const string Lightning = "lightning";
+    public const string StructureBlocks = "structure_blocks";
     public const string TrialSpawners = "trial_spawners";
     public const string CommandBlocks = "command_blocks";
     public const string SpecialBlocks = "special_blocks";
@@ -84,14 +85,14 @@ internal static class ScenarioCaptures
         [Redstone, Sulfur, MoreBlocks, StructurePieces, Fire, TickingBlocks, BlockUse, MeltingWeather, GrowingPlantTicks,
             EyeblossomGhastPortal, Brushing, ArmorStandUse, WaxingBellsOre, FoodHarvest, Cauldrons,
             ProjectileHits, Dispenser, Shelves, StrawBeds, GoldenDandelions, Lightning, TrialSpawners,
-            CommandBlocks, SpecialBlocks];
+            CommandBlocks, StructureBlocks, SpecialBlocks];
 
     public static readonly string[] All =
         [Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps, SavedHeightmaps, Mining,
             Placement, CopperWeathering, Fire, TickingBlocks, BlockUse, TurtleEggs, Frogspawn,
             GrowingPlantTicks, MeltingWeather, FurnaceResults, EyeblossomGhastPortal, Brushing, ArmorStandUse,
             WaxingBellsOre, FoodHarvest, Cauldrons, ProjectileHits, Dispenser, Shelves, StrawBeds,
-            GoldenDandelions, Lightning, TrialSpawners, CommandBlocks, SpecialBlocks];
+            GoldenDandelions, Lightning, TrialSpawners, CommandBlocks, StructureBlocks, SpecialBlocks];
 
     private const string RedstoneNotes = """
         Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a
@@ -150,7 +151,7 @@ internal static class ScenarioCaptures
                 + "fire, ticking_blocks, block_use, melting_weather, eyeblossom_ghast_portal, brushing, "
                 + "armor_stand_use, waxing_bells_ore, food_and_harvest, cauldrons, projectile_hits, dispenser, "
                 + "shelves, straw_beds, golden_dandelions, lightning, trial_spawners, growing_plant_ticks, "
-                + "command_blocks or special_blocks.");
+                + "command_blocks, structure_blocks or special_blocks.");
         }
 
         if (fixtures.Contains(CopperWeathering))
@@ -249,6 +250,14 @@ internal static class ScenarioCaptures
         if (fixtures.Contains(Dispenser))
         {
             await FixtureDumper.DumpDispenserAsync(server, Path.Combine(assetsDirectory, "dispenser.json"), cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(StructureBlocks))
+        {
+            var path = Path.Combine(assetsDirectory, "structure_blocks.json");
+            await FixtureDumper.DumpStructureBlocksAsync(server, path, cases);
             if (fixtures.Count == 1)
                 return;
         }

@@ -284,7 +284,9 @@ internal sealed class LevelFluids : IFluidLevelAccess
     }
 
     /// <inheritdoc/>
-    public bool SetBlock(Vector position, IBlock block)
+    public bool SetBlock(Vector position, IBlock block) => this.SetBlock(position, block, BlockUpdateFlags.All);
+
+    public bool SetBlock(Vector position, IBlock block, BlockUpdateFlags flags)
     {
         if (this.level.IsOutsideBuildHeight(position.Y) || !this.TryGetChunk(position, out var chunk))
             return false;
@@ -294,7 +296,8 @@ internal sealed class LevelFluids : IFluidLevelAccess
         // Like AbstractLevel.SetBlockUntrackedAsync; the removal's side effects run on the next tick, without the
         // fluid tick's lock.
         if (this.level.UpdateBlockEntity(chunk, position, block) is API.BlockEntities.BlockEntity removed)
-            this.level.QueueBlockEntityRemoval(removed);
+            this.level.QueueBlockEntityRemoval(removed,
+                skipSideEffects: flags.HasFlag(BlockUpdateFlags.SkipBlockEntitySideEffects));
 
         return true;
     }

@@ -268,6 +268,10 @@ internal static class FixtureDumper
             cases is null ? "" : string.Join('+', cases));
     }
 
+    internal static Task DumpStructureBlocksAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunInTemporaryWorldAsync(server, "StructureBlockFixtures.java", fixture, cases);
+
     // An on-request probe: command blocks on a dedicated server of its own, in a flat world in a temporary folder that
     // is deleted afterwards.
     internal static Task DumpCommandBlocksAsync(VanillaServer server, string fixture,

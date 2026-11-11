@@ -121,6 +121,7 @@ public partial class UseItemOnPacket
 
         Signs.OnPlacedByPlayer(placeLevel, position, block, player);
         CommandBlocks.OnPlacedByPlayer(placeLevel, position, block, use.UsedItem);
+        StructureBlocks.OnPlacedByPlayer(placeLevel, position, player);
 
         var center = (VectorD)position + new VectorD(0.5, 0.5, 0.5);
         placeLevel.EmitGameEvent(MobGameEvent.BlockPlace, center, player, affectedBlock: block);

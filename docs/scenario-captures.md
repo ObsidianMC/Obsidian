@@ -544,6 +544,38 @@ replaces only what vanilla produced.
   coordinates, sound seeds, random arrow-hit pitch and TNT's random horizontal impulse are omitted (see
   [dispenser behaviours](known-gaps/dispenser-behaviours.md)).
 
+- `structure_blocks.json` (`VanillaStructureBlocks.ReplayStructureBlockReference`) records structure blocks from
+  `Java/StructureBlockFixtures.java` (`CaptureFixtures=structure_blocks`). A dedicated 26.3 server in a temporary
+  flat air world handles each case on its server thread. Setup writes use quiet flags; optional `nbt` is loaded
+  through vanilla's block entity loader, and `author` applies its placement author. Actions either decode and
+  handle a real structure editor packet (`edit`), execute a `command` through vanilla's command dispatcher, or set
+  a block with neighbor updates. `validatePath` records 26.3's `TemplatePathFactory` acceptance without opening
+  a host file, allowing legal but Windows-unsafe namespace names to be checked. The game is frozen;
+  checkpoints observe the completed action without advancing scheduled ticks.
+
+  The 33 cases and 95 checkpoints cover all four modes and actions; signed-byte offset and size clamps,
+  integrity bounds, invalid names and file paths, creative/operator rejection, missing saved fields and legacy
+  enum defaults, one/multiple/missing/mismatched corners and the inclusive 80-block range; saving air and excluding
+  structure voids; a chest/item round trip; LOAD's size-preparation first press; rotations, mirrors, seeded integrity
+  and strict placement; nested generated paths, author/cache eviction and disk reload; entities included/excluded;
+  and rising-edge SAVE/LOAD/CORNER, including repeated power notifications and LOAD without size preparation.
+  The `review_*` cases add portable paths and Windows device names, final neighbor notifications, the command's
+  trailing `strict` argument, and unloaded-command rejection. The second review adds strict/non-strict fluid
+  reactions, DETECT with a reserved resource name, and namespace path validation. None of these review cases pins
+  a difference.
+
+  Checkpoints compare all nonair blocks, each structure block's custom saved tag, other block entities' saved
+  data, chat, every generated file's parsed NBT (including DataVersion), item counts and armor stand positions/yaw. Primitive
+  NBT values retain type prefixes. `entitySetup` records the initial entity NBT so unmodeled fields start from the
+  same vanilla state; UUIDs in template files are deterministic inputs, while loaded entities get new identities.
+  The four generic entity-save fields in `entities_included_and_ignored` and the unsupported wire's item count in
+  `strict_false` are pinned by exact case, on both sides, as documented in [structure blocks](known-gaps/structure-blocks.md). Other outputs compare from the start.
+
+  Capture only this fixture with
+  `dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=structure_blocks`.
+  `-p:CaptureCases=packet_clamps+detect_range_boundary` selects exact case names and leaves other cases' values
+  untouched. The replay submits packet bytes and drains queued redstone actions without extra game ticks.
+
 - `command_blocks.json` (`VanillaCommandBlocks.ReplayCommandBlockReference`) records command blocks tick by tick,
   from `Java/CommandBlockFixtures.java` (`CaptureFixtures=command_blocks`), on a dedicated server of its own in a flat
   world of air in a temporary folder, frozen and stepped one tick at a time. A case sets up its blocks without
