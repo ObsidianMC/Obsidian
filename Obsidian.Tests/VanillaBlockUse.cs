@@ -259,6 +259,8 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
 
         if (use.Reference.TryGetProperty("randomSeed", out var seed))
             world.GrowthRandom = new LegacyRandomSource(seed.GetInt64());
+        if (use.Reference.TryGetProperty("soundSeed", out var soundSeed))
+            world.SoundSeedRandom = new LegacyRandomSource(soundSeed.GetInt64());
 
         var writes = new List<string>();
         var destroyed = new List<string>();
@@ -323,13 +325,18 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
         if (withoutAmbientSounds.Contains(use.Name))
             expected = ExpectSpawnEggAmbientSoundMissing(expected, outcome);
         var differences = Compare(expected, outcome).ToList();
+        differences.AddRange(CompareVibrationFrequencies(world, use.Reference));
+        differences.AddRange(CompareSoundRandom(world.GrowthRandom, use.Reference, extra.OfType<SoundPacket>().ToArray()));
         differences.AddRange(writeDifferences);
         if (use.Reference.TryGetProperty("writes", out expectedWrites))
         {
-            var recorded = expectedWrites.EnumerateArray().Select(write => Write(
+            var recordedFlags = expectedWrites.EnumerateArray()
+                .Select(write => write.GetProperty("flags").GetInt32())
+                .ToArray();
+            var recorded = expectedWrites.EnumerateArray().Select((write, index) => Write(
                 target + Position(write.GetProperty("offset")),
                 VanillaSulfurBlocks.ParseState(write.GetProperty("state").GetString()!),
-                (BlockUpdateFlags)write.GetProperty("flags").GetInt32())).ToArray();
+                (BlockUpdateFlags)recordedFlags[index])).ToArray();
             differences.AddRange(CompareLists("ordered writes", recorded, writes.ToArray()));
             var removed = use.Reference.GetProperty("destroyed").EnumerateArray().Select(block => Destroyed(
                 target + Position(block.GetProperty("offset")),
@@ -408,6 +415,69 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
 
         if (use.Reference.TryGetProperty("checkCloseSources", out _))
             await CheckCloseSourcesAsync(harness, use);
+    }
+
+    // Native frequency and calibration samples share the block-use fixture's setup and level.
+    private static List<string> CompareVibrationFrequencies(WorldData.World world, JsonElement reference)
+    {
+        var differences = new List<string>();
+        if (reference.TryGetProperty("vibrationFrequencies", out var frequencies))
+        {
+            foreach (var kind in Enum.GetValues<MobGameEvent>())
+            {
+                var frequency = frequencies.GetProperty(kind.Identifier()).GetInt32();
+                var actual = AbstractLevel.GameEventFrequency(kind);
+                if (actual != frequency)
+                    differences.Add($"{kind.Identifier()}: expected frequency {frequency}, got {actual}");
+            }
+
+            foreach (var sample in reference.GetProperty("calibration").EnumerateArray())
+            {
+                var filter = sample.GetProperty("filter").GetInt32();
+                var eventId = sample.GetProperty("event").GetString();
+                var kind = Enum.GetValues<MobGameEvent>().Single(kind => kind.Identifier() == eventId);
+                var sensor = world.BlockUpdates.GetBlock(target);
+                var wire = BlocksRegistry.RedstoneWire.WithProperty("power", filter).WithProperty("north", "side");
+                world.BlockUpdates.SetBlock(target + Vector.South, wire, Quiet);
+                var actual = world.CalibrationAccepts(target, sensor, kind);
+                if (actual != sample.GetProperty("accepts").GetBoolean())
+                    differences.Add($"{eventId} with filter {filter}: accepted={actual}");
+            }
+
+            world.BlockUpdates.SetBlock(target + Vector.South, BlocksRegistry.Air, Quiet);
+        }
+
+        return differences;
+    }
+
+    // Compare both packet fields and the following draw, so using a different random source cannot pass.
+    private static List<string> CompareSoundRandom(IRandomSource random, JsonElement reference, SoundPacket[] sounds)
+    {
+        var differences = new List<string>();
+        if (reference.TryGetProperty("soundRandom", out var soundRandom))
+        {
+            var recorded = soundRandom.EnumerateArray().ToArray();
+            if (sounds.Length != recorded.Length)
+                differences.Add($"sound random draws: expected {recorded.Length} sounds, got {sounds.Length}");
+
+            for (var index = 0; index < Math.Min(sounds.Length, recorded.Length); index++)
+            {
+                var sound = sounds[index];
+                var captured = recorded[index];
+                if (sound.SoundLocation != captured.GetProperty("sound").GetString()
+                    || sound.Pitch != captured.GetProperty("pitch").GetSingle()
+                    || sound.Seed != captured.GetProperty("seed").GetInt64())
+                {
+                    differences.Add($"{sound.SoundLocation}: pitch={sound.Pitch:R}, seed={sound.Seed} differs");
+                }
+            }
+
+            var next = random.NextInt();
+            if (next != reference.GetProperty("nextRandom").GetInt32())
+                differences.Add($"next level random: expected {reference.GetProperty("nextRandom")}, got {next}");
+        }
+
+        return differences;
     }
 
     // A setup placement's block entity data, vanilla's SNBT without the id and position, loaded as a chunk loads it.

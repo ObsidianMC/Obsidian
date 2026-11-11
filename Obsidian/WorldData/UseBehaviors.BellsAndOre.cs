@@ -1,6 +1,7 @@
 using Obsidian.API.Blocks;
 using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.WorldData.Features;
+using Obsidian.WorldData.Redstone;
 
 namespace Obsidian.WorldData;
 
@@ -19,9 +20,6 @@ internal static partial class UseBehaviors
         // Vanilla's BellBlock.isProperHit: clicks above this height hit the bell's frame, not the bell.
         private const float RimHeight = 0.8124f;
 
-        // Vanilla's BellBlock.EVENT_BELL_RING, the block event that swings the bell on clients.
-        private const int RingEvent = 1;
-
         public ValueTask<UseResult> UseWithoutItemAsync(BlockUse use)
         {
             if (!IsProperHit(use.Block, use.Face, use.Cursor.Y))
@@ -35,14 +33,14 @@ internal static partial class UseBehaviors
             var level = use.Level;
             if (!use.TryCommit(() =>
             {
-                level.QueueBlockEvent(use.Position, use.Block.RegistryId, RingEvent, (int)use.Face);
+                level.QueueBlockEvent(use.Position, use.Block.RegistryId, RedstoneBell.RingEvent, (int)use.Face);
                 return true;
             }))
             {
                 return ValueTask.FromResult(UseResult.Fail);
             }
 
-            BlockLighting.Play(level, use.Position, "minecraft:block.bell.use", volume: 2);
+            BlockLighting.Play(level, use.Position, RedstoneBell.RingSound, RedstoneBell.RingVolume);
             level.EmitGameEvent(MobGameEvent.BlockChange, use.Center, use.Player);
             use.Award("minecraft:bell_ring");
 

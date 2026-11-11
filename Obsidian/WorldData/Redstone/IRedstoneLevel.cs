@@ -1,5 +1,6 @@
 using Obsidian.API.BlockEntities;
 using Obsidian.API.Blocks;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.BlockNotifications;
 
 namespace Obsidian.WorldData.Redstone;
@@ -11,6 +12,8 @@ namespace Obsidian.WorldData.Redstone;
 /// </summary>
 internal interface IRedstoneLevel : IBlockChangeWorld
 {
+    IRandomSource Random { get; }
+
     long GameTime { get; }
 
     long DayTime { get; }
@@ -32,11 +35,11 @@ internal interface IRedstoneLevel : IBlockChangeWorld
     /// </summary>
     ValueTask WriteAsync(Vector position, IBlock block, bool notifyNeighbors);
 
-    /// <summary>
-    /// Commits a block state with exactly vanilla's <paramref name="flags"/>, for a block whose vanilla write passes
-    /// them itself (a pressure plate's flag 2, after which it notifies its neighbours on its own).
-    /// </summary>
+    /// <summary>Commits a component's state with its exact vanilla update flags.</summary>
     ValueTask WriteAsync(Vector position, IBlock block, BlockUpdateFlags flags);
+
+    /// <summary>Refreshes the six neighbours' shapes after a write that deferred shape updates.</summary>
+    ValueTask UpdateNeighborShapesAsync(Vector position);
 
     /// <summary>Restores a block internally, without client, neighbor, shape or placement notifications.</summary>
     ValueTask RestoreBlockSilentlyAsync(Vector position, IBlock block);
@@ -90,6 +93,12 @@ internal interface IRedstoneLevel : IBlockChangeWorld
 
     /// <summary>Crafts a crafter's grid on the entity path (vanilla <c>CrafterBlock.dispenseFrom</c>).</summary>
     void CraftCrafter(Vector position);
+
+    /// <summary>
+    /// How many viewers have the trapped chest at <paramref name="position"/> open, as its last opener recheck
+    /// counted them (vanilla <c>ChestBlockEntity.getOpenCount</c>). Worlds without players have none.
+    /// </summary>
+    int TrappedChestViewers(Vector position) => 0;
 
     bool HasAnalogOutput(IBlock block);
 
