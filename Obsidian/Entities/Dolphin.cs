@@ -85,7 +85,8 @@ public sealed partial class Dolphin : AgeableMob
             Obsidian.WorldData.LevelSounds.Play(sounds, Position, "minecraft:entity.dolphin.eat", MobSoundCategory, 1, 1);
         if (CanAgeUp)
         {
-            Grow((int)(-Age * 0.1f) * 20, forced: true);
+            // Vanilla's getSpeedUpSecondsWhenFeeding: a tenth of the seconds left, in ticks.
+            Grow((int)(-Age / 20 * 0.1f) * 20, forced: true);
         }
         else
         {

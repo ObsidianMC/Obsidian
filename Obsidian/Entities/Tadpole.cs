@@ -50,10 +50,9 @@ public sealed partial class Tadpole : PathfinderMob, IAgeLockable
             return;
 
         AgeLocks.Tick(this, this);
-        if (AgeLocked)
-            return;
 
-        if (++Age >= MaturationTicks)
+        // An age-locked tadpole doesn't age or turn into a frog, but still hops on land.
+        if (!AgeLocked && ++Age >= MaturationTicks)
         {
             if (await ConvertToAsync(EntityType.Frog) is not Frog frog)
                 return;

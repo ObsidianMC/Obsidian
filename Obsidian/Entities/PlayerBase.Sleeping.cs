@@ -116,9 +116,11 @@ public partial class PlayerBase
         this.Motion = VectorD.Zero;
         this.BedBlockPosition = head;
         this.Pose = Pose.Sleeping;
-        this.Sleeping = true;
         this.SleepTimer = 0;
         this.SleepSetSpawn = canSetSpawn;
+
+        // Published last, so a progress tick that sees the player asleep also sees whether this sleep set the spawn.
+        this.Sleeping = true;
         this.SyncFoodMetadata();
 
         var statistic = bed.Is(BlockIds.StrawBed) ? "minecraft:sleep_in_straw_bed" : "minecraft:sleep_in_bed";
