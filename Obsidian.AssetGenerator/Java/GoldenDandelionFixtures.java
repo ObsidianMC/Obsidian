@@ -41,8 +41,9 @@ import net.minecraft.world.phys.Vec3;
  * <p>Each case spawns its {@code entity} on a stone floor at the target, a baby unless {@code baby} is false, with
  * the given {@code age} and {@code ageLocked}, and gives the user its hands. Its steps are {@code interact} (what the
  * server does with an interaction packet once the mob is in reach: {@code Player.interactOn}) and {@code tick} (that
- * many of the mob's ticks). Each step records the result of an interaction, the hand after it, the sounds a bystander
- * heard, the age-related particles it was sent (pausing and resetting growth, and the growth a feed gives), the game
+ * many of the mob's ticks), {@code eatGrass} (a sheep's meal), or {@code item} (changing the main hand).
+ * {@code owned} tames a pet for the user. Each step records the result of an interaction, the hand after it,
+ * the sounds a bystander heard, the age-related particles it was sent (pausing and resetting growth, and the growth a feed gives), the game
  * events, the statistics and the mob's type and saved age fields.
  */
 public final class GoldenDandelionFixtures {
@@ -50,7 +51,9 @@ public final class GoldenDandelionFixtures {
         Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_SUPPRESS_DROPS | Block.UPDATE_SKIP_ON_PLACE;
 
     // The saved fields about a mob's age.
-    private static final String[] AgeFields = { "Age", "ForcedAge", "AgeLocked", "PersistenceRequired" };
+    private static final String[] AgeFields = {
+        "Age", "ForcedAge", "AgeLocked", "PersistenceRequired", "GotFish", "Sitting"
+    };
 
     // The particles about a mob's age and growth; mobs send others (hearts, smoke) that say nothing about it.
     private static final Set<String> AgeParticles = Set.of(
@@ -129,6 +132,8 @@ public final class GoldenDandelionFixtures {
 
             call("prepare", user, standing, input);
             var mob = spawn(level, target, input);
+            if (input.has("owned") && input.get("owned").getAsBoolean())
+                ((net.minecraft.world.entity.TamableAnimal) mob).tame(user);
 
             var results = new JsonArray();
             for (var stepElement : input.getAsJsonArray("steps")) {
@@ -144,6 +149,12 @@ public final class GoldenDandelionFixtures {
                     var result = user.interactOn(mob, hand, new Vec3(0, 0.3, 0));
                     recorded.addProperty("result", (String) call("result", result));
                     recorded.addProperty("hand", (String) call("stack", user.getItemInHand(hand)));
+                } else if (step.has("eatGrass")) {
+                    ((net.minecraft.world.entity.animal.sheep.Sheep) mob).ate();
+                } else if (step.has("item")) {
+                    user.setItemInHand(InteractionHand.MAIN_HAND,
+                        new net.minecraft.world.item.ItemStack(BuiltInRegistries.ITEM.getValue(
+                            Identifier.parse(step.get("item").getAsString())), 2));
                 } else {
                     for (int tick = 0; tick < step.get("tick").getAsInt(); tick++) {
                         if (!mob.isRemoved())

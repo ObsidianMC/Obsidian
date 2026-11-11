@@ -142,7 +142,7 @@ internal static class ScenarioCaptures
             throw new ArgumentException(
                 "Case selection requires CaptureFixtures=redstone, sulfur, more_blocks, structure_pieces, "
                 + "fire, ticking_blocks, block_use, melting_weather, eyeblossom_ghast_portal, brushing, "
-                + "armor_stand_use, waxing_bells_ore, cauldrons, projectile_hits, dispenser, shelves, straw_beds or "
+                + "armor_stand_use, waxing_bells_ore, cauldrons, projectile_hits, dispenser, shelves, straw_beds, "
                 + "golden_dandelions or lightning.");
         }
 

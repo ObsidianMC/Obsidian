@@ -10,6 +10,8 @@ public class AgeableMob : PathfinderMob, IAgeable, IAgeLockable
     // Vanilla's BABY_START_AGE: how young a baby starts, in ticks to growing up.
     internal const int BabyStartAge = -24000;
 
+    protected virtual int StartingBabyAge => BabyStartAge;
+
     private bool legacyBaby;
 
     public int Age { get; internal set; }
@@ -31,7 +33,7 @@ public class AgeableMob : PathfinderMob, IAgeable, IAgeLockable
         set
         {
             legacyBaby = value;
-            Age = value ? BabyStartAge : 0;
+            Age = value ? StartingBabyAge : 0;
         }
     }
 
@@ -49,23 +51,31 @@ public class AgeableMob : PathfinderMob, IAgeable, IAgeLockable
     void IAgeLockable.ToggleAgeLock()
     {
         AgeLocked = !AgeLocked;
-        Age = BabyStartAge;
+        Age = StartingBabyAge;
         ((IAgeLockable)this).AgeLockTimer = AgeLocks.ParticleTicks;
         SynchronizeMetadata();
     }
 
     /// <summary>
     /// Vanilla's <c>ageUp</c> with <c>forced</c>: <paramref name="ticks"/> more growth, short of growing up past 0; the
-    /// growth is remembered as forced, and a baby that grew up takes the forced growth as its age.
+    /// growth is remembered when forced, and a baby that grew up takes the forced growth as its age.
+    /// All growth respects the age lock.
     /// </summary>
-    internal void ForceGrowth(int ticks)
+    internal void Grow(int ticks, bool forced = false)
     {
+        if (!CanAgeUp)
+            return;
+
         var before = Age;
         Age = Math.Min(0, Age + ticks);
-        ForcedAge += Age - before;
+        if (forced)
+            ForcedAge += Age - before;
         if (Age == 0)
             Age = ForcedAge;
     }
+
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand) =>
+        await AgeLocks.TryToggleAsync(this, player, hand) || await base.InteractAsync(player, hand);
 
     protected override ValueTask TickMobAsync()
     {
@@ -99,7 +109,7 @@ public class AgeableMob : PathfinderMob, IAgeable, IAgeLockable
     {
         base.WriteNbt(tag);
 
-        tag.Set(new NbtTag<int>("Age", HasAi ? Age : this.IsBaby ? BabyStartAge : 0));
+        tag.Set(new NbtTag<int>("Age", HasAi ? Age : this.IsBaby ? StartingBabyAge : 0));
         tag.Set(new NbtTag<int>("ForcedAge", ForcedAge));
         tag.Set(new NbtTag<bool>("AgeLocked", AgeLocked));
     }

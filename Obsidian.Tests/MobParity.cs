@@ -240,6 +240,39 @@ public sealed class MobParity
         Assert.Contains(client.SentPackets.OfType<BossEventPacket>(), packet => packet.Action is BossBarRemoveAction);
     }
 
+    [Fact]
+    public async Task SpectatorInteractionCannotChangeAgeLockOrConsumeDandelion()
+    {
+        await using var context = TestServerFactory.CreateServer($"spectator-age-lock-{Guid.NewGuid():N}");
+        var world = context.World;
+        AddEmptyChunk(world);
+        var player = TestServerFactory.CreateConnectedPlayer(
+            context.Server, world, "Spectator", new VectorD(8.5, 64, 8.5));
+        player.GameMode = GameMode.Spectator;
+        var pig = new Pig { Level = world, Position = new VectorD(8.5, 64, 9.5) };
+        pig.InitializeAi(false);
+        pig.IsBaby = true;
+        Assert.True(world.TryAddEntity(pig));
+        await world.RunQueuedEntityActionsAsync();
+        var age = pig.Age;
+        var flowers = new ItemStack(ItemsRegistry.GoldenDandelion, 2);
+        player.Inventory.SetItem(player.CurrentHeldItemSlot, flowers);
+        var client = (TestClient)player.Client;
+        client.ClearPackets();
+        world.TakeGameEvents();
+
+        await player.InteractAsync(pig);
+        await world.RunQueuedEntityActionsAsync();
+
+        Assert.False(pig.AgeLocked);
+        Assert.Equal(age, pig.Age);
+        Assert.False(pig.PersistenceRequired);
+        Assert.Same(flowers, player.GetHeldItem());
+        Assert.Equal(2, flowers.Count);
+        Assert.Empty(client.SentPackets);
+        Assert.Empty(world.TakeGameEvents());
+    }
+
     private static void AddEmptyChunk(World world)
     {
         var chunk = new Chunk(0, 0);

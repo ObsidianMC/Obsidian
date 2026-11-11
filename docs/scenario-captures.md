@@ -462,26 +462,29 @@ replaces only what vanilla produced.
   the nether, with a stone floor and a spectating bystander (who doesn't count towards sleepers). A case sets the time
   of day, its blocks, the user's game mode, standing and respawn point, then runs steps: `use`, `tick` (that many server
   ticks: `ServerLevel.tick`, then the user's `doTick`, as its connection runs it), `leave` (the leave-bed command),
-  `time` and `respawn` (`findRespawnPositionAndUseSpawnBlock`). Each step records the blocks, ordered writes and
+  `time`, `bystanderMode` (changing whether the bystander counts as an active player) and `respawn`
+  (`findRespawnPositionAndUseSpawnBlock`). Each step records the blocks, ordered writes and
   destroyed blocks, entities, what the bystander heard, game events, statistics (but those every tick awards), the
   user's own sounds and messages, whether it sleeps, its sleep timer, its position and its respawn point; a respawn
-  records whether its block was missing (the world spawn, whose spot is random, is recorded as such). The 21 cases
+  records whether its block was missing (the world spawn, whose spot is random, is recorded as such). The 22 cases
   cover straw beds slept in from either half, breaking as the night passes, on leaving and as the morning comes, in
   the day, occupied, obstructed, too far, in creative, without their other half, keeping an earlier spawn point, as
-  plain and forced respawn points, and breaking on use in the nether, with beds for comparison. The replay ticks the
-  test world and the user, confirms the user's teleports as its client would, and compares every step; a sleeper's
+  plain and forced respawn points, breaking on use in the nether, and sleep-status messages when the active-player
+  count changes, with beds for comparison. The replay ticks the test world and the user, confirms the user's teleports as its client would, and compares every step; a sleeper's
   position while it lies through ticks is its own physics' and isn't compared, and one case pins the bounce vanilla's
   player physics plays on a bed ([26.3 blocks](known-gaps/26-3-blocks.md)).
 - `golden_dandelions.json` (`VanillaGoldenDandelions.ReplayGoldenDandelionReference`) records golden dandelions locking
   young mobs' age, from `Java/GoldenDandelionFixtures.java` (`CaptureFixtures=golden_dandelions`), on
   `BlockUseFixtures.java`'s server over a stone floor. A case spawns its `entity` (a baby unless `baby` is false) with
   `age` and `ageLocked` set as a save loads them, and gives the user its hands; steps are `interact`
-  (`Player.interactOn`) and `tick` (the mob's own ticks). Each step records an interaction's result and hand, the
-  bystander's sounds (`id source volume pitch`) and age particles (`pause_mob_growth`, `reset_mob_growth`,
+  (`Player.interactOn`), `tick` (the mob's own ticks), `eatGrass` (a sheep's grass meal) and `item` (changing
+  the main hand). `owned` tames a pet for the user before the steps. Each step records an interaction's result and
+  hand, the bystander's sounds (`id source volume pitch`) and age particles (`pause_mob_growth`, `reset_mob_growth`,
   `happy_villager`), game events, statistics and the mob's type with its saved `Age`, `ForcedAge`, `AgeLocked` and
-  `PersistenceRequired`. The 26 cases lock and unlock cows, sheep, horses, llamas, camels, pandas, axolotls, chickens
-  and tadpoles, refuse adults, creative's kept dandelion, the off hand, the last dandelion, the 40-tick cooldown,
-  locked growth, locked feeding and the mobs that can't be locked. The replay sends the interact packet and ticks the
+  `PersistenceRequired`, plus `GotFish` and `Sitting` where applicable. The 32 cases lock and unlock cows, sheep,
+  horses, llamas, camels, pandas, axolotls, chickens and tadpoles, refuse adults, creative's kept dandelion, the off hand, the last dandelion, the 40-tick cooldown,
+  locked growth, locked feeding, grass meals, dolphins taking fish, owned baby pets before their sitting fallback,
+  sniffers' initial and reset ages, and the mobs that can't be locked. The replay sends the interact packet and ticks the
   mob; tick steps compare the particles and the mob only, since ambient sounds and steps are chance. Three cases pin
   mob behaviour outside the age lock ([26.3 blocks](known-gaps/26-3-blocks.md)).
 - `turtle_eggs.json` (`VanillaTurtleEggs.ReplayTurtleEggReference`) records vanilla's turtle eggs, from

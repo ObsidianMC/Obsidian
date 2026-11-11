@@ -176,6 +176,7 @@ public sealed class VanillaStrawBeds(ITestOutputHelper output)
             await ConfirmTeleportAsync(user);
         }
 
+        harness.Bystander.GameMode = GameMode.Spectator;
         await ClearAsync(world);
         SetTime(world, bed.TryGetProperty("time", out var time) ? time.GetInt64() : 18000);
         for (var x = -2; x <= 2; x++)
@@ -227,6 +228,11 @@ public sealed class VanillaStrawBeds(ITestOutputHelper output)
                 await world.DoWorldTickAsync();
                 await user.TickAsync();
             }
+        }
+        else if (step.TryGetProperty("bystanderMode", out var mode))
+        {
+            harness.Bystander.GameMode = Enum.Parse<GameMode>(mode.GetString()!, ignoreCase: true);
+            await world.UpdateSleepingPlayersAsync();
         }
         else if (step.TryGetProperty("leave", out _))
         {

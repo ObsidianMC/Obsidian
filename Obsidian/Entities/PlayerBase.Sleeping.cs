@@ -87,16 +87,31 @@ public partial class PlayerBase
         if (this.GameMode != GameMode.Creative && this.MonstersNear(head))
             return new ChatMessage { Translate = "block.minecraft.bed.not_safe" };
 
-        // Vanilla's LivingEntity.startSleeping: nobody lies on a straw bed's head without its foot.
-        if (BedBlocks.SleepHeight(level.BlockUpdates.GetBlock, head, bed) is not double height)
-            return null;
+        // Spawn confirmation can yield to a block replacement. Validate both halves and publish occupied under
+        // the same tick lock as block changes; never restore the state captured before that await.
+        lock (level.Fluids.TickLock)
+        {
+            var currentHead = level.BlockUpdates.GetBlock(head);
+            var foot = head.Offset(towardsHead.Opposite());
+            var currentFoot = level.BlockUpdates.GetBlock(foot);
+            if (currentHead is null || currentFoot is null
+                || currentHead.RegistryId != bed.RegistryId || currentFoot.RegistryId != bed.RegistryId
+                || currentHead.GetProperty("part") != "head" || currentFoot.GetProperty("part") != "foot"
+                || BedBlocks.Facing(currentHead) != towardsHead || BedBlocks.Facing(currentFoot) != towardsHead
+                || currentHead.GetProperty("occupied") == "true"
+                || BedBlocks.SleepHeight(level.BlockUpdates.GetBlock, head, currentHead) is not double height)
+            {
+                return null;
+            }
 
-        this.LeaveVehicle();
-        this.Position = new VectorD(head.X + 0.5, head.Y + height, head.Z + 0.5);
-        this.BoundingBox = this.Dimension.CreateBBFromPosition(this.Position);
+            // Only the head is written; its foot follows through its shape update.
+            if (!level.BlockUpdates.SetBlock(head, currentHead.WithProperty("occupied", "true"), BlockUpdateFlags.All))
+                return null;
 
-        // Only the head is written; its foot follows through its shape update.
-        await level.SetBlockAsync(head, bed.WithProperty("occupied", "true"), BlockUpdateFlags.All);
+            this.LeaveVehicle();
+            this.Position = new VectorD(head.X + 0.5, head.Y + height, head.Z + 0.5);
+            this.BoundingBox = this.Dimension.CreateBBFromPosition(this.Position);
+        }
 
         this.Motion = VectorD.Zero;
         this.BedBlockPosition = head;

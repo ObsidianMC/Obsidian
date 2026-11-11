@@ -1,5 +1,5 @@
 {
-  "_notes": "Vanilla 26.3 golden dandelions locking young mobs' age, recorded by Obsidian.AssetGenerator/Java/GoldenDandelionFixtures.java (CaptureFixtures=golden_dandelions) on BlockUseFixtures' dedicated server in a flat world of air, over a stone floor. A case spawns its 'entity' at the centre of the target, a baby unless 'baby' is false, with 'age' and 'ageLocked' set as a save loads them, and gives the user 'item' (two unless 'count' says otherwise), 'offhand', 'handUsed' and 'gameMode' as block_use.json's inputs do. Its steps are 'interact' (Player.interactOn, what an interaction packet does once the mob is in reach) and 'tick' (that many of the mob's ticks). Each step's 'results' entry records an interaction's result and the hand after it, the sounds a bystander heard ('id source volume pitch'), the pause_mob_growth, reset_mob_growth and happy_villager particle packets it was sent, the game events, the statistics, and the mob's type and saved Age, ForcedAge, AgeLocked and PersistenceRequired.",
+  "_notes": "Vanilla 26.3 golden dandelions locking young mobs' age, recorded by Obsidian.AssetGenerator/Java/GoldenDandelionFixtures.java (CaptureFixtures=golden_dandelions) on BlockUseFixtures' dedicated server in a flat world of air, over a stone floor. A case spawns its 'entity' at the centre of the target, a baby unless 'baby' is false, with 'age' and 'ageLocked' set as a save loads them, and gives the user 'item' (two unless 'count' says otherwise), 'offhand', 'handUsed' and 'gameMode' as block_use.json's inputs do. Its steps are 'interact' (Player.interactOn, what an interaction packet does once the mob is in reach) and 'tick' (that many of the mob's ticks), 'eatGrass' (a sheep's meal), or 'item' (changing the main hand). 'owned' tames a pet for the user. Each step's 'results' entry records an interaction's result and the hand after it, the sounds a bystander heard ('id source volume pitch'), the pause_mob_growth, reset_mob_growth and happy_villager particle packets it was sent, the game events, the statistics, and the mob's type and saved Age, ForcedAge, AgeLocked and PersistenceRequired, plus GotFish and Sitting when applicable.",
   "target": [0, 64, 0],
   "player": [0.5, 64, -1.5, 0, 30],
   "cases": [
@@ -824,6 +824,240 @@
           ],
           "stats": [],
           "mob": "minecraft:tadpole Age=23990 AgeLocked=1b PersistenceRequired=0b"
+        }
+      ]
+    },
+    {
+      "name": "sheep_locked_eats_grass",
+      "entity": "minecraft:sheep",
+      "item": "minecraft:golden_dandelion",
+      "steps": [
+        {
+          "interact": true
+        },
+        {
+          "eatGrass": true
+        }
+      ],
+      "results": [
+        {
+          "result": "success",
+          "hand": "minecraft:golden_dandelion x1",
+          "sounds": [
+            "minecraft:item.golden_dandelion.use player 1.0 1.0"
+          ],
+          "particles": [],
+          "gameEvents": [
+            "minecraft:entity_interact 0,0,0 player"
+          ],
+          "stats": [],
+          "mob": "minecraft:sheep Age=-24000 ForcedAge=0 AgeLocked=1b PersistenceRequired=1b"
+        },
+        {
+          "sounds": [],
+          "particles": [],
+          "gameEvents": [
+            "minecraft:eat 0,0,0 minecraft:sheep"
+          ],
+          "stats": [],
+          "mob": "minecraft:sheep Age=-24000 ForcedAge=0 AgeLocked=1b PersistenceRequired=1b"
+        }
+      ]
+    },
+    {
+      "name": "dolphin_locked_fed_cod",
+      "entity": "minecraft:dolphin",
+      "item": "minecraft:golden_dandelion",
+      "steps": [
+        {
+          "interact": true
+        },
+        {
+          "item": "minecraft:cod"
+        },
+        {
+          "interact": true
+        }
+      ],
+      "results": [
+        {
+          "result": "success",
+          "hand": "minecraft:golden_dandelion x1",
+          "sounds": [
+            "minecraft:item.golden_dandelion.use player 1.0 1.0"
+          ],
+          "particles": [],
+          "gameEvents": [
+            "minecraft:entity_interact 0,0,0 player"
+          ],
+          "stats": [],
+          "mob": "minecraft:dolphin Age=-24000 ForcedAge=0 AgeLocked=1b PersistenceRequired=1b GotFish=0b"
+        },
+        {
+          "sounds": [],
+          "particles": [],
+          "gameEvents": [],
+          "stats": [],
+          "mob": "minecraft:dolphin Age=-24000 ForcedAge=0 AgeLocked=1b PersistenceRequired=1b GotFish=0b"
+        },
+        {
+          "result": "success",
+          "hand": "minecraft:cod x1",
+          "sounds": [
+            "minecraft:entity.dolphin.eat neutral 1.0 1.0"
+          ],
+          "particles": [],
+          "gameEvents": [
+            "minecraft:entity_interact 0,0,0 player"
+          ],
+          "stats": [],
+          "mob": "minecraft:dolphin Age=-24000 ForcedAge=0 AgeLocked=1b PersistenceRequired=1b GotFish=1b"
+        }
+      ]
+    },
+    {
+      "name": "owned_baby_cat_locks_before_sitting",
+      "entity": "minecraft:cat",
+      "owned": true,
+      "item": "minecraft:golden_dandelion",
+      "steps": [
+        {
+          "interact": true
+        }
+      ],
+      "results": [
+        {
+          "result": "success",
+          "hand": "minecraft:golden_dandelion x1",
+          "sounds": [
+            "minecraft:item.golden_dandelion.use player 1.0 1.0"
+          ],
+          "particles": [],
+          "gameEvents": [
+            "minecraft:entity_interact 0,0,0 player"
+          ],
+          "stats": [],
+          "mob": "minecraft:cat Age=-24000 ForcedAge=0 AgeLocked=1b PersistenceRequired=1b Sitting=0b"
+        }
+      ]
+    },
+    {
+      "name": "owned_baby_wolf_locks_before_sitting",
+      "entity": "minecraft:wolf",
+      "owned": true,
+      "item": "minecraft:golden_dandelion",
+      "steps": [
+        {
+          "interact": true
+        }
+      ],
+      "results": [
+        {
+          "result": "success",
+          "hand": "minecraft:golden_dandelion x1",
+          "sounds": [
+            "minecraft:item.golden_dandelion.use player 1.0 1.0"
+          ],
+          "particles": [],
+          "gameEvents": [
+            "minecraft:entity_interact 0,0,0 player"
+          ],
+          "stats": [],
+          "mob": "minecraft:wolf Age=-24000 ForcedAge=0 AgeLocked=1b PersistenceRequired=1b Sitting=0b"
+        }
+      ]
+    },
+    {
+      "name": "sniffer_lock_uses_species_age",
+      "entity": "minecraft:sniffer",
+      "age": -47000,
+      "item": "minecraft:golden_dandelion",
+      "steps": [
+        {
+          "interact": true
+        },
+        {
+          "tick": 41
+        },
+        {
+          "interact": true
+        }
+      ],
+      "results": [
+        {
+          "result": "success",
+          "hand": "minecraft:golden_dandelion x1",
+          "sounds": [
+            "minecraft:item.golden_dandelion.use player 1.0 1.0"
+          ],
+          "particles": [],
+          "gameEvents": [
+            "minecraft:entity_interact 0,0,0 player"
+          ],
+          "stats": [],
+          "mob": "minecraft:sniffer Age=-48000 ForcedAge=0 AgeLocked=1b PersistenceRequired=1b"
+        },
+        {
+          "sounds": [
+            "minecraft:entity.sniffer.scenting neutral 1.0 1.3",
+            "minecraft:entity.sniffer.idle neutral 1.0 1.6"
+          ],
+          "particles": [
+            "minecraft:pause_mob_growth 1",
+            "minecraft:pause_mob_growth 1",
+            "minecraft:pause_mob_growth 1",
+            "minecraft:pause_mob_growth 1",
+            "minecraft:pause_mob_growth 1",
+            "minecraft:pause_mob_growth 1",
+            "minecraft:pause_mob_growth 1",
+            "minecraft:pause_mob_growth 1",
+            "minecraft:pause_mob_growth 1",
+            "minecraft:pause_mob_growth 1",
+            "minecraft:pause_mob_growth 1",
+            "minecraft:pause_mob_growth 1",
+            "minecraft:pause_mob_growth 1",
+            "minecraft:pause_mob_growth 1",
+            "minecraft:pause_mob_growth 1",
+            "minecraft:pause_mob_growth 1",
+            "minecraft:pause_mob_growth 1",
+            "minecraft:pause_mob_growth 1",
+            "minecraft:pause_mob_growth 1",
+            "minecraft:pause_mob_growth 1"
+          ],
+          "gameEvents": [],
+          "stats": [],
+          "mob": "minecraft:sniffer Age=-48000 ForcedAge=0 AgeLocked=1b PersistenceRequired=1b"
+        },
+        {
+          "result": "success",
+          "hand": "empty",
+          "sounds": [
+            "minecraft:item.golden_dandelion.unuse player 1.0 1.0"
+          ],
+          "particles": [],
+          "gameEvents": [
+            "minecraft:entity_interact 0,0,0 player"
+          ],
+          "stats": [],
+          "mob": "minecraft:sniffer Age=-48000 ForcedAge=0 AgeLocked=0b PersistenceRequired=1b"
+        }
+      ]
+    },
+    {
+      "name": "sniffer_spawn_uses_species_age",
+      "entity": "minecraft:sniffer",
+      "steps": [
+        {
+          "tick": 1
+        }
+      ],
+      "results": [
+        {
+          "sounds": [],
+          "particles": [],
+          "gameEvents": [],
+          "stats": [],
+          "mob": "minecraft:sniffer Age=-47999 ForcedAge=0 AgeLocked=0b PersistenceRequired=0b"
         }
       ]
     }

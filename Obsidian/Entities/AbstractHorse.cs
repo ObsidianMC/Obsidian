@@ -99,7 +99,7 @@ public class AbstractHorse : Animal, IRideable
             // Vanilla's AbstractHorse.handleEating: a locked baby eats without growing.
             if (IsBaby && !AgeLocked)
             {
-                Age = Math.Min(0, Age + (food == ItemsRegistry.HayBlock ? 3600 : 1200));
+                Grow(food == ItemsRegistry.HayBlock ? 3600 : 1200);
             }
             else if (tamed && breedingFood && Age == 0)
             {

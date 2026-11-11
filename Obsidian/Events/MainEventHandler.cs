@@ -103,8 +103,6 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             ArmorStand stand when standUse is not null => await stand.UseAsync(standUse),
             IPlayerInteractable interactable when player is PlayerBase user => await interactable.InteractAsync(user, hand),
             // Like vanilla's Mob.interact, leads come before the mob's own interaction.
-            // A golden dandelion locks a young mob's age once its own interaction didn't use the click, as vanilla's
-            // AgeableMob.mobInteract comes after its subclasses' food and buckets.
             Mob { HasAi: true } mob => player is PlayerBase leader && await mob.UseLeashAsync(leader, hand)
                 || await mob.InteractAsync(player, hand)
                 || await AgeLocks.TryToggleAsync(mob, player, hand),

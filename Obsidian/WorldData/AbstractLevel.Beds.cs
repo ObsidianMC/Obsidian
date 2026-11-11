@@ -18,8 +18,10 @@ public abstract partial class AbstractLevel
     // StrawBedBlock.spawnDestroyParticles).
     internal const int StrawBedBreakEvent = 2014;
 
-    // How many players were asleep at the last tick, to tell players when it changes (vanilla's SleepStatus).
+    // The last sleep-status counts, so either sleepers or active players changing refreshes the message.
     private int previousSleepers;
+
+    private int previousActivePlayers;
 
     /// <summary>
     /// Skips the night like vanilla's <c>ServerLevel.tick</c>: once enough players (by <c>players_sleeping_percentage</c>,
@@ -35,6 +37,7 @@ public abstract partial class AbstractLevel
         if (players.Length == 0)
         {
             previousSleepers = 0;
+            previousActivePlayers = 0;
             return;
         }
 
@@ -91,15 +94,17 @@ public abstract partial class AbstractLevel
         return this.AnnounceSleepersAsync(players);
     }
 
-    // Vanilla's SleepStatus.update and announceSleepStatus: when the number of sleepers changed, and anyone sleeps or
-    // slept, every player is told that the night is being skipped or how many sleep of how many are needed.
+    // Vanilla's SleepStatus.update and announceSleepStatus: when sleepers or active players changed, and anyone
+    // sleeps or slept, every player is told that the night is being skipped or how many sleep of how many are needed.
     private async ValueTask AnnounceSleepersAsync(PlayerBase[] players)
     {
         var percentage = LevelData.GetIntegerRule("players_sleeping_percentage", 100);
         var sleeping = players.Count(player => player.Sleeping);
         var needed = Math.Max(1, (int)Math.Ceiling(players.Length * percentage / 100.0));
 
-        var changed = sleeping != previousSleepers && (sleeping > 0 || previousSleepers > 0);
+        var changed = (sleeping != previousSleepers || players.Length != previousActivePlayers)
+            && (sleeping > 0 || previousSleepers > 0);
+        previousActivePlayers = players.Length;
         previousSleepers = sleeping;
         if (!changed)
             return;

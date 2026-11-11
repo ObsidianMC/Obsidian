@@ -1,5 +1,5 @@
 {
-  "_notes": "Vanilla 26.3 straw beds and beds over time, recorded by Obsidian.AssetGenerator/Java/StrawBedFixtures.java (CaptureFixtures=straw_beds) on BlockUseFixtures' dedicated server in a flat world of air, with a stone floor under the area. A case sets the time of day ('time', 18000 unless given), its blocks without updates, the user's game mode, standing ('player', x, y, z, yaw, pitch) and respawn point ('respawnPoint', relative, 'forced' or not), runs a tick so the sky follows the time, then its steps: 'use' (a use-item-on of the clicked face with an empty hand), 'tick' (that many server ticks: the level's, then the user's), 'leave' (the leave-bed command), 'time' (the time of day set) and 'respawn' (where a respawn would put the user). Each step's 'results' entry records the use's result, the blocks that changed, ordered writes and destroyed blocks, the entities around, what a spectating bystander above the target heard, the game events, the statistics (but play_time, total_world_time, time_since_death and time_since_rest), the user's own sounds and events ('userEffects'), its system and overlay messages, whether it sleeps, its sleep timer, its position relative to the target and its respawn point; a respawn records where and in which level.",
+  "_notes": "Vanilla 26.3 straw beds and beds over time, recorded by Obsidian.AssetGenerator/Java/StrawBedFixtures.java (CaptureFixtures=straw_beds) on BlockUseFixtures' dedicated server in a flat world of air, with a stone floor under the area. A case sets the time of day ('time', 18000 unless given), its blocks without updates, the user's game mode, standing ('player', x, y, z, yaw, pitch) and respawn point ('respawnPoint', relative, 'forced' or not), runs a tick so the sky follows the time, then its steps: 'use' (a use-item-on of the clicked face with an empty hand), 'tick' (that many server ticks: the level's, then the user's), 'leave' (the leave-bed command), 'time' (the time of day set), 'bystanderMode' (changing whether the bystander counts as an active player) and 'respawn' (where a respawn would put the user). Each step's 'results' entry records the use's result, the blocks that changed, ordered writes and destroyed blocks, the entities around, what a spectating bystander above the target heard, the game events, the statistics (but play_time, total_world_time, time_since_death and time_since_rest), the user's own sounds and events ('userEffects'), its system and overlay messages, whether it sleeps, its sleep timer, its position relative to the target and its respawn point; a respawn records where and in which level.",
   "target": [0, 64, 0],
   "player": [0.5, 64, -1.5, 0, 30],
   "cases": [
@@ -1479,6 +1479,165 @@
           "sleeping": false,
           "sleepTimer": 0,
           "position": "0.5000,0.0000,-1.5000",
+          "respawnPoint": null
+        }
+      ]
+    },
+    {
+      "name": "sleep_status_tracks_active_players",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:straw_bed[facing=south]"
+        },
+        {
+          "offset": [0, 0, 1],
+          "state": "minecraft:straw_bed[facing=south,part=head]"
+        }
+      ],
+      "steps": [
+        {
+          "use": {
+            "clicked": [0, 0, 1],
+            "face": "up",
+            "cursor": [0.5, 0.25, 0.5]
+          }
+        },
+        {
+          "bystanderMode": "survival"
+        },
+        {
+          "bystanderMode": "spectator"
+        },
+        {
+          "leave": true
+        }
+      ],
+      "results": [
+        {
+          "result": "success_server",
+          "changes": "0,0,0=minecraft:straw_bed[facing=south,occupied=true];0,0,1=minecraft:straw_bed[facing=south,occupied=true,part=head]",
+          "writes": [
+            {
+              "offset": [0, 0, 1],
+              "state": "minecraft:straw_bed[facing=south,occupied=true,part=head]",
+              "flags": 3
+            },
+            {
+              "offset": [0, 0, 0],
+              "state": "minecraft:straw_bed[facing=south,occupied=true]",
+              "flags": 2
+            }
+          ],
+          "destroyed": [],
+          "entities": [],
+          "sounds": [],
+          "levelEvents": [],
+          "blockEvents": [],
+          "gameEvents": [],
+          "stats": [
+            "minecraft:custom minecraft:sleep_in_straw_bed 1"
+          ],
+          "userEffects": [],
+          "messages": [
+            "overlay sleep.skipping_night"
+          ],
+          "sleeping": true,
+          "sleepTimer": 0,
+          "position": "0.5000,0.3750,1.5000",
+          "respawnPoint": null
+        },
+        {
+          "changes": "",
+          "writes": [],
+          "destroyed": [],
+          "entities": [],
+          "sounds": [],
+          "levelEvents": [],
+          "blockEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "userEffects": [],
+          "messages": [
+            "overlay sleep.players_sleeping"
+          ],
+          "sleeping": true,
+          "sleepTimer": 0,
+          "position": "0.5000,0.3750,1.5000",
+          "respawnPoint": null
+        },
+        {
+          "changes": "",
+          "writes": [],
+          "destroyed": [],
+          "entities": [],
+          "sounds": [],
+          "levelEvents": [],
+          "blockEvents": [],
+          "gameEvents": [],
+          "stats": [],
+          "userEffects": [],
+          "messages": [
+            "overlay sleep.skipping_night"
+          ],
+          "sleeping": true,
+          "sleepTimer": 0,
+          "position": "0.5000,0.3750,1.5000",
+          "respawnPoint": null
+        },
+        {
+          "changes": "0,0,0=minecraft:air;0,0,1=minecraft:air",
+          "writes": [
+            {
+              "offset": [0, 0, 1],
+              "state": "minecraft:straw_bed[facing=south,part=head]",
+              "flags": 3
+            },
+            {
+              "offset": [0, 0, 0],
+              "state": "minecraft:straw_bed[facing=south]",
+              "flags": 2
+            },
+            {
+              "offset": [0, 0, 1],
+              "state": "minecraft:air",
+              "flags": 3
+            },
+            {
+              "offset": [0, 0, 0],
+              "state": "minecraft:air",
+              "flags": 3
+            }
+          ],
+          "destroyed": [
+            {
+              "offset": [0, 0, 0],
+              "state": "minecraft:straw_bed[facing=south]",
+              "drops": true
+            }
+          ],
+          "entities": [],
+          "sounds": [
+            "minecraft:block.straw_bed.break_leave"
+          ],
+          "levelEvents": [
+            "2014 0,0,0 2293"
+          ],
+          "blockEvents": [],
+          "gameEvents": [
+            "minecraft:block_destroy 0,0,0 none"
+          ],
+          "stats": [],
+          "userEffects": [
+            "sound minecraft:block.straw_bed.break_leave",
+            "level_event 2014 0,0,0 2293"
+          ],
+          "messages": [
+            "overlay sleep.players_sleeping"
+          ],
+          "sleeping": false,
+          "sleepTimer": 100,
+          "position": "-0.5000,0.0000,1.5000",
           "respawnPoint": null
         }
       ]

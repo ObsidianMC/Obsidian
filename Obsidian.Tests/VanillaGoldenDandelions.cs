@@ -40,7 +40,8 @@ public sealed class VanillaGoldenDandelions(ITestOutputHelper output)
         ["minecraft:pause_mob_growth", "minecraft:reset_mob_growth", "minecraft:happy_villager"];
 
     // The saved fields about a mob's age, as the capture records them.
-    private static readonly string[] ageFields = ["Age", "ForcedAge", "AgeLocked", "PersistenceRequired"];
+    private static readonly string[] ageFields =
+        ["Age", "ForcedAge", "AgeLocked", "PersistenceRequired", "GotFish", "Sitting"];
 
     // Known differences, by case, step and field: what Obsidian records instead of vanilla's value. Each fails once
     // Obsidian matches vanilla or changes, so it can be removed. None is about the age lock: a horse eating plays no
@@ -131,6 +132,13 @@ public sealed class VanillaGoldenDandelions(ITestOutputHelper output)
 
         Prepare(user, dandelion);
         var mob = Spawn(world, dandelion);
+        if (dandelion.TryGetProperty("owned", out var owned) && owned.GetBoolean())
+        {
+            if (mob is Cat cat)
+                cat.Owner = user.Uuid;
+            else if (mob is Wolf wolf)
+                wolf.Owner = user.Uuid;
+        }
         await world.RunQueuedEntityActionsAsync();
 
         var differences = new List<string>();
@@ -146,6 +154,10 @@ public sealed class VanillaGoldenDandelions(ITestOutputHelper output)
             var interacting = steps[index].TryGetProperty("interact", out _);
             if (interacting)
                 await InteractAsync(harness, mob, Hand(dandelion));
+            else if (steps[index].TryGetProperty("eatGrass", out _))
+                Assert.IsType<Sheep>(mob).EatGrass();
+            else if (steps[index].TryGetProperty("item", out var item))
+                user.Inventory.SetItem(user.CurrentHeldItemSlot, Stack(item.GetString(), 2));
             else
                 await TickAsync(mob, steps[index].GetProperty("tick").GetInt32());
 
@@ -198,13 +210,13 @@ public sealed class VanillaGoldenDandelions(ITestOutputHelper output)
         var baby = !dandelion.TryGetProperty("baby", out var young) || young.GetBoolean();
         if (dandelion.TryGetProperty("age", out var age))
             tag.Add(new NbtTag<int>("Age", age.GetInt32()));
-        else if (baby)
-            tag.Add(new NbtTag<int>("Age", AgeableMob.BabyStartAge));
 
         if (dandelion.TryGetProperty("ageLocked", out var locked))
             tag.Add(new NbtTag<bool>("AgeLocked", locked.GetBoolean()));
 
         var mob = Assert.IsAssignableFrom<Mob>(EntityNbt.Load(tag, world));
+        if (baby && !dandelion.TryGetProperty("age", out _) && mob is AgeableMob ageable)
+            ageable.IsBaby = true;
         Assert.True(world.TryAddEntity(mob));
         return mob;
     }

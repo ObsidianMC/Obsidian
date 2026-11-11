@@ -135,6 +135,7 @@ public final class StrawBedFixtures {
             if (!selected.isEmpty() && !selected.contains(input.get("name").getAsString()))
                 continue;
 
+            bystander.setGameMode(GameType.SPECTATOR);
             setUp(server, level, user, target, standing, input);
 
             var results = new JsonArray();
@@ -151,7 +152,7 @@ public final class StrawBedFixtures {
                 call("observeWrites", level, observed);
 
                 var recorded = new JsonObject();
-                run(server, level, user, target, step, recorded);
+                run(server, level, user, bystander, target, step, recorded);
 
                 System.getProperties().remove("obsidian.blockUse.writes");
                 System.getProperties().remove("obsidian.blockUse.destroyed");
@@ -232,8 +233,8 @@ public final class StrawBedFixtures {
         level.tick(() -> true);
     }
 
-    private static void run(MinecraftServer server, ServerLevel level, ServerPlayer user, BlockPos target,
-        JsonObject step, JsonObject recorded) throws Exception {
+    private static void run(MinecraftServer server, ServerLevel level, ServerPlayer user, ServerPlayer bystander,
+        BlockPos target, JsonObject step, JsonObject recorded) throws Exception {
         if (step.has("use")) {
             var use = step.getAsJsonObject("use").deepCopy();
             var result = (InteractionResult) call("use", level, user, target, use);
@@ -244,6 +245,8 @@ public final class StrawBedFixtures {
                 level.tick(() -> true);
                 user.doTick();
             }
+        } else if (step.has("bystanderMode")) {
+            bystander.setGameMode(GameType.byName(step.get("bystanderMode").getAsString()));
         } else if (step.has("leave")) {
             // What the leave-bed command does (ServerGamePacketListenerImpl.handlePlayerCommand).
             if (user.isSleeping())

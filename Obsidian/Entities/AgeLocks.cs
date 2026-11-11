@@ -47,7 +47,8 @@ internal static class AgeLocks
     /// <returns>Whether the dandelion was used.</returns>
     public static async ValueTask<bool> TryToggleAsync(Mob mob, IPlayer player, InteractionHand hand)
     {
-        if (mob is not IAgeLockable lockable || !mob.Alive || mob.IsRemoved)
+        if (player.GameMode == GameMode.Spectator
+            || mob is not IAgeLockable lockable || !mob.Alive || mob.IsRemoved)
             return false;
 
         var slot = hand == InteractionHand.OffHand ? OffhandSlot : player.CurrentHeldItemSlot;
