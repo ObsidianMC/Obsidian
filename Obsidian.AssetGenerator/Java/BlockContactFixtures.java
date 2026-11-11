@@ -113,7 +113,15 @@ public final class BlockContactFixtures {
         }
         for (var value : input.getAsJsonArray("setup")) {
             var placement = value.getAsJsonObject();
-            level.setBlock(position(placement.getAsJsonArray("pos")), state(placement.get("state").getAsString()), 3);
+            var pos = position(placement.getAsJsonArray("pos"));
+            level.setBlock(pos, state(placement.get("state").getAsString()), 3);
+            if (placement.has("items") && level.getBlockEntity(pos) instanceof net.minecraft.world.Container container) {
+                for (var entry : placement.getAsJsonArray("items")) {
+                    var item = entry.getAsJsonObject();
+                    container.setItem(item.get("slot").getAsInt(), new ItemStack(BuiltInRegistries.ITEM.getValue(
+                        Identifier.parse(item.get("id").getAsString())), item.get("count").getAsInt()));
+                }
+            }
         }
         server.getCommands().performPrefixedCommand(server.createCommandSourceStack(),
             "gamerule minecraft:mob_griefing " + (!input.has("mobGriefing")
@@ -200,6 +208,15 @@ public final class BlockContactFixtures {
                     // A non-experimental minecart already runs its inside effects from move.
                     if (!(entity instanceof net.minecraft.world.entity.vehicle.minecart.AbstractMinecart)) {
                         entity.applyEffectsFromBlocks(before, entity.position());
+                    }
+                }
+            }
+            if (tick > 0 && input.has("tickHoppers")) {
+                // Entity movement/contact precedes the block-entity tick in ServerLevel.tick.
+                for (var pos : BlockPos.betweenClosed(min, max)) {
+                    if (level.getBlockEntity(pos) instanceof net.minecraft.world.level.block.entity.HopperBlockEntity hopper) {
+                        net.minecraft.world.level.block.entity.HopperBlockEntity.pushItemsTick(
+                            level, pos, level.getBlockState(pos), hopper);
                     }
                 }
             }
@@ -397,12 +414,15 @@ public final class BlockContactFixtures {
         var containers = new JsonArray();
         for (var value : input.getAsJsonArray("setup")) {
             var pos = position(value.getAsJsonObject().getAsJsonArray("pos"));
-            if (level.getBlockEntity(pos) instanceof net.minecraft.world.level.block.entity.HopperBlockEntity hopper) {
+            var blockEntity = level.getBlockEntity(pos);
+            if (blockEntity instanceof net.minecraft.world.Container inventory
+                && (input.has("recordContainers")
+                    || blockEntity instanceof net.minecraft.world.level.block.entity.HopperBlockEntity)) {
                 var container = new JsonObject();
                 container.add("pos", vector(pos));
                 var items = new JsonArray();
-                for (int slot = 0; slot < hopper.getContainerSize(); slot++) {
-                    var stack = hopper.getItem(slot);
+                for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+                    var stack = inventory.getItem(slot);
                     items.add(stack.isEmpty() ? "air" : BuiltInRegistries.ITEM.getKey(stack.getItem())
                         + " x" + stack.getCount());
                 }

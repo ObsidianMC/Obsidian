@@ -3,13 +3,13 @@
 **Status:** the phase 3 inside, fallen-on and stepped-on behaviours, posed player boxes, block speed and jump factors,
 stuck-in-block and entity-dependent collision are implemented; broader movement and sculk parity remain open.
 
-`block_contact_scenarios.json` contains the original 16 live RCON cases and 184 controlled native movement cases.
+`block_contact_scenarios.json` contains the original 16 live RCON cases and 185 controlled native movement cases.
 `VanillaBlockContact.ScenariosMatchVanilla` compares every recorded checkpoint from the start, including ordered
 writes and flags, motion, health, accepted damage types, drops and effects. No case has a blanket skip, delayed
 comparison start, or ignored unexpected write. Sound playback seeds are deliberately outside the capture;
 categories, positions, volume, pitch and ordering are compared. The 51 `inside_*` cases also compare removal,
 remaining fire ticks, item counts, vehicle damage, hopper slots, snowflake packet fields, honey particle events,
-and the next entity random integer as well as the next level random integer. Sixteen additional `review_*` cases
+and the next entity random integer as well as the next level random integer. Seventeen additional `review_*` cases
 cover stand break/drop boundaries, Frost Walker slot checks, fire ticking and expiry, minecart slide effects, and
 snow visited before a campfire. Fire-ticking cases invoke vanilla's `baseTick` before each controlled move and also
 compare the shared burning flag; the mixed snow/campfire cases compare frozen ticks. These cases have no pins.
@@ -75,6 +75,11 @@ Slime damps the horizontal movement of what walks on it. These original pose and
   item from the bowl's suction area. The tick still collects items above the hopper. The hook adds no second
   pickup implementation. `EntityContactSafety.HopperContactTriesBusyInventoryUnderTickAndTransferLocksWithoutLosingItems`
   forces inventory contention with explicit gates and checks retry and conservation across contact and ticking.
+  `review_hopper_contact_before_chest_pull` captures a raw-iron item taken by contact before the block-entity tick,
+  while cobblestone stays in the chest above during cooldown. This also explains why a block-entity lifecycle test
+  must remove a furnace's unused input before replacing it with a hopper: random replacement drops can otherwise
+  enter the hopper first. `TickingBlockEntities.BlockEntitiesTickExactlyWhileInPlace` retains every lifecycle and
+  chest-transfer assertion with that isolated fixture.
 - **Dripleaf:** vanilla routes standing contact through `entityInside`, including sneaking entities and items.
   Unstable lasts 10 ticks, partial 10, full 100, followed by reset. Tilt sounds, vibrations and redstone reset are
   captured. Arrows and snowballs immediately tilt it fully and schedule its 100-tick reset, even while powered

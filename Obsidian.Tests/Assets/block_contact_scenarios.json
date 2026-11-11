@@ -176055,6 +176055,573 @@
    "nextEntityRandom": {
     "a": -1188957731
    }
+  },
+  {
+   "name": "review_hopper_contact_before_chest_pull",
+   "contactMoves": true,
+   "recordInside": true,
+   "min": [
+    -1,
+    63,
+    0
+   ],
+   "max": [
+    1,
+    65,
+    0
+   ],
+   "ticks": 2,
+   "seed": 0,
+   "setup": [
+    {
+     "pos": [
+      -1,
+      63,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      63,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      1,
+      63,
+      0
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "pos": [
+      0,
+      64,
+      0
+     ],
+     "state": "minecraft:hopper"
+    },
+    {
+     "pos": [
+      0,
+      65,
+      0
+     ],
+     "state": "minecraft:chest",
+     "items": [
+      {
+       "slot": 0,
+       "id": "minecraft:cobblestone",
+       "count": 1
+      }
+     ]
+    }
+   ],
+   "entities": [
+    {
+     "tick": 0,
+     "summon": "a",
+     "type": "minecraft:item",
+     "pos": [
+      0.5,
+      64.75,
+      0.5
+     ],
+     "motion": [
+      0,
+      0,
+      0
+     ],
+     "noGravity": true,
+     "noAi": true,
+     "entitySeed": 123,
+     "count": 2,
+     "item": "minecraft:raw_iron"
+    }
+   ],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "blocks": [
+      {
+       "pos": [
+        -1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        -1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:hopper[enabled=true,facing=down]"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        -1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:chest[facing=north,type=single,waterlogged=false]"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "a": {
+       "position": [
+        0.5,
+        64.75,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": false,
+       "removed": false,
+       "fireTicks": 0,
+       "itemCount": 2
+      }
+     },
+     "drops": [],
+     "containers": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "items": [
+        "air",
+        "air",
+        "air",
+        "air",
+        "air"
+       ]
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "items": [
+        "minecraft:cobblestone x1",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air"
+       ]
+      }
+     ],
+     "entityEvents": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [],
+     "particles": []
+    },
+    {
+     "tick": 1,
+     "blocks": [
+      {
+       "pos": [
+        -1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        -1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:hopper[enabled=true,facing=down]"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        -1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:chest[facing=north,type=single,waterlogged=false]"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "a": {
+       "position": [
+        0.5,
+        64.75,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": false,
+       "removed": true,
+       "fireTicks": 0,
+       "itemCount": 0
+      }
+     },
+     "drops": [],
+     "containers": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "items": [
+        "minecraft:raw_iron x2",
+        "air",
+        "air",
+        "air",
+        "air"
+       ]
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "items": [
+        "minecraft:cobblestone x1",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air"
+       ]
+      }
+     ],
+     "entityEvents": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [],
+     "particles": []
+    },
+    {
+     "tick": 2,
+     "blocks": [
+      {
+       "pos": [
+        -1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        0,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        1,
+        63,
+        0
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "pos": [
+        -1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "state": "minecraft:hopper[enabled=true,facing=down]"
+      },
+      {
+       "pos": [
+        1,
+        64,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        -1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "state": "minecraft:chest[facing=north,type=single,waterlogged=false]"
+      },
+      {
+       "pos": [
+        1,
+        65,
+        0
+       ],
+       "state": "minecraft:air"
+      }
+     ],
+     "observations": {
+      "a": {
+       "position": [
+        0.5,
+        64.75,
+        0.5
+       ],
+       "velocity": [
+        0.0,
+        0.0,
+        0.0
+       ],
+       "fallDistance": 0.0,
+       "onGround": false,
+       "removed": true,
+       "fireTicks": 0,
+       "itemCount": 0
+      }
+     },
+     "drops": [],
+     "containers": [
+      {
+       "pos": [
+        0,
+        64,
+        0
+       ],
+       "items": [
+        "minecraft:raw_iron x2",
+        "air",
+        "air",
+        "air",
+        "air"
+       ]
+      },
+      {
+       "pos": [
+        0,
+        65,
+        0
+       ],
+       "items": [
+        "minecraft:cobblestone x1",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air",
+        "air"
+       ]
+      }
+     ],
+     "entityEvents": [],
+     "writes": [],
+     "sounds": [],
+     "soundDetails": [],
+     "levelEvents": [],
+     "blockEvents": [],
+     "gameEvents": [],
+     "particles": []
+    }
+   ],
+   "tickHoppers": true,
+   "recordContainers": true,
+   "nextRandom": -1155484576,
+   "nextEntityRandom": {
+    "a": -1188957731
+   }
   }
  ]
 }

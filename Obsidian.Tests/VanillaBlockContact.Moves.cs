@@ -1,4 +1,5 @@
 using Obsidian.API;
+using Obsidian.API.BlockEntities;
 using Obsidian.API.Blocks;
 using Obsidian.API.Loot;
 using Obsidian.API.Inventory;
@@ -44,8 +45,19 @@ public partial class VanillaBlockContact
 
             foreach (var placement in scenario.GetProperty("setup").EnumerateArray())
             {
-                world.BlockUpdates.SetBlock(ReadVector(placement.GetProperty("pos")),
+                var position = ReadVector(placement.GetProperty("pos"));
+                world.BlockUpdates.SetBlock(position,
                     ParseState(placement.GetProperty("state").GetString()!), quiet);
+                if (placement.TryGetProperty("items", out var items))
+                {
+                    var container = (ContainerBlockEntity)world.BlockUpdates.GetBlockEntity(position)!;
+                    foreach (var item in items.EnumerateArray())
+                    {
+                        container.Inventory.SetItem(item.GetProperty("slot").GetInt32(),
+                            new ItemStack(ItemsRegistry.Get(item.GetProperty("id").GetString()!),
+                                item.GetProperty("count").GetInt32()));
+                    }
+                }
             }
 
             var mobGriefing = !scenario.TryGetProperty("mobGriefing", out var griefing) || griefing.GetBoolean();
@@ -188,6 +200,16 @@ public partial class VanillaBlockContact
                                 entity.TakeLanding();
 
                             await contacts.TouchAsync(entity);
+                        }
+                    }
+
+                    if (tick > 0 && scenario.TryGetProperty("tickHoppers", out _))
+                    {
+                        foreach (var placement in scenario.GetProperty("setup").EnumerateArray())
+                        {
+                            var position = ReadVector(placement.GetProperty("pos"));
+                            if (world.BlockUpdates.GetBlockEntity(position) is HopperBlockEntity hopper)
+                                await Hoppers.TickAsync(world, hopper);
                         }
                     }
 
@@ -481,9 +503,9 @@ public partial class VanillaBlockContact
                 foreach (var container in containers.EnumerateArray())
                 {
                     var pos = ReadVector(container.GetProperty("pos"));
-                    var hopper = (HopperBlockEntity)world.BlockUpdates.GetBlockEntity(pos)!;
+                    var inventory = ((ContainerBlockEntity)world.BlockUpdates.GetBlockEntity(pos)!).Inventory;
                     CompareList($"container {pos}", Strings(container.GetProperty("items")),
-                        hopper.Inventory.Select(stack => stack is null || stack.IsAir || stack.Count <= 0
+                        inventory.Select(stack => stack is null || stack.IsAir || stack.Count <= 0
                             ? "air" : $"{stack.Holder.UnlocalizedName} x{stack.Count}"));
                 }
             }

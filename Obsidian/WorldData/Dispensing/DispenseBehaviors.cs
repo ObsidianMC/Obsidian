@@ -130,8 +130,8 @@ internal static partial class DispenseBehaviors
     /// a little, with the item entity's own motion drawn and replaced by one along the facing.
     /// </summary>
     /// <remarks>
-    /// Draws from the level's random in vanilla's order: the two draws of the item entity's own motion, then the
-    /// speed and three triangles, as vanilla draws them from its level's random.
+    /// Draws the speed and three triangles from the level's random in vanilla's order. The discarded initial
+    /// motion belongs to the item entity's own random and must not advance the level's sequence.
     /// </remarks>
     internal static void DropItem(AbstractLevel level, Vector position, BlockFace facing, ItemStack item)
     {
@@ -145,9 +145,6 @@ internal static partial class DispenseBehaviors
         var z = position.Z + 0.5 + 0.7 * step.Z;
 
         var random = level.GrowthRandom;
-        random.NextDouble();
-        random.NextDouble();
-
         var speed = random.NextDouble() * 0.1 + 0.2;
         var motion = new VectorD(
             random.Triangle(step.X * speed, spread),

@@ -731,7 +731,7 @@ both extension and retraction. `CaptureCases` can refresh each of these cases in
 gives its number of `ticks` and starts with empty `checkpoints`; `CaptureCases` records only the exact names supplied,
 and the other cases keep their recordings.
 
-The 184 `contactMoves` scenarios use `Java/BlockContactFixtures.java` on a real dedicated server, with the same
+The 185 `contactMoves` scenarios use `Java/BlockContactFixtures.java` on a real dedicated server, with the same
 scratch-only block-write instrumentation as block uses. They drive native `Entity.move` and
 `applyEffectsFromBlocks` with controlled velocities: falls, stationary contacts, walking and external pushes.
 This boundary exercises native collision, fall accounting, restitution and block hooks without AI or travel forces.
@@ -752,6 +752,10 @@ A summon's `equipment` object maps vanilla slot names to item ids, allowing brea
 `block_drops`; suppressed stand drops still consume their three level-random location draws. `raining: true` supplies
 open-sky rain for the stand burn cases: damage can break the stand before rain extinguishes it, and a surviving
 stand clears its counter before its shared Burning flag updates on the next base tick.
+
+A setup placement's `items` array fills its container with slot/id/count entries. `recordContainers: true` records
+all setup containers, and `tickHoppers: true` runs native hopper ticks after the controlled entity contacts.
+`review_hopper_contact_before_chest_pull` compares the item pickup and chest contents across that phase ordering.
 
 A summon's `feet` puts an item in a living entity's feet slot (leather boots for powder snow), and `sneaking` holds
 its shift key down. A tick event's `jump` runs the named entity's `jumpFromGround` before movement. A summon of
