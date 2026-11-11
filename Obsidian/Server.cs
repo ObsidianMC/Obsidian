@@ -86,7 +86,9 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
     public ConcurrentDictionary<Guid, IPlayer> OnlinePlayers { get; } = [];
 
     // The online players in the order of vanilla's PlayerList.players, which selectors such as @a go through: a player
-    // is appended on joining and moved to the end on respawning. Locked on itself.
+    // is appended on joining and moved to the end on respawning. Its lock is also the registrations' lock: registering
+    // and unregistering a player change OnlinePlayers, the name mappings and this list together under it, so neither
+    // sees the other half done. Nothing under it awaits or takes another lock.
     private readonly List<IPlayer> playerList = [];
     private ConcurrentDictionary<string, Guid> UsernameToUuidMappings { get; } = new(StringComparer.OrdinalIgnoreCase);
 
@@ -841,38 +843,29 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
 
     public bool AddPlayer(IPlayer player)
     {
-        if (!this.OnlinePlayers.TryAdd(player.Uuid, player))
-            return false;
-
-        // The name must map to this player alone; undo the registration rather than leave lookups disagreeing.
-        if (!this.UsernameToUuidMappings.TryAdd(player.Username, player.Uuid))
+        lock (this.playerList)
         {
-            this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player));
-            return false;
+            if (!this.OnlinePlayers.TryAdd(player.Uuid, player))
+                return false;
+
+            // The name must map to this player alone; undo this registration rather than leave lookups disagreeing.
+            if (!this.UsernameToUuidMappings.TryAdd(player.Username, player.Uuid))
+            {
+                this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player));
+                return false;
+            }
+
+            // Like vanilla's placeNewPlayer, joining puts the player at the end of the player list.
+            this.playerList.Add(player);
         }
 
         this.PlayerRegistered?.Invoke(player);
-
-        // Like vanilla's placeNewPlayer, joining puts the player at the end of the player list. A disconnect may have
-        // unregistered them meanwhile, and its removal from the list (which takes this lock after unregistering) may be
-        // over already: append only a player still registered, so the list never keeps one that left.
-        lock (this.playerList)
-        {
-            if (this.IsOnline(player))
-            {
-                this.playerList.Add(player);
-                return true;
-            }
-        }
-
-        // The disconnect's release may have run before the name was mapped; don't leave the name behind either.
-        this.UsernameToUuidMappings.TryRemove(new KeyValuePair<string, Guid>(player.Username, player.Uuid));
-        return false;
+        return true;
     }
 
     /// <summary>
-    /// Runs in <see cref="AddPlayer"/> between registering the player and adding them to the player list; tests hold
-    /// it to disconnect the player there.
+    /// Runs in <see cref="AddPlayer"/> once the player is registered, outside the registrations' lock; tests hold it to
+    /// disconnect the player and join them again there.
     /// </summary>
     internal Action<IPlayer>? PlayerRegistered { get; set; }
 
@@ -916,10 +909,12 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
     private bool IsOnline(IPlayer player) =>
         this.OnlinePlayers.TryGetValue(player.Uuid, out var online) && ReferenceEquals(online, player);
 
-    private void RemoveFromPlayerList(IPlayer player)
+    // Drops a registration's name mapping and its place in the player list, under the registrations' lock. While the
+    // registration's name is mapped no other player can map it, so the mapping removed is this player's.
+    private void ReleaseNameAndListing(IPlayer player)
     {
-        lock (this.playerList)
-            this.playerList.Remove(player);
+        this.UsernameToUuidMappings.TryRemove(new KeyValuePair<string, Guid>(player.Username, player.Uuid));
+        this.playerList.Remove(player);
     }
 
     public Task<IPlayer> AddServerPlayerAsync(Guid uuid, string username, IWorld? world = null) =>
@@ -1043,32 +1038,47 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
     {
         // Only the registered instance can unregister, so a stale reference can't remove a newer player who reused
         // the UUID or name.
-        if (!this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
-            return false;
+        lock (this.playerList)
+        {
+            if (!this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
+                return false;
 
-        this.ReleaseRegistrations(player);
+            this.ReleaseNameAndListing(player);
+        }
+
+        LeaveOwningLevel(player);
         return true;
     }
 
     // Drops the lookups that hang off an online registration; the caller must have just removed that registration.
     private void ReleaseRegistrations(IPlayer player)
     {
-        this.UsernameToUuidMappings.TryRemove(new KeyValuePair<string, Guid>(player.Username, player.Uuid));
-        this.RemoveFromPlayerList(player);
+        lock (this.playerList)
+            this.ReleaseNameAndListing(player);
 
-        // Under the transfer lock of the level that owns the player, so a level change can't move it on meanwhile. Only
-        // the registration goes: a player still connected (one a plugin unregistered, say) may be registered again and
-        // keeps travelling and respawning. Leaving for good is the leave's (see Entity.LeaveServer).
+        LeaveOwningLevel(player);
+    }
+
+    private static void LeaveOwningLevel(IPlayer player)
+    {
+        // Outside the registrations' lock, and under the transfer lock of the level that owns the player, so a level
+        // change can't move it on meanwhile. Only the registration goes: a player still connected (one a plugin
+        // unregistered, say) may be registered again and keeps travelling and respawning. Leaving for good is the
+        // leave's (see Entity.LeaveServer).
         Entity.RemoveFromOwningLevel(player);
     }
 
     public async Task<bool> RemoveServerPlayerAsync(IPlayer player)
     {
-        // Claiming the registration first means concurrent removals run the leave lifecycle only once.
-        if (player is not ServerPlayer serverPlayer
-            || !this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
-        {
+        // Claiming the registration first means concurrent removals run the leave lifecycle only once. Its name and
+        // place in the list are released once it left (see LeaveServerPlayerAsync).
+        if (player is not ServerPlayer serverPlayer)
             return false;
+
+        lock (this.playerList)
+        {
+            if (!this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
+                return false;
         }
 
         serverPlayer.CancelJoin();

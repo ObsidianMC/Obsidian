@@ -63,41 +63,41 @@ public sealed class SelectorPlayerOrder
     }
 
     [Fact]
-    public async Task APlayerWhoDisconnectsWhileJoiningIsNotKeptInThePlayerList()
+    public async Task APlayerWhoDisconnectsWhileJoiningLeavesTheirNextJoinRegistered()
     {
         await using var context = TestServerFactory.CreateServer($"selector-order-{System.Guid.NewGuid():N}");
         var server = context.Server;
-        var alice = TestServerFactory.CreateConnectedPlayer(server, context.World, "Alice", spot);
+        var first = TestServerFactory.CreateConnectedPlayer(server, context.World, "Alice", spot);
 
-        // Holds the join between registering Alice and adding her to the player list.
+        // Holds the first join once it registered Alice.
         var registered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         using var release = new ManualResetEventSlim();
         server.PlayerRegistered = player =>
         {
-            if (!ReferenceEquals(player, alice))
+            if (!ReferenceEquals(player, first))
                 return;
 
             registered.SetResult();
             release.Wait();
         };
 
-        var joining = Task.Run(() => server.AddPlayer(alice));
+        var joining = Task.Run(() => server.AddPlayer(first));
         await registered.Task;
 
-        // Her client disconnects there: the disconnect unregisters her and takes her out of the list, before the join
-        // added her to it.
-        Assert.True(server.RemovePlayer(alice));
+        // Her client disconnects there, and she joins again on a new connection before the first join is over.
+        Assert.True(server.RemovePlayer(first));
+        var second = TestServerFactory.CreateConnectedPlayer(server, context.World, "Alice", spot, first.Uuid);
+        Assert.True(server.AddPlayer(second));
+
+        // Whatever the first join does once it goes on, it leaves nothing of the first connection behind, and takes
+        // nothing from the second.
         release.Set();
+        await joining;
 
-        var added = await joining;
-        Assert.DoesNotContain(alice, Listed(server));
-        Assert.False(added);
-
-        // Nothing of hers is left registered: the same player can join again, once.
-        server.PlayerRegistered = null;
-        var again = TestServerFactory.CreateConnectedPlayer(server, context.World, "Alice", spot, alice.Uuid);
-        Assert.True(server.AddPlayer(again));
-        Assert.Equal([again], Listed(server));
+        Assert.Equal([second], Listed(server));
+        Assert.Same(second, server.GetPlayer("Alice"));
+        Assert.True(server.IsPlayerOnline("Alice"));
+        Assert.Same(second, server.OnlinePlayers[first.Uuid]);
     }
 
     private static async Task<Obsidian.Entities.Player> JoinAsync(RealServerContext context, string name)
