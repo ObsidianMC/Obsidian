@@ -690,11 +690,15 @@ public partial class Mob
 
         var absorbed = 0f;
 
+        // Read here, after the last await, as the commit runs under the transfer lock, where no plugin code may run, and
+        // a plugin's mob may override IsFireImmune.
+        var fireImmune = fire && IsFireImmune;
+
         // The hit as it commits: the mob may have become fire-proof while a hook held the hit, and another hit may
         // have landed meanwhile, or beside it on another thread, which the cooldown then counts first.
         float? Settle()
         {
-            if (fire && FireProof)
+            if (fire && (fireImmune || HasPotionEffect((int)PotionEffect.FireResistance - 1)))
                 return null;
 
             recentlyHurt = !ignoreHurtCooldown && AiTick - lastDamageTick < 10;

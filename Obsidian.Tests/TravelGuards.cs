@@ -199,6 +199,28 @@ public sealed class TravelGuards
     }
 
     [Fact]
+    public async Task FireHitReadsAnOverriddenFireImmunityOutsideTheTransferLock()
+    {
+        await using var context = TestServerFactory.CreateServer($"damage-fire-immune-lock-{Guid.NewGuid():N}");
+        WorldBlockEntities.AddEmptyChunk(context.World);
+        var spider = new LockWatchingSpider
+        {
+            Level = context.World,
+            EntityId = Server.GetNextEntityId(),
+            Position = new VectorD(8.5, 70, 8.5),
+            NoGravity = true
+        };
+        context.World.SpawnEntity(spider);
+        var health = spider.Health;
+
+        await spider.DamageCombatAsync(null, 2, CombatDamageKind.Fire);
+
+        Assert.True(spider.ReadFireImmunity);
+        Assert.False(spider.ReadFireImmunityUnderTransferLock);
+        Assert.Equal(health - 2, spider.Health);
+    }
+
+    [Fact]
     public async Task DamageLandsOnEntityInAPluginsOwnLevel()
     {
         // A plugin's ILevel, which travel admits entities to through TryAddEntity; it has no entity grid of ours.
@@ -369,6 +391,24 @@ public sealed class TravelGuards
     }
 
     // A plugin's damage hook that, while closed, waits for the test before letting the hit go on.
+    // A plugin's mob may override IsFireImmune; its getter is plugin code, which must not run under the transfer lock.
+    private sealed class LockWatchingSpider : Spider
+    {
+        public bool ReadFireImmunity { get; private set; }
+        public bool ReadFireImmunityUnderTransferLock { get; private set; }
+
+        public override bool IsFireImmune
+        {
+            get
+            {
+                ReadFireImmunity = true;
+                ReadFireImmunityUnderTransferLock |= WorldData.EntityTransferLock.IsAnyHeldByCurrentThread;
+                return false;
+            }
+            set { }
+        }
+    }
+
     private sealed class GatedHurtBehavior : IEntityBehavior
     {
         public bool Open { get; set; }
