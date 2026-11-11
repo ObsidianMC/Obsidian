@@ -102,22 +102,31 @@ internal static class EndTravel
         }, canContinue);
     }
 
-    // Vanilla EndGatewayBlock: the gateway's exit in the same level, keeping rotation and velocity.
-    private static async Task<PortalDestination?> PrepareGatewayAsync(
+    /// <summary>
+    /// Vanilla <c>EndGatewayBlock.getPortalDestination</c>: the gateway's exit in the same level, or the safe exit
+    /// around it (see <see cref="EndGateways.Arrival"/>), keeping rotation and velocity. The area the safe exit is
+    /// searched in stays loaded while it's searched.
+    /// </summary>
+    internal static async Task<PortalDestination?> PrepareGatewayAsync(
         Entity entity, AbstractLevel level, Vector gateway, Func<bool> canContinue)
     {
-        if (await level.FindEndGatewayExitAsync(gateway) is not Vector exit || !canContinue())
+        if (await level.FindEndGatewayExitAsync(gateway) is not { } found || !canContinue())
             return null;
 
-        var area = await PortalArea.LoadAsync(level, exit, 0, canContinue);
+        var (exit, exact) = found;
+        var reach = exact ? 0 : EndGateways.SafeExitReach;
+        var area = await PortalArea.LoadAsync(level, exit, reach, canContinue);
         if (area is null)
             return null;
 
-        var arrival = new VectorD(exit.X + 0.5, exit.Y, exit.Z + 0.5);
         return await FinishAsync(
             area,
-            () => ValueTask.FromResult<PortalDestination>(
-                new(level, arrival, entity.Yaw, entity.Pitch, entity.Motion, area)),
+            () =>
+            {
+                var arrival = EndGateways.Arrival(level, exit, exact);
+                return ValueTask.FromResult<PortalDestination>(
+                    new(level, arrival, entity.Yaw, entity.Pitch, entity.Motion, area));
+            },
             canContinue);
     }
 

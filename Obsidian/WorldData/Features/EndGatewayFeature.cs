@@ -1,4 +1,3 @@
-using Obsidian.Nbt;
 
 namespace Obsidian.WorldData.Features;
 
@@ -66,12 +65,7 @@ public sealed class EndGatewayFeature : ConfiguredFeatureBase
     /// </summary>
     private static void SetExit(IWorldGenLevel level, Vector position, Vector exit, bool exact)
     {
-        var gateway = level.GetBlockEntity(position) as DataBlockEntity;
-        if (gateway?.Id != "minecraft:end_gateway")
-            return;
-
-        gateway.Set(new NbtArray<int>("exit_portal", [exit.X, exit.Y, exit.Z]));
-        if (exact)
-            gateway.Set("ExactTeleport", true);
+        if (level.GetBlockEntity(position) is EndGatewayBlockEntity gateway)
+            gateway.SetExit(exit, exact);
     }
 }
