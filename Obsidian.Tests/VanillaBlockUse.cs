@@ -289,8 +289,8 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
                 var itemPacket = new UseItemPacket();
                 typeof(UseItemPacket).GetProperty(nameof(UseItemPacket.Hand))!.SetValue(itemPacket,
                     offhand ? InteractionHand.OffHand : InteractionHand.MainHand);
-                typeof(UseItemPacket).GetProperty(nameof(UseItemPacket.Yaw))!.SetValue(itemPacket, user.Yaw.Degrees);
-                typeof(UseItemPacket).GetProperty(nameof(UseItemPacket.Pitch))!.SetValue(itemPacket, user.Pitch.Degrees);
+                typeof(UseItemPacket).GetProperty(nameof(UseItemPacket.Yaw))!.SetValue(itemPacket, user.Yaw);
+                typeof(UseItemPacket).GetProperty(nameof(UseItemPacket.Pitch))!.SetValue(itemPacket, user.Pitch);
                 result = await itemPacket.UseAsync(harness.Context.Server, user);
             }
 

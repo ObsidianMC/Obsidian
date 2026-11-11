@@ -35,7 +35,7 @@ internal sealed class VolumeMoveControl(Mob mob) : MoveControl(mob)
         var delta = target - mob.Position;
         if (delta.Magnitude < 0.05f)
             return;
-        mob.Yaw = LookControl.RotateTowards(mob.Yaw.Degrees, (float)(Math.Atan2(-delta.X, delta.Z) * 180 / Math.PI), 30);
+        mob.Yaw = LookControl.RotateTowards(mob.Yaw, (float)(Math.Atan2(-delta.X, delta.Z) * 180 / Math.PI), 30);
         Acceleration = delta / delta.Magnitude * (mob.MovementSpeed * speed * (mob.InWater ? 0.02f : 0.05f));
         if (mob.InWater && mob is Fish)
             Acceleration = new VectorD(Acceleration.X, delta.Y / delta.Magnitude * mob.MovementSpeed * speed * 0.1f, Acceleration.Z);

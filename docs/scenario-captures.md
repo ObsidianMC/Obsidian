@@ -392,8 +392,9 @@ replaces only what vanilla produced.
   that doesn't fill goes on to its own use (`rayUse`). Cauldrons keep vanilla's quirk of awarding
   `minecraft:used minecraft:air` for the last water bottle poured into a water cauldron. The replay drives
   `UseItemOnPacket` (then `UseItemPacket`, with the capture's exact rotation) in one world and compares every
-  recorded field from the start; three cases pin an empty bucket's own use, which Obsidian aims with a rotation held
-  in 256ths of a turn (see [cauldrons](known-gaps/cauldrons.md)). `CauldronExchanges` checks what vanilla can't: an
+  recorded field from the start; an empty bucket's own use after the cauldron passes aims with that rotation, so its
+  ray passes between the cauldron's legs as vanilla's does. Two cases pin a custom effect bottle's encoding (see
+  [cauldrons](known-gaps/cauldrons.md)). `CauldronExchanges` checks what vanilla can't: an
   interrupted or raced exchange neither loses nor duplicates an item or a level, and a busy inventory is waited for
   outside the level's locks.
 

@@ -60,7 +60,7 @@ public sealed class CommandContext(string message, ICommandSender commandSender,
     /// The rotation local (<c>^</c>) coordinates are measured along: the executor's unless <c>/execute rotated</c>
     /// or <c>at</c> changed it.
     /// </summary>
-    public (Angle Yaw, Angle Pitch)? Rotation
+    public (float Yaw, float Pitch)? Rotation
     {
         get => this.rotation ?? (this.Executor is { } executor ? (executor.Yaw, executor.Pitch) : null);
         init => this.rotation = value;
@@ -68,13 +68,13 @@ public sealed class CommandContext(string message, ICommandSender commandSender,
 
     private readonly VectorD? origin;
     private readonly ILevel? level;
-    private readonly (Angle Yaw, Angle Pitch)? rotation;
+    private readonly (float Yaw, float Pitch)? rotation;
 
     /// <summary>
     /// A context for running <paramref name="message"/> from this one, as <c>/execute run</c> does: the same sender
     /// and plugin, run as <paramref name="executor"/>, which is also its player if it's one, from the given place.
     /// </summary>
-    internal CommandContext Derive(string message, IEntity? executor, VectorD? origin, ILevel? level, (Angle Yaw, Angle Pitch)? rotation) =>
+    internal CommandContext Derive(string message, IEntity? executor, VectorD? origin, ILevel? level, (float Yaw, float Pitch)? rotation) =>
         new(message, this.Sender, executor as IPlayer, server)
         {
             Executor = executor,

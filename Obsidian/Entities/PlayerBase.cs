@@ -558,7 +558,7 @@ public abstract partial class PlayerBase : Avatar, IPlayer
 
     public override ValueTask TeleportAsync(VectorD pos) => this.TeleportAsync(this.Level, pos);
 
-    private async ValueTask TeleportWithinLevelAsync(ILevel level, VectorD pos, Angle? yaw, Angle? pitch)
+    private async ValueTask TeleportWithinLevelAsync(ILevel level, VectorD pos, float? yaw, float? pitch)
     {
         FallDistance = 0;
         combatPosition = null;
@@ -569,8 +569,8 @@ public abstract partial class PlayerBase : Avatar, IPlayer
         // unrelated Entity position writers, which are recorded in the movement known gaps.
         await this.chunkUpdates.WaitAsync();
         VectorD from;
-        Angle fromYaw;
-        Angle fromPitch;
+        float fromYaw;
+        float fromPitch;
         Entity[] riders;
         try
         {
@@ -608,7 +608,7 @@ public abstract partial class PlayerBase : Avatar, IPlayer
 
     // Moves the player within their level, with chunkUpdates held, after the travel that may have come first.
     // Returns the passengers it took off, to carry along.
-    private Entity[] MoveWithinLevel(ILevel level, VectorD pos, Angle? yaw, Angle? pitch)
+    private Entity[] MoveWithinLevel(ILevel level, VectorD pos, float? yaw, float? pitch)
     {
         if (this.Level != level || !this.Alive)
             throw new InvalidOperationException("The player died or changed level before the teleport.");
@@ -644,11 +644,11 @@ public abstract partial class PlayerBase : Avatar, IPlayer
         this.TeleportAsync(world, world.LevelData.SpawnPosition);
 
     public override ValueTask TeleportAsync(
-        ILevel level, VectorD position, Angle? yaw = null, Angle? pitch = null) =>
+        ILevel level, VectorD position, float? yaw = null, float? pitch = null) =>
         DeferredInventoryWork.RunOrDeferAsync(() => this.TeleportAfterCallbacksAsync(level, position, yaw, pitch));
 
     private async ValueTask TeleportAfterCallbacksAsync(
-        ILevel level, VectorD position, Angle? yaw = null, Angle? pitch = null)
+        ILevel level, VectorD position, float? yaw = null, float? pitch = null)
     {
         ValidateTravel(level, position, yaw, pitch);
 
@@ -737,13 +737,13 @@ public abstract partial class PlayerBase : Avatar, IPlayer
     }
 
     internal Task TransferDimensionAsync(
-        ILevel destination, VectorD? position = null, Angle? yaw = null, Angle? pitch = null,
+        ILevel destination, VectorD? position = null, float? yaw = null, float? pitch = null,
         VectorD? motion = null, bool portal = false, bool relativeMotion = false)
         => DeferredInventoryWork.RunOrDeferAsync(() => new ValueTask(this.TransferDimensionAfterCallbacksAsync(
             destination, position, yaw, pitch, motion, portal, relativeMotion))).AsTask();
 
     private async Task TransferDimensionAfterCallbacksAsync(
-        ILevel destination, VectorD? position, Angle? yaw, Angle? pitch,
+        ILevel destination, VectorD? position, float? yaw, float? pitch,
         VectorD? motion, bool portal, bool relativeMotion)
     {
         await this.CancelPortalTravelAsync();
@@ -1017,7 +1017,7 @@ public abstract partial class PlayerBase : Avatar, IPlayer
             await this.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
             await this.SendPositionAsync(
                 this.preservePortalMotion ? VectorD.Zero : this.Motion,
-                this.preservePortalMotion ? NetherPortalRelativeFlags : 0);
+                this.preservePortalMotion ? NetherPortalRelativeFlags : PositionFlags.None);
 
             pendingRespawnChunks = !await this.UpdateChunksUnderLockAsync(true);
             respawnChunkRetryTicks = 20;

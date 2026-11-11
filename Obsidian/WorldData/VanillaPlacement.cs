@@ -170,7 +170,7 @@ internal static class VanillaPlacement
         if (gate && open)
         {
             // A gate swings away from the player opening it.
-            var looking = PlacementDirections.Horizontal(player.Yaw.Degrees);
+            var looking = PlacementDirections.Horizontal(player.Yaw);
             if (state.GetProperty("facing") == FeatureHelpers.FaceName(looking.Opposite()))
                 state = state.WithProperty("facing", FeatureHelpers.FaceName(looking));
         }
