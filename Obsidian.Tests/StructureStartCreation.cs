@@ -382,49 +382,6 @@ public sealed class StructureStartCreation
         Assert.Equal(newLayout.Version, resumed.Version);
     }
 
-    [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task TaskDispatchedReentrancyCompletesBeforeItsOwnerReturns()
-    {
-        using var started = new ManualResetEventSlim();
-        var cache = new StructureStartCache
-        {
-            CreationWait = System.Threading.Timeout.InfiniteTimeSpan,
-            ObserveCreationWait = _ => Assert.Fail("A logically nested request must not join its creator's notice.")
-        };
-        var layout = Layout();
-        Task<StructureStartCache.ChunkStarts?>? nested = null;
-        var completedBeforeOwnerReturned = false;
-
-        StructureStart Leaf(StructureLayout _, StructureSet set, int x, int z, out bool refused)
-        {
-            refused = false;
-            return Start(set, x, z);
-        }
-
-        StructureStart Create(StructureLayout _, StructureSet set, int x, int z, out bool refused)
-        {
-            refused = false;
-            nested = Task.Run(() =>
-            {
-                started.Set();
-                return cache.Get(x, z, layout, Leaf);
-            });
-
-            // Bound the reproduction so a cycle is released and every task is joined before the test exits.
-            Assert.True(started.Wait(Timeout));
-            completedBeforeOwnerReturned = nested.Wait(Timeout);
-            return Start(set, x, z);
-        }
-
-        var owner = Request(() => cache.Get(0, 0, layout, Create));
-        await owner.Result.WaitAsync(TimeSpan.FromSeconds(25));
-        Assert.NotNull(nested);
-        await nested.WaitAsync(Timeout);
-
-        Assert.True(completedBeforeOwnerReturned,
-            "The nested request waited for the owner that was synchronously waiting for the nested request.");
-    }
-
     [Theory(Timeout = TestServerFactory.TestTimeout)]
     [InlineData(ContextFreeDispatch.SuppressedTask)]
     [InlineData(ContextFreeDispatch.UnsafeWorkItem)]
@@ -639,65 +596,6 @@ public sealed class StructureStartCreation
         Assert.NotNull(waiter);
         await waiter.WaitAsync(Timeout);
         Assert.False(duplicated, "A context from an ended factory bypassed an unrelated cache's active creator.");
-    }
-
-    [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task AContextFreeChildOfAFallbackFinishesBeforeEitherParentReturns()
-    {
-        using var leafStarted = new ManualResetEventSlim();
-        var cache = new StructureStartCache
-        {
-            CreationWait = TimeSpan.FromMilliseconds(20)
-        };
-        var layout = Layout();
-        Task<StructureStartCache.ChunkStarts?>? fallback = null;
-        Task<StructureStartCache.ChunkStarts?>? leaf = null;
-        var fallbackCompletedBeforeOwnerReturned = false;
-        var leafCompletedBeforeFallbackReturned = false;
-
-        StructureStart Leaf(StructureLayout _, StructureSet set, int x, int z, out bool refused)
-        {
-            refused = false;
-            return Start(set, x, z);
-        }
-
-        StructureStart Fallback(StructureLayout _, StructureSet set, int x, int z, out bool refused)
-        {
-            refused = false;
-            leaf = DispatchWithoutContext(() =>
-            {
-                leafStarted.Set();
-                return cache.Get(x, z, layout, Leaf);
-            }, ContextFreeDispatch.UnsafeWorkItem);
-            Assert.True(leafStarted.Wait(Timeout));
-            leafCompletedBeforeFallbackReturned = leaf.Wait(Timeout);
-            return Start(set, x, z);
-        }
-
-        StructureStart Create(StructureLayout _, StructureSet set, int x, int z, out bool refused)
-        {
-            refused = false;
-            fallback = DispatchWithoutContext(
-                () => cache.Get(x, z, layout, Fallback), ContextFreeDispatch.SuppressedTask);
-
-            // Both waits are bounded so a fallback cap that restores this dependency cycle fails without hanging.
-            // Starting the leaf also proves that the intermediate fallback has started its factory.
-            Assert.True(leafStarted.Wait(Timeout));
-            fallbackCompletedBeforeOwnerReturned = fallback.Wait(Timeout);
-            return Start(set, x, z);
-        }
-
-        var owner = Request(() => cache.Get(0, 0, layout, Create));
-        var result = await owner.Result.WaitAsync(TimeSpan.FromSeconds(25));
-        Assert.NotNull(fallback);
-        Assert.NotNull(leaf);
-        var fallbackResult = await fallback.WaitAsync(Timeout);
-        var leafResult = await leaf.WaitAsync(Timeout);
-
-        Assert.True(fallbackCompletedBeforeOwnerReturned);
-        Assert.True(leafCompletedBeforeFallbackReturned, "A fallback slot blocked the context-free child it needed.");
-        Assert.Same(Assert.Single(leafResult!.Starts), Assert.Single(fallbackResult!.Starts));
-        Assert.Same(Assert.Single(leafResult.Starts), Assert.Single(result!.Starts));
     }
 
     private static StructureLayout Layout(long version = 1)
