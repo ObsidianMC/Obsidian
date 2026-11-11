@@ -127,7 +127,7 @@ internal static partial class UseBehaviors
                 return ValueTask.FromResult(UseResult.TryWithEmptyHand);
 
             var face = use.Face is BlockFace.Up or BlockFace.Down
-                ? PlacementDirections.Horizontal(use.Player.Yaw.Degrees).Opposite() : use.Face;
+                ? PlacementDirections.Horizontal(use.Player.Yaw).Opposite() : use.Face;
             var carved = BlocksRegistry.CarvedPumpkin.WithProperty("facing", face.ToString().ToLowerInvariant());
             if (!use.TryCommit(() =>
             {
