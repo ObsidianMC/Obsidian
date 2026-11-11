@@ -37,6 +37,7 @@ internal sealed class TestClient(IServer server, bool connected = true) : IClien
     public string? Brand { get; set; } = "test-client";
     public string? Ip => "127.0.0.1";
     public bool Connected { get; private set; } = connected;
+    internal ChatMessage? DisconnectReason { get; private set; }
     public long? LastKeepAliveId { get; set; }
     public IServer Server { get; } = server;
     public ClientState State { get; private set; } = ClientState.Play;
@@ -60,6 +61,7 @@ internal sealed class TestClient(IServer server, bool connected = true) : IClien
 
     public ValueTask DisconnectAsync(ChatMessage reason)
     {
+        this.DisconnectReason = reason;
         this.Dispose();
         return default;
     }

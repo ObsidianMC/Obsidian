@@ -16,31 +16,49 @@ public partial class PlayerBase
 
     /// <summary>
     /// Applies a movement packet. The rotation, when it has one, is kept as the exact floats the client sent, after
-    /// <see cref="ClientRotation"/>; a packet with a rotation that isn't finite is ignored.
+    /// <see cref="TryClientRotation"/>. Invalid movement disconnects the client before changing player state.
     /// </summary>
     internal ValueTask HandleClientMovementAsync(
         VectorD? position, float? yaw, float? pitch, MovementFlags flags)
     {
+        if (position is VectorD requested)
+        {
+            if (double.IsNaN(requested.X) || double.IsNaN(requested.Y) || double.IsNaN(requested.Z))
+                return this.KickAsync(new ChatMessage { Translate = "multiplayer.disconnect.invalid_player_movement" });
+
+            position = ClientPosition(requested);
+        }
+
         if (yaw is not float requestedYaw || pitch is not float requestedPitch)
             return this.ApplyPlayerMovementAsync(position, null, null, flags, true);
 
-        if (!float.IsFinite(requestedYaw) || !float.IsFinite(requestedPitch))
-            return default;
+        if (!TryClientRotation(requestedYaw, requestedPitch, out var rotation))
+            return this.KickAsync(new ChatMessage { Translate = "multiplayer.disconnect.invalid_player_movement" });
 
-        var (clientYaw, clientPitch) = ClientRotation(requestedYaw, requestedPitch);
-        return this.ApplyPlayerMovementAsync(position, clientYaw, clientPitch, flags, true);
+        return this.ApplyPlayerMovementAsync(position, rotation.Yaw, rotation.Pitch, flags, true);
     }
+
+    // Vanilla clamps client coordinates, including infinities, before applying movement or a teleport confirmation.
+    private static VectorD ClientPosition(VectorD position) => new(
+        Math.Clamp(position.X, -3.0E7, 3.0E7),
+        Math.Clamp(position.Y, -2.0E7, 2.0E7),
+        Math.Clamp(position.Z, -3.0E7, 3.0E7));
 
     /// <summary>
     /// The rotation a player takes from a client's request, as vanilla's packet handler applies it: the yaw wrapped
     /// into [-180, 180), and the pitch wrapped, then clamped to [-90, 90]. The arithmetic is vanilla's so the
     /// stored floats, and every direction aimed by them, are bit for bit vanilla's.
     /// </summary>
-    internal static (float Yaw, float Pitch) ClientRotation(float yaw, float pitch)
+    internal static bool TryClientRotation(float yaw, float pitch, out (float Yaw, float Pitch) rotation)
     {
+        rotation = default;
+        if (!float.IsFinite(yaw) || !float.IsFinite(pitch))
+            return false;
+
         var wrappedYaw = Mth.WrapDegrees(yaw) % 360f;
         var clampedPitch = Math.Clamp(Mth.WrapDegrees(pitch), -90f, 90f) % 360f;
-        return (wrappedYaw, clampedPitch);
+        rotation = (wrappedYaw, clampedPitch);
+        return true;
     }
 
     private async ValueTask ApplyPlayerMovementAsync(

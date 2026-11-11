@@ -10,7 +10,8 @@ namespace Obsidian.Entities;
 public partial class PlayerBase
 {
     private const int PlayerPortalCooldown = 10;
-    private const int NetherPortalRelativeFlags = 0x1E0;
+    private const PositionFlags NetherPortalRelativeFlags = PositionFlags.DeltaX | PositionFlags.DeltaY
+        | PositionFlags.DeltaZ | PositionFlags.RotateDelta;
     private int portalTime;
     private int portalCooldown;
     private volatile int portalGeneration;

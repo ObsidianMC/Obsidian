@@ -102,6 +102,37 @@ public class MovementPayloads
         return JsonDocument.Parse(stream);
     }
 
+    [Fact]
+    public void RelativeTeleportFlagsEncodeAsIntMasks()
+    {
+        (PositionFlags Flags, string Bytes)[] cases =
+        [
+            (PositionFlags.None, "00000000"),
+            (PositionFlags.X, "00000001"),
+            (PositionFlags.Y, "00000002"),
+            (PositionFlags.Z, "00000004"),
+            (PositionFlags.RotationY, "00000008"),
+            (PositionFlags.RotationX, "00000010"),
+            (PositionFlags.DeltaX, "00000020"),
+            (PositionFlags.DeltaY, "00000040"),
+            (PositionFlags.DeltaZ, "00000080"),
+            (PositionFlags.RotateDelta, "00000100"),
+            (PositionFlags.RotationY | PositionFlags.RotationX, "00000018"),
+            (PositionFlags.DeltaX | PositionFlags.DeltaY | PositionFlags.DeltaZ | PositionFlags.RotateDelta, "000001E0")
+        ];
+
+        foreach (var row in cases)
+        {
+            using var player = new NetworkBuffer();
+            new PlayerPositionPacket { Flags = row.Flags }.Serialize(player);
+            Assert.Equal(row.Bytes, Convert.ToHexString(player.AsSpan(player.Size - 4, 4)));
+
+            using var entity = new NetworkBuffer();
+            new TeleportEntityPacket { Flags = row.Flags }.Serialize(entity);
+            Assert.Equal(row.Bytes, Convert.ToHexString(entity.AsSpan(entity.Size - 5, 4)));
+        }
+    }
+
     // Replays every captured packet, so that a capture without a row here fails rather than going untested.
     [Fact]
     public void MatchesVanilla()

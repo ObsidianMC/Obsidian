@@ -332,7 +332,7 @@ public partial class Portals
             Assert.Equal(BlockIds.DiamondBlock,
                 (await target.World.GetBlockAsync(exit.Value.Origin + Vector.Down))!.RegistryId);
             var teleport = ((TestClient)player.Client).SentPackets.OfType<PlayerPositionPacket>().Last();
-            Assert.Equal(0x1E0, teleport.RelativeFlags);
+            Assert.Equal(0x1E0, (int)teleport.Flags);
 
             var mob = new Cow
             {
@@ -475,7 +475,7 @@ public partial class Portals
         Assert.Equal(10, Assert.Single(client.SentPackets.OfType<RespawnPacket>())
             .CommonPlayerSpawnInfo.PortalCooldown);
         var endPosition = Assert.Single(client.SentPackets.OfType<PlayerPositionPacket>());
-        Assert.Equal(0, endPosition.RelativeFlags);
+        Assert.Equal(PositionFlags.None, endPosition.Flags);
         Assert.Equal(VectorD.Zero, endPosition.Delta);
         Assert.Equal(world.DimensionName,
             Assert.Single(client.SentPackets.OfType<SetDefaultSpawnPositionPacket>()).Position.Dimension);

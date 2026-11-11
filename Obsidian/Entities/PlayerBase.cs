@@ -1017,7 +1017,7 @@ public abstract partial class PlayerBase : Avatar, IPlayer
             await this.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
             await this.SendPositionAsync(
                 this.preservePortalMotion ? VectorD.Zero : this.Motion,
-                this.preservePortalMotion ? NetherPortalRelativeFlags : 0);
+                this.preservePortalMotion ? NetherPortalRelativeFlags : PositionFlags.None);
 
             pendingRespawnChunks = !await this.UpdateChunksUnderLockAsync(true);
             respawnChunkRetryTicks = 20;
