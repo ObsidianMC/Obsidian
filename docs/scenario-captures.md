@@ -322,6 +322,32 @@ replaces only what vanilla produced.
   sound starts working (see [mob ambient sounds](known-gaps/mob-ambient-sounds.md)). The expected differences of
   the newer cases are named, each pinned to its exact cases, and fail when they disappear (see below).
 
+- `special_blocks.json` (`VanillaSpecialBlocks.ReplaySpecialBlocksReference`) records the special blocks of the
+  block interactions plan's phase 6, from `Java/SpecialBlockFixtures.java` (`CaptureFixtures=special_blocks`). Like
+  the waxing probe it has a fixture of its own and runs on `BlockUseFixtures.java`'s server, players, recorders and
+  write observer by reflection, through `FixtureDumper.RunObservedProbeAsync`. A case without `ticks` is a use,
+  recorded as a `block_use` case with `checkWrites` and `checkEffects` plus `userEffects`; with `attack` it is a
+  survival player starting to hit the block (`ServerPlayerGameMode.handleBlockBreakAction`), and `randomSeed` seeds
+  the level's random first. The 31 use cases open ender chests under stone, glass, slabs, a sitting cat, waterlogged,
+  sneaking and as a spectator; open shulker boxes facing each way with stone, slabs, glass, a torch or a sitting cat
+  where the lid goes and elsewhere (the lid needs room the way the box faces, and glass blocks it); and teleport the
+  dragon egg by a use, a use with an item and an attack in each game mode, each with its own seed. A case with `ticks`
+  freezes the game and steps that many whole level ticks; the user is one of the level's players for the case, flying
+  so that the server doesn't simulate its fall, reset as a player who just joined, and ticked after the level as its
+  connection would be. `use` and `close` open and close a menu. Each tick that did something keeps a checkpoint: the
+  writes with their flags, the bystander's sounds (with their block), level events, block events and particles, the
+  game events, the effects the user was given, the user's position when it moved, the target's block entity client
+  data when it changed (an entity's UUID written as its type) and the entities within 16 blocks with their positions
+  and health. The 18 tick cases cover shulker lids pushing an armor stand up and sideways, primed TNT bouncing on the
+  open lid's grown collision box, an observer seeing the lid start and stop, an ender chest's opener rechecks;
+  conduits with the 16-block ring and the whole 42-block frame built of every kind of frame block, giving Conduit Power and
+  hurting a silent drowned, ignoring a dry zombie and staying off without water; and End gateways flashing their beam
+  at age 2400, sending armor stands and players to an exact exit and to the safe exit with and without blocks around
+  it, doing nothing without an exit, and holding a second armor stand for the cooldown. The replay drives the
+  use-item-on and player action packets and whole world ticks in one world of empty chunks and compares every field
+  of every tick from the start: a tick the capture left out must have done nothing. Its pinned differences are listed
+  in [the known gaps](known-gaps/special-blocks.md).
+
 - `brushing.json` (`VanillaBrushing.ReplayBrushingReference`) records a player brushing, from
   `Java/BrushingFixtures.java` (`CaptureFixtures=brushing`). The probe runs a dedicated server of its own in a flat
   world of air, in a temporary folder it deletes. A case sets up suspicious sand or gravel (or another block) with its
@@ -593,6 +619,8 @@ dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtur
 
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=lightning
 
+dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=special_blocks
+
 dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=sulfur -p:CaptureCases=spike_shatters_after_falling+review_spike_pending_fall_keeps_frustum
 ```
 
@@ -655,6 +683,10 @@ the others keep theirs. Add a case with empty `checkpoints` and capture it on it
 For `lightning`, `CaptureCases` accepts exact `+`-separated names in `lightning_bolts.json` and records only those
 cases; the others keep theirs. Every case takes well under a second after the server starts. The probe needs the block
 use probe's observed copy of the jar, which the capture builds first.
+
+For `special_blocks`, `CaptureCases` accepts exact `+`-separated names in `special_blocks.json` and records only those
+cases; the others keep theirs. The whole capture takes about 15 seconds, on the block use probe's observed copy of the
+jar.
 
 For `eyeblossom_ghast_portal`, `CaptureCases` accepts exact `+`-separated names in
 `eyeblossom_ghast_portal_ticks.json` and records only those cases; the others keep theirs. The capture takes about ten
@@ -759,7 +791,7 @@ The underlying command is `Obsidian.AssetGenerator capture-scenarios <minecraft 
 <scratch directory> <test assets directory>
 [redstone+fluids+daylight+sulfur+more_blocks+structure_pieces+heightmaps+saved_heightmaps+mining+placement+
 copper_weathering+fire+ticking_blocks+block_use+waxing_bells_ore+cauldrons+turtle_eggs+frogspawn+growing_plant_ticks+
-melting_weather+furnace_results+brushing+armor_stand_use+projectile_hits+dispenser+lightning]
+melting_weather+furnace_results+brushing+armor_stand_use+projectile_hits+dispenser+lightning+special_blocks]
 [case names]`.
 
 ## How it captures
