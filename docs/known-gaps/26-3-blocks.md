@@ -1,7 +1,8 @@
 # 26.3 blocks
 
 
-**Status:** Phase 6 step 1's sulfur slice and construction/music slice are implemented with the limits below.
+**Status:** Phase 6 step 1's sulfur slice and construction/music slice, and the block interactions plan's batch G
+(shelves, straw beds' sleep rules, golden dandelions' age locking), are implemented with the limits below.
 `VanillaMoreBlocks.ReplayConstructionAndMusicReference` replays `more_blocks.json` as one test with labelled
 failures across every case. `MoreBlockFixtures.java`, registered in `FixtureDumper.cs`, records it through
 `CaptureFixtures=more_blocks`.
@@ -10,8 +11,8 @@ Poplar logs/wood and stripped variants, planks, stairs, slabs, fences, gates, do
 plates and signs use the existing block-family APIs. The reference checks axis placement, axe stripping (state,
 sound ID and durability cost), door upper halves, opening/closing states and sound IDs, powered placement, gate
 wall placement and fence connections. Standing and ceiling sign probes start with the variant already selected;
-sign item selection and editing still use the shared sign implementation. The shelf's basic placement is covered,
-but storage, quick swapping and connections are not implemented for shelves of any wood.
+sign item selection and editing still use the shared sign implementation. The shelf's basic placement is covered
+here; its storage, swapping and connections are below.
 
 All 16 colors of wool and concrete stairs/slabs have captured placement, waterlogging, slab merging and stair
 corner updates/placement. Red, orange and yellow poplar leaves have captured persistent placement, waterlogging,
@@ -48,11 +49,28 @@ forms for lids, bells, gateways, spawners and geysers. A bell rung by a player's
 bells rung by redstone or projectiles, and the bell's server-side ringing state, are still missing (see
 [waxing, bells and redstone ore](waxing-bells-and-redstone-ore.md)).
 
-Remaining block work needs separate interaction/lifecycle captures:
+Shelves of every wood, straw beds' sleep rules and golden dandelions' age locking are implemented and replayed
+from their own captures (`VanillaShelves`, `VanillaStrawBeds`, `VanillaGoldenDandelions`; see
+[scenario captures](../scenario-captures.md)). What still differs:
 
-- Golden dandelion interactions and persisted age locking, including stopping aging, cooldown and particles.
-- Straw bed placement and sleep rules: its own environment attribute, spawn behavior and break-on-wake behavior.
-- Shared shelf storage, quick swapping and connected shelf behavior, including poplar shelves.
+- **Shelves.** Breaking one shows the shared player break effects (its break sound instead of level event 2001, and
+  `block_destroy` after the removal's effects), pinned in three cases ([player break effects](player-break-effects.md)).
+  Whether taking an item into the hand is heard follows the item's default `use_effects` only; a stack whose own
+  components change `interact_vibrations` is heard as its item would be. Any item access to a shelf, a plugin's
+  included, emits the `block_activate` game events vanilla's hopper transfer does (three for an item put in, two for
+  one taken out). `align_items_to_bottom` is kept as loaded; nothing on the server changes it, as in vanilla.
+- **Straw beds and beds.** A player lying down falls the last eighth of a block onto a bed, which bounces in vanilla's
+  own player physics; Obsidian leaves players' movement to their clients, and pins the bounce's game events in one
+  case. A forced respawn point counts a block with a collision shape as solid, where vanilla reads its legacy solid
+  flag. Respawn anchors still stand players up with Obsidian's own search rather than vanilla's
+  `RespawnAnchorBlock.findStandUpPosition`. Villagers asleep in a bed aren't woken by a player using it. The players
+  are told how many sleep as a player falls asleep or wakes; a player joining or leaving is announced on the next
+  tick rather than at once.
+- **Golden dandelions.** A dandelion is checked after the mob's own interaction, as vanilla's `AgeableMob` comes after
+  its subclasses' food and buckets; a mob of another kind whose interaction takes a golden dandelion first would
+  differ. Bees in a hive don't keep or honour their age lock while inside (vanilla's `BeehiveBlockEntity.Occupant`).
+  Three cases pin mob behaviour outside the age lock: a horse eating plays no sound or `eat` event, a zombie horse
+  doesn't anger at an interaction, and a baby villager neither refuses one with its sound nor stays despawnable.
 - Poplar sapling growth is tracked separately below; poplar boats remain entity work.
 
 Sulfur, chiseled/polished sulfur and sulfur bricks use the generated properties, sounds, shapes and loot. Their
@@ -77,6 +95,5 @@ Remaining sulfur limits:
 - Gas uses the existing entity eye-height implementations; remaining species/pose eye-height differences belong
   to the entity behavior work.
 
-**Where to start:** extend the sulfur or construction/music references before changing the covered behavior.
-Golden dandelions and straw beds need new interaction and sleep lifecycle scenarios. These, and the sulfur
-cube and cushion entities, are left out of the port; see [26.3 gameplay left out of the port](26-3-gameplay-left-out-of-the-port.md).
+**Where to start:** extend the sulfur, construction/music, shelf, straw bed or golden dandelion references before
+changing the covered behavior. The sulfur cube and cushion entities are left out of the port; see [26.3 gameplay left out of the port](26-3-gameplay-left-out-of-the-port.md).

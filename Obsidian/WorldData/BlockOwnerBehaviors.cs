@@ -48,6 +48,8 @@ internal static class OnPlaceBehaviors
 
     internal static IOnPlaceBehavior FrostedIceBlock { get; } = new FrostedIceBlockBehavior();
 
+    internal static IOnPlaceBehavior ShelfBlock { get; } = new ShelfConnections.Placement();
+
     internal static IOnPlaceBehavior LightningRodBlock => LightningRodBehavior.Instance;
 }
 

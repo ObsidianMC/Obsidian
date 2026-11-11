@@ -17,7 +17,8 @@ public class Animal : AgeableMob
     internal virtual bool CanBreed => Alive && !IsRemoved && Age == 0 && LoveTicks > 0;
     internal virtual bool CanMateWith(Animal mate) => !ReferenceEquals(this, mate) && mate.Type == Type && mate.CanBreed;
     protected virtual bool CanEat(Obsidian.API.Inventory.ItemStack? item) => false;
-    internal override ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand) => FeedAsync(player, hand);
+    internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand) =>
+        await FeedAsync(player, hand) || await base.InteractAsync(player, hand);
 
     protected override async ValueTask TickMobAsync()
     {
@@ -47,12 +48,15 @@ public class Animal : AgeableMob
 
         var slot = hand == InteractionHand.OffHand ? 45 : player.CurrentHeldItemSlot;
         var item = player.Inventory.GetItem(slot);
-        if (!CanEat(item) || !IsBaby && (Age != 0 || LoveTicks > 0))
+        // Vanilla's Animal.mobInteract: a baby whose age a golden dandelion locked doesn't eat.
+        if (!CanEat(item) || !IsBaby && (Age != 0 || LoveTicks > 0) || IsBaby && !CanAgeUp)
             return false;
 
         if (IsBaby)
         {
-            Age += (-Age / 20 / 10) * 20;
+            // Vanilla's getSpeedUpSecondsWhenFeeding, in its float: a tenth of the seconds left, forced.
+            var seconds = (int)(-Age / 20 * 0.1f);
+            Grow(seconds * 20, forced: true);
         }
         else
         {

@@ -1,0 +1,4483 @@
+{
+  "_notes": "Vanilla 26.3 shelves, recorded by Obsidian.AssetGenerator/Java/ShelfFixtures.java (CaptureFixtures=shelves) on BlockUseFixtures' dedicated server in a flat world of air. Cases take block_use.json's inputs: blocks set around the target without updates (with their block entity's 'nbt'), a player at 'player' (x, y, z, yaw, pitch) with the case's hands, 'selected' hotbar slot and 'hotbar' slots (slot, item, count). A case's 'kind' is 'use' (the default: the hand's item used on the clicked face through ServerPlayerGameMode.useItemOn), 'set' ('place' set with every update), 'hopper' (the hopper at 'hopper' runs pushItemsTick once) or 'break' (the user breaks the clicked block), then the tick's block events. Every case records block_use.json's outputs with checkWrites and checkEffects, items' components in 'entities', 'userEffects' (the sounds, level events and block events sent to the acting player), 'blockEntities' (each setup block entity's saved data, as 'x,y,z snbt'), 'inventory' (with checkInventory: the 36 storage slots) and 'comparatorSignal' (the comparator at 'comparator' once its pending tick ran).",
+  "target": [0, 64, 0],
+  "player": [0.5, 64, -2.5, 0, 30],
+  "cases": [
+    {
+      "name": "put_into_slot_0",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.83, 0.5, 0.6875],
+      "item": "minecraft:stone",
+      "checkInventory": true,
+      "result": "success_server",
+      "changes": "",
+      "hand": "empty",
+      "inventory": [
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.place_item 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.place_item"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.place_item"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:0b,count:2,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "put_into_slot_1",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.5, 0.5, 0.6875],
+      "item": "minecraft:stone",
+      "result": "success_server",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.place_item 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.place_item"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.place_item"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:1b,count:2,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "put_into_slot_2",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.17, 0.5, 0.6875],
+      "item": "minecraft:stone",
+      "result": "success_server",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.place_item 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.place_item"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.place_item"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:2b,count:2,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "put_whole_stack",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.5, 0.5, 0.6875],
+      "item": "minecraft:cobblestone",
+      "count": 64,
+      "result": "success_server",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.place_item 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.place_item"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.place_item"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:1b,count:64,id:\"minecraft:cobblestone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "put_named_item",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.83, 0.5, 0.6875],
+      "item": "minecraft:diamond_sword",
+      "count": 1,
+      "result": "success_server",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.place_item 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.place_item"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.place_item"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:0b,count:1,id:\"minecraft:diamond_sword\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "take_into_empty_hand",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[{Slot:0b,count:5,id:\"minecraft:diamond\"}],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.83, 0.5, 0.6875],
+      "checkInventory": true,
+      "result": "success_server",
+      "changes": "",
+      "hand": "minecraft:diamond x5",
+      "inventory": [
+        "minecraft:diamond x5",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.take_item 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.take_item"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.take_item"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "take_from_slot_2",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[{Slot:2b,count:3,id:\"minecraft:apple\"}],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.17, 0.5, 0.6875],
+      "result": "success_server",
+      "changes": "",
+      "hand": "minecraft:apple x3",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.take_item 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.take_item"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.take_item"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "swap_with_held",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[{Slot:1b,count:5,id:\"minecraft:diamond\"}],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.5, 0.5, 0.6875],
+      "item": "minecraft:stone",
+      "count": 7,
+      "checkInventory": true,
+      "result": "success_server",
+      "changes": "",
+      "hand": "minecraft:diamond x5",
+      "inventory": [
+        "minecraft:diamond x5",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.single_swap 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.single_swap"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.single_swap"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:1b,count:7,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "swap_same_item",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[{Slot:1b,count:5,id:\"minecraft:stone\"}],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.5, 0.5, 0.6875],
+      "item": "minecraft:stone",
+      "count": 7,
+      "result": "success_server",
+      "changes": "",
+      "hand": "minecraft:stone x5",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.single_swap 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.single_swap"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.single_swap"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:1b,count:7,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "nothing_either_side",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.83, 0.5, 0.6875],
+      "result": "pass",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "empty_slot_beside_items",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"}],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.17, 0.5, 0.6875],
+      "result": "pass",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "creative_put_keeps_hand",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.83, 0.5, 0.6875],
+      "item": "minecraft:stone",
+      "gameMode": "creative",
+      "result": "success_server",
+      "changes": "",
+      "hand": "minecraft:stone x2",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.place_item 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.place_item"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.place_item"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:0b,count:2,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "creative_take",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[{Slot:0b,count:5,id:\"minecraft:diamond\"}],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.83, 0.5, 0.6875],
+      "gameMode": "creative",
+      "result": "success_server",
+      "changes": "",
+      "hand": "minecraft:diamond x5",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.take_item 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.take_item"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.take_item"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "creative_swap",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[{Slot:0b,count:5,id:\"minecraft:diamond\"}],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.83, 0.5, 0.6875],
+      "item": "minecraft:stone",
+      "gameMode": "creative",
+      "result": "success_server",
+      "changes": "",
+      "hand": "minecraft:diamond x5",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.single_swap 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.single_swap"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.single_swap"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:0b,count:2,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "adventure_put",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.83, 0.5, 0.6875],
+      "item": "minecraft:stone",
+      "gameMode": "adventure",
+      "result": "success_server",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.place_item 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.place_item"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.place_item"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:0b,count:2,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "spectator_put",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.83, 0.5, 0.6875],
+      "item": "minecraft:stone",
+      "gameMode": "spectator",
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:stone x2",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "offhand_put",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.83, 0.5, 0.6875],
+      "offhand": "minecraft:stone",
+      "handUsed": "offhand",
+      "result": "success",
+      "changes": "0,0,-1=minecraft:stone",
+      "hand": "minecraft:stone x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.stone.place 0,0,-1 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.stone.place"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_place 0,0,-1 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:stone 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, -1],
+          "state": "minecraft:stone",
+          "flags": 11
+        }
+      ],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "sneaking_with_item",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.83, 0.5, 0.6875],
+      "item": "minecraft:diamond",
+      "sneaking": true,
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:diamond x2",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "sneaking_empty_handed",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[{Slot:0b,count:5,id:\"minecraft:diamond\"}],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.83, 0.5, 0.6875],
+      "sneaking": true,
+      "result": "success_server",
+      "changes": "",
+      "hand": "minecraft:diamond x5",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.take_item 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.take_item"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.take_item"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "waterlogged_put",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[waterlogged=true]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.83, 0.5, 0.6875],
+      "item": "minecraft:stone",
+      "result": "success_server",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.place_item 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.place_item"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.place_item"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:0b,count:2,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "spruce_take",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:spruce_shelf",
+          "nbt": "{Items:[{Slot:1b,count:2,id:\"minecraft:diamond\"}],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.5, 0.5, 0.6875],
+      "result": "success_server",
+      "changes": "",
+      "hand": "minecraft:diamond x2",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.take_item 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.take_item"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.take_item"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "held_block_not_placed",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.5, 0.5, 0.6875],
+      "item": "minecraft:oak_planks",
+      "result": "success_server",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.place_item 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.place_item"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.place_item"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:1b,count:2,id:\"minecraft:oak_planks\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "take_spear_is_silent",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[{Slot:0b,count:1,id:\"minecraft:iron_spear\"}],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.83, 0.5, 0.6875],
+      "result": "success_server",
+      "changes": "",
+      "hand": "minecraft:iron_spear x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.take_item 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.take_item"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.take_item"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "put_spear",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.83, 0.5, 0.6875],
+      "item": "minecraft:iron_spear",
+      "count": 1,
+      "result": "success_server",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.place_item 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.place_item"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.place_item"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:0b,count:1,id:\"minecraft:iron_spear\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "side_face_picks_nothing",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "east",
+      "cursor": [1.0, 0.5, 0.8],
+      "item": "minecraft:diamond",
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:diamond x2",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "top_face_picks_nothing",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "up",
+      "cursor": [0.5, 1.0, 0.8],
+      "item": "minecraft:diamond",
+      "result": "pass",
+      "changes": "",
+      "hand": "minecraft:diamond x2",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "cursor_on_section_edge",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.3333333432674408, 0.5, 0.6875],
+      "item": "minecraft:stone",
+      "result": "success_server",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.place_item 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.place_item"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.place_item"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:1b,count:2,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "comparator_behind_reads_slots",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"},{Slot:2b,count:1,id:\"minecraft:apple\"}],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [0, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 1],
+          "state": "minecraft:comparator[facing=north]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.5, 0.5, 0.6875],
+      "item": "minecraft:stone",
+      "comparator": [0, 0, 1],
+      "result": "success_server",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.place_item 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.place_item"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.place_item"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"},{Slot:1b,count:2,id:\"minecraft:stone\"},{Slot:2b,count:1,id:\"minecraft:apple\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,0,1 {OutputSignal:0,components:{},id:\"minecraft:comparator\"}"
+      ],
+      "comparatorSignal": 7
+    },
+    {
+      "name": "comparator_behind_after_take",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"},{Slot:2b,count:1,id:\"minecraft:apple\"}],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [0, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 1],
+          "state": "minecraft:comparator[facing=north]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.17, 0.5, 0.6875],
+      "comparator": [0, 0, 1],
+      "result": "success_server",
+      "changes": "",
+      "hand": "minecraft:apple x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.take_item 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.take_item"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.take_item"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,0,1 {OutputSignal:0,components:{},id:\"minecraft:comparator\"}"
+      ],
+      "comparatorSignal": 1
+    },
+    {
+      "name": "comparator_in_front_reads_nothing",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [0, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, -1],
+          "state": "minecraft:comparator[facing=south]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.5, 0.5, 0.6875],
+      "item": "minecraft:stone",
+      "comparator": [0, 0, -1],
+      "result": "success_server",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.place_item 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.place_item"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.place_item"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:1b,count:2,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,0,-1 {OutputSignal:0,components:{},id:\"minecraft:comparator\"}"
+      ],
+      "comparatorSignal": 0
+    },
+    {
+      "name": "comparator_beside_reads_nothing",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:comparator[facing=west]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.5, 0.5, 0.6875],
+      "item": "minecraft:stone",
+      "comparator": [1, 0, 0],
+      "result": "success_server",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.place_item 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.place_item"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:item_interact_finish 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.place_item"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:1b,count:2,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "1,0,0 {OutputSignal:0,components:{},id:\"minecraft:comparator\"}"
+      ],
+      "comparatorSignal": 0
+    },
+    {
+      "name": "powered_swaps_last_three",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "nbt": "{Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"},{Slot:1b,count:2,id:\"minecraft:apple\"}],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.5, 0.5, 0.6875],
+      "hotbar": [
+        [
+          0,
+          "minecraft:stone",
+          1
+        ],
+        [
+          1,
+          "minecraft:stone",
+          2
+        ],
+        [
+          2,
+          "minecraft:stone",
+          3
+        ],
+        [
+          3,
+          "minecraft:stone",
+          4
+        ],
+        [
+          4,
+          "minecraft:stone",
+          5
+        ],
+        [
+          5,
+          "minecraft:stone",
+          6
+        ],
+        [
+          6,
+          "minecraft:stone",
+          7
+        ],
+        [
+          7,
+          "minecraft:stone",
+          8
+        ],
+        [
+          8,
+          "minecraft:stone",
+          9
+        ]
+      ],
+      "checkInventory": true,
+      "result": "success_server",
+      "changes": "",
+      "hand": "minecraft:stone x1",
+      "inventory": [
+        "minecraft:stone x1",
+        "minecraft:stone x2",
+        "minecraft:stone x3",
+        "minecraft:stone x4",
+        "minecraft:stone x5",
+        "minecraft:stone x6",
+        "minecraft:diamond x1",
+        "minecraft:apple x2",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.multi_swap 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.multi_swap"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:entity_interact 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.multi_swap"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:0b,count:7,id:\"minecraft:stone\"},{Slot:1b,count:8,id:\"minecraft:stone\"},{Slot:2b,count:9,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "powered_swap_with_nothing",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.5, 0.5, 0.6875],
+      "checkInventory": true,
+      "result": "consume",
+      "changes": "",
+      "hand": "empty",
+      "inventory": [
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:entity_interact 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "powered_shelf_empty_hotbar_full",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "nbt": "{Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"},{Slot:1b,count:2,id:\"minecraft:apple\"},{Slot:2b,count:3,id:\"minecraft:bread\"}],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.83, 0.5, 0.6875],
+      "checkInventory": true,
+      "result": "success_server",
+      "changes": "",
+      "hand": "empty",
+      "inventory": [
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "minecraft:diamond x1",
+        "minecraft:apple x2",
+        "minecraft:bread x3",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.multi_swap 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.multi_swap"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:entity_interact 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.multi_swap"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "powered_selected_slot_swapped",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "nbt": "{Items:[{Slot:1b,count:1,id:\"minecraft:diamond\"}],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.5, 0.5, 0.6875],
+      "selected": 7,
+      "item": "minecraft:stone",
+      "hotbar": [
+        [
+          0,
+          "minecraft:stone",
+          1
+        ],
+        [
+          1,
+          "minecraft:stone",
+          2
+        ],
+        [
+          2,
+          "minecraft:stone",
+          3
+        ],
+        [
+          3,
+          "minecraft:stone",
+          4
+        ],
+        [
+          4,
+          "minecraft:stone",
+          5
+        ],
+        [
+          5,
+          "minecraft:stone",
+          6
+        ],
+        [
+          6,
+          "minecraft:stone",
+          7
+        ],
+        [
+          7,
+          "minecraft:stone",
+          8
+        ],
+        [
+          8,
+          "minecraft:stone",
+          9
+        ]
+      ],
+      "checkInventory": true,
+      "result": "success_server",
+      "changes": "",
+      "hand": "minecraft:diamond x1",
+      "inventory": [
+        "minecraft:stone x1",
+        "minecraft:stone x2",
+        "minecraft:stone x3",
+        "minecraft:stone x4",
+        "minecraft:stone x5",
+        "minecraft:stone x6",
+        "empty",
+        "minecraft:diamond x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.multi_swap 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.multi_swap"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:entity_interact 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.multi_swap"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:0b,count:7,id:\"minecraft:stone\"},{Slot:1b,count:8,id:\"minecraft:stone\"},{Slot:2b,count:9,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "powered_creative_swaps",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "nbt": "{Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"}],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.83, 0.5, 0.6875],
+      "gameMode": "creative",
+      "hotbar": [
+        [
+          0,
+          "minecraft:stone",
+          1
+        ],
+        [
+          1,
+          "minecraft:stone",
+          2
+        ],
+        [
+          2,
+          "minecraft:stone",
+          3
+        ],
+        [
+          3,
+          "minecraft:stone",
+          4
+        ],
+        [
+          4,
+          "minecraft:stone",
+          5
+        ],
+        [
+          5,
+          "minecraft:stone",
+          6
+        ],
+        [
+          6,
+          "minecraft:stone",
+          7
+        ],
+        [
+          7,
+          "minecraft:stone",
+          8
+        ],
+        [
+          8,
+          "minecraft:stone",
+          9
+        ]
+      ],
+      "checkInventory": true,
+      "result": "success_server",
+      "changes": "",
+      "hand": "minecraft:stone x1",
+      "inventory": [
+        "minecraft:stone x1",
+        "minecraft:stone x2",
+        "minecraft:stone x3",
+        "minecraft:stone x4",
+        "minecraft:stone x5",
+        "minecraft:stone x6",
+        "minecraft:diamond x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.multi_swap 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.multi_swap"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:entity_interact 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.multi_swap"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:0b,count:7,id:\"minecraft:stone\"},{Slot:1b,count:8,id:\"minecraft:stone\"},{Slot:2b,count:9,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "powered_offhand_does_nothing",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "nbt": "{Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"}],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.83, 0.5, 0.6875],
+      "offhand": "minecraft:stone",
+      "handUsed": "offhand",
+      "hotbar": [
+        [
+          0,
+          "minecraft:stone",
+          1
+        ],
+        [
+          1,
+          "minecraft:stone",
+          2
+        ],
+        [
+          2,
+          "minecraft:stone",
+          3
+        ],
+        [
+          3,
+          "minecraft:stone",
+          4
+        ],
+        [
+          4,
+          "minecraft:stone",
+          5
+        ],
+        [
+          5,
+          "minecraft:stone",
+          6
+        ],
+        [
+          6,
+          "minecraft:stone",
+          7
+        ],
+        [
+          7,
+          "minecraft:stone",
+          8
+        ],
+        [
+          8,
+          "minecraft:stone",
+          9
+        ]
+      ],
+      "checkInventory": true,
+      "result": "success",
+      "changes": "0,0,-1=minecraft:stone;0,0,0=minecraft:oak_shelf",
+      "hand": "minecraft:stone x1",
+      "inventory": [
+        "minecraft:stone x1",
+        "minecraft:stone x2",
+        "minecraft:stone x3",
+        "minecraft:stone x4",
+        "minecraft:stone x5",
+        "minecraft:stone x6",
+        "minecraft:stone x7",
+        "minecraft:stone x8",
+        "minecraft:stone x9",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.deactivate 0,0,0 1.0",
+        "minecraft:block.stone.place 0,0,-1 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.deactivate",
+        "minecraft:block.stone.place"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_deactivate 0,0,0 none",
+        "minecraft:block_place 0,0,-1 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:stone 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.shelf.deactivate"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, -1],
+          "state": "minecraft:stone",
+          "flags": 11
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "powered_side_face_does_nothing",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "nbt": "{Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"}],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "east",
+      "cursor": [1.0, 0.5, 0.8],
+      "hotbar": [
+        [
+          0,
+          "minecraft:stone",
+          1
+        ],
+        [
+          1,
+          "minecraft:stone",
+          2
+        ],
+        [
+          2,
+          "minecraft:stone",
+          3
+        ],
+        [
+          3,
+          "minecraft:stone",
+          4
+        ],
+        [
+          4,
+          "minecraft:stone",
+          5
+        ],
+        [
+          5,
+          "minecraft:stone",
+          6
+        ],
+        [
+          6,
+          "minecraft:stone",
+          7
+        ],
+        [
+          7,
+          "minecraft:stone",
+          8
+        ],
+        [
+          8,
+          "minecraft:stone",
+          9
+        ]
+      ],
+      "checkInventory": true,
+      "result": "success",
+      "changes": "0,0,0=minecraft:oak_shelf;1,0,0=minecraft:stone",
+      "hand": "empty",
+      "inventory": [
+        "empty",
+        "minecraft:stone x2",
+        "minecraft:stone x3",
+        "minecraft:stone x4",
+        "minecraft:stone x5",
+        "minecraft:stone x6",
+        "minecraft:stone x7",
+        "minecraft:stone x8",
+        "minecraft:stone x9",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.deactivate 0,0,0 1.0",
+        "minecraft:block.stone.place 1,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.deactivate",
+        "minecraft:block.stone.place"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_deactivate 0,0,0 none",
+        "minecraft:block_place 1,0,0 player"
+      ],
+      "stats": [
+        "minecraft:used minecraft:stone 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.shelf.deactivate"
+      ],
+      "writes": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:stone",
+          "flags": 11
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "two_connected_swap_six",
+      "setup": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=left]",
+          "nbt": "{Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"}],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=right]",
+          "nbt": "{Items:[{Slot:2b,count:2,id:\"minecraft:apple\"}],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.5, 0.5, 0.6875],
+      "hotbar": [
+        [
+          0,
+          "minecraft:stone",
+          1
+        ],
+        [
+          1,
+          "minecraft:stone",
+          2
+        ],
+        [
+          2,
+          "minecraft:stone",
+          3
+        ],
+        [
+          3,
+          "minecraft:stone",
+          4
+        ],
+        [
+          4,
+          "minecraft:stone",
+          5
+        ],
+        [
+          5,
+          "minecraft:stone",
+          6
+        ],
+        [
+          6,
+          "minecraft:stone",
+          7
+        ],
+        [
+          7,
+          "minecraft:stone",
+          8
+        ],
+        [
+          8,
+          "minecraft:stone",
+          9
+        ]
+      ],
+      "checkInventory": true,
+      "result": "success_server",
+      "changes": "",
+      "hand": "minecraft:stone x1",
+      "inventory": [
+        "minecraft:stone x1",
+        "minecraft:stone x2",
+        "minecraft:stone x3",
+        "minecraft:diamond x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "minecraft:apple x2",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.multi_swap 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.multi_swap"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:entity_interact 1,0,0 none",
+        "minecraft:entity_interact 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.multi_swap"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "1,0,0 {Items:[{Slot:0b,count:4,id:\"minecraft:stone\"},{Slot:1b,count:5,id:\"minecraft:stone\"},{Slot:2b,count:6,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,0,0 {Items:[{Slot:0b,count:7,id:\"minecraft:stone\"},{Slot:1b,count:8,id:\"minecraft:stone\"},{Slot:2b,count:9,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "three_connected_swap_all",
+      "setup": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=left]",
+          "nbt": "{Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"}],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=center]",
+          "nbt": "{Items:[{Slot:1b,count:2,id:\"minecraft:apple\"}],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=right]",
+          "nbt": "{Items:[{Slot:2b,count:3,id:\"minecraft:bread\"}],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.5, 0.5, 0.6875],
+      "hotbar": [
+        [
+          0,
+          "minecraft:stone",
+          1
+        ],
+        [
+          1,
+          "minecraft:stone",
+          2
+        ],
+        [
+          2,
+          "minecraft:stone",
+          3
+        ],
+        [
+          3,
+          "minecraft:stone",
+          4
+        ],
+        [
+          4,
+          "minecraft:stone",
+          5
+        ],
+        [
+          5,
+          "minecraft:stone",
+          6
+        ],
+        [
+          6,
+          "minecraft:stone",
+          7
+        ],
+        [
+          7,
+          "minecraft:stone",
+          8
+        ],
+        [
+          8,
+          "minecraft:stone",
+          9
+        ]
+      ],
+      "checkInventory": true,
+      "result": "success_server",
+      "changes": "",
+      "hand": "minecraft:diamond x1",
+      "inventory": [
+        "minecraft:diamond x1",
+        "empty",
+        "empty",
+        "empty",
+        "minecraft:apple x2",
+        "empty",
+        "empty",
+        "empty",
+        "minecraft:bread x3",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.multi_swap 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.multi_swap"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:entity_interact 1,0,0 none",
+        "minecraft:entity_interact 0,0,0 none",
+        "minecraft:entity_interact -1,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.multi_swap"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "1,0,0 {Items:[{Slot:0b,count:1,id:\"minecraft:stone\"},{Slot:1b,count:2,id:\"minecraft:stone\"},{Slot:2b,count:3,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,0,0 {Items:[{Slot:0b,count:4,id:\"minecraft:stone\"},{Slot:1b,count:5,id:\"minecraft:stone\"},{Slot:2b,count:6,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "-1,0,0 {Items:[{Slot:0b,count:7,id:\"minecraft:stone\"},{Slot:1b,count:8,id:\"minecraft:stone\"},{Slot:2b,count:9,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "three_connected_from_an_end",
+      "setup": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=left]",
+          "nbt": "{Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"}],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=center]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=right]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [-1, 0, 0],
+      "face": "north",
+      "cursor": [0.83, 0.5, 0.6875],
+      "hotbar": [
+        [
+          0,
+          "minecraft:stone",
+          1
+        ],
+        [
+          1,
+          "minecraft:stone",
+          2
+        ],
+        [
+          2,
+          "minecraft:stone",
+          3
+        ],
+        [
+          3,
+          "minecraft:stone",
+          4
+        ],
+        [
+          4,
+          "minecraft:stone",
+          5
+        ],
+        [
+          5,
+          "minecraft:stone",
+          6
+        ],
+        [
+          6,
+          "minecraft:stone",
+          7
+        ],
+        [
+          7,
+          "minecraft:stone",
+          8
+        ],
+        [
+          8,
+          "minecraft:stone",
+          9
+        ]
+      ],
+      "checkInventory": true,
+      "result": "success_server",
+      "changes": "",
+      "hand": "minecraft:diamond x1",
+      "inventory": [
+        "minecraft:diamond x1",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.multi_swap -1,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.multi_swap"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:entity_interact 1,0,0 none",
+        "minecraft:entity_interact 0,0,0 none",
+        "minecraft:entity_interact -1,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.multi_swap"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "1,0,0 {Items:[{Slot:0b,count:1,id:\"minecraft:stone\"},{Slot:1b,count:2,id:\"minecraft:stone\"},{Slot:2b,count:3,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,0,0 {Items:[{Slot:0b,count:4,id:\"minecraft:stone\"},{Slot:1b,count:5,id:\"minecraft:stone\"},{Slot:2b,count:6,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "-1,0,0 {Items:[{Slot:0b,count:7,id:\"minecraft:stone\"},{Slot:1b,count:8,id:\"minecraft:stone\"},{Slot:2b,count:9,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "powered_neighbour_not_connected",
+      "setup": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "nbt": "{Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"}],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "nbt": "{Items:[{Slot:2b,count:2,id:\"minecraft:apple\"}],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.5, 0.5, 0.6875],
+      "hotbar": [
+        [
+          0,
+          "minecraft:stone",
+          1
+        ],
+        [
+          1,
+          "minecraft:stone",
+          2
+        ],
+        [
+          2,
+          "minecraft:stone",
+          3
+        ],
+        [
+          3,
+          "minecraft:stone",
+          4
+        ],
+        [
+          4,
+          "minecraft:stone",
+          5
+        ],
+        [
+          5,
+          "minecraft:stone",
+          6
+        ],
+        [
+          6,
+          "minecraft:stone",
+          7
+        ],
+        [
+          7,
+          "minecraft:stone",
+          8
+        ],
+        [
+          8,
+          "minecraft:stone",
+          9
+        ]
+      ],
+      "checkInventory": true,
+      "result": "success_server",
+      "changes": "",
+      "hand": "minecraft:stone x1",
+      "inventory": [
+        "minecraft:stone x1",
+        "minecraft:stone x2",
+        "minecraft:stone x3",
+        "minecraft:stone x4",
+        "minecraft:stone x5",
+        "minecraft:stone x6",
+        "empty",
+        "empty",
+        "minecraft:apple x2",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty",
+        "empty"
+      ],
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.multi_swap 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.multi_swap"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:entity_interact 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.multi_swap"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "1,0,0 {Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,0,0 {Items:[{Slot:0b,count:7,id:\"minecraft:stone\"},{Slot:1b,count:8,id:\"minecraft:stone\"},{Slot:2b,count:9,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "powered_comparator_after_swap",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "nbt": "{Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"}],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [0, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 1],
+          "state": "minecraft:comparator[facing=north]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cursor": [0.5, 0.5, 0.6875],
+      "hotbar": [
+        [
+          0,
+          "minecraft:stone",
+          1
+        ],
+        [
+          1,
+          "minecraft:stone",
+          2
+        ],
+        [
+          2,
+          "minecraft:stone",
+          3
+        ],
+        [
+          3,
+          "minecraft:stone",
+          4
+        ],
+        [
+          4,
+          "minecraft:stone",
+          5
+        ],
+        [
+          5,
+          "minecraft:stone",
+          6
+        ],
+        [
+          6,
+          "minecraft:stone",
+          7
+        ],
+        [
+          7,
+          "minecraft:stone",
+          8
+        ],
+        [
+          8,
+          "minecraft:stone",
+          9
+        ]
+      ],
+      "comparator": [0, 0, 1],
+      "result": "success_server",
+      "changes": "",
+      "hand": "minecraft:stone x1",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.multi_swap 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.multi_swap"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:entity_interact 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.multi_swap"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:0b,count:7,id:\"minecraft:stone\"},{Slot:1b,count:8,id:\"minecraft:stone\"},{Slot:2b,count:9,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,0,1 {OutputSignal:0,components:{},id:\"minecraft:comparator\"}"
+      ],
+      "comparatorSignal": 7
+    },
+    {
+      "name": "power_single_shelf",
+      "kind": "set",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "place": {
+        "offset": [0, 1, 0],
+        "state": "minecraft:redstone_block"
+      },
+      "changes": "0,0,0=minecraft:oak_shelf[powered=true];0,1,0=minecraft:redstone_block",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.activate 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.activate"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_activate 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.activate"
+      ],
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:redstone_block",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "unpower_single_shelf",
+      "kind": "set",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "place": {
+        "offset": [0, 1, 0],
+        "state": "minecraft:air"
+      },
+      "changes": "0,0,0=minecraft:oak_shelf;0,1,0=minecraft:air",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.deactivate 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.deactivate"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_deactivate 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.deactivate"
+      ],
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "unpowered_neighbour_stays_apart",
+      "kind": "set",
+      "setup": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "place": {
+        "offset": [0, 1, 0],
+        "state": "minecraft:redstone_block"
+      },
+      "changes": "0,0,0=minecraft:oak_shelf[powered=true];1,0,0=minecraft:oak_shelf;0,1,0=minecraft:redstone_block",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.activate 0,0,0 1.0",
+        "minecraft:block.shelf.deactivate 1,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.activate",
+        "minecraft:block.shelf.deactivate"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_activate 0,0,0 none",
+        "minecraft:block_deactivate 1,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.activate",
+        "sound minecraft:block.shelf.deactivate"
+      ],
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:redstone_block",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "flags": 3
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=left]",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=right]",
+          "flags": 3
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "blockEntities": [
+        "1,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "power_joins_powered_left",
+      "kind": "set",
+      "setup": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [1, 1, 0],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "place": {
+        "offset": [0, 1, 0],
+        "state": "minecraft:redstone_block"
+      },
+      "changes": "0,0,0=minecraft:oak_shelf[powered=true,side_chain=right];1,0,0=minecraft:oak_shelf[powered=true,side_chain=left];0,1,0=minecraft:redstone_block",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.activate 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.activate"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_activate 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.activate"
+      ],
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:redstone_block",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "flags": 3
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=left]",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=right]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "blockEntities": [
+        "1,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "power_joins_powered_right",
+      "kind": "set",
+      "setup": [
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [-1, 1, 0],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "place": {
+        "offset": [0, 1, 0],
+        "state": "minecraft:redstone_block"
+      },
+      "changes": "-1,0,0=minecraft:oak_shelf[powered=true,side_chain=right];0,0,0=minecraft:oak_shelf[powered=true,side_chain=left];0,1,0=minecraft:redstone_block",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.activate 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.activate"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_activate 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.activate"
+      ],
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:redstone_block",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "flags": 3
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=right]",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=left]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "blockEntities": [
+        "-1,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "power_joins_both_sides",
+      "kind": "set",
+      "setup": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [1, 1, 0],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [-1, 1, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "place": {
+        "offset": [0, 1, 0],
+        "state": "minecraft:redstone_block"
+      },
+      "changes": "-1,0,0=minecraft:oak_shelf[powered=true,side_chain=right];0,0,0=minecraft:oak_shelf[powered=true,side_chain=center];1,0,0=minecraft:oak_shelf[powered=true,side_chain=left];0,1,0=minecraft:redstone_block",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.activate 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.activate"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_activate 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.activate"
+      ],
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:redstone_block",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "flags": 3
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=left]",
+          "flags": 3
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=right]",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=center]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "blockEntities": [
+        "1,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "-1,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "power_extends_chain_of_two",
+      "kind": "set",
+      "setup": [
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=left]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [2, 1, 0],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=right]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [1, 1, 0],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "place": {
+        "offset": [0, 1, 0],
+        "state": "minecraft:redstone_block"
+      },
+      "changes": "0,0,0=minecraft:oak_shelf[powered=true,side_chain=right];1,0,0=minecraft:oak_shelf[powered=true,side_chain=center];0,1,0=minecraft:redstone_block",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.activate 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.activate"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_activate 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.activate"
+      ],
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:redstone_block",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "flags": 3
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=center]",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=right]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "blockEntities": [
+        "2,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "1,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "power_joins_two_singles",
+      "kind": "set",
+      "setup": [
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [2, 1, 0],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "place": {
+        "offset": [1, 1, 0],
+        "state": "minecraft:redstone_block"
+      },
+      "changes": "0,0,0=minecraft:oak_shelf[powered=true,side_chain=right];1,0,0=minecraft:oak_shelf[powered=true,side_chain=center];2,0,0=minecraft:oak_shelf[powered=true,side_chain=left];1,1,0=minecraft:redstone_block",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.activate 1,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.activate"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_activate 1,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.activate"
+      ],
+      "writes": [
+        {
+          "offset": [1, 1, 0],
+          "state": "minecraft:redstone_block",
+          "flags": 3
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "flags": 3
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=left]",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=right]",
+          "flags": 3
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=center]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "blockEntities": [
+        "2,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "1,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "full_chain_takes_no_fourth",
+      "kind": "set",
+      "setup": [
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=left]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [2, 1, 0],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=center]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [1, 1, 0],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=right]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "place": {
+        "offset": [-1, 1, 0],
+        "state": "minecraft:redstone_block"
+      },
+      "changes": "-1,0,0=minecraft:oak_shelf[powered=true];-1,1,0=minecraft:redstone_block",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.activate -1,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.activate"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_activate -1,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.activate"
+      ],
+      "writes": [
+        {
+          "offset": [-1, 1, 0],
+          "state": "minecraft:redstone_block",
+          "flags": 3
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "blockEntities": [
+        "2,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "1,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "-1,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "chain_of_two_and_single_stay_apart",
+      "kind": "set",
+      "setup": [
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=left]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [2, 1, 0],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=right]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [1, 1, 0],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [-1, 1, 0],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "offset": [-2, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [-2, 1, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "place": {
+        "offset": [0, 1, 0],
+        "state": "minecraft:redstone_block"
+      },
+      "changes": "0,0,0=minecraft:oak_shelf[powered=true,side_chain=right];1,0,0=minecraft:oak_shelf[powered=true,side_chain=center];0,1,0=minecraft:redstone_block",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.activate 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.activate"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_activate 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.activate"
+      ],
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:redstone_block",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "flags": 3
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=center]",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=right]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "blockEntities": [
+        "2,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "1,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "-1,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "-2,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "other_facing_stays_apart",
+      "kind": "set",
+      "setup": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[facing=south,powered=true]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [1, 1, 0],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "place": {
+        "offset": [0, 1, 0],
+        "state": "minecraft:redstone_block"
+      },
+      "changes": "0,0,0=minecraft:oak_shelf[powered=true];0,1,0=minecraft:redstone_block",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.activate 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.activate"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_activate 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.activate"
+      ],
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:redstone_block",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "blockEntities": [
+        "1,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "mixed_woods_connect",
+      "kind": "set",
+      "setup": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:birch_shelf[powered=true]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [1, 1, 0],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "place": {
+        "offset": [0, 1, 0],
+        "state": "minecraft:redstone_block"
+      },
+      "changes": "0,0,0=minecraft:oak_shelf[powered=true,side_chain=right];1,0,0=minecraft:birch_shelf[powered=true,side_chain=left];0,1,0=minecraft:redstone_block",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.activate 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.activate"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_activate 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.activate"
+      ],
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:redstone_block",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "flags": 3
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:birch_shelf[powered=true,side_chain=left]",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=right]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "blockEntities": [
+        "1,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "unpowering_middle_splits_chain",
+      "kind": "set",
+      "setup": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=left]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [1, 1, 0],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=center]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=right]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [-1, 1, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "place": {
+        "offset": [0, 1, 0],
+        "state": "minecraft:air"
+      },
+      "changes": "-1,0,0=minecraft:oak_shelf[powered=true];0,0,0=minecraft:oak_shelf;1,0,0=minecraft:oak_shelf[powered=true];0,1,0=minecraft:air",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.deactivate 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.deactivate"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_deactivate 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.deactivate"
+      ],
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "flags": 3
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "flags": 3
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "blockEntities": [
+        "1,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "-1,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "unpowering_end_shortens_chain",
+      "kind": "set",
+      "setup": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=left]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [1, 1, 0],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=center]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=right]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [-1, 1, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "place": {
+        "offset": [1, 1, 0],
+        "state": "minecraft:air"
+      },
+      "changes": "0,0,0=minecraft:oak_shelf[powered=true,side_chain=left];1,0,0=minecraft:oak_shelf;1,1,0=minecraft:air",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.deactivate 1,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.deactivate"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_deactivate 1,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.deactivate"
+      ],
+      "writes": [
+        {
+          "offset": [1, 1, 0],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=left]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "blockEntities": [
+        "1,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "-1,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "place_powered_shelf_beside_powered",
+      "kind": "set",
+      "setup": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [1, 1, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "place": {
+        "offset": [0, 0, 0],
+        "state": "minecraft:oak_shelf[powered=true]"
+      },
+      "changes": "0,0,0=minecraft:oak_shelf[side_chain=right]",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.deactivate 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.deactivate"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_deactivate 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.deactivate"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "flags": 3
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=left]",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "flags": 3
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[side_chain=right]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "blockEntities": [
+        "1,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "place_unpowered_shelf_beside_chain",
+      "kind": "set",
+      "setup": [
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=left]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [2, 1, 0],
+          "state": "minecraft:redstone_block"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=right]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [1, 1, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "place": {
+        "offset": [0, 0, 0],
+        "state": "minecraft:oak_shelf"
+      },
+      "changes": "0,0,0=minecraft:oak_shelf",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "blockEntities": [
+        "2,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "1,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "power_with_comparator_behind",
+      "kind": "set",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"}],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [0, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 1],
+          "state": "minecraft:comparator[facing=north]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "place": {
+        "offset": [0, 1, 0],
+        "state": "minecraft:redstone_block"
+      },
+      "comparator": [0, 0, 1],
+      "changes": "0,0,0=minecraft:oak_shelf[powered=true];0,1,0=minecraft:redstone_block",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.activate 0,0,0 1.0"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shelf.activate"
+      ],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_activate 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [
+        "sound minecraft:block.shelf.activate"
+      ],
+      "writes": [
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:redstone_block",
+          "flags": 3
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,0,1 {OutputSignal:0,components:{},id:\"minecraft:comparator\"}"
+      ],
+      "comparatorSignal": 1
+    },
+    {
+      "name": "hopper_fills_first_slot",
+      "kind": "hopper",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:hopper[facing=down]",
+          "nbt": "{Items:[{Slot:0b,count:5,id:\"minecraft:stone\"}],TransferCooldown:0}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "hopper": [0, 1, 0],
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_activate 0,0,0 none",
+        "minecraft:block_activate 0,0,0 none",
+        "minecraft:block_activate 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:0b,count:1,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,1,0 {Items:[{Slot:0b,count:4,id:\"minecraft:stone\"}],TransferCooldown:8,components:{},id:\"minecraft:hopper\"}"
+      ]
+    },
+    {
+      "name": "hopper_fills_next_free_slot",
+      "kind": "hopper",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"}],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:hopper[facing=down]",
+          "nbt": "{Items:[{Slot:0b,count:5,id:\"minecraft:stone\"}],TransferCooldown:0}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "hopper": [0, 1, 0],
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_activate 0,0,0 none",
+        "minecraft:block_activate 0,0,0 none",
+        "minecraft:block_activate 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"},{Slot:1b,count:1,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,1,0 {Items:[{Slot:0b,count:4,id:\"minecraft:stone\"}],TransferCooldown:8,components:{},id:\"minecraft:hopper\"}"
+      ]
+    },
+    {
+      "name": "hopper_tops_up_matching_stack",
+      "kind": "hopper",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[{Slot:1b,count:10,id:\"minecraft:stone\"}],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:hopper[facing=down]",
+          "nbt": "{Items:[{Slot:0b,count:5,id:\"minecraft:stone\"}],TransferCooldown:0}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "hopper": [0, 1, 0],
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_activate 0,0,0 none",
+        "minecraft:block_activate 0,0,0 none",
+        "minecraft:block_activate 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:0b,count:1,id:\"minecraft:stone\"},{Slot:1b,count:10,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,1,0 {Items:[{Slot:0b,count:4,id:\"minecraft:stone\"}],TransferCooldown:8,components:{},id:\"minecraft:hopper\"}"
+      ]
+    },
+    {
+      "name": "hopper_into_full_shelf",
+      "kind": "hopper",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"},{Slot:1b,count:1,id:\"minecraft:apple\"},{Slot:2b,count:1,id:\"minecraft:bread\"}],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:hopper[facing=down]",
+          "nbt": "{Items:[{Slot:0b,count:5,id:\"minecraft:stone\"}],TransferCooldown:0}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "hopper": [0, 1, 0],
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"},{Slot:1b,count:1,id:\"minecraft:apple\"},{Slot:2b,count:1,id:\"minecraft:bread\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,1,0 {Items:[{Slot:0b,count:5,id:\"minecraft:stone\"}],TransferCooldown:0,components:{},id:\"minecraft:hopper\"}"
+      ]
+    },
+    {
+      "name": "hopper_from_side_fills_first_slot",
+      "kind": "hopper",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:hopper[facing=west]",
+          "nbt": "{Items:[{Slot:0b,count:5,id:\"minecraft:stone\"}],TransferCooldown:0}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "hopper": [1, 0, 0],
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_activate 0,0,0 none",
+        "minecraft:block_activate 0,0,0 none",
+        "minecraft:block_activate 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:0b,count:1,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "1,0,0 {Items:[{Slot:0b,count:4,id:\"minecraft:stone\"}],TransferCooldown:8,components:{},id:\"minecraft:hopper\"}"
+      ]
+    },
+    {
+      "name": "hopper_takes_first_item",
+      "kind": "hopper",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[{Slot:1b,count:2,id:\"minecraft:diamond\"},{Slot:2b,count:1,id:\"minecraft:apple\"}],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:hopper[facing=down]",
+          "nbt": "{Items:[],TransferCooldown:0}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "hopper": [0, -1, 0],
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_activate 0,0,0 none",
+        "minecraft:block_activate 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:1b,count:1,id:\"minecraft:diamond\"},{Slot:2b,count:1,id:\"minecraft:apple\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,-1,0 {Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"}],TransferCooldown:8,components:{},id:\"minecraft:hopper\"}"
+      ]
+    },
+    {
+      "name": "hopper_fills_with_comparator",
+      "kind": "hopper",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:hopper[facing=down]",
+          "nbt": "{Items:[{Slot:0b,count:5,id:\"minecraft:stone\"}],TransferCooldown:0}"
+        },
+        {
+          "offset": [0, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 1],
+          "state": "minecraft:comparator[facing=north]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "hopper": [0, 1, 0],
+      "comparator": [0, 0, 1],
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_activate 0,0,0 none",
+        "minecraft:block_activate 0,0,0 none",
+        "minecraft:block_activate 0,0,0 none"
+      ],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,0 {Items:[{Slot:0b,count:1,id:\"minecraft:stone\"}],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "0,1,0 {Items:[{Slot:0b,count:4,id:\"minecraft:stone\"}],TransferCooldown:8,components:{},id:\"minecraft:hopper\"}",
+        "0,0,1 {OutputSignal:0,components:{},id:\"minecraft:comparator\"}"
+      ],
+      "comparatorSignal": 1
+    },
+    {
+      "name": "break_drops_items",
+      "kind": "break",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[{Slot:0b,count:2,id:\"minecraft:diamond\"},{Slot:2b,count:1,id:\"minecraft:apple\"}],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "changes": "0,0,0=minecraft:air",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [
+        "item minecraft:diamond x2",
+        "item minecraft:apple x1",
+        "item minecraft:oak_shelf x1"
+      ],
+      "sounds": [],
+      "levelEvents": [
+        "2001 0,0,0 4613"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_destroy 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:mined minecraft:oak_shelf 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "blockEntities": []
+    },
+    {
+      "name": "break_middle_of_chain",
+      "kind": "break",
+      "setup": [
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=left]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=center]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true,side_chain=right]",
+          "nbt": "{Items:[],align_items_to_bottom:0b}"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "changes": "-1,0,0=minecraft:oak_shelf;0,0,0=minecraft:air;1,0,0=minecraft:oak_shelf",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shelf.deactivate -1,0,0 1.0",
+        "minecraft:block.shelf.deactivate 1,0,0 1.0"
+      ],
+      "entities": [
+        "item minecraft:oak_shelf x1"
+      ],
+      "sounds": [
+        "minecraft:block.shelf.deactivate",
+        "minecraft:block.shelf.deactivate"
+      ],
+      "levelEvents": [
+        "2001 0,0,0 4609"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_destroy 0,0,0 player",
+        "minecraft:block_deactivate -1,0,0 none",
+        "minecraft:block_deactivate 1,0,0 none"
+      ],
+      "stats": [
+        "minecraft:mined minecraft:oak_shelf 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.shelf.deactivate",
+        "sound minecraft:block.shelf.deactivate"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:air",
+          "flags": 3
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "flags": 3
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:oak_shelf[powered=true]",
+          "flags": 3
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "flags": 3
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "blockEntities": [
+        "1,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+        "-1,0,0 {Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}"
+      ]
+    },
+    {
+      "name": "break_with_comparator_behind",
+      "kind": "break",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_shelf",
+          "nbt": "{Items:[{Slot:0b,count:1,id:\"minecraft:diamond\"}],align_items_to_bottom:0b}"
+        },
+        {
+          "offset": [0, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 1],
+          "state": "minecraft:comparator[facing=north]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "comparator": [0, 0, 1],
+      "changes": "0,0,0=minecraft:air",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [
+        "item minecraft:diamond x1",
+        "item minecraft:oak_shelf x1"
+      ],
+      "sounds": [],
+      "levelEvents": [
+        "2001 0,0,0 4613"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_destroy 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:mined minecraft:oak_shelf 1"
+      ],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "blockEntities": [
+        "0,0,1 {OutputSignal:0,components:{},id:\"minecraft:comparator\"}"
+      ],
+      "comparatorSignal": 0
+    }
+  ],
+  "version": "26.3"
+}
