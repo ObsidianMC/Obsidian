@@ -47,6 +47,7 @@ import net.minecraft.util.profiling.Profiler;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -73,13 +74,13 @@ import net.minecraft.world.phys.Vec3;
  * Records trial spawners on a headless dedicated server in a flat world of air, one game tick at a time, and the trial
  * spawners and vaults a placed trial chamber holds.
  *
- * <p>A {@code trial} case is its input: the blocks set up around its origin, the spawner's state and saved data (set
- * as a structure sets them), the players standing around it, the seed of the level's random, and what happens to each
- * mob the spawner spawns ({@code mobActions}: killed, or moved out of its tracking range, some ticks after it
- * appeared). It steps the frozen game one tick at a time and records after each tick the blocks the level stored (in
- * order, with their flags), the blocks that changed, the spawner's saved data, the block entity data a listener got
- * for it (the chunk's changes are sent at the end of each tick, where vanilla sends them at the start of the next),
- * the entities in the area, the sounds, level events and particles the listener received, the game events
+ * <p>A {@code trial} case is its input: the blocks set up around its origin, the spawner's state and saved data (set as
+ * a structure sets them), the players standing around it, the seed of the level's random, and what happens to each mob
+ * the spawner spawns ({@code mobActions}: killed, discarded, or moved out of its tracking range, under the floor, some
+ * ticks after it appeared). It steps the frozen game one tick at a time and records after each tick the blocks the
+ * level stored (in order, with their flags), the blocks that changed, the spawner's saved data, the block entity data a
+ * listener got for it (the chunk's changes are sent at the end of each tick, where vanilla sends them at the start of
+ * the next), the entities in the area, the sounds, level events and particles the listener received, the game events
  * within 16 blocks, the state of the level's random, and each item's id modulo 4 (which picks the ticks a resting item
  * moves on, an input the replay takes as ids can't match). Mobs' and the spawner's UUID sets are written in a fixed
  * order: vanilla saves them from a hash set whose order changes between runs. Tracked mobs are named by the order they
@@ -108,8 +109,9 @@ public final class TrialSpawnerFixtures {
     // Ticks run after a case's area is cleared, so that ticks it left scheduled find air.
     private static final int DrainTicks = 3;
 
-    // How far a mob that leaves is moved up: beyond the 47 blocks a spawner tracks its mobs to.
-    private static final int LeaveHeight = 60;
+    // How far a mob that leaves is moved down: beyond the 47 blocks a spawner tracks its mobs to, and under the
+    // floor, out of the sun, so that a mob with its AI never burns there by its own random.
+    private static final int LeaveDepth = 60;
 
     // The listener floats this far above the origin: a spectator, which spawners never detect.
     private static final Vec3 ListenerOffset = new Vec3(0.5, 10, 0.5);
@@ -374,11 +376,14 @@ public final class TrialSpawnerFixtures {
             if (state.appeared.get(mob) + action.get("after").getAsInt() != tick || !mob.isAlive())
                 continue;
 
-            if (action.get("action").getAsString().equals("kill")) {
+            var kind = action.get("action").getAsString();
+            if (kind.equals("kill")) {
                 mob.kill(level);
+            } else if (kind.equals("discard")) {
+                mob.discard();
             } else {
                 mob.setNoGravity(true);
-                mob.teleportTo(mob.getX(), mob.getY() + LeaveHeight, mob.getZ());
+                mob.teleportTo(mob.getX(), mob.getY() - LeaveDepth, mob.getZ());
             }
         }
     }
@@ -519,8 +524,9 @@ public final class TrialSpawnerFixtures {
         return phases;
     }
 
-    // An entity as "<type> <x,y,z>", then a mob's yaw (the spawner draws it) and name, its health, whether it must
-    // persist, and the item it is. An item's yaw comes from its own unseeded random, so it isn't recorded.
+    // An entity as "<type> <x,y,z>", then a mob's yaw (the spawner draws it), name and what it holds and wears, its
+    // health, whether it must persist, and the item it is. An item's yaw comes from its own unseeded random, so it
+    // isn't recorded.
     private static String describe(Entity entity, Trial state) {
         var at = entity.position().subtract(Vec3.atLowerCornerOf(origin));
         var text = new StringBuilder(BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString())
@@ -529,6 +535,11 @@ public final class TrialSpawnerFixtures {
         if (entity instanceof Mob mob) {
             text.append(" yaw ").append(number(entity.getYRot(), 2));
             text.append(" (").append(mobName(state, mob.getUUID())).append(')');
+            for (var slot : EquipmentSlot.values()) {
+                var worn = mob.getItemBySlot(slot);
+                if (!worn.isEmpty())
+                    text.append(' ').append(slot.getName()).append(' ').append(stack(worn));
+            }
         }
         if (entity instanceof LivingEntity living)
             text.append(" health ").append(number(living.getHealth(), 2));

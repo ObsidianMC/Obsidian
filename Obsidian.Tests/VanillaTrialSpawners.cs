@@ -41,8 +41,8 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
     private const int Below = 2;
     private const int Above = 6;
 
-    // How far a mob that leaves is moved up, as the probe moves it.
-    private const int LeaveHeight = 60;
+    // How far a mob that leaves is moved down, as the probe moves it.
+    private const int LeaveDepth = 60;
 
     // Quiet writes, as the probe's setup: no neighbour or shape updates and no on-place.
     private const BlockUpdateFlags Quiet = BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace;
@@ -205,7 +205,9 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
                 Compare(differences, $"tick {tick} {field}", Strings(checkpoint.GetProperty(field)), obsidian);
 
             var saved = Canonical(checkpoint.GetProperty("saved").GetString()!);
-            BlockProbes.Expect(differences, $"tick {tick} saved", saved, NormalizedSave(spawner, mobs));
+            var ours = NormalizedSave(spawner, mobs);
+            ExpectKept(differences, $"tick {tick}", probe, ours);
+            BlockProbes.Expect(differences, $"tick {tick} saved", saved, Snbt.Write(ours));
             BlockProbes.Expect(differences, $"tick {tick} random", checkpoint.GetProperty("random").GetInt64(),
                 random.State);
 
@@ -287,14 +289,21 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
                 continue;
 
             // Vanilla's kill: damage beyond any health, from nothing.
-            if (action.GetProperty("action").GetString() == "kill")
+            var kind = action.GetProperty("action").GetString();
+            if (kind == "kill")
             {
                 await mob.DamageCombatAsync(null, float.MaxValue, CombatDamageKind.Magic);
                 continue;
             }
 
+            if (kind == "discard")
+            {
+                await mob.RemoveAsync();
+                continue;
+            }
+
             mob.NoGravity = true;
-            await mob.TeleportAsync(mob.Position + new VectorD(0, LeaveHeight, 0));
+            await mob.TeleportAsync(mob.Position - new VectorD(0, LeaveDepth, 0));
         }
     }
 
@@ -322,9 +331,26 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
             .ToList();
     }
 
+    // The fields the case says Obsidian keeps where vanilla drops them (a config naming a registry entry this server
+    // doesn't have): they must be saved as the case's data had them, and are left out of the comparison with vanilla.
+    private static void ExpectKept(List<string> differences, string what, JsonElement probe, NbtCompound ours)
+    {
+        if (!probe.TryGetProperty("obsidianKeeps", out var kept))
+            return;
+
+        var input = SnbtReader.ReadCompound(probe.GetProperty("spawner").GetProperty("nbt").GetString()!);
+        foreach (var field in kept.EnumerateArray().Select(name => name.GetString()!))
+        {
+            var expected = Snbt.Write(input[field]);
+            var actual = ours.TryGetTag(field, out var tag) ? Snbt.Write(tag) : "nothing";
+            BlockProbes.Expect(differences, $"{what} kept {field}", expected, actual);
+            ours.Remove(field);
+        }
+    }
+
     // The spawner's saved data as the probe writes it: its UUID sets in a fixed order, and its mobs by the order they
     // spawned in.
-    private static string NormalizedSave(TrialSpawnerBlockEntity spawner, MobLog mobs)
+    private static NbtCompound NormalizedSave(TrialSpawnerBlockEntity spawner, MobLog mobs)
     {
         var saved = Saved(spawner);
         if (saved.TryGetTag<NbtList>("registered_players", out var players))
@@ -355,7 +381,7 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
             saved.Add(list);
         }
 
-        return Snbt.Write(saved);
+        return saved;
     }
 
     private static string Canonical(string snbt) => Snbt.Write(SnbtReader.ReadCompound(snbt));
@@ -438,20 +464,45 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
             && box.Min.Z < max.Z && box.Max.Z > min.Z;
     }
 
-    // An entity as the probe describes it: type and offset, then a mob's yaw and name, its health, whether it must
-    // persist, and the item it is.
+    // An entity as the probe describes it: type and offset, then a mob's yaw, name and what it holds and wears, its
+    // health, whether it must persist, and the item it is.
     private static string Describe(Entity entity, Vector origin, MobLog mobs)
     {
         var at = entity.Position - (VectorD)origin;
         var text = $"{EntityNbt.TypeId(entity)} {Number(at.X, 3)},{Number(at.Y, 3)},{Number(at.Z, 3)}";
         if (entity is Mob mob)
-            text += $" yaw {Number(mob.Yaw, 2)} ({mobs.NameOf(mob.Uuid)})";
+            text += $" yaw {Number(mob.Yaw, 2)} ({mobs.NameOf(mob.Uuid)}){Worn(mob)}";
         if (entity is Living living)
             text += $" health {Number(Math.Max(0, living.Health), 2)}";
         if (entity is Mob { PersistenceRequired: true })
             text += " persistent";
         if (entity is ItemEntity item)
             text += $" item {item.Item.Holder.UnlocalizedName} x{item.Item.Count}";
+
+        return text;
+    }
+
+    // What a mob holds and wears, by vanilla's slot names in vanilla's slot order, as the probe lists them.
+    private static string Worn(Mob mob)
+    {
+        (EquipmentSlot Slot, string Name)[] slots =
+        [
+            (EquipmentSlot.MainHand, "mainhand"),
+            (EquipmentSlot.OffHand, "offhand"),
+            (EquipmentSlot.Boots, "feet"),
+            (EquipmentSlot.Leggings, "legs"),
+            (EquipmentSlot.Chestplate, "chest"),
+            (EquipmentSlot.Helmet, "head"),
+            (EquipmentSlot.Body, "body"),
+            (EquipmentSlot.Saddle, "saddle")
+        ];
+
+        var text = "";
+        foreach (var (slot, name) in slots)
+        {
+            if (mob.GetEquipment(slot) is { IsAir: false, Count: > 0 } worn)
+                text += $" {name} {worn.Holder.UnlocalizedName} x{worn.Count}";
+        }
 
         return text;
     }
