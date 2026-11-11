@@ -11,6 +11,8 @@ differs or isn't there yet.
 These items have a behaviour in vanilla but are dropped like any other here:
 
 - **Glass bottles at full beehives** wait for hive harvesting (#731), which isn't merged on this base.
+- **Sulfur cube buckets** still drop their item; their mob placement is outside this phase's fluid, fish and
+  axolotl bucket scope.
 - **Wind charges**: Obsidian has no flight for a wind charge outside the breeze's. The capture keeps vanilla's shot
   (`wind_charge`, pinned).
 - **Lingering potions**: Obsidian throws no lingering potion yet.
