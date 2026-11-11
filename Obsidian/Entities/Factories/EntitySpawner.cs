@@ -116,6 +116,7 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
         EntityType.BreezeWindCharge => new BreezeWindCharge(level),
         EntityType.WitherSkull => new WitherSkull { Level = level },
         EntityType.EndCrystal => new EndCrystal { Level = level },
+        EntityType.LightningBolt => new LightningBolt { Level = level },
         EntityType.EyeOfEnder => new EyeOfEnder { Level = level },
         EntityType.EnderPearl => new EnderPearl { Level = level },
         EntityType.Tnt => new PrimedTnt { Level = level },

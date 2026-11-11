@@ -249,6 +249,8 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
     private DamageSource SourceOf(IEntity source, CombatDamageKind kind)
     {
         var attacker = ReferenceEquals(source, this) ? null : source;
+        if (this.IncomingDamageKind.HasValue)
+            attacker = this.IncomingAttacker;
         var direct = this.IncomingDirectSource ?? attacker;
         var type = kind switch
         {
@@ -268,6 +270,7 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
             CombatDamageKind.Freezing => "minecraft:freeze",
             CombatDamageKind.Thorns => "minecraft:thorns",
             CombatDamageKind.Drowning => "minecraft:drown",
+            CombatDamageKind.Lightning => "minecraft:lightning_bolt",
             _ => "minecraft:magic"
         };
 

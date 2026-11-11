@@ -23,6 +23,9 @@ public enum BlockUpdateFlags
     /// </summary>
     Clients = 2,
 
+    /// <summary>Vanilla <c>UPDATE_INVISIBLE</c>: clients aren't told even when <see cref="Clients"/> is set.</summary>
+    Invisible = 4,
+
     /// <summary>Vanilla UPDATE_IMMEDIATE: retain immediate client-render updates, including through shape changes.</summary>
     Immediate = 8,
 
@@ -35,6 +38,11 @@ public enum BlockUpdateFlags
     /// Vanilla <c>UPDATE_SUPPRESS_DROPS</c>: blocks the shape updates destroy don't drop anything.
     /// </summary>
     SuppressDrops = 32,
+
+    /// <summary>
+    /// Vanilla <c>UPDATE_SKIP_BLOCK_ENTITY_SIDEEFFECTS</c>: a block entity the change removes keeps its contents.
+    /// </summary>
+    SkipBlockEntitySideEffects = 256,
 
     /// <summary>
     /// Vanilla <c>UPDATE_SKIP_ON_PLACE</c>: the new block isn't told it was placed.

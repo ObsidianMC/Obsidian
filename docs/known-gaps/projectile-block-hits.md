@@ -4,19 +4,13 @@
 of its tick where vanilla's `onHitBlock` runs: the block reacts, then the projectile's own block reaction, then
 `projectile_land`, then what the projectile does on any hit. Target blocks (power, the `target_hit` statistic and
 criterion), campfires, candles and candle cakes lit by burning projectiles, TNT primed by them, chorus flowers and
-pointed dripstone or sulfur spikes broken by projectiles, Channeling's lightning on a lightning rod and wooden buttons
-pressed by arrows are checked against vanilla by `projectile_block_hits.json` (see
-[scenario captures](../scenario-captures.md)). `VanillaProjectileHits` pins each difference below by case and field,
+pointed dripstone or sulfur spikes broken by projectiles, Channeling's lightning on a lightning rod (the rod powered
+and sparking, the strike, the bolt's whole life; see [lightning](lightning.md)) and wooden buttons pressed by arrows
+are checked against vanilla by `projectile_block_hits.json` (see [scenario captures](../scenario-captures.md)). `VanillaProjectileHits` pins each difference below by case and field,
 and fails once one goes.
 
 ## Differences the replay pins
 
-- **The bolt Channeling calls down doesn't strike.** The hit summons the lightning bolt and plays the trident's
-  thunder, as vanilla's `hit_block` enchantment effect does, but Obsidian has no lightning bolt behaviour: the
-  lightning rod isn't powered and doesn't spark, there's no `lightning_strike` game event, nothing is set alight or
-  struck, and the bolt stays until its chunk unloads. Lightning rods giving power is phase 4 of the
-  [block interactions plan](../block-interactions-plan.md); a lightning bolt entity is where to start
-  (`channeling_trident_lightning_rod`).
 - **Arrows press wooden buttons after they hit.** Vanilla's arrow presses a button it moves through during its move,
   before its own hit, so the click and `block_activate` come before the arrow's sound and `projectile_land`. Obsidian's
   contact pass (#723) runs straight after the arrow's tick, so the press follows the hit. Touching the blocks along a

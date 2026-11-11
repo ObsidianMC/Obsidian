@@ -8,6 +8,10 @@ namespace Obsidian.Entities;
 [MinecraftEntity("minecraft:turtle")]
 public sealed partial class Turtle : FarmAnimal
 {
+    // Vanilla's Turtle.thunderHit: lightning kills it outright, without setting it on fire.
+    internal override ValueTask ThunderHitAsync(LightningBolt bolt) =>
+        DamageCombatAsync(this, float.MaxValue, CombatDamageKind.Lightning);
+
     internal Vector Home { get; private set; }
     internal bool HasEgg { get; private set; }
     internal bool Laying { get; set; }

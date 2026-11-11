@@ -35,6 +35,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.ExperienceOrb;
+import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.projectile.FishingHook;
 import net.minecraft.world.entity.projectile.Projectile;
@@ -213,6 +214,7 @@ public final class ProjectileHitFixtures {
 
             var before = snapshot(level, target);
             var ticks = new JsonArray();
+            var seeded = new ArrayList<Entity>();
             for (int tick = 1; tick <= input.get("ticks").getAsInt(); tick++) {
                 heard.clear();
                 gameEvents.clear();
@@ -248,6 +250,7 @@ public final class ProjectileHitFixtures {
                 addIfAny(record, "criteria", awarded);
                 addIfAny(record, "stats", strings(owner.awarded));
                 ticks.add(record);
+                seedLightning(level, target, input, seeded);
             }
 
             input.add("record", ticks);
@@ -468,6 +471,37 @@ public final class ProjectileHitFixtures {
     // The entities of the area, sorted: items as "item <id> x<count>", experience orbs by type alone (how vanilla
     // splits the experience is its own business), and others as "<type> <cell>", the cell relative to the target.
     // The case's projectile is "projectile <cell>".
+    // A case with boltSeed seeds a lightning bolt the hit summoned, after the tick it appeared in and before its first
+    // tick: its own random with boltSeed (its seed and flashes drawn again, as its constructor draws them), and the
+    // level's random, which its strike draws from, with levelSeed.
+    private static void seedLightning(ServerLevel level, BlockPos target, JsonObject input, List<Entity> seeded) {
+        if (!input.has("boltSeed"))
+            return;
+
+        var bolts = level.getEntities((Entity)null, area(target, Reach + 1), entity -> entity instanceof LightningBolt);
+        for (var entity : bolts) {
+            if (seeded.contains(entity))
+                continue;
+
+            try {
+                var randomField = Entity.class.getDeclaredField("random");
+                randomField.setAccessible(true);
+                var random = (net.minecraft.util.RandomSource) randomField.get(entity);
+                random.setSeed(input.get("boltSeed").getAsLong());
+                var bolt = (LightningBolt) entity;
+                bolt.seed = random.nextLong();
+                var flashes = LightningBolt.class.getDeclaredField("flashes");
+                flashes.setAccessible(true);
+                flashes.setInt(bolt, random.nextInt(3) + 1);
+            } catch (ReflectiveOperationException e) {
+                throw new RuntimeException(e);
+            }
+
+            level.getRandom().setSeed(input.get("levelSeed").getAsLong());
+            seeded.add(entity);
+        }
+    }
+
     private static JsonArray entities(ServerLevel level, BlockPos target, Entity projectile) {
         var found = new ArrayList<String>();
         for (var entity : level.getEntities((Entity)null, area(target, Reach + 1), entity -> true)) {

@@ -174,6 +174,9 @@ internal sealed partial class MobSpawner(AbstractLevel level)
             && level.LevelData.GetBooleanRule("spawn_monsters");
         var spawnCats = spawnMobs && ticks % 1200 == 0;
 
+        // Like vanilla's tickSpawningChunk, each chunk that spawns mobs may be struck in a thunderstorm.
+        var strikes = level.StormStrikes;
+
         var (counts, potential, tickingMobs) = this.TallyMobs(spawnCats);
 
         // Like vanilla, the chunks spawn in a shuffled order.
@@ -201,7 +204,8 @@ internal sealed partial class MobSpawner(AbstractLevel level)
                     }
                 }
             }
-            TickThunder(chunk);
+            if (strikes)
+                level.TickThunder(chunk);
             foreach (var category in spawnCategories)
             {
                 if (!spawnMobs || category.Rare && ticks % 400 != 0 || category.Name == "monster" && !spawnMonsters)

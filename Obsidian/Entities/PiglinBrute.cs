@@ -52,7 +52,8 @@ public sealed partial class PiglinBrute : PathfinderMob
         if (++TimeInOverworld > 300)
         {
             PlayMobSound("converted_to_zombified");
-            var zombie = (ZombifiedPiglin)await ConvertToAsync(EntityType.ZombifiedPiglin);
+            if (await ConvertToAsync(EntityType.ZombifiedPiglin) is not ZombifiedPiglin zombie)
+                return;
             zombie.AddPotionEffect((int)PotionEffect.Nausea - 1, 200);
         }
     }
