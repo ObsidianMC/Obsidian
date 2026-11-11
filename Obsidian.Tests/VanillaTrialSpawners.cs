@@ -87,6 +87,43 @@ public sealed class VanillaTrialSpawners(ITestOutputHelper output)
     }
 
     /// <summary>
+    /// A wither skeleton from spawn data that only names it gets vanilla's wither skeleton setup, not the skeleton's
+    /// it inherits: a stone sword, no armour, no enchantments, and an attack damage of 4. It draws only the base
+    /// setup's and the loot pickup chance from the level's random. Before Halloween, so no pumpkin draws either.
+    /// </summary>
+    [Fact]
+    public async Task BareWitherSkeletonGetsItsOwnSetup()
+    {
+        await using var context = TestServerFactory.CreateServer($"bare-wither-{Guid.NewGuid():N}");
+        var level = context.World;
+        level.TimeProvider = new NoonUtc(new DateOnly(2026, 6, 1));
+        var wither = new WitherSkeleton { Level = level };
+        var random = new LegacyRandomSource(9009);
+
+        wither.FinalizeBareSpawn(level, random);
+
+        Assert.True(wither.GetEquipment(EquipmentSlot.MainHand).Is(ItemsRegistry.StoneSword));
+        Assert.Empty(wither.GetEquipment(EquipmentSlot.MainHand).Enchantments);
+        foreach (var slot in new[] { EquipmentSlot.Helmet, EquipmentSlot.Chestplate, EquipmentSlot.Leggings,
+                     EquipmentSlot.Boots })
+            Assert.True(wither.GetEquipment(slot).IsAir, $"{slot} isn't empty");
+        Assert.Equal(4, wither.GetAttributeValue("minecraft:generic.attack_damage"));
+
+        var expected = new LegacyRandomSource(9009);
+        new WitherSkeleton { Level = level }.FinalizeMobSpawnFromLevel(expected);
+        expected.NextFloat();
+        Assert.Equal(expected.State, random.State);
+    }
+
+    /// <summary>A clock that reads noon of <paramref name="date"/>, in a local time zone of UTC.</summary>
+    private sealed class NoonUtc(DateOnly date) : TimeProvider
+    {
+        public override TimeZoneInfo LocalTimeZone => TimeZoneInfo.Utc;
+
+        public override DateTimeOffset GetUtcNow() => new(date.ToDateTime(new TimeOnly(12, 0)), TimeSpan.Zero);
+    }
+
+    /// <summary>
     /// Obsidian-only risk: a trial chamber's trial spawners and vaults, as vanilla placed them and after they ticked,
     /// and each trial case's spawner at its end, load as their typed block entities and save exactly what vanilla
     /// saved. Each ticked spawner's spawn data is one its registry config, as Obsidian reads it, can pick.

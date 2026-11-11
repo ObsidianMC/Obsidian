@@ -287,7 +287,9 @@ public partial class ItemEntity : Entity
         var moving = Math.Sqrt(motion.X * motion.X * 0.2f + motion.Y * motion.Y + motion.Z * motion.Z * 0.2f);
         var volume = Math.Min(1f, (float)moving * 0.2f);
         var pitch = 1f + (Globals.Random.NextSingle() - Globals.Random.NextSingle()) * 0.4f;
-        LevelSounds.Play(level, this.Position, "minecraft:entity.generic.splash", SoundCategory.Neutral, volume, pitch);
+        // Vanilla's Entity.playSound skips a silent entity's sound, after the pitch's draws and before the event.
+        if (!this.Silent)
+            LevelSounds.Play(level, this.Position, "minecraft:entity.generic.splash", SoundCategory.Neutral, volume, pitch);
         level.EmitGameEvent(MobGameEvent.Splash, this.Position, this);
     }
 

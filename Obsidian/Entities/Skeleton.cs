@@ -38,15 +38,13 @@ public partial class Skeleton : PathfinderMob
 
     /// <summary>
     /// Vanilla's <c>AbstractSkeleton.finalizeSpawn</c> with the level's random, in vanilla's order: the base spawn
-    /// setup, armour, the bow, their enchantments, picking up loot and, on Halloween, a pumpkin.
+    /// setup, the type's default equipment, its enchantments, picking up loot and, on Halloween, a pumpkin.
     /// </summary>
     internal override void FinalizeBareSpawn(AbstractLevel level, IRandomSource random)
     {
         var special = SpecialDifficulty;
         FinalizeMobSpawnFromLevel(random);
-        PopulateDefaultArmor(random.NextFloat, random.NextInt, special);
-        SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(ItemsRegistry.Bow));
-        PopulateEquipmentEnchantmentsFromLevel(random, special);
+        PopulateBareEquipment(random, special);
         CanPickUpLoot = random.NextFloat() < 0.55f * special;
 
         var bareHead = GetEquipment(EquipmentSlot.Helmet).IsAir;
@@ -57,6 +55,17 @@ public partial class Skeleton : PathfinderMob
             SetEquipment(EquipmentSlot.Helmet, ItemsRegistry.GetSingleItem(head));
             SetEquipmentDropChance(EquipmentSlot.Helmet, 0);
         }
+    }
+
+    /// <summary>
+    /// Vanilla's <c>AbstractSkeleton</c> default equipment and its enchantments, from the level's random: armour, a
+    /// bow, then the enchantments of what it holds and wears.
+    /// </summary>
+    private protected virtual void PopulateBareEquipment(IRandomSource random, float special)
+    {
+        PopulateDefaultArmor(random.NextFloat, random.NextInt, special);
+        SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(ItemsRegistry.Bow));
+        PopulateEquipmentEnchantmentsFromLevel(random, special);
     }
 
     protected override void FinalizeSpawn()
