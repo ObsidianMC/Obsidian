@@ -1,4 +1,5 @@
 using Obsidian.API.Blocks;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.BlockTicks;
 using Obsidian.WorldData.Features;
@@ -143,6 +144,11 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IRedstoneLevel,
 
     long IRedstoneLevel.GameTime => this.Fluids.Clock.GameTime;
 
+    IRandomSource IRedstoneLevel.Random => this.GrowthRandom;
+
+    // Vanilla Level.soundSeedGenerator is independent of gameplay randomness, including piston pitch.
+    internal IRandomSource SoundSeedRandom { get; set; } = new LegacyRandomSource(Random.Shared.NextInt64());
+
     long IRedstoneLevel.DayTime => this.LevelData.DayTime;
 
     int IRedstoneLevel.GetSkyLight(Vector position) =>
@@ -232,6 +238,20 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IRedstoneLevel,
 
     ValueTask IRedstoneLevel.WriteAsync(Vector position, IBlock block, bool notifyNeighbors) =>
         this.WriteAsync(position, block, notifyNeighbors ? BlockUpdateFlags.All : ClientsOnly);
+
+    ValueTask IRedstoneLevel.WriteAsync(Vector position, IBlock block, BlockUpdateFlags flags) =>
+        this.WriteAsync(position, block, flags);
+
+    async ValueTask IRedstoneLevel.UpdateNeighborShapesAsync(Vector position)
+    {
+        // Vanilla's direct shape order, independent of the signal-query direction order.
+        BlockFace[] faces =
+            [BlockFace.West, BlockFace.East, BlockFace.North, BlockFace.South, BlockFace.Down, BlockFace.Up];
+        foreach (var face in faces)
+            this.BlockUpdates.ShapeUpdateAt(position.Offset(face), face.Opposite(), BlockUpdateFlags.Clients, 512);
+
+        await this.BlockNotifications.DrainAsync();
+    }
 
     ValueTask IRedstoneLevel.RestoreBlockSilentlyAsync(Vector position, IBlock block) =>
         this.WriteAsync(position, block, BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace);

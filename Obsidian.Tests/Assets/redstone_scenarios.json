@@ -34050,6 +34050,182 @@
      ]
     }
    ]
+  },
+  {
+   "name": "review_retraction_notifies_base_neighbours",
+   "description": "A retracting east piston updates a west-side quasi-connected piston",
+   "coverage": [
+    "piston"
+   ],
+   "min": [
+    10008,
+    69,
+    8
+   ],
+   "max": [
+    10014,
+    73,
+    8
+   ],
+   "setup": [
+    {
+     "pos": [
+      10011,
+      70,
+      8
+     ],
+     "state": "minecraft:piston[facing=east,extended=true]"
+    },
+    {
+     "pos": [
+      10012,
+      70,
+      8
+     ],
+     "state": "minecraft:piston_head[facing=east]"
+    },
+    {
+     "pos": [
+      10010,
+      70,
+      8
+     ],
+     "state": "minecraft:piston[facing=west]"
+    },
+    {
+     "pos": [
+      10010,
+      72,
+      8
+     ],
+     "state": "minecraft:redstone_block"
+    }
+   ],
+   "actions": [],
+   "entities": [],
+   "arrows": [],
+   "checkpoints": [
+    {
+     "tick": 0,
+     "palette": [
+      "minecraft:air",
+      "minecraft:piston[extended=false,facing=west]",
+      "minecraft:piston[extended=true,facing=east]",
+      "minecraft:piston_head[facing=east,short=false,type=normal]",
+      "minecraft:redstone_block"
+     ],
+     "rows": [
+      "0000000",
+      "0012300",
+      "0000000",
+      "0040000",
+      "0000000"
+     ]
+    },
+    {
+     "tick": 1,
+     "palette": [
+      "minecraft:air",
+      "minecraft:moving_piston[facing=west,type=normal]",
+      "minecraft:piston[extended=true,facing=west]",
+      "minecraft:moving_piston[facing=east,type=normal]",
+      "minecraft:redstone_block"
+     ],
+     "rows": [
+      "0000000",
+      "0123000",
+      "0000000",
+      "0040000",
+      "0000000"
+     ]
+    },
+    {
+     "tick": 2,
+     "palette": [
+      "minecraft:air",
+      "minecraft:moving_piston[facing=west,type=normal]",
+      "minecraft:piston[extended=true,facing=west]",
+      "minecraft:moving_piston[facing=east,type=normal]",
+      "minecraft:redstone_block"
+     ],
+     "rows": [
+      "0000000",
+      "0123000",
+      "0000000",
+      "0040000",
+      "0000000"
+     ]
+    },
+    {
+     "tick": 3,
+     "palette": [
+      "minecraft:air",
+      "minecraft:piston_head[facing=west,short=false,type=normal]",
+      "minecraft:piston[extended=true,facing=west]",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:redstone_block"
+     ],
+     "rows": [
+      "0000000",
+      "0123000",
+      "0000000",
+      "0040000",
+      "0000000"
+     ]
+    },
+    {
+     "tick": 4,
+     "palette": [
+      "minecraft:air",
+      "minecraft:piston_head[facing=west,short=false,type=normal]",
+      "minecraft:piston[extended=true,facing=west]",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:redstone_block"
+     ],
+     "rows": [
+      "0000000",
+      "0123000",
+      "0000000",
+      "0040000",
+      "0000000"
+     ]
+    },
+    {
+     "tick": 5,
+     "palette": [
+      "minecraft:air",
+      "minecraft:piston_head[facing=west,short=false,type=normal]",
+      "minecraft:piston[extended=true,facing=west]",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:redstone_block"
+     ],
+     "rows": [
+      "0000000",
+      "0123000",
+      "0000000",
+      "0040000",
+      "0000000"
+     ]
+    },
+    {
+     "tick": 6,
+     "palette": [
+      "minecraft:air",
+      "minecraft:piston_head[facing=west,short=false,type=normal]",
+      "minecraft:piston[extended=true,facing=west]",
+      "minecraft:piston[extended=false,facing=east]",
+      "minecraft:redstone_block"
+     ],
+     "rows": [
+      "0000000",
+      "0123000",
+      "0000000",
+      "0040000",
+      "0000000"
+     ]
+    }
+   ],
+   "level": true
   }
  ]
 }

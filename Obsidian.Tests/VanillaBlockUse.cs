@@ -57,27 +57,6 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
     // Named expected difference DestroyEventAfterRemoval, pinned to the one case whose removal emits game events.
     private static readonly HashSet<string> destroyEventAfterRemoval = ["jukebox_destroy_with_disc"];
 
-    // Named expected difference RedstoneWriteFlags (see known-gaps/redstone.md), pinned to these cases: Obsidian's
-    // flags for each of the case's ordered writes, whose positions and states match vanilla's. Redstone's writes
-    // through the notification pipeline notify neighbours (3) where vanilla's dust and comparators update only
-    // clients (2) and then notify by hand; its silent writes skip placement (514) where vanilla's comparator mode
-    // change sends 2 and its piston moves send their own flags.
-    private static readonly Dictionary<string, int[]> redstoneWriteFlags = new()
-    {
-        ["trapped_chest_powers_neighbours"] = [3, 3],
-        ["double_trapped_chest_powers_neighbours"] = [3, 3],
-        ["comparator_reads_chest_under_sitting_cat"] = [514],
-        ["comparator_reads_chest_under_standing_cat"] = [514, 3, 3],
-        ["comparator_reads_command_block"] = [514, 3, 3],
-        ["comparator_reads_active_sculk_sensor"] = [514, 3, 3],
-        ["comparator_reads_inactive_sculk_sensor"] = [514],
-        ["comparator_reads_calibrated_sculk_sensor"] = [514, 3, 3],
-        ["comparator_reads_copper_bulb"] = [514, 3, 3],
-        ["comparator_reads_copper_golem_statue"] = [514, 3, 3],
-        ["lever_extends_piston"] = [3, 514, 3],
-        ["lever_retracts_piston"] = [3, 514, 3],
-    };
-
     private sealed record Setup(Vector Offset, IBlock State, string? Text);
 
     private sealed record Effects(
@@ -280,6 +259,8 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
 
         if (use.Reference.TryGetProperty("randomSeed", out var seed))
             world.GrowthRandom = new LegacyRandomSource(seed.GetInt64());
+        if (use.Reference.TryGetProperty("soundSeed", out var soundSeed))
+            world.SoundSeedRandom = new LegacyRandomSource(soundSeed.GetInt64());
 
         var writes = new List<string>();
         var destroyed = new List<string>();
@@ -344,17 +325,18 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
         if (withoutAmbientSounds.Contains(use.Name))
             expected = ExpectSpawnEggAmbientSoundMissing(expected, outcome);
         var differences = Compare(expected, outcome).ToList();
+        differences.AddRange(CompareVibrationFrequencies(world, use.Reference));
+        differences.AddRange(CompareSoundRandom(world.GrowthRandom, use.Reference, extra.OfType<SoundPacket>().ToArray()));
         differences.AddRange(writeDifferences);
         if (use.Reference.TryGetProperty("writes", out expectedWrites))
         {
             var recordedFlags = expectedWrites.EnumerateArray()
                 .Select(write => write.GetProperty("flags").GetInt32())
                 .ToArray();
-            var flags = ExpectedWriteFlags(use.Name, recordedFlags, differences);
             var recorded = expectedWrites.EnumerateArray().Select((write, index) => Write(
                 target + Position(write.GetProperty("offset")),
                 VanillaSulfurBlocks.ParseState(write.GetProperty("state").GetString()!),
-                (BlockUpdateFlags)flags[index])).ToArray();
+                (BlockUpdateFlags)recordedFlags[index])).ToArray();
             differences.AddRange(CompareLists("ordered writes", recorded, writes.ToArray()));
             var removed = use.Reference.GetProperty("destroyed").EnumerateArray().Select(block => Destroyed(
                 target + Position(block.GetProperty("offset")),
@@ -433,6 +415,69 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
 
         if (use.Reference.TryGetProperty("checkCloseSources", out _))
             await CheckCloseSourcesAsync(harness, use);
+    }
+
+    // Native frequency and calibration samples share the block-use fixture's setup and level.
+    private static List<string> CompareVibrationFrequencies(WorldData.World world, JsonElement reference)
+    {
+        var differences = new List<string>();
+        if (reference.TryGetProperty("vibrationFrequencies", out var frequencies))
+        {
+            foreach (var kind in Enum.GetValues<MobGameEvent>())
+            {
+                var frequency = frequencies.GetProperty(kind.Identifier()).GetInt32();
+                var actual = AbstractLevel.GameEventFrequency(kind);
+                if (actual != frequency)
+                    differences.Add($"{kind.Identifier()}: expected frequency {frequency}, got {actual}");
+            }
+
+            foreach (var sample in reference.GetProperty("calibration").EnumerateArray())
+            {
+                var filter = sample.GetProperty("filter").GetInt32();
+                var eventId = sample.GetProperty("event").GetString();
+                var kind = Enum.GetValues<MobGameEvent>().Single(kind => kind.Identifier() == eventId);
+                var sensor = world.BlockUpdates.GetBlock(target);
+                var wire = BlocksRegistry.RedstoneWire.WithProperty("power", filter).WithProperty("north", "side");
+                world.BlockUpdates.SetBlock(target + Vector.South, wire, Quiet);
+                var actual = world.CalibrationAccepts(target, sensor, kind);
+                if (actual != sample.GetProperty("accepts").GetBoolean())
+                    differences.Add($"{eventId} with filter {filter}: accepted={actual}");
+            }
+
+            world.BlockUpdates.SetBlock(target + Vector.South, BlocksRegistry.Air, Quiet);
+        }
+
+        return differences;
+    }
+
+    // Compare both packet fields and the following draw, so using a different random source cannot pass.
+    private static List<string> CompareSoundRandom(IRandomSource random, JsonElement reference, SoundPacket[] sounds)
+    {
+        var differences = new List<string>();
+        if (reference.TryGetProperty("soundRandom", out var soundRandom))
+        {
+            var recorded = soundRandom.EnumerateArray().ToArray();
+            if (sounds.Length != recorded.Length)
+                differences.Add($"sound random draws: expected {recorded.Length} sounds, got {sounds.Length}");
+
+            for (var index = 0; index < Math.Min(sounds.Length, recorded.Length); index++)
+            {
+                var sound = sounds[index];
+                var captured = recorded[index];
+                if (sound.SoundLocation != captured.GetProperty("sound").GetString()
+                    || sound.Pitch != captured.GetProperty("pitch").GetSingle()
+                    || sound.Seed != captured.GetProperty("seed").GetInt64())
+                {
+                    differences.Add($"{sound.SoundLocation}: pitch={sound.Pitch:R}, seed={sound.Seed} differs");
+                }
+            }
+
+            var next = random.NextInt();
+            if (next != reference.GetProperty("nextRandom").GetInt32())
+                differences.Add($"next level random: expected {reference.GetProperty("nextRandom")}, got {next}");
+        }
+
+        return differences;
     }
 
     // A setup placement's block entity data, vanilla's SNBT without the id and position, loaded as a chunk loads it.
@@ -1024,23 +1069,6 @@ public sealed class VanillaBlockUse(ITestOutputHelper output)
     {
         var offset = position - target;
         return $"{offset.X},{offset.Y},{offset.Z}";
-    }
-
-    // The flags a case's writes are compared with: vanilla's, or Obsidian's pinned RedstoneWriteFlags, which must
-    // still differ from vanilla's so that the pin goes once Obsidian matches.
-    private static int[] ExpectedWriteFlags(string name, int[] recorded, List<string> differences)
-    {
-        if (!redstoneWriteFlags.TryGetValue(name, out var pinned))
-            return recorded;
-
-        if (pinned.Length != recorded.Length || pinned.SequenceEqual(recorded))
-        {
-            differences.Add($"RedstoneWriteFlags pin [{string.Join(", ", pinned)}] no longer fits vanilla's "
-                + $"[{string.Join(", ", recorded)}]");
-            return recorded;
-        }
-
-        return pinned;
     }
 
     private static string Write(Vector position, IBlock block, BlockUpdateFlags flags) =>

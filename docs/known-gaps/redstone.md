@@ -22,14 +22,10 @@ What follows is what still differs.
   as vanilla's do without a creaking. Command blocks give their saved `SuccessCount`, which nothing changes yet,
   since Obsidian doesn't run them.
 - **Sculk.** Calibrated sensors hear only the frequency of the signal behind them, when there is one, and stay
-  active for 10 ticks. A sensor dates a vibration from when it was emitted, so one from between ticks (a player's
-  action or a command) arrives a tick sooner than one emitted during the tick, as in vanilla. Wardens and allays,
+  active for 10 ticks. Their frequency table matches vanilla 26.3, including landings and bounces (2),
+  deaths (15), and events with no frequency entry (0). A sensor dates a vibration from when it was emitted, so one
+  from between ticks (a player's action or a command) arrives a tick sooner than one emitted during the tick, as in vanilla. Wardens and allays,
   which vanilla ticks with entities, still date vibrations from the tick that dispatches them.
-- **Write flags.** Redstone's writes through the notification pipeline notify neighbours (flags 3) where vanilla's
-  dust and comparators update only clients (2) and then notify by hand, and its silent writes skip placement (514)
-  where vanilla's comparator mode change sends 2 and its pistons send their own flags (67, 276, 324). The states,
-  their order and the neighbours reached match; `VanillaBlockUse` pins the flags of the redstone cases as
-  `RedstoneWriteFlags`.
 - **Timing.** Comparators hear of a container's items changing at the end of the level's block entity tick (through
   item access) or on its next one (players' clicks), and only near players, where vanilla's `setChanged` tells them
   at once. Entities press plates, trip wires and press wooden buttons (arrows) straight after their own tick, as

@@ -1,3 +1,4 @@
+using Obsidian.API.Blocks;
 using Obsidian.Entities;
 using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.BlockTicks;
@@ -38,7 +39,7 @@ internal sealed class RedstoneComparator(IRedstoneLevel level, RedstoneEngine en
         IPlayer player)
     {
         var mode = state.GetProperty("mode") == "subtract" ? "compare" : "subtract";
-        await level.WriteAsync(position, state.WithProperty("mode", mode), notifyNeighbors: false);
+        await level.WriteAsync(position, state.WithProperty("mode", mode), BlockUpdateFlags.Clients);
         level.PlaySound(position, "minecraft:block.comparator.click", 0.3f, mode == "subtract" ? 0.55f : 0.5f, player);
         await new RedstoneComparator(level, engine).RefreshAsync(position);
     }
@@ -62,8 +63,7 @@ internal sealed class RedstoneComparator(IRedstoneLevel level, RedstoneEngine en
     public ValueTask OnNeighborChangedAsync(NeighborChange change, IBlockChangeWorld world) => this.ScheduleIfChanged(change.Position, change.State);
 
     /// <summary>
-    /// A scheduled tick's or a mode change's refresh: recompute the output and, when it changed, commit it and notify
-    /// the neighbours.
+    /// Recomputes the output. Compare mode refreshes the front neighbours even when the output stays the same.
     /// </summary>
     public async ValueTask RefreshAsync(Vector position)
     {
@@ -72,16 +72,16 @@ internal sealed class RedstoneComparator(IRedstoneLevel level, RedstoneEngine en
             return;
 
         var target = this.Calculate(position, state);
-        if (target == entity.OutputSignal)
+        if (target == entity.OutputSignal && state.GetProperty("mode") != "compare")
             return;
 
         entity.OutputSignal = target;
         entity.SetChanged();
         var powered = (target > 0).ToString().ToLowerInvariant();
         if (state.GetProperty("powered") != powered)
-            await level.SetBlockAsync(position, state.WithProperty("powered", powered));
+            await level.WriteAsync(position, state.WithProperty("powered", powered), BlockUpdateFlags.Clients);
 
-        // Vanilla ComparatorBlock.tick: an output change goes to the block in front of the comparator.
+        // Vanilla refreshes only the front, including an unchanged compare-mode output.
         await BasicRedstoneComponents.NotifyOutputFrontAsync(level, position, Facing(state).Opposite());
     }
 

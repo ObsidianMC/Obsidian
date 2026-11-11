@@ -21056,6 +21056,9 @@
     },
     {
       "name": "lever_extends_piston",
+      "randomSeed": 12345,
+      "soundSeed": 67890,
+      "checkSoundRandom": true,
       "setup": [
         {
           "offset": [0, -1, 0],
@@ -21114,10 +21117,26 @@
         "minecraft:block_activate 1,0,0 none"
       ],
       "stats": [],
-      "menu": null
+      "menu": null,
+      "soundRandom": [
+        {
+          "sound": "minecraft:block.lever.click",
+          "pitch": 0.6,
+          "seed": -3561856981251203394
+        },
+        {
+          "sound": "minecraft:block.piston.extend",
+          "pitch": 0.6904508,
+          "seed": -5122393215592965447
+        }
+      ],
+      "nextRandom": -2090749135
     },
     {
       "name": "lever_retracts_piston",
+      "randomSeed": 12345,
+      "soundSeed": 67890,
+      "checkSoundRandom": true,
       "setup": [
         {
           "offset": [0, -1, 0],
@@ -21179,6 +21198,204 @@
         "minecraft:block_deactivate 0,0,0 none",
         "minecraft:block_deactivate 1,0,0 none"
       ],
+      "stats": [],
+      "menu": null,
+      "soundRandom": [
+        {
+          "sound": "minecraft:block.lever.click",
+          "pitch": 0.5,
+          "seed": -3561856981251203394
+        },
+        {
+          "sound": "minecraft:block.piston.contract",
+          "pitch": 0.65427047,
+          "seed": -5122393215592965447
+        }
+      ],
+      "nextRandom": -2090749135
+    },
+    {
+      "name": "review_compare_mode_same_output_notifies_front",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:comparator[facing=west,mode=subtract]"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:piston[facing=east]"
+        },
+        {
+          "offset": [2, 2, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "face": "north",
+      "checkWrites": true,
+      "clicked": [0, 0, 0],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:comparator[facing=west]",
+          "flags": 2
+        },
+        {
+          "offset": [3, 0, 0],
+          "state": "minecraft:moving_piston[facing=east]",
+          "flags": 324
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:piston[extended=true,facing=east]",
+          "flags": 67
+        }
+      ],
+      "destroyed": [],
+      "result": "success",
+      "changes": "0,0,0=minecraft:comparator[facing=west];2,0,0=minecraft:piston[extended=true,facing=east]",
+      "hand": "empty",
+      "entities": [],
+      "sounds": [
+        "minecraft:block.comparator.click",
+        "minecraft:block.piston.extend"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:piston 0 5 2,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:block_activate 2,0,0 none"
+      ],
+      "stats": [],
+      "menu": null
+    },
+    {
+      "name": "calibrated_sensor_frequency_table",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:calibrated_sculk_sensor[facing=north]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "checkVibrationFrequencies": true,
+      "calibration": [
+        {
+          "event": "minecraft:hit_ground",
+          "filter": 2,
+          "accepts": true
+        },
+        {
+          "event": "minecraft:hit_ground",
+          "filter": 3,
+          "accepts": false
+        },
+        {
+          "event": "minecraft:bounce",
+          "filter": 2,
+          "accepts": true
+        },
+        {
+          "event": "minecraft:bounce",
+          "filter": 3,
+          "accepts": false
+        },
+        {
+          "event": "minecraft:entity_die",
+          "filter": 15,
+          "accepts": true
+        },
+        {
+          "event": "minecraft:entity_die",
+          "filter": 12,
+          "accepts": false
+        },
+        {
+          "event": "minecraft:sculk_sensor_tendrils_clicking",
+          "filter": 4,
+          "accepts": false
+        }
+      ],
+      "result": "pass",
+      "changes": "",
+      "hand": "empty",
+      "vibrationFrequencies": {
+        "minecraft:block_activate": 10,
+        "minecraft:block_attach": 10,
+        "minecraft:block_change": 11,
+        "minecraft:block_close": 9,
+        "minecraft:block_deactivate": 9,
+        "minecraft:block_destroy": 12,
+        "minecraft:block_detach": 9,
+        "minecraft:block_open": 10,
+        "minecraft:block_place": 13,
+        "minecraft:bounce": 2,
+        "minecraft:container_close": 9,
+        "minecraft:container_open": 10,
+        "minecraft:drink": 8,
+        "minecraft:eat": 8,
+        "minecraft:elytra_glide": 4,
+        "minecraft:entity_damage": 7,
+        "minecraft:entity_die": 15,
+        "minecraft:entity_dismount": 5,
+        "minecraft:entity_interact": 6,
+        "minecraft:entity_mount": 6,
+        "minecraft:entity_place": 14,
+        "minecraft:entity_action": 4,
+        "minecraft:equip": 5,
+        "minecraft:explode": 15,
+        "minecraft:flap": 1,
+        "minecraft:fluid_pickup": 12,
+        "minecraft:fluid_place": 13,
+        "minecraft:hit_ground": 2,
+        "minecraft:instrument_play": 3,
+        "minecraft:item_interact_finish": 3,
+        "minecraft:item_interact_start": 0,
+        "minecraft:jukebox_play": 0,
+        "minecraft:jukebox_stop_play": 0,
+        "minecraft:lightning_strike": 14,
+        "minecraft:note_block_play": 10,
+        "minecraft:prime_fuse": 10,
+        "minecraft:projectile_land": 2,
+        "minecraft:projectile_shoot": 3,
+        "minecraft:sculk_sensor_tendrils_clicking": 0,
+        "minecraft:shear": 6,
+        "minecraft:shriek": 0,
+        "minecraft:splash": 2,
+        "minecraft:step": 1,
+        "minecraft:swim": 1,
+        "minecraft:teleport": 14,
+        "minecraft:unequip": 4,
+        "minecraft:resonate_1": 1,
+        "minecraft:resonate_2": 2,
+        "minecraft:resonate_3": 3,
+        "minecraft:resonate_4": 4,
+        "minecraft:resonate_5": 5,
+        "minecraft:resonate_6": 6,
+        "minecraft:resonate_7": 7,
+        "minecraft:resonate_8": 8,
+        "minecraft:resonate_9": 9,
+        "minecraft:resonate_10": 10,
+        "minecraft:resonate_11": 11,
+        "minecraft:resonate_12": 12,
+        "minecraft:resonate_13": 13,
+        "minecraft:resonate_14": 14,
+        "minecraft:resonate_15": 15
+      },
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
       "stats": [],
       "menu": null
     }

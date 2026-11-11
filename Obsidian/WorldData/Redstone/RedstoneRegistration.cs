@@ -31,7 +31,7 @@ internal static class RedstoneRegistration
     public static RedstoneInstall Install(IRedstoneLevel world, LevelBlockTicks ticks, NeighborBehaviors neighbors, RedstoneBehaviors redstone, Action<Vector>? playNote = null)
     {
         var engine = new RedstoneEngine(world, redstone);
-        RedstoneWire.Register(redstone, neighbors, engine);
+        RedstoneWire.Register(world, redstone, neighbors, engine);
         SculkSensorSignal.Register(redstone);
         TrappedChestSignal.Register(world, redstone);
         BasicRedstoneComponents.Register(world, ticks, redstone, neighbors, engine, playNote);

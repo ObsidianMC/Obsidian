@@ -334,7 +334,7 @@ public abstract partial class AbstractLevel
     /// Vanilla <c>CalibratedSculkSensorBlockEntity</c>'s <c>canReceiveVibration</c>: the signal behind a calibrated
     /// sensor, when there is one, is the only frequency it hears. Plain sensors hear every frequency.
     /// </summary>
-    private bool CalibrationAccepts(Vector point, IBlock sensor, MobGameEvent kind)
+    internal bool CalibrationAccepts(Vector point, IBlock sensor, MobGameEvent kind)
     {
         if (!sensor.Is(BlockIds.CalibratedSculkSensor))
             return true;
@@ -514,11 +514,10 @@ public abstract partial class AbstractLevel
         return false;
     }
 
-    private static int GameEventFrequency(MobGameEvent kind) => kind switch
+    internal static int GameEventFrequency(MobGameEvent kind) => kind switch
     {
         MobGameEvent.Step or MobGameEvent.Swim => 1,
-        MobGameEvent.ProjectileLand => 2,
-        MobGameEvent.Land => 3,
+        MobGameEvent.ProjectileLand or MobGameEvent.Land or MobGameEvent.Bounce => 2,
         MobGameEvent.ItemInteractFinish => 3,
         MobGameEvent.Eat => 8,
         MobGameEvent.BlockClose or MobGameEvent.ContainerClose => 9,
@@ -527,7 +526,7 @@ public abstract partial class AbstractLevel
         MobGameEvent.BlockChange => 11,
         MobGameEvent.BlockActivate => 10,
         MobGameEvent.BlockDeactivate => 9,
-        MobGameEvent.BlockDestroy or MobGameEvent.EntityDie => 12,
+        MobGameEvent.BlockDestroy => 12,
         MobGameEvent.FluidPickup => 12,
         MobGameEvent.BlockPlace or MobGameEvent.FluidPlace => 13,
         MobGameEvent.EntityPlace or MobGameEvent.LightningStrike => 14,
@@ -536,8 +535,7 @@ public abstract partial class AbstractLevel
         MobGameEvent.Unequip => 4,
         MobGameEvent.EntityDamage => 7,
         MobGameEvent.ProjectileShoot => 3,
-        MobGameEvent.SculkSensorClick => 4,
-        MobGameEvent.Explode => 15,
+        MobGameEvent.EntityDie or MobGameEvent.Explode => 15,
         _ => 0
     };
 

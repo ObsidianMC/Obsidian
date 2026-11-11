@@ -1,4 +1,6 @@
 using Obsidian.API.BlockEntities;
+using Obsidian.API.Blocks;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.BlockNotifications;
 
 namespace Obsidian.WorldData.Redstone;
@@ -10,6 +12,8 @@ namespace Obsidian.WorldData.Redstone;
 /// </summary>
 internal interface IRedstoneLevel : IBlockChangeWorld
 {
+    IRandomSource Random { get; }
+
     long GameTime { get; }
 
     long DayTime { get; }
@@ -30,6 +34,12 @@ internal interface IRedstoneLevel : IBlockChangeWorld
     /// notifying neighbors.
     /// </summary>
     ValueTask WriteAsync(Vector position, IBlock block, bool notifyNeighbors);
+
+    /// <summary>Commits a component's state with its exact vanilla update flags.</summary>
+    ValueTask WriteAsync(Vector position, IBlock block, BlockUpdateFlags flags);
+
+    /// <summary>Refreshes the six neighbours' shapes after a write that deferred shape updates.</summary>
+    ValueTask UpdateNeighborShapesAsync(Vector position);
 
     /// <summary>Restores a block internally, without client, neighbor, shape or placement notifications.</summary>
     ValueTask RestoreBlockSilentlyAsync(Vector position, IBlock block);

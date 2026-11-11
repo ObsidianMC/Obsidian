@@ -639,6 +639,17 @@ scenario has checkpoints) and capture again; the tests pick it up.
 For redstone, `CaptureCases` accepts exact `+`-separated scenario names and records only those; the other
 scenarios keep what they hold.
 
+`review_retraction_notifies_base_neighbours` covers the moving base's immediate neighbour notification: a
+quasi-connected piston extends in tick 1. `review_compare_mode_same_output_notifies_front` in `block_use.json`
+covers a compare-mode click with unchanged output waking the piston beyond its front support. The block-use
+replay compares their writes with vanilla's exact flags; no `RedstoneWriteFlags` pins remain.
+
+`calibrated_sensor_frequency_table` records `VibrationSystem.getGameEventFrequency` for the entire game-event
+registry, plus native calibrated-sensor acceptance of landings, bounces, deaths and sensor clicks at matching
+and mismatching filters. The replay checks every event Obsidian exposes and the captured acceptance cases.
+The two `lever_*_piston` cases also opt into seeded pitch, sound packet seed and next level-random checks for
+both extension and retraction. `CaptureCases` can refresh each of these cases independently.
+
 `block_contact` is captured only when named. Its original 16 RCON scenarios take about 15 seconds each. A scenario
 gives its number of `ticks` and starts with empty `checkpoints`; `CaptureCases` records only the exact names supplied,
 and the other cases keep their recordings.
