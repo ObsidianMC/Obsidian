@@ -81,16 +81,18 @@ public sealed partial class Dolphin : AgeableMob
         if (item is not { Count: > 0, Holder.Id: ItemIds.Cod or ItemIds.Salmon })
             return false;
         await ConsumeInteractionItemAsync(player, hand);
-        if (IsBaby)
+        if (!Silent && Level is Obsidian.WorldData.AbstractLevel sounds)
+            Obsidian.WorldData.LevelSounds.Play(sounds, Position, "minecraft:entity.dolphin.eat", MobSoundCategory, 1, 1);
+        if (CanAgeUp)
         {
-            Age += -Age / 10;
+            // Vanilla's getSpeedUpSecondsWhenFeeding: a tenth of the seconds left, in ticks.
+            Grow((int)(-Age / 20 * 0.1f) * 20, forced: true);
         }
         else
         {
             GotFish = true;
             TreasurePosition = Level is Obsidian.WorldData.AbstractLevel level && level.Generator is Obsidian.WorldData.Generators.MojangGenerator generator
                 ? await generator.FindDolphinTreasureAsync((Vector)Position.Floor()) : null;
-            SendEntityEvent(38);
         }
         SynchronizeMetadata();
         return true;

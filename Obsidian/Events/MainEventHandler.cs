@@ -104,9 +104,14 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
             IPlayerInteractable interactable when player is PlayerBase user => await interactable.InteractAsync(user, hand),
             // Like vanilla's Mob.interact, leads come before the mob's own interaction.
             Mob { HasAi: true } mob => player is PlayerBase leader && await mob.UseLeashAsync(leader, hand)
-                || await mob.InteractAsync(player, hand),
+                || await mob.InteractAsync(player, hand)
+                || await AgeLocks.TryToggleAsync(mob, player, hand),
             _ => false
         };
+
+        // Like vanilla's Mob.interact, a mob that used the click is heard being interacted with, after what it did.
+        if (used && entity is Mob { HasAi: true } && entity.Level is Obsidian.WorldData.AbstractLevel events)
+            events.EmitGameEvent(Obsidian.WorldData.MobGameEvent.EntityInteract, entity.Position, player);
 
         if (!used && entity is ILiving living)
             await Plugins.ItemBehaviors.UseOnEntityAsync(player, hand, living);

@@ -13,6 +13,8 @@ public sealed partial class Sniffer : FarmAnimal
     private long nextDig;
     internal int State { get; private set; }
     internal int DropSeedAt { get; private set; }
+    protected override int StartingBabyAge => -48000;
+
     public Sniffer() => Type = EntityType.Sniffer;
     protected override string? SoundName => "sniffer";
 

@@ -273,6 +273,9 @@ public sealed partial class Wolf : Animal
         }
         else
         {
+            if (await AgeLocks.TryToggleAsync(this, player, hand))
+                return true;
+
             OrderedToSit = !OrderedToSit;
             AttackTarget = null;
             ((Navigator)Navigator!).Stop();

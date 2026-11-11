@@ -23,8 +23,9 @@ namespace Obsidian.Tests;
 
 /// <summary>
 /// Obsidian-only risks of the blocks that hold items (flower pots, chiseled bookshelves, decorated pots, lodestone
-/// compasses, jukeboxes): an exchange interrupted or raced by another player neither loses nor duplicates an item,
-/// and their block entities save in vanilla's form. What the uses do is captured from vanilla (block_use.json).
+/// compasses, jukeboxes, shelves): an exchange interrupted or raced by another player or a hopper neither loses nor
+/// duplicates an item, a powered shelf's row swap only tries the other shelves' inventories, and their block entities
+/// save in vanilla's form. What the uses do is captured from vanilla (block_use.json, shelves.json).
 /// </summary>
 [Collection(nameof(PluginTagFiles))]
 public sealed class ItemHoldingBlocks
@@ -67,8 +68,28 @@ public sealed class ItemHoldingBlocks
             use => Behavior(use).UseWithoutItemAsync(use)),
         new("lodestone compass", world => Place(world, "minecraft:lodestone"),
             () => Stack("minecraft:compass", 2),
-            UseItemOnPacket.UseCompassAsync)
+            UseItemOnPacket.UseCompassAsync),
+        new("shelf put", world => Place(world, "minecraft:oak_shelf"),
+            () => Stack("minecraft:stone", 2),
+            use => Behavior(use).UseItemOnAsync(use)),
+        new("shelf take", world => Place(world, "minecraft:oak_shelf", Stack("minecraft:diamond", 5)),
+            () => null,
+            use => Behavior(use).UseItemOnAsync(use)),
+        new("shelf swap", world => Place(world, "minecraft:oak_shelf", Stack("minecraft:diamond", 5)),
+            () => Stack("minecraft:stone", 3),
+            use => Behavior(use).UseItemOnAsync(use)),
+        new("powered shelf row", world => Place(world, "minecraft:oak_shelf[powered=true]",
+            Stack("minecraft:diamond", 5)),
+            () => Stack("minecraft:stone", 3),
+            use => Behavior(use).UseItemOnAsync(use))
     ];
+
+    // Exchanges a second player's read of the same block may still commit after the first: a compass is used on a
+    // lodestone as often as there are compasses, and a shelf swaps whatever the first swap left in its slot.
+    private static readonly HashSet<string> repeatable =
+        ["lodestone compass", "shelf put", "shelf take", "shelf swap", "powered shelf row"];
+
+    private static readonly string[] shelfExchanges = ["shelf put", "shelf take", "shelf swap", "powered shelf row"];
 
     [Fact]
     public async Task InterruptedExchangesNeitherLoseNorDuplicateItems()
@@ -141,8 +162,8 @@ public sealed class ItemHoldingBlocks
             var secondResult = await exchange.Use(second);
             var after = Merge(await SettledCensusAsync(world, alice), Census(world, bob, includeBlock: false));
 
-            var compass = exchange.Name == "lodestone compass";
-            if (!firstResult.ConsumesAction() || secondResult.ConsumesAction() && !compass)
+            var mayRepeat = repeatable.Contains(exchange.Name);
+            if (!firstResult.ConsumesAction() || secondResult.ConsumesAction() && !mayRepeat)
                 failures.Add($"{exchange.Name}: {firstResult} then {secondResult}");
 
             if (!Same(before, after))
@@ -150,6 +171,90 @@ public sealed class ItemHoldingBlocks
         }
 
         Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
+    }
+
+    [Fact]
+    public async Task AHopperBetweenReadAndCommitMovesEachItemOnce()
+    {
+        await using var context = await StartAsync();
+        var world = context.World;
+        var player = Player(context, "User");
+        var failures = new List<string>();
+
+        foreach (var exchange in exchanges.Where(exchange => shelfExchanges.Contains(exchange.Name)))
+        {
+            // The click is read, then a hopper puts a stone into the shelf before the click commits.
+            await PrepareAsync(world, player, exchange);
+            var use = Read(context, player);
+            var access = world.GetItemAccess(target, BlockFace.Up)!;
+            var refused = access.Insert(Stack("minecraft:stone", 1));
+            Assert.Null(refused);
+            var before = await SettledCensusAsync(world, player);
+
+            await exchange.Use(use);
+            var after = await SettledCensusAsync(world, player);
+
+            if (!Same(before, after))
+                failures.Add($"{exchange.Name}: {Describe(before)} became {Describe(after)}");
+        }
+
+        Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
+    }
+
+    [Fact]
+    public async Task ABusyConnectedShelfRefusesTheRowSwap()
+    {
+        await using var context = await StartAsync();
+        var world = context.World;
+        var player = Player(context, "User");
+
+        // Two connected powered shelves facing north: the left one, as one looks at them, is to the east.
+        var left = target + new Vector(1, 0, 0);
+        world.BlockUpdates.SetBlock(target, VanillaSulfurBlocks.ParseState(
+            "minecraft:oak_shelf[powered=true,side_chain=right]"), Quiet);
+        world.BlockUpdates.SetBlock(left, VanillaSulfurBlocks.ParseState(
+            "minecraft:oak_shelf[powered=true,side_chain=left]"), Quiet);
+        var leftShelf = Assert.IsType<ShelfBlockEntity>(world.GetResidentBlockEntity(left));
+        leftShelf.Inventory.SetItem(0, Stack("minecraft:diamond", 5));
+        for (var slot = 36; slot <= 44; slot++)
+            player.Inventory.SetItem(slot, Stack("minecraft:stone", slot - 35));
+
+        var before = RowCensus(world, player, left);
+
+        // The other shelf's inventory is held, as a hopper's transfer holds it: the swap only tries it, and refuses.
+        UseResult busy;
+        using (leftShelf.Inventory.Lock())
+        {
+            var use = Read(context, player);
+            busy = await Behavior(use).UseItemOnAsync(use);
+        }
+
+        Assert.Equal(UseResult.Fail, busy);
+        Assert.True(Same(before, RowCensus(world, player, left)));
+        Assert.Equal(5, leftShelf.Inventory.GetItem(0)!.Count);
+
+        // Free again, the same swap moves both shelves' rows, each item once.
+        var free = Read(context, player);
+        Assert.Equal(UseResult.SuccessServer, await Behavior(free).UseItemOnAsync(free));
+        Assert.True(Same(before, RowCensus(world, player, left)));
+        Assert.Equal(ItemsRegistry.Get("minecraft:diamond").Id, player.Inventory.GetItem(39)!.Holder.Id);
+    }
+
+    // Every item of the player and of both shelves of a row.
+    private static Dictionary<string, int> RowCensus(WorldData.World world, ServerPlayer player, Vector other)
+    {
+        var counts = Census(world, player);
+        var shelf = (ContainerBlockEntity)world.GetResidentBlockEntity(other)!;
+        for (var slot = 0; slot < shelf.Inventory.Size; slot++)
+        {
+            if (shelf.Inventory[slot] is { Count: > 0 } stack)
+            {
+                var id = stack.Holder.UnlocalizedName;
+                counts[id] = counts.GetValueOrDefault(id) + stack.Count;
+            }
+        }
+
+        return counts;
     }
 
     /// <summary>A block entity's saved data, vanilla's, and what loading it must give back.</summary>
@@ -179,6 +284,18 @@ public sealed class ItemHoldingBlocks
                 + "sherds:{back:{id:\"minecraft:angler_pottery_sherd\"},front:{id:\"minecraft:heart_pottery_sherd\"},"
                 + "left:{id:\"minecraft:brick\"},right:{id:\"minecraft:brick\"}}}",
                 entity => Assert.Equal(9, Assert.IsType<DecoratedPotBlockEntity>(entity).Inventory[0]!.Count)),
+            new("shelf with items", "minecraft:oak_shelf",
+                "{Items:[{Slot:1b,count:5,id:\"minecraft:diamond\"}],align_items_to_bottom:1b,components:{},"
+                + "id:\"minecraft:shelf\"}",
+                entity =>
+                {
+                    var shelf = Assert.IsType<ShelfBlockEntity>(entity);
+                    Assert.True(shelf.AlignItemsToBottom);
+                    Assert.Equal(2, shelf.AnalogSignal());
+                }),
+            new("empty shelf", "minecraft:oak_shelf",
+                "{Items:[],align_items_to_bottom:0b,components:{},id:\"minecraft:shelf\"}",
+                entity => Assert.Equal(0, Assert.IsType<ShelfBlockEntity>(entity).AnalogSignal())),
             new("pot waiting for loot", "minecraft:decorated_pot",
                 "{LootTable:\"minecraft:archaeology/desert_pyramid\",LootTableSeed:5L,components:{},"
                 + "id:\"minecraft:decorated_pot\"}",
