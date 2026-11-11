@@ -78,7 +78,8 @@ public partial class PlayerBase
             return;
         }
 
-        if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact or CombatDamageKind.HotFloor
+        if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact
+            or CombatDamageKind.Campfire or CombatDamageKind.HotFloor
             && HasPotionEffect((int)PotionEffect.FireResistance - 1))
             return;
 
@@ -102,7 +103,8 @@ public partial class PlayerBase
         AcceptedDamageCount++;
         LastDamageKind = kind;
         if (kind is CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion
-            or CombatDamageKind.FireContact or CombatDamageKind.HotFloor or CombatDamageKind.SweetBerryBush
+            or CombatDamageKind.FireContact or CombatDamageKind.Campfire or CombatDamageKind.HotFloor
+            or CombatDamageKind.Cactus or CombatDamageKind.SweetBerryBush
             or CombatDamageKind.Lightning or CombatDamageKind.Thorns or CombatDamageKind.FallingStalactite)
         {
             // Worn items' armour is in the attributes' modifiers.
@@ -140,6 +142,8 @@ public partial class PlayerBase
         [CombatDamageKind.Fire] = "minecraft:on_fire",
         [CombatDamageKind.FireContact] = "minecraft:in_fire",
         [CombatDamageKind.HotFloor] = "minecraft:hot_floor",
+        [CombatDamageKind.Campfire] = "minecraft:campfire",
+        [CombatDamageKind.Cactus] = "minecraft:cactus",
         [CombatDamageKind.Explosion] = "minecraft:explosion",
         [CombatDamageKind.Magic] = "minecraft:magic",
         [CombatDamageKind.Starvation] = "minecraft:starve",

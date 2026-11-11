@@ -160,7 +160,8 @@ internal sealed class EntityContactPass(IContactLevel level)
     // its tick took out of the level (see AbstractLevel's entity loop); these flags are for the ones that mark
     // themselves removed.
     private static bool IsRemoved(Entity entity) =>
-        entity is ItemEntity { Removed: true } or Mob { IsRemoved: true } or VehicleEntity { IsRemoved: true };
+        entity is ItemEntity { Removed: true } or Mob { IsRemoved: true }
+            or VehicleEntity { IsRemoved: true } or ArmorStand { IsRemoved: true };
 
     /// <summary>
     /// Whether pressure plates and tripwires leave <paramref name="entity"/> out when they look for entities on them,
@@ -264,6 +265,15 @@ internal sealed class EntityContactPass(IContactLevel level)
     // The cells from index on; a behaviour that doesn't finish at once hands the rest to InsideAfterAsync.
     private ValueTask InsideFromAsync(Entity entity, CellBox cells, int index)
     {
+        var touched = index > 0;
+        // Rain runs after burn damage and inside hooks, even when every cell is air. Dry, unlit entities retain
+        // the empty pass: one flag read per cell, without a weather/terrain query or effect completion.
+        if (index == 0 && entity.NeedsRainContact)
+        {
+            entity.BeginInsideContact();
+            touched = true;
+        }
+
         var blocks = new ChunkCursor(level);
         for (; index < cells.Count; index++)
         {
@@ -275,12 +285,21 @@ internal sealed class EntityContactPass(IContactLevel level)
             if (IsRemoved(entity) || entity is Living { Alive: false })
                 return default;
 
+            if (!touched)
+                entity.BeginInsideContact();
+
+            touched = true;
             var pending = this.EntityInsideAsync(entity, cell, state);
             if (!pending.IsCompletedSuccessfully)
                 return this.InsideAfterAsync(pending, entity, cells, index + 1);
 
             pending.GetAwaiter().GetResult();
         }
+
+        // Inside effects are completed after every touched cell, so powder snow in two cells can melt both before
+        // fire is cleared. Cells without hooks still do only the flag read and never enter the effect path.
+        if (touched)
+            entity.FinishInsideContact();
 
         return default;
     }

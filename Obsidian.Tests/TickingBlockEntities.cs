@@ -41,13 +41,17 @@ public sealed class TickingBlockEntities
         Assert.Equal(spent + 2, furnace.CookingSpent);
 
         // Replaced by a hopper, the furnace stops and the hopper takes the chest's item.
+        // Don't scatter leftover input into the new hopper: inside contact can legitimately collect it before
+        // the block-entity pass, putting the hopper on cooldown instead of pulling from the chest.
+        furnace.Inventory.SetItem(0, null);
         await world.SetBlockAsync(machine, BlocksRegistry.Hopper);
         var hopper = Assert.IsAssignableFrom<ContainerBlockEntity>(world.GetResidentBlockEntity(machine));
         spent = furnace.CookingSpent;
         await TickAsync(world, 2);
 
         Assert.Equal(spent, furnace.CookingSpent);
-        Assert.True(hopper.Inventory[0]?.Is(ItemsRegistry.Cobblestone));
+        Assert.True(hopper.Inventory[0]?.Is(ItemsRegistry.Cobblestone),
+            string.Join(", ", hopper.Inventory.Select(stack => stack?.Holder.UnlocalizedName ?? "air")));
 
         // Removed, the hopper takes nothing more.
         await world.SetBlockAsync(machine, BlocksRegistry.Air);

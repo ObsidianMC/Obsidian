@@ -313,20 +313,13 @@ public partial class PlayerBase
                 return;
         }
 
-        // Contact with cactus and wither rose, over the cells the player's box (their pose's) is in.
+        // Wither rose, over the cells the player's box (their pose's) is in. Cactus uses the shared contact pass.
         for (var x = (int)Math.Floor(bounds.Min.X + 0.001); x <= (int)Math.Floor(bounds.Max.X - 0.001); x++)
             for (var y = (int)Math.Floor(bounds.Min.Y + 0.001); y <= (int)Math.Floor(bounds.Max.Y - 0.001); y++)
                 for (var z = (int)Math.Floor(bounds.Min.Z + 0.001); z <= (int)Math.Floor(bounds.Max.Z - 0.001); z++)
                 {
                     var block = terrain.GetBlock(new Vector(x, y, z));
 
-                    if (block?.RegistryId == BlockIds.Cactus)
-                    {
-                        await DamageCombatAsync(this, 1, CombatDamageKind.Melee); // TODO CombatDamageKind currently don't have cactus damage type
-
-                        if (!Alive || Respawning)
-                            return;
-                    }
                     if (Level.LevelData.Difficulty != Difficulty.Peaceful
                         && block?.RegistryId == BlockIds.WitherRose)
                             AddPotionEffect((int)PotionEffect.Wither - 1, 40);

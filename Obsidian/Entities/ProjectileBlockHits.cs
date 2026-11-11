@@ -124,10 +124,11 @@ internal static class ProjectileBlockHits
         && owner is not IPlayer { GameMode: GameMode.Adventure or GameMode.Spectator };
 
     // The block's reaction to the hit (vanilla's onProjectileHit overrides). Bells and decorated pots react too, and
-    // amethyst chimes and big dripleaves tilt; Obsidian doesn't model those yet (known-gaps/projectile-block-hits.md).
+    // amethyst chimes remain unmodeled (known-gaps/projectile-block-hits.md).
     private static ValueTask ReactAsync(AbstractLevel level, Entity projectile, IEntity? owner,
         ProjectileBlockHit hit, IBlock block) => block.BlockClass() switch
     {
+        "BigDripleafBlock" => BigDripleafContactBehavior.ProjectileHit(level.BlockUpdates, hit.Block, block),
         "TargetBlock" => HitTargetAsync(level, projectile, owner, hit),
         "CampfireBlock" => LightCampfire(level, projectile, owner, hit.Block, block),
         "CandleBlock" or "CandleCakeBlock" => LightCandle(level, projectile, hit.Block, block),

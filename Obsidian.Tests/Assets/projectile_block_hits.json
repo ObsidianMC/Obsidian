@@ -5938,6 +5938,1707 @@
           ]
         }
       ]
+    },
+    {
+      "name": "arrow_big_dripleaf",
+      "projectile": "minecraft:arrow",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:big_dripleaf"
+        }
+      ],
+      "ticks": 104,
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:big_dripleaf[tilt=full]",
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:block.big_dripleaf.tilt_down",
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:block_change 0,0,0 none",
+            "minecraft:projectile_land 0,0,0 minecraft:arrow",
+            "minecraft:projectile_shoot 0,0,0 player"
+          ],
+          "writes": [
+            "0,0,0=minecraft:big_dripleaf[tilt=full] flags 2"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 7,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 8,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 9,
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,-1,0 minecraft:arrow"
+          ]
+        },
+        {
+          "tick": 10,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 11,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 12,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 13,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 14,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 16,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 17,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 18,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 19,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 20,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 21,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 22,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 23,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 24,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 25,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 26,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 27,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 28,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 29,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 30,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 31,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 32,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 33,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 34,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 35,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 36,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 37,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 38,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 39,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 40,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 41,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 42,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 43,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 44,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 45,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 46,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 47,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 48,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 49,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 50,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 51,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 52,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 53,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 54,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 55,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 56,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 57,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 58,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 59,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 60,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 61,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 62,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 63,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 64,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 65,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 66,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 67,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 68,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 69,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 70,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 71,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 72,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 73,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 74,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 75,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 76,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 77,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 78,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 79,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 80,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 81,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 82,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 83,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 84,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 85,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 86,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 87,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 88,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 89,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 90,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 91,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 92,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 93,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 94,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 95,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 96,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 97,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 98,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 99,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 100,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 101,
+          "changes": "0,0,0=minecraft:big_dripleaf",
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:block.big_dripleaf.tilt_up"
+          ],
+          "gameEvents": [
+            "minecraft:block_change 0,0,0 none"
+          ],
+          "writes": [
+            "0,0,0=minecraft:big_dripleaf flags 2"
+          ]
+        },
+        {
+          "tick": 102,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 103,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 104,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "snowball_big_dripleaf",
+      "projectile": "minecraft:snowball",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:big_dripleaf"
+        }
+      ],
+      "ticks": 104,
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:big_dripleaf[tilt=full]",
+          "sounds": [
+            "minecraft:block.big_dripleaf.tilt_down"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,0,0 player",
+            "minecraft:block_change 0,0,0 none",
+            "minecraft:projectile_land 0,0,0 minecraft:snowball"
+          ],
+          "writes": [
+            "0,0,0=minecraft:big_dripleaf[tilt=full] flags 2"
+          ]
+        },
+        {
+          "tick": 2
+        },
+        {
+          "tick": 3
+        },
+        {
+          "tick": 4
+        },
+        {
+          "tick": 5
+        },
+        {
+          "tick": 6
+        },
+        {
+          "tick": 7
+        },
+        {
+          "tick": 8
+        },
+        {
+          "tick": 9
+        },
+        {
+          "tick": 10
+        },
+        {
+          "tick": 11
+        },
+        {
+          "tick": 12
+        },
+        {
+          "tick": 13
+        },
+        {
+          "tick": 14
+        },
+        {
+          "tick": 15
+        },
+        {
+          "tick": 16
+        },
+        {
+          "tick": 17
+        },
+        {
+          "tick": 18
+        },
+        {
+          "tick": 19
+        },
+        {
+          "tick": 20
+        },
+        {
+          "tick": 21
+        },
+        {
+          "tick": 22
+        },
+        {
+          "tick": 23
+        },
+        {
+          "tick": 24
+        },
+        {
+          "tick": 25
+        },
+        {
+          "tick": 26
+        },
+        {
+          "tick": 27
+        },
+        {
+          "tick": 28
+        },
+        {
+          "tick": 29
+        },
+        {
+          "tick": 30
+        },
+        {
+          "tick": 31
+        },
+        {
+          "tick": 32
+        },
+        {
+          "tick": 33
+        },
+        {
+          "tick": 34
+        },
+        {
+          "tick": 35
+        },
+        {
+          "tick": 36
+        },
+        {
+          "tick": 37
+        },
+        {
+          "tick": 38
+        },
+        {
+          "tick": 39
+        },
+        {
+          "tick": 40
+        },
+        {
+          "tick": 41
+        },
+        {
+          "tick": 42
+        },
+        {
+          "tick": 43
+        },
+        {
+          "tick": 44
+        },
+        {
+          "tick": 45
+        },
+        {
+          "tick": 46
+        },
+        {
+          "tick": 47
+        },
+        {
+          "tick": 48
+        },
+        {
+          "tick": 49
+        },
+        {
+          "tick": 50
+        },
+        {
+          "tick": 51
+        },
+        {
+          "tick": 52
+        },
+        {
+          "tick": 53
+        },
+        {
+          "tick": 54
+        },
+        {
+          "tick": 55
+        },
+        {
+          "tick": 56
+        },
+        {
+          "tick": 57
+        },
+        {
+          "tick": 58
+        },
+        {
+          "tick": 59
+        },
+        {
+          "tick": 60
+        },
+        {
+          "tick": 61
+        },
+        {
+          "tick": 62
+        },
+        {
+          "tick": 63
+        },
+        {
+          "tick": 64
+        },
+        {
+          "tick": 65
+        },
+        {
+          "tick": 66
+        },
+        {
+          "tick": 67
+        },
+        {
+          "tick": 68
+        },
+        {
+          "tick": 69
+        },
+        {
+          "tick": 70
+        },
+        {
+          "tick": 71
+        },
+        {
+          "tick": 72
+        },
+        {
+          "tick": 73
+        },
+        {
+          "tick": 74
+        },
+        {
+          "tick": 75
+        },
+        {
+          "tick": 76
+        },
+        {
+          "tick": 77
+        },
+        {
+          "tick": 78
+        },
+        {
+          "tick": 79
+        },
+        {
+          "tick": 80
+        },
+        {
+          "tick": 81
+        },
+        {
+          "tick": 82
+        },
+        {
+          "tick": 83
+        },
+        {
+          "tick": 84
+        },
+        {
+          "tick": 85
+        },
+        {
+          "tick": 86
+        },
+        {
+          "tick": 87
+        },
+        {
+          "tick": 88
+        },
+        {
+          "tick": 89
+        },
+        {
+          "tick": 90
+        },
+        {
+          "tick": 91
+        },
+        {
+          "tick": 92
+        },
+        {
+          "tick": 93
+        },
+        {
+          "tick": 94
+        },
+        {
+          "tick": 95
+        },
+        {
+          "tick": 96
+        },
+        {
+          "tick": 97
+        },
+        {
+          "tick": 98
+        },
+        {
+          "tick": 99
+        },
+        {
+          "tick": 100
+        },
+        {
+          "tick": 101,
+          "changes": "0,0,0=minecraft:big_dripleaf",
+          "sounds": [
+            "minecraft:block.big_dripleaf.tilt_up"
+          ],
+          "gameEvents": [
+            "minecraft:block_change 0,0,0 none"
+          ],
+          "writes": [
+            "0,0,0=minecraft:big_dripleaf flags 2"
+          ]
+        },
+        {
+          "tick": 102
+        },
+        {
+          "tick": 103
+        },
+        {
+          "tick": 104
+        }
+      ]
+    },
+    {
+      "name": "arrow_big_dripleaf_powered",
+      "projectile": "minecraft:arrow",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:big_dripleaf"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "ticks": 104,
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:big_dripleaf[tilt=full]",
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:block.big_dripleaf.tilt_down",
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:block_change 0,0,0 none",
+            "minecraft:projectile_land 0,0,0 minecraft:arrow",
+            "minecraft:projectile_shoot 0,0,0 player"
+          ],
+          "writes": [
+            "0,0,0=minecraft:big_dripleaf[tilt=full] flags 2"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 7,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 8,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 9,
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,-1,0 minecraft:arrow"
+          ]
+        },
+        {
+          "tick": 10,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 11,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 12,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 13,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 14,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 16,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 17,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 18,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 19,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 20,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 21,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 22,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 23,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 24,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 25,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 26,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 27,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 28,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 29,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 30,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 31,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 32,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 33,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 34,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 35,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 36,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 37,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 38,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 39,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 40,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 41,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 42,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 43,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 44,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 45,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 46,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 47,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 48,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 49,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 50,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 51,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 52,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 53,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 54,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 55,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 56,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 57,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 58,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 59,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 60,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 61,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 62,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 63,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 64,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 65,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 66,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 67,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 68,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 69,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 70,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 71,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 72,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 73,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 74,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 75,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 76,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 77,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 78,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 79,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 80,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 81,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 82,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 83,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 84,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 85,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 86,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 87,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 88,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 89,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 90,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 91,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 92,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 93,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 94,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 95,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 96,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 97,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 98,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 99,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 100,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 101,
+          "changes": "0,0,0=minecraft:big_dripleaf",
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:block.big_dripleaf.tilt_up"
+          ],
+          "gameEvents": [
+            "minecraft:block_change 0,0,0 none"
+          ],
+          "writes": [
+            "0,0,0=minecraft:big_dripleaf flags 2"
+          ]
+        },
+        {
+          "tick": 102,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 103,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 104,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        }
+      ]
     }
   ]
 }
