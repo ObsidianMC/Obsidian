@@ -68,9 +68,6 @@ still succeeds.
   Obsidian where vanilla's is zero (`shears_mooshroom`, pinned).
 - **Bucketed axolotl ambience.** The captured `bucket_mob_axolotl` emits `entity.axolotl.idle_air` after the empty-bucket
   sound at tick 4. Obsidian emits only the bucket sound; that exact sound list is pinned.
-- **Powder snow contact particles.** The dropped bucket touching powder snow in
-  `powder_snow_bucket_into_powder_snow` emits one snowflake in vanilla at tick 4. Obsidian omits it; the particle and
-  its exact captured position (`1.503360,1.000000,0.546411`) are pinned, with the drop and events still compared.
 - **Potion component serialization.** Vanilla writes the default `show_icon:1b` on the speed effect in
   `potion_custom_effect`; Obsidian omits it. The complete slot/drop component values are pinned from tick 1,
   including the overflow count suffix. Both keep the custom-effect water potion from making mud.
@@ -102,6 +99,13 @@ bucket without relying on an unload race.
 The known-gap cases pin exact values for the affected fields and still compare every other captured value.
 They cannot pass merely because the same field names differ. The mooshroom/cow grounding gap also pins its exact
 vertical gravity accumulator (`-0.0784` instead of vanilla's zero).
+
+`powder_snow_bucket_into_powder_snow` seeds the level random before dispensing (`selectionSeed: 2`) and compares
+vanilla's server snowflake at its exact position. There is no particle pin. The item's discarded constructor motion
+uses its own random; the level draws only the dispense speed and three triangular components, followed by the
+powder-snow contact draw. Consuming two constructor draws from the level instead moved the particle and advanced
+its random sequence. Powder snow emits a server snowflake for nonzero horizontal known movement when the level's
+boolean draw succeeds; non-living entities qualify, while living entities must have their feet in powder snow.
 
 Cases with `details: true` additionally compare complete item component patches in slots, projectile pickup/items,
 equipment and dropped stacks, shulker contents, rocket angled state, deterministic sound category/volume/pitch and

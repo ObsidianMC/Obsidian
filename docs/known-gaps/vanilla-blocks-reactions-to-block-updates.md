@@ -17,8 +17,9 @@ sand, magma, composters, frogspawn, sulfur spikes) and for redstone components a
 nothing when they come due.
 Of vanilla's own blocks, pressure plates, tripwire, wooden buttons, detector rails and bubble columns react to
 entities inside them. Magma and turtle eggs bind stepped-on owners; farmland, turtle eggs, slime, hay and honey
-bind fallen-on owners, and beds use their inherited fall-distance reduction. Sculk shriekers still use their own
-checks. Contact capture limits and remaining phase 3 work are listed in
+bind fallen-on owners, and beds use their inherited fall-distance reduction. Cactus, campfires, honey, hoppers,
+powder snow and big dripleaf bind inside owners; sculk shriekers bind stepped-on owners. Dripleaf tilts and shrieker
+resets use scheduled block ticks. Contact capture limits and remaining phase 3 work are listed in
 [stepped and fallen-on contacts](stepped-and-fallen-on-contacts.md). The [block interactions plan](../block-interactions-plan.md) lists what is missing, phase by
 phase. Some vanilla blocks' shape rules aren't modelled yet:
 a bell keeps its `single_wall` or `double_wall` attachment when a wall beside it is added or removed, and doesn't drop

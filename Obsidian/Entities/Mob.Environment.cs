@@ -108,7 +108,8 @@ public partial class Mob
             return;
         var baby = this is IAgeable { IsBaby: true };
         var blockDamage = IncomingDamageKind
-            is CombatDamageKind.Fall or CombatDamageKind.HotFloor or CombatDamageKind.SweetBerryBush;
+            is CombatDamageKind.Fall or CombatDamageKind.HotFloor or CombatDamageKind.SweetBerryBush
+                or CombatDamageKind.Cactus or CombatDamageKind.Campfire;
         if (kind == "hurt" && blockDamage && Level is AbstractLevel world)
         {
             var pitch = (Random.NextSingle() - Random.NextSingle()) * 0.2f + (baby ? 1.5f : 1);

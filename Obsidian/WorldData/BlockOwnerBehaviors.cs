@@ -116,6 +116,10 @@ internal static class TickBehaviors
 
     internal static IScheduledTickBehavior CactusBlock { get; } = new CactusBlockBehavior();
 
+    internal static IScheduledTickBehavior BigDripleafBlock { get; } = BigDripleafContactBehavior.Instance;
+
+    internal static IScheduledTickBehavior SculkShriekerBlock { get; } = new ShriekerContactBehavior();
+
     internal static IScheduledTickBehavior BambooStalkBlock { get; } = new BambooStalkBlockBehavior();
 
     internal static IScheduledTickBehavior GrowingPlantBlock { get; } = new KelpBlockBehavior();
@@ -334,6 +338,16 @@ internal static class EntityInsideBehaviors
 
     internal static IEntityInsideBehavior PowderSnowBlock { get; } = PowderSnowContactBehavior.Instance;
 
+    internal static IEntityInsideBehavior CactusBlock { get; } = new CactusContactBehavior();
+
+    internal static IEntityInsideBehavior CampfireBlock { get; } = new CampfireContactBehavior();
+
+    internal static IEntityInsideBehavior HoneyBlock { get; } = new HoneySlideBehavior();
+
+    internal static IEntityInsideBehavior HopperBlock { get; } = new HopperContactBehavior();
+
+    internal static IEntityInsideBehavior BigDripleafBlock { get; } = BigDripleafContactBehavior.Instance;
+
     // The redstone blocks run their level's own instance, which holds what they need from the level.
     private sealed class PressurePlateContact : IEntityInsideBehavior
     {
@@ -371,6 +385,8 @@ internal static class StepOnBehaviors
     internal static IStepOnBehavior TurtleEggBlock { get; } = new TurtleEggContactBehavior();
 
     internal static IStepOnBehavior SlimeBlock { get; } = new SlimeStepBehavior();
+
+    internal static IStepOnBehavior SculkShriekerBlock { get; } = new ShriekerContactBehavior();
 }
 
 /// <summary>

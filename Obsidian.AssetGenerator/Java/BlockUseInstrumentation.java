@@ -32,6 +32,7 @@ public final class BlockUseInstrumentation {
             var directory = Path.of(args[1]);
             patch(jar, directory, Chunk, true);
             patch(jar, directory, Level, false);
+            patchEntityEvents(jar, directory);
             // Mixing unsigned observed classes with signed classes of the same package is forbidden by the JVM.
             // Keep an unsigned scratch copy of the jar; the shared, signed original stays untouched.
             try (var output = new JarOutputStream(Files.newOutputStream(directory.resolve("vanilla-observed.jar")))) {
@@ -52,6 +53,49 @@ public final class BlockUseInstrumentation {
                 }
             }
         }
+    }
+
+    // Entity tracking normally flushes events on a server tick. Controlled movement probes observe the broadcast
+    // itself, without ticking AI, item gravity or network tracking just to hear a honey slide's particle event.
+    private static void patchEntityEvents(JarFile jar, Path directory) throws Exception {
+        var type = ClassDesc.of("net.minecraft.server.level.ServerLevel");
+        var resource = "net/minecraft/server/level/ServerLevel.class";
+        byte[] original;
+        try (var stream = jar.getInputStream(jar.getJarEntry(resource))) {
+            original = stream.readAllBytes();
+        }
+        var classFile = ClassFile.of();
+        var model = classFile.parse(original);
+        var hooks = new int[1];
+        var patched = classFile.transformClass(model, (builder, element) -> {
+            if (element instanceof MethodModel method && method.methodName().equalsString("broadcastEntityEvent")) {
+                builder.transformMethod(method, (methodBuilder, member) -> {
+                    if (member instanceof CodeModel code) {
+                        methodBuilder.transformCode(code, (out, instruction) -> {
+                            if (instruction instanceof ReturnInstruction) {
+                                out.aload(0).aload(1).aconst_null().iload(2).invokestatic(type, Method, Callback);
+                                hooks[0]++;
+                            }
+                            out.with(instruction);
+                        });
+                    } else {
+                        methodBuilder.with(member);
+                    }
+                });
+            } else {
+                builder.with(element);
+            }
+            if (element == model.elementList().getLast()) {
+                builder.withMethod(Method, Callback, ClassFile.ACC_PRIVATE | ClassFile.ACC_STATIC, method ->
+                    method.withCode(code -> callback(code, "entityEvents")));
+            }
+        });
+        if (hooks[0] != 1) {
+            throw new IllegalStateException("Expected one entity-event observation point, found " + hooks[0]);
+        }
+        var destination = directory.resolve(resource);
+        Files.createDirectories(destination.getParent());
+        Files.write(destination, patched);
     }
 
     private static void patch(JarFile jar, Path directory, ClassDesc type, boolean storage) throws Exception {

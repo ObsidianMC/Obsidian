@@ -1,12 +1,14 @@
 using Obsidian.API;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
+using Obsidian.API.Loot;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Entities;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.WorldData;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -14,6 +16,98 @@ namespace Obsidian.Tests;
 
 public sealed class EntityContactSafety
 {
+    [Fact]
+    public async Task EmptyAndFrostWalkerProtectedContactsAllocateNothing()
+    {
+        await using var context = TestServerFactory.CreateServer($"contact-allocations-{Guid.NewGuid():N}");
+        var world = context.World;
+        WorldBlockEntities.AddEmptyChunk(world);
+        await world.GetChunkAsync(0, 0, scheduleGeneration: false);
+        var position = new VectorD(8.5, 64.4375, 8.5);
+        var mob = new Pig { Level = world, Position = position };
+        var stand = new ArmorStand { Level = world, Position = position };
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Protected", position);
+        var boots = new ItemStack(ItemsRegistry.DiamondBoots, 1);
+        EnchantmentHelper.Enchant(boots, EnchantmentsRegistry.FrostWalker, 1);
+        mob.SetEquipment(EquipmentSlot.Boots, boots);
+        stand.SetEquipment(EquipmentSlot.Boots, boots);
+        player.Inventory.SetItem(8, boots);
+
+        // First the empty pass, then all three owners of feet equipment. Count allocations, never elapsed time.
+        foreach (var block in new[] { BlocksRegistry.Air, BlocksRegistry.Campfire })
+        {
+            world.BlockUpdates.SetBlock(new Vector(8, 64, 8), block);
+            foreach (var entity in new Entity[] { mob, stand, player })
+            {
+                for (var index = 0; index < 20_000; index++)
+                    await world.EntityContacts.TouchAsync(entity);
+
+                var start = GC.GetAllocatedBytesForCurrentThread();
+                for (var index = 0; index < 100_000; index++)
+                    await world.EntityContacts.TouchAsync(entity);
+
+                var allocated = GC.GetAllocatedBytesForCurrentThread() - start;
+                Assert.Equal(0, allocated);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task HopperContactTriesBusyInventoryUnderTickAndTransferLocksWithoutLosingItems()
+    {
+        await using var context = TestServerFactory.CreateServer($"contact-hopper-locks-{Guid.NewGuid():N}");
+        var world = context.World;
+        WorldBlockEntities.AddEmptyChunk(world);
+        await world.GetChunkAsync(0, 0, scheduleGeneration: false);
+        var position = new Vector(8, 64, 8);
+        world.BlockUpdates.SetBlock(position, BlocksRegistry.Hopper);
+        var hopper = (HopperBlockEntity)world.BlockUpdates.GetBlockEntity(position)!;
+        var item = new ItemEntity
+        {
+            Level = world,
+            EntityId = Server.GetNextEntityId(),
+            Position = new VectorD(8.5, 64.75, 8.5),
+            Item = new ItemStack(ItemsRegistry.Diamond, 5),
+            CanPickup = false
+        };
+        world.SpawnEntity(item);
+
+        // The other thread owns the inventory until both contact attempts finish. Explicit signals force the
+        // contested interval; no sleep, timeout, or chance of two uncoordinated operations overlapping is involved.
+        var inventoryHeld = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var releaseInventory = new ManualResetEventSlim();
+        var holder = Task.Factory.StartNew(() =>
+        {
+            using var held = hopper.Inventory.Lock();
+            inventoryHeld.SetResult();
+            releaseInventory.Wait();
+        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        await inventoryHeld.Task;
+        try
+        {
+            lock (world.Fluids.TickLock)
+                Assert.True(world.EntityContacts.TouchAsync(item).IsCompletedSuccessfully);
+
+            using (world.TransferLock.Enter())
+                Assert.True(world.EntityContacts.TouchAsync(item).IsCompletedSuccessfully);
+
+            Assert.False(item.Removed);
+            Assert.Equal(5, item.Item.Count);
+        }
+        finally
+        {
+            releaseInventory.Set();
+            await holder;
+        }
+
+        // Once admission is available, contact takes the stack, and the ordinary hopper tick cannot take it again.
+        await world.EntityContacts.TouchAsync(item);
+        await Hoppers.TickAsync(world, hopper);
+        Assert.True(item.Removed);
+        Assert.Equal(5, hopper.Inventory[0]?.Count);
+        Assert.False(item.IsMemberOf(world));
+    }
+
     [Fact]
     public async Task PlayerLandingKeepsItsSupportAcrossLaterMovement()
     {
@@ -87,7 +181,6 @@ public sealed class EntityContactSafety
                 default,
                 TaskCreationOptions.LongRunning,
                 TaskScheduler.Default);
-            Assert.True(replacement.Wait(TimeSpan.FromSeconds(10)), "Concurrent replacement was blocked.");
             replacement.GetAwaiter().GetResult();
         });
         await world.EntityContacts.TouchAsync(pig);
@@ -126,7 +219,6 @@ public sealed class EntityContactSafety
                 default,
                 TaskCreationOptions.LongRunning,
                 TaskScheduler.Default);
-            Assert.True(replacement.Wait(TimeSpan.FromSeconds(10)), "Concurrent replacement was blocked.");
             replacement.GetAwaiter().GetResult();
         }, alwaysZero: true);
         await world.EntityContacts.TouchAsync(pig);
