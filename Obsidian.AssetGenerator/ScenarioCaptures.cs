@@ -32,6 +32,7 @@ internal static class ScenarioCaptures
     public const string Fire = "fire";
     public const string TickingBlocks = "ticking_blocks";
     public const string BlockUse = "block_use";
+    public const string FoodHarvest = "food_and_harvest";
     public const string WaxingBellsOre = "waxing_bells_ore";
     public const string Cauldrons = "cauldrons";
     public const string ProjectileHits = "projectile_hits";
@@ -78,14 +79,15 @@ internal static class ScenarioCaptures
     // The fixtures whose probes record only the cases asked for.
     private static readonly string[] SelectableCases =
         [Redstone, Sulfur, MoreBlocks, StructurePieces, Fire, TickingBlocks, BlockUse, MeltingWeather,
-            EyeblossomGhastPortal, Brushing, ArmorStandUse, WaxingBellsOre, Cauldrons, ProjectileHits, Dispenser,
-            Shelves, StrawBeds, GoldenDandelions, Lightning];
+            EyeblossomGhastPortal, Brushing, ArmorStandUse, WaxingBellsOre, FoodHarvest, Cauldrons,
+            ProjectileHits, Dispenser, Shelves, StrawBeds, GoldenDandelions, Lightning];
 
     public static readonly string[] All =
         [Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps, SavedHeightmaps, Mining,
             Placement, CopperWeathering, Fire, TickingBlocks, BlockUse, TurtleEggs, Frogspawn,
             GrowingPlantTicks, MeltingWeather, FurnaceResults, EyeblossomGhastPortal, Brushing, ArmorStandUse,
-            WaxingBellsOre, Cauldrons, ProjectileHits, Dispenser, Shelves, StrawBeds, GoldenDandelions, Lightning];
+            WaxingBellsOre, FoodHarvest, Cauldrons, ProjectileHits, Dispenser, Shelves, StrawBeds,
+            GoldenDandelions, Lightning];
 
     private const string RedstoneNotes = """
         Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a
@@ -142,8 +144,8 @@ internal static class ScenarioCaptures
             throw new ArgumentException(
                 "Case selection requires CaptureFixtures=redstone, sulfur, more_blocks, structure_pieces, "
                 + "fire, ticking_blocks, block_use, melting_weather, eyeblossom_ghast_portal, brushing, "
-                + "armor_stand_use, waxing_bells_ore, cauldrons, projectile_hits, dispenser, shelves, straw_beds, "
-                + "golden_dandelions or lightning.");
+                + "armor_stand_use, waxing_bells_ore, food_and_harvest, cauldrons, projectile_hits, dispenser, "
+                + "shelves, straw_beds, golden_dandelions or lightning.");
         }
 
         if (fixtures.Contains(CopperWeathering))
@@ -188,6 +190,14 @@ internal static class ScenarioCaptures
         {
             await FixtureDumper.DumpArmorStandUseAsync(server, Path.Combine(assetsDirectory, "armor_stand_use.json"),
                 cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(FoodHarvest))
+        {
+            var path = Path.Combine(assetsDirectory, "food_and_harvest.json");
+            await FixtureDumper.DumpFoodHarvestAsync(server, path, cases);
             if (fixtures.Count == 1)
                 return;
         }
