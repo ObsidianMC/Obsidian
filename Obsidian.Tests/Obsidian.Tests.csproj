@@ -44,6 +44,7 @@
 		<EmbeddedResource Include="Assets\melting_weather.json" />
 		<EmbeddedResource Include="Assets\block_contact_scenarios.json" />
 		<EmbeddedResource Include="Assets\furnace_results.json" />
+		<EmbeddedResource Include="Assets\dispenser.json" />
 
 		<EmbeddedResource Include="Assets\heightmaps.json" />
 		<EmbeddedResource Include="Assets\saved_heightmaps.json" />

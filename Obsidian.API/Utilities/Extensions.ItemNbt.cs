@@ -470,7 +470,13 @@ public partial class Extensions
             }
         }
 
-        return new() { FlightDuration = tag.TryGetTagValue<int>("flight_duration", out var duration) ? Math.Clamp(duration, 0, 255) : 0, Explosions = explosions.ToImmutable() };
+        return new()
+        {
+            FlightDuration = tag.TryGetNumber<int>("flight_duration", out var duration)
+                ? Math.Clamp(duration, 0, 255)
+                : 0,
+            Explosions = explosions.ToImmutable()
+        };
     }
 
     // Vanilla's ItemEnchantments.CODEC: a map of enchantment id to level.

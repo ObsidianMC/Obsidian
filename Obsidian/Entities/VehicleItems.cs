@@ -108,6 +108,10 @@ internal static class VehicleItems
         return level.TrySpawnEntity(minecart, hostOwned: true) ? minecart : null;
     }
 
+    /// <summary>Whether <paramref name="item"/> is a boat or a minecart, which a dispenser places.</summary>
+    public static bool IsVehicle(ItemStack item) =>
+        Boat.TypeFor(item.Holder) is not null || MinecartFor(item.Holder) is not null;
+
     /// <summary>
     /// A dispenser firing a boat or a minecart (vanilla's <c>BoatDispenseItemBehavior</c> and
     /// <c>MinecartDispenseItemBehavior</c>): a boat goes into the water or onto the air before it, a minecart onto the
