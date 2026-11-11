@@ -22,7 +22,32 @@ public partial class Mob
     /// with the level's random. Types whose setup draws from the level's random in vanilla's order override it; the
     /// others set themselves up from their own random (see <see cref="FinalizeSpawn"/>).
     /// </summary>
-    internal virtual void FinalizeBareSpawn(AbstractLevel level, IRandomSource random) => this.FinalizeSpawn();
+    /// <returns>
+    /// The jockey the setup made, which the spawner adds with the mob: a vehicle the mob rides, added before it, or a
+    /// passenger riding it, added after it.
+    /// </returns>
+    internal virtual SpawnCompanions FinalizeBareSpawn(AbstractLevel level, IRandomSource random)
+    {
+        this.FinalizeSpawn();
+        return default;
+    }
+
+    /// <summary>
+    /// The Halloween head vanilla's skeletons and zombies may get as they spawn, from the level's random: on Halloween
+    /// (by the level's clock), with nothing on its head, one time in four a carved pumpkin or, one time in ten of
+    /// those, a jack o'lantern, which it never drops. Draws nothing on other days.
+    /// </summary>
+    protected void PutOnHalloweenHeadFromLevel(AbstractLevel level, IRandomSource random)
+    {
+        var bareHead = GetEquipment(EquipmentSlot.Helmet).IsAir;
+        var today = level.TimeProvider.GetLocalNow().DateTime;
+        if (!bareHead || !MobSpawner.IsHalloween(today) || random.NextFloat() >= 0.25f)
+            return;
+
+        var head = random.NextFloat() < 0.1f ? ItemsRegistry.JackOLantern : ItemsRegistry.CarvedPumpkin;
+        SetEquipment(EquipmentSlot.Helmet, ItemsRegistry.GetSingleItem(head));
+        SetEquipmentDropChance(EquipmentSlot.Helmet, 0);
+    }
 
     /// <summary>
     /// Vanilla's <c>populateDefaultEquipmentEnchantments</c> from the level's random: the main hand's chance, then
@@ -62,3 +87,10 @@ public partial class Mob
         SetEquipment(slot, item);
     }
 }
+
+/// <summary>
+/// What a mob's spawn setup made to spawn with it: a <paramref name="Vehicle"/> it rides, added to the level before it
+/// (vanilla adds a baby zombie's chicken during the setup), or a <paramref name="Passenger"/> riding it, added after it
+/// (as vanilla's <c>addFreshEntityWithPassengers</c> adds a spider's skeleton).
+/// </summary>
+internal readonly record struct SpawnCompanions(Mob? Vehicle, Mob? Passenger);

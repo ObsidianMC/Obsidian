@@ -9,8 +9,11 @@ namespace Obsidian.Entities;
 public sealed partial class Silverfish : PathfinderMob
 {
     // Vanilla's silverfish sets itself up only as every mob does: Mob.finalizeSpawn, from the level's random.
-    internal override void FinalizeBareSpawn(AbstractLevel level, IRandomSource random) =>
+    internal override SpawnCompanions FinalizeBareSpawn(AbstractLevel level, IRandomSource random)
+    {
         FinalizeMobSpawnFromLevel(random);
+        return default;
+    }
 
     private int wakeTicks;
     private static readonly Vector[] directions = [new(1, 0, 0), new(-1, 0, 0), new(0, 1, 0), new(0, -1, 0), new(0, 0, 1), new(0, 0, -1)];

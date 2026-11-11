@@ -40,21 +40,14 @@ public partial class Skeleton : PathfinderMob
     /// Vanilla's <c>AbstractSkeleton.finalizeSpawn</c> with the level's random, in vanilla's order: the base spawn
     /// setup, the type's default equipment, its enchantments, picking up loot and, on Halloween, a pumpkin.
     /// </summary>
-    internal override void FinalizeBareSpawn(AbstractLevel level, IRandomSource random)
+    internal override SpawnCompanions FinalizeBareSpawn(AbstractLevel level, IRandomSource random)
     {
         var special = SpecialDifficulty;
         FinalizeMobSpawnFromLevel(random);
         PopulateBareEquipment(random, special);
         CanPickUpLoot = random.NextFloat() < 0.55f * special;
-
-        var bareHead = GetEquipment(EquipmentSlot.Helmet).IsAir;
-        var today = level.TimeProvider.GetLocalNow().DateTime;
-        if (bareHead && MobSpawner.IsHalloween(today) && random.NextFloat() < 0.25f)
-        {
-            var head = random.NextFloat() < 0.1f ? ItemsRegistry.JackOLantern : ItemsRegistry.CarvedPumpkin;
-            SetEquipment(EquipmentSlot.Helmet, ItemsRegistry.GetSingleItem(head));
-            SetEquipmentDropChance(EquipmentSlot.Helmet, 0);
-        }
+        PutOnHalloweenHeadFromLevel(level, random);
+        return default;
     }
 
     /// <summary>

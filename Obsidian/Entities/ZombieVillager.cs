@@ -1,3 +1,4 @@
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Entities.AI;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
@@ -13,6 +14,14 @@ public sealed partial class ZombieVillager : Zombie
     public int VillagerType { get; set; } = 2;
     public int VillagerProfession { get; set; }
     public int VillagerLevel { get; set; } = 1;
+
+    // Vanilla's ZombieVillager.finalizeSpawn from the level's random isn't ported: a bare zombie villager sets
+    // itself up from its own.
+    internal override SpawnCompanions FinalizeBareSpawn(WorldData.AbstractLevel level, IRandomSource random)
+    {
+        FinalizeSpawn();
+        return default;
+    }
     public ZombieVillager() => Type = EntityType.ZombieVillager;
     protected override string? SoundName => "zombie_villager";
     protected override bool CanDespawn => ConversionTime < 0 && VillagerXp == 0;

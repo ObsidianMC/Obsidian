@@ -34,51 +34,18 @@ public sealed partial class ZombifiedPiglin : Zombie
         SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(ItemsRegistry.GoldenSword));
     }
 
-    /// <summary>
-    /// Vanilla's <c>finalizeSpawn</c> for a zombified piglin a portal spawns, which draws from the level's random
-    /// (<paramref name="random"/>) rather than the mob's own: the follow range's spawn bonus and left-handedness, picking
-    /// up loot, being a baby (and then riding a chicken nearby, or a new chicken jockey), breaking doors, the golden
-    /// spear or sword, the weapon's enchantment and, on Halloween, a pumpkin. The draws and their order are vanilla's,
-    /// because they're part of the level's random sequence; the attribute bonuses after them come from the mob's own
-    /// random, as vanilla's <c>handleAttributes</c> does.
-    /// </summary>
-    /// <returns>A new chicken the piglin rides, which the caller adds to the level before the piglin.</returns>
-    internal Chicken? FinalizeSpawnFromLevel(AbstractLevel level, IRandomSource random)
+    // Vanilla's ZombifiedPiglin.populateDefaultEquipmentSlots, from the level's random: no armour, and a golden
+    // spear one time in 20, else a golden sword. A portal's piglin, or a spawner's bare one, is otherwise set up as
+    // every zombie is (see Zombie.FinalizeSpawnFromLevel).
+    private protected override void PopulateDefaultEquipmentFromLevel(IRandomSource random, float special)
     {
-        var special = SpecialDifficulty;
-
-        FinalizeMobSpawnFromLevel(random);
-
-        // Zombie.finalizeSpawn.
-        CanPickUpLoot = random.NextFloat() < 0.55f * special;
-        Chicken? jockey = null;
-        if (random.NextFloat() < 0.05f)
-        {
-            IsBaby = true;
-            if (random.NextFloat() < 0.05f)
-                RideChickenNearby(level);
-            else if (random.NextFloat() < 0.05f)
-                jockey = NewChickenJockey(level, random);
-        }
-
-        CanBreakDoors = random.NextFloat() < special * 0.1f;
-
         var weapon = random.NextInt(20) == 0 ? ItemsRegistry.GoldenSpear : ItemsRegistry.GoldenSword;
         SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(weapon));
+    }
 
-        // Mob.populateDefaultEquipmentEnchantments: the weapon's chance; the empty armour slots draw nothing.
-        this.EnchantSpawnedEquipmentFromLevel(random, special);
-
-        var bareHead = GetEquipment(EquipmentSlot.Helmet).IsAir;
-        var today = level.TimeProvider.GetLocalNow().DateTime;
-        if (bareHead && MobSpawner.IsHalloween(today) && random.NextFloat() < 0.25f)
-        {
-            var head = random.NextFloat() < 0.1f ? ItemsRegistry.JackOLantern : ItemsRegistry.CarvedPumpkin;
-            SetEquipment(EquipmentSlot.Helmet, ItemsRegistry.GetSingleItem(head));
-            SetEquipmentDropChance(EquipmentSlot.Helmet, 0);
-        }
-
-        // Zombie.handleAttributes, from the mob's own random; a zombified piglin never calls reinforcements.
+    // Zombie.handleAttributes from the mob's own random, where a zombified piglin never calls reinforcements.
+    private protected override void HandleSpawnAttributes(float special)
+    {
         ReinforcementChance = 0;
         TryUpdateAttribute("minecraft:generic.knockback_resistance", Random.NextSingle() * 0.05f);
         var rangeBonus = Random.NextDouble() * 1.5 * special;
@@ -92,42 +59,6 @@ public sealed partial class ZombifiedPiglin : Zombie
             Health = health;
             CanBreakDoors = true;
         }
-
-        return jockey;
-    }
-
-    // Vanilla takes the first eligible chicken in the entity query, without a draw or nearest-distance sort:
-    // alive, carrying nobody and riding nothing, within 5 blocks across and 3 up or down of the piglin's box.
-    // A successful first jockey roll with no eligible chicken does not try the second roll.
-    private void RideChickenNearby(AbstractLevel level)
-    {
-        var box = Dimension.CreateBBFromPosition(Position);
-        var reach = new BoundingBox(box.Min - new VectorD(5, 3, 5), box.Max + new VectorD(5, 3, 5));
-        var chicken = level.GetNonPlayerEntitiesInRange(Position, 16)
-            .OfType<Chicken>()
-            .FirstOrDefault(chicken => chicken.Alive && !chicken.IsRemoved
-                && chicken.Passengers.Count == 0 && chicken.Vehicle is null
-                && reach.Intersects(chicken.Dimension.CreateBBFromPosition(chicken.Position)));
-        if (chicken is null)
-            return;
-
-        chicken.IsChickenJockey = true;
-        StartRiding(chicken);
-    }
-
-    // Vanilla's second jockey chance: a new chicken where the piglin stands, turned its way, finalized from the
-    // level's random, which the piglin rides.
-    private Chicken NewChickenJockey(AbstractLevel level, IRandomSource random)
-    {
-        var chicken = (Chicken)Factories.EntitySpawner.CreateMob(level, EntityType.Chicken)!;
-        chicken.EntityId = Server.GetNextEntityId();
-        chicken.Position = Position;
-        chicken.Yaw = Yaw;
-        chicken.Pitch = 0;
-        chicken.InitializeAi(finalizeSpawn: false);
-        chicken.FinalizeJockeySpawnFromLevel(random);
-        chicken.IsChickenJockey = true;
-        return chicken;
     }
 
     /// <summary>

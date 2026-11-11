@@ -25,10 +25,11 @@ public sealed partial class WitherSkeleton : Skeleton
         SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(ItemsRegistry.StoneSword));
 
     // Vanilla's WitherSkeleton.finalizeSpawn: the skeleton's setup, then an attack damage of 4.
-    internal override void FinalizeBareSpawn(AbstractLevel level, IRandomSource random)
+    internal override SpawnCompanions FinalizeBareSpawn(AbstractLevel level, IRandomSource random)
     {
-        base.FinalizeBareSpawn(level, random);
+        var companions = base.FinalizeBareSpawn(level, random);
         TryUpdateAttribute("minecraft:generic.attack_damage", 4);
+        return companions;
     }
 
     protected override void FinalizeSpawn()
