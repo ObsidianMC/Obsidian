@@ -19,7 +19,18 @@ using Xunit;
 
 namespace Obsidian.Tests;
 
-[Collection(nameof(PluginTagFiles))]
+/// <summary>
+/// Structure block tests that point vanilla's template registry somewhere else for a while, which run alone: other
+/// tests loading a vanilla template meanwhile would cache it empty for the rest of the run. Alone, they also keep clear
+/// of the plugin tag file tests' plugin registries.
+/// </summary>
+[CollectionDefinition(Name, DisableParallelization = true)]
+public sealed class StructureTemplateRegistryCollection
+{
+    public const string Name = "Structure template registry";
+}
+
+[Collection(StructureTemplateRegistryCollection.Name)]
 public sealed class StructureBlockReviewTests
 {
     private static readonly Vector source = new(8, 64, 8);
