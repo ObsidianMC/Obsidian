@@ -15,6 +15,11 @@ public partial class ItemEntity : Entity
     private int ticksExisted;
 
     private int? restPhase;
+
+    // Whether it touched water when it last checked, like vanilla's wasTouchingWater, which decides its splash.
+    private bool wasTouchingWater;
+
+    internal override bool TouchesWaterForFalls => this.wasTouchingWater;
     internal void SetExtendedLifetime() => age = -6000;
     // Merges, pickups, hopper pulls and removal check and set it under the transfer lock of the level owning the item
     // (see Entity.EnterOwningLevel), so a stack isn't transferred after its entity is removed, even when the removal
@@ -227,11 +232,15 @@ public partial class ItemEntity : Entity
         }
 
         var from = Position;
+        this.UpdateFluidContact(firstTick: this.ticksExisted == 1);
         var next = EntityMovement.MoveItem(this, this.terrain, this.ticksExisted);
         if (Level is AbstractLevel level && !level.TryMoveEntity(this, Position, next))
             return;
         if (next != Position)
             await UpdateAsync(next, MovementFlags);
+
+        // Vanilla's item updates its fluid contact again once it has moved, after its first tick.
+        this.UpdateFluidContact(firstTick: false);
 
         // Like vanilla's ItemEntity.tick, it looks for items to merge with every 2 ticks after moving into another
         // block and every 40 otherwise, which decides how soon dropped items stack up.
@@ -240,6 +249,46 @@ public partial class ItemEntity : Entity
             return;
 
         await this.MergeWithNeighboursAsync();
+    }
+
+    /// <summary>
+    /// Vanilla's <c>Entity.updateFluidInteraction</c>, which an item runs as its tick starts and again once it has
+    /// moved: in water its fall is forgotten and, coming in from out of it (not on its first tick), it splashes; then
+    /// the water's current and the lava's push it.
+    /// </summary>
+    private void UpdateFluidContact(bool firstTick)
+    {
+        if (this.terrain is not MobTerrain terrain || this.Level is not AbstractLevel level)
+            return;
+
+        var bounds = this.Dimension.CreateBBFromPosition(this.Position);
+        var inWater = terrain.FluidHeight(bounds, water: true) is not null;
+        var inLava = terrain.FluidHeight(bounds, water: false) is not null;
+        if (inWater)
+        {
+            this.ResetFallDistance();
+            if (!this.wasTouchingWater && !firstTick)
+                this.Splash(level);
+        }
+
+        this.wasTouchingWater = inWater;
+        if (inWater)
+            this.Motion += terrain.FluidPush(bounds, water: true, this.Motion);
+
+        if (inLava)
+            this.Motion += terrain.FluidPush(bounds, water: false, this.Motion);
+    }
+
+    // Vanilla's doWaterSplashEffect for an item: a splash as loud as it was moving (sideways counting a fifth), its
+    // pitch from the item's own random, and the splash game event. Its bubbles are drawn by clients.
+    private void Splash(AbstractLevel level)
+    {
+        var motion = this.Motion;
+        var moving = Math.Sqrt(motion.X * motion.X * 0.2f + motion.Y * motion.Y + motion.Z * motion.Z * 0.2f);
+        var volume = Math.Min(1f, (float)moving * 0.2f);
+        var pitch = 1f + (Globals.Random.NextSingle() - Globals.Random.NextSingle()) * 0.4f;
+        LevelSounds.Play(level, this.Position, "minecraft:entity.generic.splash", SoundCategory.Neutral, volume, pitch);
+        level.EmitGameEvent(MobGameEvent.Splash, this.Position, this);
     }
 
     // Vanilla's mergeWithNeighbours: each item whose box meets this one's, widened by half a block across, that can

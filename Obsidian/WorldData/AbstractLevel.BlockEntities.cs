@@ -740,7 +740,8 @@ public abstract partial class AbstractLevel
     /// <summary>
     /// Vanilla's <c>Containers.dropItemStack</c>: the stack drops at a random point of the block's lower part, in
     /// item entities of 10 to 30 items, each tossed up with a little random motion. Draws from the level's random in
-    /// vanilla's order, the motion the item entity's constructor draws included.
+    /// vanilla's order; the motion the item entity's constructor gives it, which this replaces, comes from its own
+    /// random in 26.3.
     /// </summary>
     internal void DropItemStack(Vector position, ItemStack stack)
     {
@@ -755,10 +756,6 @@ public abstract partial class AbstractLevel
         {
             var count = Math.Min(remaining, random.NextInt(21) + 10);
             remaining -= count;
-
-            // The item entity's own motion, which the drop replaces.
-            random.NextDouble();
-            random.NextDouble();
 
             var motion = new VectorD(
                 random.Triangle(0.0, DropMotionSpread),

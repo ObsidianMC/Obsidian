@@ -153,13 +153,15 @@ public abstract partial class AbstractLevel
     {
         lock (this.Fluids.TickLock)
         {
-            // Vanilla Block.popResource: three location draws, then the item's two horizontal motion draws.
-            // Use the level random, as the existing environmental redstone drops do, to keep seed ordering.
+            // Vanilla's Block.popResource: three draws from the level's random place the item (Mth.nextDouble between
+            // -0.25 and 0.25, added to the centre as vanilla adds it). The item's own motion comes from its own random,
+            // as in 26.3 an item entity's constructor draws it there, not from the level's.
             var random = this.GrowthRandom;
-            var x = position.X + 0.5 + random.NextDouble() * 0.5 - 0.25;
-            var y = position.Y + 0.5 + random.NextDouble() * 0.5 - 0.25 - ItemEntityWidth / 2;
-            var z = position.Z + 0.5 + random.NextDouble() * 0.5 - 0.25;
-            var motion = new VectorD(random.NextDouble() * 0.2 - 0.1, 0.2, random.NextDouble() * 0.2 - 0.1);
+            var x = position.X + 0.5 + (random.NextDouble() * 0.5 + -0.25);
+            var y = position.Y + 0.5 + (random.NextDouble() * 0.5 + -0.25) - ItemEntityWidth / 2;
+            var z = position.Z + 0.5 + (random.NextDouble() * 0.5 + -0.25);
+            var own = Globals.Random;
+            var motion = new VectorD(own.NextDouble() * 0.2 - 0.1, 0.2, own.NextDouble() * 0.2 - 0.1);
             this.SpawnItem(new VectorD(x, y, z), stack, motion);
         }
     }

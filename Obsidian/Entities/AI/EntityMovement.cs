@@ -63,15 +63,15 @@ internal static class EntityMovement
     }
 
     /// <summary>
-    /// An item entity's move out of fluids, like vanilla's <c>ItemEntity.tick</c>: gravity first, then the move, then
-    /// drag (and the friction of the block it lands on), and a bounce off the ground. An item at rest on the ground only
-    /// moves every fourth tick of its age and id (see <see cref="ItemEntity.RestPhase"/>). Living things move before
-    /// gravity pulls (see <see cref="Move(Entity, MobTerrain, VectorD, float, float)"/>), which would leave an item one
-    /// gravity step higher on every tick it flies.
+    /// An item entity's move, like vanilla's <c>ItemEntity.tick</c> after its fluid contact was updated (see
+    /// <see cref="ItemEntity"/>): deep in water or lava it rises a little and slows across, or else gravity pulls it;
+    /// then the move, then drag (and the friction of the block it lands on), and a bounce off the ground. An item at
+    /// rest on the ground only moves every fourth tick of its age and id (see <see cref="ItemEntity.RestPhase"/>).
+    /// Living things move before gravity pulls (see <see cref="Move(Entity, MobTerrain, VectorD, float, float)"/>),
+    /// which would leave an item one gravity step higher on every tick it flies.
     /// </summary>
     /// <remarks>
-    /// In water or lava the item moves as before (see <see cref="Move(Entity, MobTerrain, VectorD, float, float)"/>).
-    /// Vanilla keeps the item's gravity in double precision and its drag as a float.
+    /// Vanilla keeps the item's gravity in double precision and its drag, fluid factors and rise as floats.
     /// </remarks>
     /// <param name="age">The ticks the item has existed, which with its id picks its resting moves.</param>
     internal static VectorD MoveItem(ItemEntity item, MobTerrain terrain, int age)
@@ -80,10 +80,15 @@ internal static class EntityMovement
         const float drag = 0.98f;
 
         var bounds = item.Dimension.CreateBBFromPosition(item.Position);
-        if (terrain.ContainsFluid(bounds, water: true) || terrain.ContainsFluid(bounds, water: false))
-            return Move(item, terrain, VectorD.Zero, (float)gravity, drag);
+        var waterHeight = terrain.FluidHeight(bounds, water: true);
+        var lavaHeight = terrain.FluidHeight(bounds, water: false);
 
-        if (!item.NoGravity)
+        // Deep enough in a fluid (more than 0.1 above its feet), it's held up instead of pulled down.
+        if (waterHeight > 0.1f)
+            item.Motion = InFluid(item.Motion, 0.99f);
+        else if (lavaHeight > 0.1f)
+            item.Motion = InFluid(item.Motion, 0.95f);
+        else if (!item.NoGravity)
             item.Motion = new VectorD(item.Motion.X, item.Motion.Y - gravity, item.Motion.Z);
 
         var motion = item.Motion;
@@ -110,6 +115,14 @@ internal static class EntityMovement
 
         item.Motion = new VectorD(after.X * friction, vertical, after.Z * friction);
         return next;
+    }
+
+    // Vanilla's ItemEntity.setFluidMovement: slowed across by the fluid's factor, and lifted a little while it rises
+    // slower than 0.06 a tick.
+    private static VectorD InFluid(VectorD motion, float factor)
+    {
+        var rise = motion.Y < 0.06f ? 5.0E-4f : 0;
+        return new VectorD(motion.X * factor, motion.Y + rise, motion.Z * factor);
     }
 
     /// <summary>

@@ -12,7 +12,7 @@ internal enum MobGameEvent
     EntityDamage, EntityDie, EntityInteract, NoteBlockPlay, JukeboxPlay, JukeboxStop, SculkSensorClick,
     BlockActivate, BlockDeactivate, BlockOpen, BlockClose, ContainerOpen, ContainerClose, Eat, FluidPickup,
     FluidPlace, PrimeFuse, EntityPlace, ItemInteractFinish, ItemInteractStart, Shear, Equip, Unequip, Explode,
-    LightningStrike
+    LightningStrike, Splash
 }
 
 internal static class MobGameEvents
@@ -517,7 +517,7 @@ public abstract partial class AbstractLevel
     internal static int GameEventFrequency(MobGameEvent kind) => kind switch
     {
         MobGameEvent.Step or MobGameEvent.Swim => 1,
-        MobGameEvent.ProjectileLand or MobGameEvent.Land or MobGameEvent.Bounce => 2,
+        MobGameEvent.ProjectileLand or MobGameEvent.Land or MobGameEvent.Bounce or MobGameEvent.Splash => 2,
         MobGameEvent.ItemInteractFinish => 3,
         MobGameEvent.Eat => 8,
         MobGameEvent.BlockClose or MobGameEvent.ContainerClose => 9,

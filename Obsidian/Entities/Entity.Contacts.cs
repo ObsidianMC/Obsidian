@@ -58,7 +58,8 @@ public partial class Entity
         if (this is Bat)
             return;
 
-        if (descent < 0)
+        // Vanilla's checkFallDamage: an entity in water builds no fall.
+        if (descent < 0 && !this.TouchesWaterForFalls)
             this.ContactFallDistance -= (float)descent;
 
         if (!grounded)
@@ -67,6 +68,12 @@ public partial class Entity
         this.RecordLanding(this.ContactFallDistance, impactPosition, support);
         this.ContactFallDistance = 0;
     }
+
+    /// <summary>
+    /// Whether the entity touched water when it last checked, like vanilla's <c>isInWater</c>, which stops a fall
+    /// building up. Only item entities track it so far; living entities forget their fall in water as they move.
+    /// </summary>
+    internal virtual bool TouchesWaterForFalls => false;
 
     internal virtual ValueTask CauseContactFallAsync(
         double distance, float multiplier = 1, VectorD? impact = null) => default;

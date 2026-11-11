@@ -32,6 +32,41 @@ internal sealed class MobTerrain(ILevel level) : IPathTerrain
         return false;
     }
 
+    /// <summary>
+    /// How far water (or lava) reaches above the bottom of <paramref name="bounds"/>, like vanilla's
+    /// <c>updateFluidHeightAndDoFluidPushing</c>: the highest surface among the fluid blocks the box (shrunk by 0.001)
+    /// is in, a full block where the same fluid is above. Null when the box touches none.
+    /// </summary>
+    public double? FluidHeight(BoundingBox bounds, bool water)
+    {
+        double? height = null;
+        var bottom = bounds.Min.Y + 0.001;
+        for (var x = (int)Math.Floor(bounds.Min.X + 0.001); x < (int)Math.Ceiling(bounds.Max.X - 0.001); x++)
+        {
+            for (var y = (int)Math.Floor(bounds.Min.Y + 0.001); y < (int)Math.Ceiling(bounds.Max.Y - 0.001); y++)
+            {
+                for (var z = (int)Math.Floor(bounds.Min.Z + 0.001); z < (int)Math.Ceiling(bounds.Max.Z - 0.001); z++)
+                {
+                    var point = new Vector(x, y, z);
+                    if (GetBlock(point) is not { } block)
+                        continue;
+
+                    var fluid = FluidState.Of(block);
+                    if (!(water ? fluid.IsWater : fluid.IsLava))
+                        continue;
+
+                    var above = GetBlock(point + Vector.Up);
+                    var full = above != null && (water ? FluidState.Of(above).IsWater : FluidState.Of(above).IsLava);
+                    var surface = y + (full ? 1 : fluid.OwnHeight);
+                    if (surface >= bottom)
+                        height = Math.Max(height ?? 0, surface - bottom);
+                }
+            }
+        }
+
+        return height;
+    }
+
     public VectorD FluidPush(BoundingBox bounds, bool water, VectorD motion)
     {
         if (level is not AbstractLevel concrete) return VectorD.Zero;
