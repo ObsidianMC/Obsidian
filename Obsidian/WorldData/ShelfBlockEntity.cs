@@ -8,14 +8,14 @@ namespace Obsidian.WorldData;
 
 /// <summary>
 /// A shelf's block entity, like vanilla's <c>ShelfBlockEntity</c>: a row of three slots of a whole stack each, which a
-/// player's use swaps with their hand (or, while the shelf is powered, with the end of their hotbar), and hoppers
-/// reach from every side.
+/// player's use swaps with their hand (or, while the shelf is powered, with the end of their hotbar), and hoppers reach
+/// from every side.
 /// </summary>
 /// <remarks>
-/// Saved as vanilla saves it: <c>Items</c> (always written, empty or not) and <c>align_items_to_bottom</c>, which clients
-/// get too. Comparators behind the shelf read a bit for each slot that holds something. Every change saves the shelf,
-/// sends clients its items, tells the comparators around and, like vanilla's <c>setChanged</c>, emits a game event
-/// at its centre without a source.
+/// Saved as vanilla saves it: <c>Items</c> (always written, empty or not) and <c>align_items_to_bottom</c>, which
+/// clients get too. Comparators behind the shelf read a bit for each slot that holds something. Every change saves the
+/// shelf, sends clients its items, tells the comparators around and, like vanilla's <c>setChanged</c>, emits a game
+/// event at its centre without a source.
 /// </remarks>
 internal sealed class ShelfBlockEntity : VanillaContainerBlockEntity
 {
@@ -38,8 +38,8 @@ internal sealed class ShelfBlockEntity : VanillaContainerBlockEntity
     }
 
     /// <summary>
-    /// Vanilla's <c>align_items_to_bottom</c>: whether clients draw the items at the bottom of the shelf. Nothing on the
-    /// server changes it; it's kept as it was loaded.
+    /// Vanilla's <c>align_items_to_bottom</c>: whether clients draw the items at the bottom of the shelf. Nothing on
+    /// the server changes it; it's kept as it was loaded.
     /// </summary>
     public bool AlignItemsToBottom => Volatile.Read(ref this.alignItemsToBottom) != 0;
 

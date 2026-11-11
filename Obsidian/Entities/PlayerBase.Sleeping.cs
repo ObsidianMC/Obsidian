@@ -54,8 +54,9 @@ public partial class PlayerBase
 
     /// <summary>
     /// Puts the player to sleep in the bed or straw bed whose head is at <paramref name="head"/>, like vanilla's
-    /// <c>ServerPlayer.startSleepInBed</c>: the bed must be in reach and not obstructed; it sets the player's spawn where
-    /// the bed's rule lets it; then the rule must let them sleep now and, out of creative mode, no monster may be near.
+    /// <c>ServerPlayer.startSleepInBed</c>: the bed must be in reach and not obstructed; it sets the player's spawn
+    /// where the bed's rule lets it; then the rule must let them sleep now and, out of creative mode, no monster may be
+    /// near.
     /// The bed's statistic is awarded, and the players are told how many sleep.
     /// </summary>
     /// <returns>Why the player can't sleep, to show them; null once they're asleep, or when nothing is said.</returns>
@@ -310,7 +311,9 @@ public partial class PlayerBase
 
             // Vanilla's isPossibleToRespawnInThis: a forced point needs room where its block and the one above are.
             var above = await level.GetBlockAsync(point.Position + Vector.Up);
-            if (point.Forced && RespawnsInside(level, point.Position, block) && RespawnsInside(level, point.Position + Vector.Up, above))
+            var roomy = RespawnsInside(level, point.Position, block)
+                && RespawnsInside(level, point.Position + Vector.Up, above);
+            if (point.Forced && roomy)
                 return (level, (VectorD)point.Position + new VectorD(0.5, 0.1, 0.5), point.Yaw);
         }
 

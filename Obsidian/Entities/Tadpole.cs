@@ -11,7 +11,9 @@ public sealed partial class Tadpole : PathfinderMob, IAgeLockable
     public Tadpole() => Type = EntityType.Tadpole;
     public int Age { get; internal set; }
 
-    /// <summary>Whether a golden dandelion paused the tadpole's growing into a frog (vanilla's <c>AgeLocked</c>).</summary>
+    /// <summary>
+    /// Whether a golden dandelion paused the tadpole's growing into a frog (vanilla's <c>AgeLocked</c>).
+    /// </summary>
     public bool AgeLocked { get; internal set; }
 
     bool IAgeLockable.CanLockAge => true;

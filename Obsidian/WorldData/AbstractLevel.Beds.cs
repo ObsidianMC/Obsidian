@@ -120,8 +120,8 @@ public abstract partial class AbstractLevel
     /// <summary>
     /// A player using a bed or straw bed, like vanilla's <c>AbstractBedBlock.useWithoutItem</c>: a half without its
     /// other half does nothing. Where the bed's rule destroys it on use (the nether's and the end's), it's removed, a
-    /// bed exploding and a straw bed breaking, with the rule's message if it has one; otherwise a player is told the bed
-    /// is occupied, or tries to sleep in it (see <see cref="PlayerBase.StartSleepInBedAsync"/>).
+    /// bed exploding and a straw bed breaking, with the rule's message if it has one; otherwise a player is told the
+    /// bed is occupied, or tries to sleep in it (see <see cref="PlayerBase.StartSleepInBedAsync"/>).
     /// </summary>
     /// <returns>Pass when <paramref name="block"/> isn't a bed; how the use went otherwise.</returns>
     internal async ValueTask<UseResult> UseBedAsync(IPlayer player, Vector position, IBlock block)

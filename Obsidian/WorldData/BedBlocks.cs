@@ -5,8 +5,8 @@ using Obsidian.WorldData.Features;
 namespace Obsidian.WorldData;
 
 /// <summary>
-/// What vanilla's <c>AbstractBedBlock</c> knows about its beds, the coloured ones and straw beds: which blocks they are,
-/// where a sleeper lies, and where one stands up.
+/// What vanilla's <c>AbstractBedBlock</c> knows about its beds, the coloured ones and straw beds: which blocks they
+/// are, where a sleeper lies, and where one stands up.
 /// </summary>
 internal static class BedBlocks
 {

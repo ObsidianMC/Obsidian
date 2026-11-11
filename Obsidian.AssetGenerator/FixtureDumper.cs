@@ -197,8 +197,8 @@ internal static class FixtureDumper
         IReadOnlyCollection<string>? cases = null) =>
         RunObservedProbeAsync(server, fixture, "cauldrons", "CauldronFixtures.java", cases);
 
-    // On-request probes of 26.3's shelves, straw beds and golden dandelions, each a dedicated server of its own in a new
-    // flat world under the scratch directory. They reuse BlockUseFixtures.java from the same directory (the source
+    // On-request probes of 26.3's shelves, straw beds and golden dandelions, each a dedicated server of its own in a
+    // new flat world under the scratch directory. They reuse BlockUseFixtures.java from the same directory (the source
     // launcher compiles it on demand) and its observed copy of the vanilla jar for the ordered block writes.
     internal static Task DumpShelvesAsync(VanillaServer server, string fixture,
         IReadOnlyCollection<string>? cases = null) =>

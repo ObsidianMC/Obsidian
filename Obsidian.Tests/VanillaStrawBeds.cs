@@ -316,7 +316,10 @@ public sealed class VanillaStrawBeds(ITestOutputHelper output)
             expected["position"] = result.GetProperty("position").GetString()!;
 
         if (sleeping)
-            expected["sleep timer"] = result.GetProperty("sleepTimer").GetInt32().ToString(CultureInfo.InvariantCulture);
+        {
+            var timer = result.GetProperty("sleepTimer").GetInt32();
+            expected["sleep timer"] = timer.ToString(CultureInfo.InvariantCulture);
+        }
 
         if (result.TryGetProperty("result", out var use))
             expected["result"] = use.GetString()!;
@@ -345,7 +348,10 @@ public sealed class VanillaStrawBeds(ITestOutputHelper output)
             if (knownDifferences.TryGetValue((name, step, field), out var known))
             {
                 if (got != known || value == known)
-                    differences.Add($"step {step} {field}: the known difference changed; vanilla [{value}], got [{got}]");
+                {
+                    var changed = $"the known difference changed; vanilla [{value}], got [{got}]";
+                    differences.Add($"step {step} {field}: {changed}");
+                }
             }
             else if (got != value)
             {
@@ -418,10 +424,13 @@ public sealed class VanillaStrawBeds(ITestOutputHelper output)
         var changed = Area()
             .Select((position, index) => (position, index))
             .Where(entry => !world.BlockUpdates.GetBlock(entry.position).IsSameState(before[entry.index]))
-            .Select(entry => $"{text.Offset(entry.position)}={CaptureText.State(world.BlockUpdates.GetBlock(entry.position))}");
+            .Select(entry => Changed(world, entry.position));
 
         return string.Join(';', changed);
     }
+
+    private static string Changed(WorldData.World world, Vector position) =>
+        $"{text.Offset(position)}={CaptureText.State(world.BlockUpdates.GetBlock(position))}";
 
     private static IEnumerable<Vector> Area()
     {

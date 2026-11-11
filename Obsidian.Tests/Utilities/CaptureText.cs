@@ -65,7 +65,9 @@ internal sealed class CaptureText(Vector target)
         return $"{block} {blockEvent.ActionId} {blockEvent.ActionParam} {this.Offset(blockEvent.Position)}";
     }
 
-    /// <summary>A sound with the block it plays in and its volume. Sound positions travel in eighths of a block.</summary>
+    /// <summary>
+    /// A sound with the block it plays in and its volume. Sound positions travel in eighths of a block.
+    /// </summary>
     public string SoundDetail(SoundPacket sound)
     {
         var position = new Vector(
@@ -120,7 +122,9 @@ internal sealed class CaptureText(Vector target)
         return Obsidian.Commands.Snbt.Write(saved);
     }
 
-    /// <summary>Vanilla's SNBT as Obsidian writes the same NBT, so that only names, types and values are compared.</summary>
+    /// <summary>
+    /// Vanilla's SNBT as Obsidian writes the same NBT, so that only names, types and values are compared.
+    /// </summary>
     public static string CanonicalNbt(string snbt) => Obsidian.Commands.Snbt.Write(SnbtReader.ReadCompound(snbt));
 
     /// <summary>A particle packet: "minecraft:type count".</summary>

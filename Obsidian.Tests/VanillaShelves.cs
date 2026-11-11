@@ -173,7 +173,10 @@ public sealed class VanillaShelves(ITestOutputHelper output)
 
         var actual = Observe(harness, shelf, result, before, statistics, writes, destroyed);
         if (shelf.TryGetProperty("comparator", out var comparator))
-            actual["comparator"] = (await ComparatorOutputAsync(world, target + CaptureText.Position(comparator))).ToString();
+        {
+            var output = await ComparatorOutputAsync(world, target + CaptureText.Position(comparator));
+            actual["comparator"] = output.ToString();
+        }
 
         return Compare(Name(shelf), Expected(shelf), actual);
     }
@@ -233,7 +236,8 @@ public sealed class VanillaShelves(ITestOutputHelper output)
         for (var slot = 9; slot <= 45; slot++)
             user.Inventory.SetItem(slot, null);
 
-        user.CurrentHeldItemSlot = (short)(shelf.TryGetProperty("selected", out var selected) ? selected.GetInt32() : 0);
+        var hotbarSlot = shelf.TryGetProperty("selected", out var selected) ? selected.GetInt32() : 0;
+        user.CurrentHeldItemSlot = (short)hotbarSlot;
         var count = shelf.TryGetProperty("count", out var held) ? held.GetInt32() : 2;
         user.Inventory.SetItem(user.CurrentHeldItemSlot, Stack(OptionalString(shelf, "item"), count));
         user.Inventory.SetItem(45, Stack(OptionalString(shelf, "offhand"), 2));
@@ -487,10 +491,13 @@ public sealed class VanillaShelves(ITestOutputHelper output)
         var changed = Area()
             .Select((position, index) => (position, index))
             .Where(entry => !world.BlockUpdates.GetBlock(entry.position).IsSameState(before[entry.index]))
-            .Select(entry => $"{text.Offset(entry.position)}={CaptureText.State(world.BlockUpdates.GetBlock(entry.position))}");
+            .Select(entry => Changed(world, entry.position));
 
         return string.Join(';', changed);
     }
+
+    private static string Changed(WorldData.World world, Vector position) =>
+        $"{text.Offset(position)}={CaptureText.State(world.BlockUpdates.GetBlock(position))}";
 
     // The compared area in the capture's order: y, then z, then x ascending.
     private static IEnumerable<Vector> Area()

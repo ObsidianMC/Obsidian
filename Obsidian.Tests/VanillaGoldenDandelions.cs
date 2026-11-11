@@ -276,7 +276,10 @@ public sealed class VanillaGoldenDandelions(ITestOutputHelper output)
             if (knownDifferences.TryGetValue((name, step, field), out var known))
             {
                 if (got != known || value == known)
-                    differences.Add($"step {step} {field}: the known difference changed; vanilla [{value}], got [{got}]");
+                {
+                    var changed = $"the known difference changed; vanilla [{value}], got [{got}]";
+                    differences.Add($"step {step} {field}: {changed}");
+                }
             }
             else if (got != value)
             {
