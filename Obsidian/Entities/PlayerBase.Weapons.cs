@@ -370,7 +370,7 @@ public partial class PlayerBase
         var holdingArm = offHandHolds && !mainHandHolds
             ? (ClientInformation.MainHand == HumanoidArm.Right ? HumanoidArm.Left : HumanoidArm.Right)
             : ClientInformation.MainHand;
-        var yaw = (Yaw.Degrees + (holdingArm == HumanoidArm.Right ? 80 : -80)) * Math.PI / 180;
+        var yaw = (Yaw + (holdingArm == HumanoidArm.Right ? 80 : -80)) * Math.PI / 180;
         return new VectorD(-Math.Sin(yaw), 0, Math.Cos(yaw)) * 0.5;
     }
 

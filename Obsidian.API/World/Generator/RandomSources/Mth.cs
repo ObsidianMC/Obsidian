@@ -1,7 +1,7 @@
 namespace Obsidian.API.World.Generator.RandomSources;
 
 /// <summary>
-/// The subset of vanilla's <c>Mth</c> needed for bit-exact world generation.
+/// The subset of vanilla's <c>Mth</c> needed for bit-exact world generation and entity rotation.
 /// Argument order matches vanilla (the interpolation factor comes first).
 /// </summary>
 public static class Mth
@@ -13,6 +13,22 @@ public static class Mth
 
     /// <summary>Vanilla's table-based cosine (65536 steps per turn), used by carvers.</summary>
     public static float Cos(double value) => sinTable[(int)((long)(value * 10430.378350470453 + 16384.0) & 65535L)];
+
+    /// <summary>
+    /// Vanilla's <c>wrapDegrees</c>: <paramref name="degrees"/> wrapped into [-180, 180), through the same float
+    /// remainder, so a wrapped rotation is bit for bit vanilla's.
+    /// </summary>
+    public static float WrapDegrees(float degrees)
+    {
+        var wrapped = degrees % 360f;
+        if (wrapped >= 180f)
+            wrapped -= 360f;
+
+        if (wrapped < -180f)
+            wrapped += 360f;
+
+        return wrapped;
+    }
 
     /// <summary>Vanilla floor. Matches <c>(int)Math.Floor</c> in range; out-of-range values wrap like Java.</summary>
     public static int Floor(double value)

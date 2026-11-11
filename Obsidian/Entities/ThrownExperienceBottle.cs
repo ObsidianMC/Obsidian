@@ -46,7 +46,7 @@ public sealed partial class ThrownExperienceBottle : Throwable
             EntityId = Server.GetNextEntityId(),
             Owner = player,
             Position = new VectorD(player.Position.X, player.HeadY - 0.1, player.Position.Z),
-            Motion = Direction(player.Yaw.Degrees, player.Pitch.Degrees + PitchOffset) * Speed + player.CombatMotion,
+            Motion = Direction(player.Yaw, player.Pitch + PitchOffset) * Speed + player.CombatMotion,
             Item = new ItemStack(stack, 1)
         };
         bottle.BoundingBox = bottle.Dimension.CreateBBFromPosition(bottle.Position);

@@ -103,8 +103,8 @@ public sealed class FakePlayer : IPlayer
     public Guid Uuid { get; set; }
     public VectorD LastPosition { get; set; }
     public VectorD Position { get;set; }
-    public Angle Pitch { get; set; }
-    public Angle Yaw { get; set; }
+    public float Pitch { get; set; }
+    public float Yaw { get; set; }
 
     public int EntityId => 0;
 
@@ -192,8 +192,8 @@ public sealed class FakePlayer : IPlayer
         throw new NotImplementedException();
     public ValueTask SetActionBarTextAsync(ChatMessage message) => throw new NotImplementedException();
     public ValueTask SetGamemodeAsync(GameMode gamemode) => throw new NotImplementedException();
-    public void SetHeadRotation(Angle headYaw) => throw new NotImplementedException();
-    public void SetRotation(Angle yaw, Angle pitch, MovementFlags movementFlags) => throw new NotImplementedException();
+    public void SetHeadRotation(float headYaw) => throw new NotImplementedException();
+    public void SetRotation(float yaw, float pitch, MovementFlags movementFlags) => throw new NotImplementedException();
     public void SpawnEntity(Velocity? velocity = null, int additionalData = 0) => throw new NotImplementedException();
     public ValueTask SpawnParticleAsync(ParticleData data) => throw new NotImplementedException();
     public ValueTask TeleportAsync(IWorld world) => throw new NotImplementedException();
@@ -203,8 +203,8 @@ public sealed class FakePlayer : IPlayer
     public bool TryAddAttribute(string attributeResourceName, float value) => throw new NotImplementedException();
     public bool TryUpdateAttribute(string attributeResourceName, float newValue) => throw new NotImplementedException();
     public ValueTask UpdateAsync(VectorD position, MovementFlags movementFlags) => throw new NotImplementedException();
-    public ValueTask UpdateAsync(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags) => throw new NotImplementedException();
-    public ValueTask UpdateAsync(Angle yaw, Angle pitch, MovementFlags movementFlags) => throw new NotImplementedException();
+    public ValueTask UpdateAsync(VectorD position, float yaw, float pitch, MovementFlags movementFlags) => throw new NotImplementedException();
+    public ValueTask UpdateAsync(float yaw, float pitch, MovementFlags movementFlags) => throw new NotImplementedException();
     public Task<bool> UpdateChunksAsync(bool unloadAll = false, int distance = 0) => throw new NotImplementedException();
     public ValueTask UpdateDisplayNameAsync(string newDisplayName) => throw new NotImplementedException();
     public ValueTask UpdatePlayerInfoAsync() => throw new NotImplementedException();

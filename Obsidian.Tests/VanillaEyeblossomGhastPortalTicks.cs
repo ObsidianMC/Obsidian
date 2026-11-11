@@ -647,7 +647,7 @@ public sealed class VanillaEyeblossomGhastPortalTicks(ITestOutputHelper output)
 
     private static string Describe(Entity entity, bool randomHead)
     {
-        var headYaw = entity is Mob looking ? looking.LookControl.HeadYaw.Value : entity.Yaw.Value;
+        var headYaw = ((Angle)(entity is Mob looking ? looking.LookControl.HeadYaw : entity.Yaw)).Value;
         var head = randomHead && headYaw <= Turn(MathF.Tau) ? "random" : headYaw.ToString();
         var chicken = entity is Chicken bird
             ? $" variant {ChickenVariants[bird.Variant]} sound {ChickenSounds[bird.SoundVariant]} "
@@ -668,8 +668,8 @@ public sealed class VanillaEyeblossomGhastPortalTicks(ITestOutputHelper output)
                 living.CanPickUpLoot, entity.Vehicle is null ? "none" : EntityName(entity.Vehicle.Type));
         }
 
-        return $"{EntityName(entity.Type)} at {Vec(entity.Position)} yaw {entity.Yaw.Value} head {head} "
-            + $"pitch {entity.Pitch.Value} cooldown {entity.PortalCooldownTicks}{chicken}{age}{mob}";
+        return $"{EntityName(entity.Type)} at {Vec(entity.Position)} yaw {((Angle)entity.Yaw).Value} head {head} "
+            + $"pitch {((Angle)entity.Pitch).Value} cooldown {entity.PortalCooldownTicks}{chicken}{age}{mob}";
     }
 
     // A mob's fields; the enchantments sorted, as a stack's enchantments have no order that matters.

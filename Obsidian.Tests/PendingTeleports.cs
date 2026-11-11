@@ -26,7 +26,7 @@ using MoveVehiclePacket = Obsidian.Net.Packets.Play.Serverbound.MoveVehiclePacke
 namespace Obsidian.Tests;
 
 // Protocol regressions: real players, parsed serverbound packets, and packets delivered to watching clients.
-public sealed class PendingTeleports
+public sealed partial class PendingTeleports
 {
     private static readonly VectorD start = new(4.5, 80, 4.5);
 
@@ -58,7 +58,7 @@ public sealed class PendingTeleports
             Assert.DoesNotContain(watching.SentPackets, IsPositionUpdate);
         }
 
-        Assert.Equal(((Angle)90f, (Angle)45f), (player.Yaw, player.Pitch));
+        Assert.Equal((90f, 45f), (player.Yaw, player.Pitch));
         Assert.Contains(watching.SentPackets, packet => packet is MoveEntityRotPacket { Yaw: var yaw }
             && yaw == (Angle)90f);
 
@@ -158,8 +158,8 @@ public sealed class PendingTeleports
         Assert.Equal(original.Position, retry.Position);
         Assert.Equal(VectorD.Zero, retry.Delta);
         Assert.Equal(VectorD.Zero, player.Motion);
-        Assert.Equal(0, retry.RelativeFlags);
-        Assert.Equal(((Angle)90f, (Angle)45f), (retry.Yaw, retry.Pitch));
+        Assert.Equal(PositionFlags.None, retry.Flags);
+        Assert.Equal((90f, 45f), (retry.Yaw, retry.Pitch));
 
         await client.ConfirmTeleportAsync(original);
         await Move(start).HandleAsync(context.Server, player);

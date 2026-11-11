@@ -14,8 +14,24 @@ public interface IEntity : Data.IAttachmentHolder
 
     public VectorD LastPosition { get; set; }
     public VectorD Position { get; set; }
-    public Angle Pitch { get; set; }
-    public Angle Yaw { get; set; }
+
+    /// <summary>
+    /// The entity's pitch in degrees: positive looks down. A player's is the exact value their client sent, wrapped
+    /// and clamped to [-90, 90] as vanilla does.
+    /// </summary>
+    /// <remarks>
+    /// This was an <see cref="Angle"/> (256ths of a turn) before; it is the exact float now, as vanilla keeps it, so
+    /// aimed uses see the direction the client sent. <see cref="Angle"/> still converts implicitly to and from float
+    /// degrees, so assigning one keeps working.
+    /// </remarks>
+    public float Pitch { get; set; }
+
+    /// <summary>
+    /// The entity's yaw in degrees: 0 faces south (+Z) and 90 west (-X). A player's is the exact value their client
+    /// sent, wrapped to [-180, 180) as vanilla does.
+    /// </summary>
+    /// <remarks>See <see cref="Pitch"/> about the change from <see cref="Angle"/>.</remarks>
+    public float Yaw { get; set; }
 
     public int EntityId { get; }
 
@@ -95,7 +111,7 @@ public interface IEntity : Data.IAttachmentHolder
     /// Moves this entity and its passengers to a level, preserving entity state and velocity.
     /// Null rotation components retain their current values. The destination is loaded before removal.
     /// </summary>
-    public ValueTask TeleportAsync(ILevel level, VectorD position, Angle? yaw = null, Angle? pitch = null) =>
+    public ValueTask TeleportAsync(ILevel level, VectorD position, float? yaw = null, float? pitch = null) =>
         throw new NotSupportedException("This entity doesn't support level travel.");
 
     public ValueTask TeleportAsync(IWorld world);
@@ -103,8 +119,8 @@ public interface IEntity : Data.IAttachmentHolder
     public ValueTask TeleportAsync(VectorD pos);
 
     public ValueTask UpdateAsync(VectorD position, MovementFlags movementFlags);
-    public ValueTask UpdateAsync(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags);
-    public ValueTask UpdateAsync(Angle yaw, Angle pitch, MovementFlags movementFlags);
+    public ValueTask UpdateAsync(VectorD position, float yaw, float pitch, MovementFlags movementFlags);
+    public ValueTask UpdateAsync(float yaw, float pitch, MovementFlags movementFlags);
 
     public void Write(INetStreamWriter writer);
 
@@ -119,10 +135,14 @@ public interface IEntity : Data.IAttachmentHolder
 
     public IEnumerable<IEntity> GetEntitiesNear(float distance);
 
+    /// <summary>
+    /// The unit vector the entity looks along, from its <see cref="Pitch"/> and <see cref="Yaw"/>: vanilla's
+    /// <c>getViewVector</c>.
+    /// </summary>
     public VectorF GetLookDirection();
 
-    public void SetHeadRotation(Angle headYaw);
-    public void SetRotation(Angle yaw, Angle pitch, MovementFlags movementFlags);
+    public void SetHeadRotation(float headYaw);
+    public void SetRotation(float yaw, float pitch, MovementFlags movementFlags);
 
     public bool HasAttribute(string attributeResourceName);
     public bool TryAddAttribute(string attributeResourceName, float value);

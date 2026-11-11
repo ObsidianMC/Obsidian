@@ -38,7 +38,7 @@ public partial class PlayerBase
     void IPlayer.ReleaseMovementAbilities(IPluginContainer plugin) => this.ReleaseMovementAbilities(plugin);
 
     Task IPlayer.CancelPortalTravelAsync() => this.CancelPortalTravelAsync();
-    Task IPlayer.TransferDimensionAsync(ILevel destination, VectorD? position, Angle? yaw, Angle? pitch,
+    Task IPlayer.TransferDimensionAsync(ILevel destination, VectorD? position, float? yaw, float? pitch,
         VectorD? motion, bool portal, bool relativeMotion) =>
         this.TransferDimensionAsync(destination, position, yaw, pitch, motion, portal, relativeMotion);
 

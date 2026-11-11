@@ -160,8 +160,8 @@ public sealed class BlockUseBuckets
         player.Inventory.SetItem(36, new ItemStack(ItemsRegistry.WaterBucket, 1));
         player.Yaw = 33;
         player.Pitch = 7;
-        var yaw = player.Yaw.Degrees;
-        var pitch = player.Pitch.Degrees;
+        var yaw = player.Yaw;
+        var pitch = player.Pitch;
         context.World.BlockUpdates.SetBlock(target, BlocksRegistry.Stone, Quiet);
         var client = (TestClient)player.Client;
         var sequence = 0;
@@ -187,8 +187,8 @@ public sealed class BlockUseBuckets
                 Assert.Equal(player.Inventory.GetItem(slot), correction.SlotData);
                 Assert.Equal(sequence, acknowledgement.SequenceID);
                 Assert.True(Array.IndexOf(packets, correction) < Array.IndexOf(packets, acknowledgement));
-                Assert.Equal(yaw, player.Yaw.Degrees);
-                Assert.Equal(pitch, player.Pitch.Degrees);
+                Assert.Equal(yaw, player.Yaw);
+                Assert.Equal(pitch, player.Pitch);
                 Assert.Equal(ItemsRegistry.WaterBucket.Id, player.GetHeldItem()?.Holder.Id);
                 Assert.True(context.World.BlockUpdates.GetBlock(target + Vector.Up).IsAir);
             }

@@ -1,5 +1,6 @@
 using Obsidian.API.AI;
 using Obsidian.API.World;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.WorldData;
@@ -77,9 +78,17 @@ public partial class Entity : IEquatable<Entity>, IEntity
     internal EntityGrid? Grid { get; set; }
     internal long GridChunk { get; set; }
 
-    public Angle Pitch { get; set; }
+    /// <summary>
+    /// The pitch in degrees, kept as the exact float vanilla keeps; it's packed into an <see cref="Angle"/> only
+    /// for the packets that send one.
+    /// </summary>
+    public float Pitch { get; set; }
 
-    public Angle Yaw { get; set; }
+    /// <summary>
+    /// The yaw in degrees, kept as the exact float vanilla keeps; it's packed into an <see cref="Angle"/> only
+    /// for the packets that send one.
+    /// </summary>
+    public float Yaw { get; set; }
 
     /// <summary>
     /// The entity's velocity in blocks per tick, saved as vanilla's <c>Motion</c>.
@@ -269,8 +278,8 @@ public partial class Entity : IEquatable<Entity>, IEntity
         tag.Set(EntityNbt.DoubleList("Motion", this.Motion));
         tag.Set(new NbtList(NbtTagType.Float, "Rotation")
         {
-            new NbtTag<float>(string.Empty, this.Yaw.Degrees),
-            new NbtTag<float>(string.Empty, this.Pitch.Degrees)
+            new NbtTag<float>(string.Empty, this.Yaw),
+            new NbtTag<float>(string.Empty, this.Pitch)
         });
         tag.Set(new NbtTag<short>("Air", this.Air));
         tag.Set(new NbtTag<bool>("OnGround", this.MovementFlags.HasFlag(MovementFlags.OnGround)));
@@ -355,7 +364,7 @@ public partial class Entity : IEquatable<Entity>, IEntity
         && delta.Y is >= short.MinValue and <= short.MaxValue
         && delta.Z is >= short.MinValue and <= short.MaxValue;
 
-    private void BroadcastTeleport(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags) =>
+    private void BroadcastTeleport(VectorD position, float yaw, float pitch, MovementFlags movementFlags) =>
         this.PacketBroadcaster.BroadcastToLevelInRange(this.Level, position, new EntityPositionSyncPacket
         {
             EntityId = EntityId,
@@ -394,18 +403,18 @@ public partial class Entity : IEquatable<Entity>, IEntity
         }
     }
 
-    public virtual async ValueTask UpdateAsync(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags)
+    public virtual async ValueTask UpdateAsync(VectorD position, float yaw, float pitch, MovementFlags movementFlags)
     {
         this.BroadcastMovement(position, yaw, pitch, movementFlags);
         await this.UpdatePositionAsync(position, yaw, pitch, movementFlags);
     }
 
-    private protected void BroadcastMovement(VectorD position, Angle yaw, Angle pitch, MovementFlags movementFlags)
+    private protected void BroadcastMovement(VectorD position, float yaw, float pitch, MovementFlags movementFlags)
     {
         // Moved when the move shows on the client: when its delta, in 1/4096 blocks, isn't zero.
         var delta = MoveDelta(Position, position);
         var isNewLocation = delta != Vector.Zero;
-        var isNewRotation = yaw != Yaw || pitch != Pitch;
+        var isNewRotation = this.TurnsVisibly(yaw, pitch);
 
         if (!IsRelativeMove(delta))
         {
@@ -451,18 +460,27 @@ public partial class Entity : IEquatable<Entity>, IEntity
         }
     }
 
-    public virtual ValueTask UpdateAsync(Angle yaw, Angle pitch, MovementFlags movementFlags)
+    public virtual ValueTask UpdateAsync(float yaw, float pitch, MovementFlags movementFlags)
     {
-        var isNewRotation = yaw != Yaw || pitch != Pitch;
-
-        if (isNewRotation)
+        if (this.TurnsVisibly(yaw, pitch))
         {
             this.SetRotation(yaw, pitch, movementFlags);
             this.SetHeadRotation(yaw);
         }
+        else
+        {
+            this.UpdatePosition(yaw, pitch, movementFlags);
+        }
 
         return default;
     }
+
+    /// <summary>
+    /// Whether turning to <paramref name="yaw"/> and <paramref name="pitch"/> shows on clients, which see rotation in
+    /// 256ths of a turn: a smaller turn is kept but not sent.
+    /// </summary>
+    private protected bool TurnsVisibly(float yaw, float pitch) =>
+        (Angle)yaw != (Angle)this.Yaw || (Angle)pitch != (Angle)this.Pitch;
 
     public bool IsInRange(IEntity entity, float distance)
     {
@@ -477,14 +495,14 @@ public partial class Entity : IEquatable<Entity>, IEntity
     }
 
 
-    public void SetHeadRotation(Angle headYaw) =>
+    public void SetHeadRotation(float headYaw) =>
         this.PacketBroadcaster.BroadcastToLevelInRange(this.Level, this.Position, new RotateHeadPacket
         {
             EntityId = EntityId,
             HeadYaw = headYaw
         }, EntityId);
 
-    public void SetRotation(Angle yaw, Angle pitch, MovementFlags movementFlags)
+    public void SetRotation(float yaw, float pitch, MovementFlags movementFlags)
     {
         this.PacketBroadcaster.BroadcastToLevelInRange(this.Level, this.Position, new MoveEntityRotPacket
         {
@@ -512,7 +530,7 @@ public partial class Entity : IEquatable<Entity>, IEntity
             BoundingBox = Dimension.CreateBBFromPosition(pos);
     }
 
-    public async Task UpdatePositionAsync(VectorD pos, Angle yaw, Angle pitch, MovementFlags movementFlags = MovementFlags.OnGround)
+    public async Task UpdatePositionAsync(VectorD pos, float yaw, float pitch, MovementFlags movementFlags = MovementFlags.OnGround)
     {
         var (x, z) = WorldData.Region.ChunkOf(pos);
         var chunk = await Level.GetChunkAsync(x, z, false);
@@ -529,7 +547,7 @@ public partial class Entity : IEquatable<Entity>, IEntity
             BoundingBox = Dimension.CreateBBFromPosition(pos);
     }
 
-    public void UpdatePosition(Angle yaw, Angle pitch, MovementFlags movementFlags = MovementFlags.OnGround)
+    public void UpdatePosition(float yaw, float pitch, MovementFlags movementFlags = MovementFlags.OnGround)
     {
         Yaw = yaw;
         Pitch = pitch;
@@ -537,15 +555,25 @@ public partial class Entity : IEquatable<Entity>, IEntity
     }
     #endregion
 
-    public VectorF GetLookDirection()
-    {
-        const float DegreesToRadian = MathF.PI / 180f;
-        float pitch = Pitch.Degrees * DegreesToRadian;
-        float yaw = Yaw.Degrees * DegreesToRadian;
+    public VectorF GetLookDirection() => ViewVector(this.Pitch, this.Yaw);
 
-        (float sinPitch, float cosPitch) = MathF.SinCos(pitch);
-        (float sinYaw, float cosYaw) = MathF.SinCos(yaw);
-        return new(-cosPitch * sinYaw, -sinPitch, cosPitch * cosYaw);
+    /// <summary>
+    /// The unit vector along <paramref name="pitch"/> and <paramref name="yaw"/>, in degrees. This is vanilla's
+    /// <c>calculateViewVector</c> step for step, with its table sine: rays aimed by a look (bucket and brush uses,
+    /// projectile launches) must hit what vanilla's hit, and a ray grazing an edge turns on the last bit.
+    /// </summary>
+    internal static VectorF ViewVector(float pitch, float yaw)
+    {
+        // Vanilla converts to radians in float, then samples its table with the float widened to double.
+        const float DegreesToRadians = (float)(Math.PI / 180.0);
+        var pitchRadians = pitch * DegreesToRadians;
+        var yawRadians = -yaw * DegreesToRadians;
+
+        var cosPitch = Mth.Cos(pitchRadians);
+        var sinPitch = Mth.Sin(pitchRadians);
+        var cosYaw = Mth.Cos(yawRadians);
+        var sinYaw = Mth.Sin(yawRadians);
+        return new(sinYaw * cosPitch, -sinPitch, cosYaw * cosPitch);
     }
 
     public virtual async ValueTask RemoveAsync()
@@ -648,7 +676,7 @@ public partial class Entity : IEquatable<Entity>, IEntity
             this.PacketBroadcaster.QueuePacketToLevel(this.Level, new HurtAnimationPacket
             {
                 EntityId = EntityId,
-                Yaw = (float)(Math.Atan2(source.Position.Z - Position.Z, source.Position.X - Position.X) * 180 / Math.PI - Yaw.Degrees)
+                Yaw = (float)(Math.Atan2(source.Position.Z - Position.Z, source.Position.X - Position.X) * 180 / Math.PI - Yaw)
             });
 
             if (living is IPlayer player)
