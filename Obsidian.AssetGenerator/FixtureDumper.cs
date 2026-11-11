@@ -250,6 +250,12 @@ internal static class FixtureDumper
         IReadOnlyCollection<string>? cases = null) =>
         RunObservedProbeAsync(server, fixture, "lightning", "LightningFixtures.java", cases);
 
+    // An on-request probe: trial spawners stepped tick by tick, and a placed trial chamber's spawners and vaults, on a
+    // dedicated server of its own. It shares block_use's observed copy of the vanilla jar for the ordered block writes.
+    internal static Task DumpTrialSpawnersAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunObservedProbeAsync(server, fixture, "trial-spawners", "TrialSpawnerFixtures.java", cases);
+
     // An on-request probe of controlled entity contacts, on block_use's observed copy of the vanilla jar.
     internal static Task DumpBlockContactsAsync(VanillaServer server, string fixture,
         IReadOnlyCollection<string> cases) =>

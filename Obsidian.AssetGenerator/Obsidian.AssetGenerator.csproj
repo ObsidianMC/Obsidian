@@ -39,6 +39,7 @@
 		<VanillaDumperInput Remove="Java\BlockContactFixtures.java" />
 		<VanillaDumperInput Remove="Java\ProjectileHitFixtures.java" />
 		<VanillaDumperInput Remove="Java\LightningFixtures.java" />
+		<VanillaDumperInput Remove="Java\TrialSpawnerFixtures.java" />
 		<VanillaDumperInput Remove="Java\WaxingBellsOreFixtures.java" />
 		<VanillaDumperInput Remove="Java\FoodHarvestFixtures.java" />
 
@@ -65,6 +66,7 @@
 		<None Update="Java\BlockContactFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\ProjectileHitFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\LightningFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\TrialSpawnerFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\WaxingBellsOreFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\FoodHarvestFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 
