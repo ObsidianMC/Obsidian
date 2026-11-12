@@ -145,12 +145,6 @@ public partial class Mob
         if (!Enum.IsDefined(slot))
             throw new ArgumentOutOfRangeException(nameof(slot));
         equipment[slot] = item;
-        var maximum = GetArmorStats(item, slot).Durability;
-        if (maximum > 0 && !item.ContainsKey(DataComponentType.MaxDamage))
-        {
-            var durability = ComponentBuilder.MaxDamage with { Value = maximum };
-            item[DataComponentType.MaxDamage] = durability;
-        }
         if (initialized)
             SynchronizeEquipment();
     }
