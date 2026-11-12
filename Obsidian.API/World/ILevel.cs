@@ -118,11 +118,13 @@ public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
     /// </summary>
     /// <remarks>
     /// Unlike <see cref="IChunk.SetBiome(int, int, int, BiomeCodec)"/>, which changes a chunk's stored biomes without
-    /// telling clients, this is how a plugin changes biomes players can see. Safe to call from any thread: it holds
-    /// the level's tick lock while it fills, so it waits for the block updates running at the time, and runs
-    /// <paramref name="filter"/> under it. Don't call it while holding a lock block hooks may wait on, such as a
-    /// window's. It holds the tick lock for time proportional to the box's area in chunks, loaded or not, so the
-    /// level's tick waits for it: keep boxes to loaded areas.
+    /// telling clients, this is how a plugin changes biomes players can see. Safe to call from any thread: it holds the
+    /// level's tick lock while it fills, so it waits for the block updates running at the time. Don't call it while
+    /// holding a lock block hooks may wait on, such as a window's. <paramref name="filter"/> is called once for each
+    /// quart in the box, under the level's tick lock and the chunk's block lock but not under a section's lock. It may
+    /// be shown a biome that a write from another thread changes before the fill applies, and it must not wait on
+    /// another thread that needs those locks. The fill holds the tick lock for time proportional to the box's area in
+    /// chunks, loaded or not, so the level's tick waits for it: keep boxes to loaded areas.
     /// </remarks>
     /// <returns>How many quarts changed biome. Zero sends nothing.</returns>
     public int FillBiomes(

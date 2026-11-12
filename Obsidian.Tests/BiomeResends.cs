@@ -109,6 +109,30 @@ public sealed class BiomeResends
         region.Unretire();
     }
 
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task FilterIsAskedOnceForEachQuart()
+    {
+        await using var context = TestServerFactory.CreateServer($"biome-resends-filter-{Guid.NewGuid():N}");
+        var chunk = WorldBlockEntities.AddEmptyChunk(context.World, 0, 0);
+        var before = chunk.GetBiome(0, 64, 0);
+
+        // A filter that accepts only the first quart it's shown: the fill takes that quart and no other, so asking
+        // it again before writing would change nothing and return 0.
+        ILevel level = context.World;
+        var desert = CodecRegistry.Biomes.All["minecraft:desert"];
+        Assert.NotEqual(desert.Id, before.Id);
+        var calls = 0;
+        var changed = level.FillBiomes(new Vector(0, 64, 0), new Vector(7, 64, 7), desert, _ => ++calls == 1);
+
+        // The box holds the quarts at x 0 and 4 and z 0 and 4, visited x, then z, from (0, 64, 0).
+        Assert.Equal(4, calls);
+        Assert.Equal(1, changed);
+        Assert.Equal(desert.Id, chunk.GetBiome(0, 64, 0).Id);
+        Assert.Equal(before.Id, chunk.GetBiome(0, 64, 4).Id);
+        Assert.Equal(before.Id, chunk.GetBiome(4, 64, 0).Id);
+        Assert.Equal(before.Id, chunk.GetBiome(4, 64, 4).Id);
+    }
+
     // Runs a command from the console in the test's world, returning what it said back.
     private static async Task<List<string>> FillBiomeCommandAsync(RealServerContext context, string text)
     {

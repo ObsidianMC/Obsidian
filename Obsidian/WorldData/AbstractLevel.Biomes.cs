@@ -106,32 +106,37 @@ public abstract partial class AbstractLevel
     private static Vector QuartCorner(Vector position) => new(position.X & ~3, position.Y & ~3, position.Z & ~3);
 
     // Fills one chunk's quarts in the box, returning how many changed biome. A chunk with changes has every section's
-    // biomes rebuilt, as vanilla's fill rebuilds each section's container (see Rebuild). A first pass, without holding
-    // the sections, finds whether anything changes, so that an unchanged chunk is left as it is. Then each section is
-    // read again and rebuilt under its container's lock, which every biome write takes, so that a biome set
-    // meanwhile through the chunk or its sections without the tick lock is kept, not overwritten.
+    // biomes rebuilt, as vanilla's fill rebuilds each section's container (see Rebuild).
+    //
+    // The first pass decides which quarts are filled: those in the box whose current biome the filter accepts, asking
+    // the filter once per quart and outside every section's lock, so that it may read the chunk. Then each section is
+    // read again and rebuilt under its container's lock, which every biome write takes: the decided quarts take the
+    // biome and the others keep what they hold then, so a biome set meanwhile on a quart the fill doesn't take is
+    // kept.
     private int FillChunkBiomes(Chunk chunk, Vector min, Vector max, BiomeCodec biome, Func<BiomeCodec, bool>? filter)
     {
         lock (chunk.BlockLock)
         {
             var sections = chunk.Sections;
-            var values = new BiomeCodec[QuartsInSection];
+            var filled = new bool[sections.Length][];
             var changes = 0;
-            for (var sectionIndex = 0; sectionIndex < sections.Length && changes == 0; sectionIndex++)
+            for (var sectionIndex = 0; sectionIndex < sections.Length; sectionIndex++)
             {
                 var biomes = sections[sectionIndex].BiomeContainer;
-                changes += this.FillSection(chunk, sectionIndex, biomes, min, max, biome, filter, values);
+                var decided = filled[sectionIndex] = new bool[QuartsInSection];
+                changes += this.DecideSection(chunk, sectionIndex, biomes, min, max, biome, filter, decided);
             }
 
             if (changes == 0)
                 return 0;
 
+            var values = new BiomeCodec[QuartsInSection];
             var changed = 0;
             for (var sectionIndex = 0; sectionIndex < sections.Length; sectionIndex++)
             {
                 var biomes = sections[sectionIndex].BiomeContainer;
                 using var scope = biomes.EnterScope();
-                changed += this.FillSection(chunk, sectionIndex, biomes, min, max, biome, filter, values);
+                changed += ApplySection(biomes, biome, filled[sectionIndex], values);
                 Rebuild(biomes, values);
             }
 
@@ -139,8 +144,9 @@ public abstract partial class AbstractLevel
         }
     }
 
-    // Lists a section's biomes after the fill in values, x, y, z, and returns how many quarts change.
-    private int FillSection(
+    // Records in filled, x, y, z, which of a section's quarts the fill takes, calling the filter once for each quart in
+    // the box, and returns how many of those hold another biome.
+    private int DecideSection(
         Chunk chunk,
         int sectionIndex,
         DataContainer<BiomeCodec> biomes,
@@ -148,9 +154,43 @@ public abstract partial class AbstractLevel
         Vector max,
         BiomeCodec biome,
         Func<BiomeCodec, bool>? filter,
-        BiomeCodec[] values)
+        bool[] filled)
     {
         var sectionY = (this.MinY >> 4) + sectionIndex;
+        var changes = 0;
+        var index = 0;
+        for (var x = 0; x < QuartsPerSection; x++)
+        {
+            for (var y = 0; y < QuartsPerSection; y++)
+            {
+                for (var z = 0; z < QuartsPerSection; z++)
+                {
+                    var corner = new Vector(chunk.X << 4 | x << 2, sectionY << 4 | y << 2, chunk.Z << 4 | z << 2);
+                    var fills = false;
+                    if (IsInside(corner, min, max))
+                    {
+                        var current = biomes.Get(x, y, z);
+                        fills = filter?.Invoke(current) ?? true;
+                        if (fills && current.Id != biome.Id)
+                            changes++;
+                    }
+
+                    filled[index++] = fills;
+                }
+            }
+        }
+
+        return changes;
+    }
+
+    // Lists a section's biomes after the fill in values, x, y, z: the biome where filled says so, and what the section
+    // holds now elsewhere. Returns how many filled quarts held another biome.
+    private static int ApplySection(
+        DataContainer<BiomeCodec> biomes,
+        BiomeCodec biome,
+        bool[] filled,
+        BiomeCodec[] values)
+    {
         var changed = 0;
         var index = 0;
         for (var x = 0; x < QuartsPerSection; x++)
@@ -160,12 +200,11 @@ public abstract partial class AbstractLevel
                 for (var z = 0; z < QuartsPerSection; z++)
                 {
                     var current = biomes.Get(x, y, z);
-                    var corner = new Vector(chunk.X << 4 | x << 2, sectionY << 4 | y << 2, chunk.Z << 4 | z << 2);
-                    var fills = IsInside(corner, min, max) && (filter?.Invoke(current) ?? true);
-                    if (fills && current.Id != biome.Id)
+                    if (filled[index] && current.Id != biome.Id)
                         changed++;
 
-                    values[index++] = fills ? biome : current;
+                    values[index] = filled[index] ? biome : current;
+                    index++;
                 }
             }
         }
