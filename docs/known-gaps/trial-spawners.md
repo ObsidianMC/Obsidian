@@ -15,9 +15,12 @@ server sends no particle packets. Ominous trials convert Bad Omen during a spawn
 level, Trial Omen amplifier zero), switch configs with level event 3020, discard the old mobs while dropping their
 preserved equipment, and create ominous item spawners above eligible players or mobs. Spawn-data equipment tables
 equip their loot and apply their slot drop chances. `ominous_trials.json` checks these changes, the item spawners'
-saved and client item data, timers, sounds, release events and random draws against 26.3. Eight additional probes
+saved and client item data, timers, sounds, release events and random draws against 26.3. Forty-one additional probes
 follow real releases through impact, including potion reloads, ordinary arrows carrying potion contents and the
-player wind charge's separate burst. Loaded chunks outside simulation range pause item-spawner timers. What's left:
+player wind charge's separate burst. Burst probes also cover powered openables, door halves, buttons, levers and
+bells, including block states, sounds, block events and random draws. Potion events mix visible effect colors and
+select instant particles and sound only for an instant base potion. Loaded chunks outside simulation range pause
+item-spawner timers. What's left:
 
 ## Left for later trial work
 

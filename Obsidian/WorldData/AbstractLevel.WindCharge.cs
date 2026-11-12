@@ -1,6 +1,9 @@
+using Obsidian.API.Blocks;
 using Obsidian.Entities;
 using Obsidian.Entities.AI;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData.Features;
+using Obsidian.WorldData.Redstone;
 
 namespace Obsidian.WorldData;
 
@@ -173,14 +176,44 @@ public abstract partial class AbstractLevel
             return;
         }
 
-        if (block.GetProperty("open") is string open
-            && block.RegistryId is not BlockIds.IronDoor and not BlockIds.IronTrapdoor)
+        var kind = block.BlockClass();
+        var door = kind is "DoorBlock" or "WeatheringCopperDoorBlock";
+        var trapdoor = kind is "TrapDoorBlock" or "WeatheringCopperTrapDoorBlock";
+        if (door || trapdoor || kind == "FenceGateBlock")
         {
-            await this.SetBlockAsync(position, block.WithProperty("open", open != "true"), true);
+            // Native explosion callbacks leave powered openables alone and only address a door's lower half.
+            // All block sets except iron permit wind charges, including copper and gold.
+            if (block.GetProperty("powered") == "true" || door && block.GetProperty("half") != "lower"
+                || block.RegistryId is BlockIds.IronDoor or BlockIds.IronTrapdoor)
+            {
+                return;
+            }
+
+            var open = block.GetProperty("open") != "true";
+            var flags = BlockUpdateFlags.All;
+            if (door)
+                flags = BlockUpdateFlags.Clients | BlockUpdateFlags.Immediate;
+            else if (trapdoor)
+                flags = BlockUpdateFlags.Clients;
+
+            await this.WriteAsync(position, block.WithProperty("open", open), flags);
+            if (trapdoor && block.GetProperty("waterlogged") == "true")
+                this.Fluids.ScheduleShapeFluidTick(position);
+
+            ((IRedstoneLevel)this).PlaySound(position, VanillaPlacement.OpenSound(block, open), 1,
+                this.GrowthRandom.NextFloat() * 0.1f + 0.9f);
+            this.EmitGameEvent(open ? MobGameEvent.BlockOpen : MobGameEvent.BlockClose, position, null);
         }
         else if (await this.TriggerRedstoneAsync(position))
         {
             return;
+        }
+        else if (block.RegistryId == BlockIds.Bell && ((IRedstoneLevel)this).GetBlockEntityAt(position) is not null)
+        {
+            var facing = FeatureHelpers.ParseFace(block.GetProperty("facing"));
+            this.QueueBlockEvent(position, block.RegistryId, RedstoneBell.RingEvent, (int)facing);
+            ((IRedstoneLevel)this).PlaySound(position, RedstoneBell.RingSound, RedstoneBell.RingVolume);
+            this.EmitGameEvent(MobGameEvent.BlockChange, position, null);
         }
         else if (block.GetProperty("lit") == "true"
             && (block.RegistryId is BlockIds.Campfire or BlockIds.SoulCampfire

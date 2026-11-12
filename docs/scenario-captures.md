@@ -356,13 +356,19 @@ replaces only what vanilla produced.
   releases, and all three ominous ranged configs' equipment. The rooms have roofs and make observed mobs silent:
   sunlight damage and ambient sounds use unrelated unseeded mob randoms. Released entities are observed at birth,
   then discarded before flight for the same reason. Four separately seeded native `Projectile.getMovementToShoot`
-  probes check exact release motion and the following random draw. Eight `impacts` probes instead tick an actual
+  probes check exact release motion and the following random draw. Forty-one `impacts` probes instead tick an actual
   item-spawner release through flight and impact (`ReplayOminousReleaseImpactReference`): lingering potion entity
   and block hits, ordinary arrows carrying poison and strong slowness, tipped-arrow duration scaling, splash and
   lingering potion reloads, and the player wind charge's burst. They check full saved stacks, health, effects, fire,
-  motion, level events and explosion packets. `OminousTrialInstrumentation.java` seeds the projectile's private random
-  immediately before native `shoot`, without replacing the release or flight code. Each trial case starts at a fixed
-  game time; final saved mob UUIDs use the same symbolic names as checkpoints, removing unsaved UUID randomness.
+  motion, level events and explosion packets. Twenty-four burst scenes add powered/unpowered doors, trapdoors, fence
+  gates, buttons, levers and bells, including upper-only door hits and iron controls; they compare block states,
+  exact sounds, bell block events and the level random. Nine potion scenes check the four ominous potion colors
+  without custom colors, visible-effect weighting, hidden/empty defaults, and base versus custom-only instant
+  effects. Custom effect probes specify icon flags and byte amplifiers explicitly, keeping this capture independent
+  of existing default-flag and numeric-tag serialization differences. `OminousTrialInstrumentation.java` seeds the
+  projectile's private random immediately before native `shoot`, without replacing the release or flight code. Each
+  trial case starts at a fixed game time; final saved mob UUIDs use the same symbolic names as checkpoints, removing
+  unsaved UUID randomness.
   The persistence test also checks that loading restarts an item spawner's unsaved age and preserves its potion
   components in item metadata. No expected values are pinned; existing trial-spawner and vault reward sequences are
   untouched. Lingering cloud creation remains a [known gap](known-gaps/trial-spawners.md).

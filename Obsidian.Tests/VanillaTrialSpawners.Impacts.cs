@@ -30,7 +30,8 @@ public sealed partial class VanillaTrialSpawners
         await using var replay = await TrialWorld.CreateAsync(1);
         await FixtureCases.AssertAllAsync(reference.GetProperty("impacts").EnumerateArray(), Name,
             probe => ReplayImpact(replay, probe));
-        output.WriteLine("Replayed 8 actual ominous releases through impact, including 2 reloads.");
+        output.WriteLine($"Replayed {reference.GetProperty("impacts").GetArrayLength()} actual ominous releases "
+            + "through impact, including 2 reloads.");
     }
 
     /// <summary>Loaded chunks alone must not advance this entity's simulation, including its release timer.</summary>
@@ -76,6 +77,8 @@ public sealed partial class VanillaTrialSpawners
             ["state"] = "minecraft:stone"
         });
         Setup(level, JsonSerializer.SerializeToElement(new { setup = blocks }), origin);
+        if (probe.TryGetProperty("setup", out _))
+            Setup(level, probe, origin);
         var specs = new JsonArray();
         foreach (var target in probe.GetProperty("targets").EnumerateArray())
         {
@@ -184,6 +187,24 @@ public sealed partial class VanillaTrialSpawners
         }
         BlockProbes.Expect(differences, "fire blocks", expected.GetProperty("fireBlocks").GetInt64(),
             Area(origin).LongCount(position => level.BlockUpdates.GetBlock(position).Is(BlockIds.Fire)));
+
+        if (expected.TryGetProperty("blocks", out var watched))
+        {
+            await level.ProcessBlockEventsAsync();
+            var actual = probe.GetProperty("watch").EnumerateArray().Select(point =>
+            {
+                var position = origin + BlockProbes.Position(point);
+                return Offset(position, origin) + " " + StateText(level.BlockUpdates.GetBlock(position));
+            }).ToList();
+            Compare(differences, "burst block states", Strings(watched), actual);
+            Compare(differences, "burst sounds", Strings(expected.GetProperty("sounds")),
+                Sounds(level, listener.Client, origin, exact: true, categories: true));
+            var blockEvents = listener.Client.SentPackets.OfType<BlockEventPacket>()
+                .Select(packet => $"{Offset(packet.Position, origin)} {packet.ActionId} {packet.ActionParam}").ToList();
+            Compare(differences, "burst block events", Strings(expected.GetProperty("blockEvents")), blockEvents);
+            BlockProbes.Expect(differences, "burst random", expected.GetProperty("random").GetInt64(),
+                ((LegacyRandomSource)level.GrowthRandom).State);
+        }
 
         replay.RemovePlayers(players);
         await replay.ClearAsync(origin);

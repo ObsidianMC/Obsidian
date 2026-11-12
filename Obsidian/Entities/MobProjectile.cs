@@ -444,11 +444,12 @@ internal sealed class MobProjectile : Entity
     {
         var effects = this.GetSplashEffects();
         var contents = this.SplashItem?.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents);
-        var color = contents?.CustomColor ?? 0x385dc6;
+        var color = contents?.CustomColor ?? PotionColors.Mix(effects);
         // Vanilla's AbstractThrownPotion.onHit: the potion's particles (instant ones for an instant potion), then its
         // sound, which is a level event of its own.
         var block = (Vector)Position.Floor();
-        var instant = effects.Any(effect => IsInstant(effect.Id));
+        // Custom instant effects still use the normal break events. Only the base potion selects the instant pair.
+        var instant = contents?.Potion is Potion.Healing or Potion.StrongHealing or Potion.Harming or Potion.StrongHarming;
         var particles = new LevelEventPacket(instant ? 2007 : 2002, block, color);
         PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, particles);
         if (!Silent)

@@ -391,6 +391,7 @@ public final class TrialSpawnerFixtures {
         setGameTime(500000L);
         for (var pos : BlockPos.betweenClosed(origin.offset(-8, -1, -8), origin.offset(8, -1, 8)))
             level.setBlock(pos, Blocks.STONE.defaultBlockState(), QuietFlags);
+        setup(input);
 
         var targets = new ArrayList<ImpactTarget>();
         for (var element : input.getAsJsonArray("targets")) {
@@ -485,6 +486,33 @@ public final class TrialSpawnerFixtures {
         result.add("levelEvents", events);
         result.add("explosions", explosions);
         result.addProperty("fireBlocks", area().stream().filter(pos -> level.getBlockState(pos).is(Blocks.FIRE)).count());
+
+        if (input.has("watch")) {
+            try {
+                var dispatch = ServerLevel.class.getDeclaredMethod("runBlockEvents");
+                dispatch.setAccessible(true);
+                dispatch.invoke(level);
+            } catch (ReflectiveOperationException error) {
+                throw new RuntimeException(error);
+            }
+
+            var blocks = new JsonArray();
+            for (var point : input.getAsJsonArray("watch")) {
+                var pos = origin.offset(position(point.getAsJsonArray()));
+                blocks.add(offset(pos) + " " + text(level.getBlockState(pos)));
+            }
+            result.add("blocks", blocks);
+            var effects = new JsonObject();
+            recordEvents(effects, targets.getFirst().packets, List.of());
+            result.add("sounds", effects.getAsJsonArray("sounds"));
+            var blockEvents = new JsonArray();
+            for (var packet : targets.getFirst().packets) {
+                if (packet instanceof net.minecraft.network.protocol.game.ClientboundBlockEventPacket event)
+                    blockEvents.add(offset(event.getPos()) + " " + event.getB0() + " " + event.getB1());
+            }
+            result.add("blockEvents", blockEvents);
+            result.addProperty("random", randomState());
+        }
 
         for (var target : targets) {
             target.player.discard();

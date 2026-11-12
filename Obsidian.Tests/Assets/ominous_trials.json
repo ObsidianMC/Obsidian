@@ -52634,6 +52634,1940 @@
         ],
         "fireBlocks": 0
       }
+    },
+    {
+      "name": "wind_oak_trapdoor_powered_false_open_false",
+      "stack": "{id:\"minecraft:wind_charge\",count:1}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [0.5, 2.5, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [4, 0, 0]
+        }
+      ],
+      "reload": false,
+      "setup": [
+        {
+          "pos": [1, 0, 0],
+          "state": "minecraft:oak_trapdoor[powered=false,open=false]"
+        }
+      ],
+      "watch": [
+        [1, 0, 0]
+      ],
+      "output": {
+        "type": "minecraft:wind_charge",
+        "birthMotion": [
+          1.2952427181233078E-4,
+          -1.057824059586254,
+          -0.06418130018289207
+        ],
+        "item": "{}",
+        "impactTicks": 3,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "1051 0",
+          "3021 1"
+        ],
+        "explosions": [
+          {
+            "center": [0.5003061101480899, 0.25, 0.34831763940027294],
+            "radius": 1.2,
+            "blocks": 61,
+            "particle": "minecraft:gust_emitter_small",
+            "sound": "minecraft:entity.wind_charge.wind_burst"
+          }
+        ],
+        "fireBlocks": 0,
+        "blocks": [
+          "1,0,0 minecraft:oak_trapdoor[open=true]"
+        ],
+        "sounds": [
+          "minecraft:block.wooden_trapdoor.open 1.500,0.500,0.500 volume 1.00 pitchBits 1063826684 seed 3780524077795069487 category block"
+        ],
+        "blockEvents": [],
+        "random": 25365565311251
+      }
+    },
+    {
+      "name": "wind_oak_trapdoor_powered_false_open_true",
+      "stack": "{id:\"minecraft:wind_charge\",count:1}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [0.5, 2.5, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [4, 0, 0]
+        }
+      ],
+      "reload": false,
+      "setup": [
+        {
+          "pos": [1, 0, 0],
+          "state": "minecraft:oak_trapdoor[powered=false,open=true]"
+        }
+      ],
+      "watch": [
+        [1, 0, 0]
+      ],
+      "output": {
+        "type": "minecraft:wind_charge",
+        "birthMotion": [
+          1.2952427181233078E-4,
+          -1.057824059586254,
+          -0.06418130018289207
+        ],
+        "item": "{}",
+        "impactTicks": 3,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "1051 0",
+          "3021 1"
+        ],
+        "explosions": [
+          {
+            "center": [0.5003061101480899, 0.25, 0.34831763940027294],
+            "radius": 1.2,
+            "blocks": 61,
+            "particle": "minecraft:gust_emitter_small",
+            "sound": "minecraft:entity.wind_charge.wind_burst"
+          }
+        ],
+        "fireBlocks": 0,
+        "blocks": [
+          "1,0,0 minecraft:oak_trapdoor"
+        ],
+        "sounds": [
+          "minecraft:block.wooden_trapdoor.close 1.500,0.500,0.500 volume 1.00 pitchBits 1063826684 seed 3780524077795069487 category block"
+        ],
+        "blockEvents": [],
+        "random": 25365565311251
+      }
+    },
+    {
+      "name": "wind_oak_trapdoor_powered_true_open_false",
+      "stack": "{id:\"minecraft:wind_charge\",count:1}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [0.5, 2.5, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [4, 0, 0]
+        }
+      ],
+      "reload": false,
+      "setup": [
+        {
+          "pos": [1, 0, 0],
+          "state": "minecraft:oak_trapdoor[powered=true,open=false]"
+        }
+      ],
+      "watch": [
+        [1, 0, 0]
+      ],
+      "output": {
+        "type": "minecraft:wind_charge",
+        "birthMotion": [
+          1.2952427181233078E-4,
+          -1.057824059586254,
+          -0.06418130018289207
+        ],
+        "item": "{}",
+        "impactTicks": 3,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "1051 0",
+          "3021 1"
+        ],
+        "explosions": [
+          {
+            "center": [0.5003061101480899, 0.25, 0.34831763940027294],
+            "radius": 1.2,
+            "blocks": 61,
+            "particle": "minecraft:gust_emitter_small",
+            "sound": "minecraft:entity.wind_charge.wind_burst"
+          }
+        ],
+        "fireBlocks": 0,
+        "blocks": [
+          "1,0,0 minecraft:oak_trapdoor[powered=true]"
+        ],
+        "sounds": [],
+        "blockEvents": [],
+        "random": 147348147906600
+      }
+    },
+    {
+      "name": "wind_oak_trapdoor_powered_true_open_true",
+      "stack": "{id:\"minecraft:wind_charge\",count:1}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [0.5, 2.5, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [4, 0, 0]
+        }
+      ],
+      "reload": false,
+      "setup": [
+        {
+          "pos": [1, 0, 0],
+          "state": "minecraft:oak_trapdoor[powered=true,open=true]"
+        }
+      ],
+      "watch": [
+        [1, 0, 0]
+      ],
+      "output": {
+        "type": "minecraft:wind_charge",
+        "birthMotion": [
+          1.2952427181233078E-4,
+          -1.057824059586254,
+          -0.06418130018289207
+        ],
+        "item": "{}",
+        "impactTicks": 3,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "1051 0",
+          "3021 1"
+        ],
+        "explosions": [
+          {
+            "center": [0.5003061101480899, 0.25, 0.34831763940027294],
+            "radius": 1.2,
+            "blocks": 61,
+            "particle": "minecraft:gust_emitter_small",
+            "sound": "minecraft:entity.wind_charge.wind_burst"
+          }
+        ],
+        "fireBlocks": 0,
+        "blocks": [
+          "1,0,0 minecraft:oak_trapdoor[open=true,powered=true]"
+        ],
+        "sounds": [],
+        "blockEvents": [],
+        "random": 147348147906600
+      }
+    },
+    {
+      "name": "wind_oak_fence_gate_powered_false_open_false",
+      "stack": "{id:\"minecraft:wind_charge\",count:1}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [0.5, 2.5, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [4, 0, 0]
+        }
+      ],
+      "reload": false,
+      "setup": [
+        {
+          "pos": [1, 0, 0],
+          "state": "minecraft:oak_fence_gate[powered=false,open=false]"
+        }
+      ],
+      "watch": [
+        [1, 0, 0]
+      ],
+      "output": {
+        "type": "minecraft:wind_charge",
+        "birthMotion": [
+          1.2952427181233078E-4,
+          -1.057824059586254,
+          -0.06418130018289207
+        ],
+        "item": "{}",
+        "impactTicks": 3,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "1051 0",
+          "3021 1"
+        ],
+        "explosions": [
+          {
+            "center": [0.5003061101480899, 0.25, 0.34831763940027294],
+            "radius": 1.2,
+            "blocks": 61,
+            "particle": "minecraft:gust_emitter_small",
+            "sound": "minecraft:entity.wind_charge.wind_burst"
+          }
+        ],
+        "fireBlocks": 0,
+        "blocks": [
+          "1,0,0 minecraft:oak_fence_gate[open=true]"
+        ],
+        "sounds": [
+          "minecraft:block.fence_gate.open 1.500,0.500,0.500 volume 1.00 pitchBits 1063826684 seed 3780524077795069487 category block"
+        ],
+        "blockEvents": [],
+        "random": 25365565311251
+      }
+    },
+    {
+      "name": "wind_oak_fence_gate_powered_false_open_true",
+      "stack": "{id:\"minecraft:wind_charge\",count:1}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [0.5, 2.5, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [4, 0, 0]
+        }
+      ],
+      "reload": false,
+      "setup": [
+        {
+          "pos": [1, 0, 0],
+          "state": "minecraft:oak_fence_gate[powered=false,open=true]"
+        }
+      ],
+      "watch": [
+        [1, 0, 0]
+      ],
+      "output": {
+        "type": "minecraft:wind_charge",
+        "birthMotion": [
+          1.2952427181233078E-4,
+          -1.057824059586254,
+          -0.06418130018289207
+        ],
+        "item": "{}",
+        "impactTicks": 3,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "1051 0",
+          "3021 1"
+        ],
+        "explosions": [
+          {
+            "center": [0.5003061101480899, 0.25, 0.34831763940027294],
+            "radius": 1.2,
+            "blocks": 61,
+            "particle": "minecraft:gust_emitter_small",
+            "sound": "minecraft:entity.wind_charge.wind_burst"
+          }
+        ],
+        "fireBlocks": 0,
+        "blocks": [
+          "1,0,0 minecraft:oak_fence_gate"
+        ],
+        "sounds": [
+          "minecraft:block.fence_gate.close 1.500,0.500,0.500 volume 1.00 pitchBits 1063826684 seed 3780524077795069487 category block"
+        ],
+        "blockEvents": [],
+        "random": 25365565311251
+      }
+    },
+    {
+      "name": "wind_oak_fence_gate_powered_true_open_false",
+      "stack": "{id:\"minecraft:wind_charge\",count:1}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [0.5, 2.5, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [4, 0, 0]
+        }
+      ],
+      "reload": false,
+      "setup": [
+        {
+          "pos": [1, 0, 0],
+          "state": "minecraft:oak_fence_gate[powered=true,open=false]"
+        }
+      ],
+      "watch": [
+        [1, 0, 0]
+      ],
+      "output": {
+        "type": "minecraft:wind_charge",
+        "birthMotion": [
+          1.2952427181233078E-4,
+          -1.057824059586254,
+          -0.06418130018289207
+        ],
+        "item": "{}",
+        "impactTicks": 3,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "1051 0",
+          "3021 1"
+        ],
+        "explosions": [
+          {
+            "center": [0.5003061101480899, 0.25, 0.34831763940027294],
+            "radius": 1.2,
+            "blocks": 61,
+            "particle": "minecraft:gust_emitter_small",
+            "sound": "minecraft:entity.wind_charge.wind_burst"
+          }
+        ],
+        "fireBlocks": 0,
+        "blocks": [
+          "1,0,0 minecraft:oak_fence_gate[powered=true]"
+        ],
+        "sounds": [],
+        "blockEvents": [],
+        "random": 147348147906600
+      }
+    },
+    {
+      "name": "wind_oak_fence_gate_powered_true_open_true",
+      "stack": "{id:\"minecraft:wind_charge\",count:1}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [0.5, 2.5, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [4, 0, 0]
+        }
+      ],
+      "reload": false,
+      "setup": [
+        {
+          "pos": [1, 0, 0],
+          "state": "minecraft:oak_fence_gate[powered=true,open=true]"
+        }
+      ],
+      "watch": [
+        [1, 0, 0]
+      ],
+      "output": {
+        "type": "minecraft:wind_charge",
+        "birthMotion": [
+          1.2952427181233078E-4,
+          -1.057824059586254,
+          -0.06418130018289207
+        ],
+        "item": "{}",
+        "impactTicks": 3,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "1051 0",
+          "3021 1"
+        ],
+        "explosions": [
+          {
+            "center": [0.5003061101480899, 0.25, 0.34831763940027294],
+            "radius": 1.2,
+            "blocks": 61,
+            "particle": "minecraft:gust_emitter_small",
+            "sound": "minecraft:entity.wind_charge.wind_burst"
+          }
+        ],
+        "fireBlocks": 0,
+        "blocks": [
+          "1,0,0 minecraft:oak_fence_gate[open=true,powered=true]"
+        ],
+        "sounds": [],
+        "blockEvents": [],
+        "random": 147348147906600
+      }
+    },
+    {
+      "name": "wind_door_lower_reached_powered_false_open_false",
+      "stack": "{id:\"minecraft:wind_charge\",count:1}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [0.5, 2.5, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [4, 0, 0]
+        }
+      ],
+      "reload": false,
+      "setup": [
+        {
+          "pos": [1, 0, 0],
+          "state": "minecraft:oak_door[half=lower,facing=north,powered=false,open=false]"
+        },
+        {
+          "pos": [1, 1, 0],
+          "state": "minecraft:oak_door[half=upper,facing=north,powered=false,open=false]"
+        }
+      ],
+      "watch": [
+        [1, 0, 0],
+        [1, 1, 0]
+      ],
+      "output": {
+        "type": "minecraft:wind_charge",
+        "birthMotion": [
+          1.2952427181233078E-4,
+          -1.057824059586254,
+          -0.06418130018289207
+        ],
+        "item": "{}",
+        "impactTicks": 3,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "1051 0",
+          "3021 1"
+        ],
+        "explosions": [
+          {
+            "center": [0.5003061101480899, 0.25, 0.34831763940027294],
+            "radius": 1.2,
+            "blocks": 61,
+            "particle": "minecraft:gust_emitter_small",
+            "sound": "minecraft:entity.wind_charge.wind_burst"
+          }
+        ],
+        "fireBlocks": 0,
+        "blocks": [
+          "1,0,0 minecraft:oak_door[open=true]",
+          "1,1,0 minecraft:oak_door[half=upper,open=true]"
+        ],
+        "sounds": [
+          "minecraft:block.wooden_door.open 1.500,0.500,0.500 volume 1.00 pitchBits 1063826684 seed 3780524077795069487 category block"
+        ],
+        "blockEvents": [],
+        "random": 25365565311251
+      }
+    },
+    {
+      "name": "wind_door_lower_reached_powered_false_open_true",
+      "stack": "{id:\"minecraft:wind_charge\",count:1}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [0.5, 2.5, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [4, 0, 0]
+        }
+      ],
+      "reload": false,
+      "setup": [
+        {
+          "pos": [1, 0, 0],
+          "state": "minecraft:oak_door[half=lower,facing=north,powered=false,open=true]"
+        },
+        {
+          "pos": [1, 1, 0],
+          "state": "minecraft:oak_door[half=upper,facing=north,powered=false,open=true]"
+        }
+      ],
+      "watch": [
+        [1, 0, 0],
+        [1, 1, 0]
+      ],
+      "output": {
+        "type": "minecraft:wind_charge",
+        "birthMotion": [
+          1.2952427181233078E-4,
+          -1.057824059586254,
+          -0.06418130018289207
+        ],
+        "item": "{}",
+        "impactTicks": 3,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "1051 0",
+          "3021 1"
+        ],
+        "explosions": [
+          {
+            "center": [0.5003061101480899, 0.25, 0.34831763940027294],
+            "radius": 1.2,
+            "blocks": 61,
+            "particle": "minecraft:gust_emitter_small",
+            "sound": "minecraft:entity.wind_charge.wind_burst"
+          }
+        ],
+        "fireBlocks": 0,
+        "blocks": [
+          "1,0,0 minecraft:oak_door",
+          "1,1,0 minecraft:oak_door[half=upper]"
+        ],
+        "sounds": [
+          "minecraft:block.wooden_door.close 1.500,0.500,0.500 volume 1.00 pitchBits 1063826684 seed 3780524077795069487 category block"
+        ],
+        "blockEvents": [],
+        "random": 25365565311251
+      }
+    },
+    {
+      "name": "wind_door_lower_reached_powered_true_open_false",
+      "stack": "{id:\"minecraft:wind_charge\",count:1}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [0.5, 2.5, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [4, 0, 0]
+        }
+      ],
+      "reload": false,
+      "setup": [
+        {
+          "pos": [1, 0, 0],
+          "state": "minecraft:oak_door[half=lower,facing=north,powered=true,open=false]"
+        },
+        {
+          "pos": [1, 1, 0],
+          "state": "minecraft:oak_door[half=upper,facing=north,powered=true,open=false]"
+        }
+      ],
+      "watch": [
+        [1, 0, 0],
+        [1, 1, 0]
+      ],
+      "output": {
+        "type": "minecraft:wind_charge",
+        "birthMotion": [
+          1.2952427181233078E-4,
+          -1.057824059586254,
+          -0.06418130018289207
+        ],
+        "item": "{}",
+        "impactTicks": 3,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "1051 0",
+          "3021 1"
+        ],
+        "explosions": [
+          {
+            "center": [0.5003061101480899, 0.25, 0.34831763940027294],
+            "radius": 1.2,
+            "blocks": 61,
+            "particle": "minecraft:gust_emitter_small",
+            "sound": "minecraft:entity.wind_charge.wind_burst"
+          }
+        ],
+        "fireBlocks": 0,
+        "blocks": [
+          "1,0,0 minecraft:oak_door[powered=true]",
+          "1,1,0 minecraft:oak_door[half=upper,powered=true]"
+        ],
+        "sounds": [],
+        "blockEvents": [],
+        "random": 147348147906600
+      }
+    },
+    {
+      "name": "wind_door_lower_reached_powered_true_open_true",
+      "stack": "{id:\"minecraft:wind_charge\",count:1}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [0.5, 2.5, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [4, 0, 0]
+        }
+      ],
+      "reload": false,
+      "setup": [
+        {
+          "pos": [1, 0, 0],
+          "state": "minecraft:oak_door[half=lower,facing=north,powered=true,open=true]"
+        },
+        {
+          "pos": [1, 1, 0],
+          "state": "minecraft:oak_door[half=upper,facing=north,powered=true,open=true]"
+        }
+      ],
+      "watch": [
+        [1, 0, 0],
+        [1, 1, 0]
+      ],
+      "output": {
+        "type": "minecraft:wind_charge",
+        "birthMotion": [
+          1.2952427181233078E-4,
+          -1.057824059586254,
+          -0.06418130018289207
+        ],
+        "item": "{}",
+        "impactTicks": 3,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "1051 0",
+          "3021 1"
+        ],
+        "explosions": [
+          {
+            "center": [0.5003061101480899, 0.25, 0.34831763940027294],
+            "radius": 1.2,
+            "blocks": 61,
+            "particle": "minecraft:gust_emitter_small",
+            "sound": "minecraft:entity.wind_charge.wind_burst"
+          }
+        ],
+        "fireBlocks": 0,
+        "blocks": [
+          "1,0,0 minecraft:oak_door[open=true,powered=true]",
+          "1,1,0 minecraft:oak_door[half=upper,open=true,powered=true]"
+        ],
+        "sounds": [],
+        "blockEvents": [],
+        "random": 147348147906600
+      }
+    },
+    {
+      "name": "wind_door_upper_only_open_false",
+      "stack": "{id:\"minecraft:wind_charge\",count:1}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [0.5, 4.5, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [4, 0, 0]
+        }
+      ],
+      "reload": false,
+      "setup": [
+        {
+          "pos": [0, 1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [1, -2, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [1, -1, 0],
+          "state": "minecraft:oak_door[half=lower,facing=north,powered=false,open=false]"
+        },
+        {
+          "pos": [1, 0, 0],
+          "state": "minecraft:oak_door[half=upper,facing=north,powered=false,open=false]"
+        }
+      ],
+      "watch": [
+        [1, -1, 0],
+        [1, 0, 0]
+      ],
+      "output": {
+        "type": "minecraft:wind_charge",
+        "birthMotion": [
+          1.2952427181233078E-4,
+          -1.057824059586254,
+          -0.06418130018289207
+        ],
+        "item": "{}",
+        "impactTicks": 3,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "1051 0",
+          "3021 1"
+        ],
+        "explosions": [
+          {
+            "center": [0.5003061101480899, 2.25, 0.34831763940027294],
+            "radius": 1.2,
+            "blocks": 61,
+            "particle": "minecraft:gust_emitter_small",
+            "sound": "minecraft:entity.wind_charge.wind_burst"
+          }
+        ],
+        "fireBlocks": 0,
+        "blocks": [
+          "1,-1,0 minecraft:oak_door",
+          "1,0,0 minecraft:oak_door[half=upper]"
+        ],
+        "sounds": [],
+        "blockEvents": [],
+        "random": 147348147906600
+      }
+    },
+    {
+      "name": "wind_door_upper_only_open_true",
+      "stack": "{id:\"minecraft:wind_charge\",count:1}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [0.5, 4.5, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [4, 0, 0]
+        }
+      ],
+      "reload": false,
+      "setup": [
+        {
+          "pos": [0, 1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [1, -2, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "pos": [1, -1, 0],
+          "state": "minecraft:oak_door[half=lower,facing=north,powered=false,open=true]"
+        },
+        {
+          "pos": [1, 0, 0],
+          "state": "minecraft:oak_door[half=upper,facing=north,powered=false,open=true]"
+        }
+      ],
+      "watch": [
+        [1, -1, 0],
+        [1, 0, 0]
+      ],
+      "output": {
+        "type": "minecraft:wind_charge",
+        "birthMotion": [
+          1.2952427181233078E-4,
+          -1.057824059586254,
+          -0.06418130018289207
+        ],
+        "item": "{}",
+        "impactTicks": 3,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "1051 0",
+          "3021 1"
+        ],
+        "explosions": [
+          {
+            "center": [0.5003061101480899, 2.25, 0.34831763940027294],
+            "radius": 1.2,
+            "blocks": 61,
+            "particle": "minecraft:gust_emitter_small",
+            "sound": "minecraft:entity.wind_charge.wind_burst"
+          }
+        ],
+        "fireBlocks": 0,
+        "blocks": [
+          "1,-1,0 minecraft:oak_door[open=true]",
+          "1,0,0 minecraft:oak_door[half=upper,open=true]"
+        ],
+        "sounds": [],
+        "blockEvents": [],
+        "random": 147348147906600
+      }
+    },
+    {
+      "name": "wind_iron_door",
+      "stack": "{id:\"minecraft:wind_charge\",count:1}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [0.5, 2.5, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [4, 0, 0]
+        }
+      ],
+      "reload": false,
+      "setup": [
+        {
+          "pos": [1, 0, 0],
+          "state": "minecraft:iron_door"
+        },
+        {
+          "pos": [1, 1, 0],
+          "state": "minecraft:iron_door[half=upper]"
+        }
+      ],
+      "watch": [
+        [1, 0, 0],
+        [1, 1, 0]
+      ],
+      "output": {
+        "type": "minecraft:wind_charge",
+        "birthMotion": [
+          1.2952427181233078E-4,
+          -1.057824059586254,
+          -0.06418130018289207
+        ],
+        "item": "{}",
+        "impactTicks": 3,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "1051 0",
+          "3021 1"
+        ],
+        "explosions": [
+          {
+            "center": [0.5003061101480899, 0.25, 0.34831763940027294],
+            "radius": 1.2,
+            "blocks": 61,
+            "particle": "minecraft:gust_emitter_small",
+            "sound": "minecraft:entity.wind_charge.wind_burst"
+          }
+        ],
+        "fireBlocks": 0,
+        "blocks": [
+          "1,0,0 minecraft:iron_door",
+          "1,1,0 minecraft:iron_door[half=upper]"
+        ],
+        "sounds": [],
+        "blockEvents": [],
+        "random": 147348147906600
+      }
+    },
+    {
+      "name": "wind_iron_trapdoor",
+      "stack": "{id:\"minecraft:wind_charge\",count:1}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [0.5, 2.5, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [4, 0, 0]
+        }
+      ],
+      "reload": false,
+      "setup": [
+        {
+          "pos": [1, 0, 0],
+          "state": "minecraft:iron_trapdoor"
+        }
+      ],
+      "watch": [
+        [1, 0, 0]
+      ],
+      "output": {
+        "type": "minecraft:wind_charge",
+        "birthMotion": [
+          1.2952427181233078E-4,
+          -1.057824059586254,
+          -0.06418130018289207
+        ],
+        "item": "{}",
+        "impactTicks": 3,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "1051 0",
+          "3021 1"
+        ],
+        "explosions": [
+          {
+            "center": [0.5003061101480899, 0.25, 0.34831763940027294],
+            "radius": 1.2,
+            "blocks": 61,
+            "particle": "minecraft:gust_emitter_small",
+            "sound": "minecraft:entity.wind_charge.wind_burst"
+          }
+        ],
+        "fireBlocks": 0,
+        "blocks": [
+          "1,0,0 minecraft:iron_trapdoor"
+        ],
+        "sounds": [],
+        "blockEvents": [],
+        "random": 147348147906600
+      }
+    },
+    {
+      "name": "wind_oak_button_powered_false",
+      "stack": "{id:\"minecraft:wind_charge\",count:1}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [0.5, 2.5, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [4, 0, 0]
+        }
+      ],
+      "reload": false,
+      "setup": [
+        {
+          "pos": [1, 0, 0],
+          "state": "minecraft:oak_button[powered=false,face=floor]"
+        }
+      ],
+      "watch": [
+        [1, 0, 0]
+      ],
+      "output": {
+        "type": "minecraft:wind_charge",
+        "birthMotion": [
+          1.2952427181233078E-4,
+          -1.057824059586254,
+          -0.06418130018289207
+        ],
+        "item": "{}",
+        "impactTicks": 3,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "1051 0",
+          "3021 1"
+        ],
+        "explosions": [
+          {
+            "center": [0.5003061101480899, 0.25, 0.34831763940027294],
+            "radius": 1.2,
+            "blocks": 61,
+            "particle": "minecraft:gust_emitter_small",
+            "sound": "minecraft:entity.wind_charge.wind_burst"
+          }
+        ],
+        "fireBlocks": 0,
+        "blocks": [
+          "1,0,0 minecraft:oak_button[face=floor,powered=true]"
+        ],
+        "sounds": [
+          "minecraft:block.wooden_button.click_on 1.500,0.500,0.500 volume 1.00 pitchBits 1065353216 seed 3780524077795069487 category block"
+        ],
+        "blockEvents": [],
+        "random": 147348147906600
+      }
+    },
+    {
+      "name": "wind_oak_button_powered_true",
+      "stack": "{id:\"minecraft:wind_charge\",count:1}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [0.5, 2.5, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [4, 0, 0]
+        }
+      ],
+      "reload": false,
+      "setup": [
+        {
+          "pos": [1, 0, 0],
+          "state": "minecraft:oak_button[powered=true,face=floor]"
+        }
+      ],
+      "watch": [
+        [1, 0, 0]
+      ],
+      "output": {
+        "type": "minecraft:wind_charge",
+        "birthMotion": [
+          1.2952427181233078E-4,
+          -1.057824059586254,
+          -0.06418130018289207
+        ],
+        "item": "{}",
+        "impactTicks": 3,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "1051 0",
+          "3021 1"
+        ],
+        "explosions": [
+          {
+            "center": [0.5003061101480899, 0.25, 0.34831763940027294],
+            "radius": 1.2,
+            "blocks": 61,
+            "particle": "minecraft:gust_emitter_small",
+            "sound": "minecraft:entity.wind_charge.wind_burst"
+          }
+        ],
+        "fireBlocks": 0,
+        "blocks": [
+          "1,0,0 minecraft:oak_button[face=floor,powered=true]"
+        ],
+        "sounds": [],
+        "blockEvents": [],
+        "random": 147348147906600
+      }
+    },
+    {
+      "name": "wind_stone_button_powered_false",
+      "stack": "{id:\"minecraft:wind_charge\",count:1}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [0.5, 2.5, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [4, 0, 0]
+        }
+      ],
+      "reload": false,
+      "setup": [
+        {
+          "pos": [1, 0, 0],
+          "state": "minecraft:stone_button[powered=false,face=floor]"
+        }
+      ],
+      "watch": [
+        [1, 0, 0]
+      ],
+      "output": {
+        "type": "minecraft:wind_charge",
+        "birthMotion": [
+          1.2952427181233078E-4,
+          -1.057824059586254,
+          -0.06418130018289207
+        ],
+        "item": "{}",
+        "impactTicks": 3,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "1051 0",
+          "3021 1"
+        ],
+        "explosions": [
+          {
+            "center": [0.5003061101480899, 0.25, 0.34831763940027294],
+            "radius": 1.2,
+            "blocks": 61,
+            "particle": "minecraft:gust_emitter_small",
+            "sound": "minecraft:entity.wind_charge.wind_burst"
+          }
+        ],
+        "fireBlocks": 0,
+        "blocks": [
+          "1,0,0 minecraft:stone_button[face=floor,powered=true]"
+        ],
+        "sounds": [
+          "minecraft:block.stone_button.click_on 1.500,0.500,0.500 volume 1.00 pitchBits 1065353216 seed 3780524077795069487 category block"
+        ],
+        "blockEvents": [],
+        "random": 147348147906600
+      }
+    },
+    {
+      "name": "wind_stone_button_powered_true",
+      "stack": "{id:\"minecraft:wind_charge\",count:1}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [0.5, 2.5, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [4, 0, 0]
+        }
+      ],
+      "reload": false,
+      "setup": [
+        {
+          "pos": [1, 0, 0],
+          "state": "minecraft:stone_button[powered=true,face=floor]"
+        }
+      ],
+      "watch": [
+        [1, 0, 0]
+      ],
+      "output": {
+        "type": "minecraft:wind_charge",
+        "birthMotion": [
+          1.2952427181233078E-4,
+          -1.057824059586254,
+          -0.06418130018289207
+        ],
+        "item": "{}",
+        "impactTicks": 3,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "1051 0",
+          "3021 1"
+        ],
+        "explosions": [
+          {
+            "center": [0.5003061101480899, 0.25, 0.34831763940027294],
+            "radius": 1.2,
+            "blocks": 61,
+            "particle": "minecraft:gust_emitter_small",
+            "sound": "minecraft:entity.wind_charge.wind_burst"
+          }
+        ],
+        "fireBlocks": 0,
+        "blocks": [
+          "1,0,0 minecraft:stone_button[face=floor,powered=true]"
+        ],
+        "sounds": [],
+        "blockEvents": [],
+        "random": 147348147906600
+      }
+    },
+    {
+      "name": "wind_lever_powered_false",
+      "stack": "{id:\"minecraft:wind_charge\",count:1}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [0.5, 2.5, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [4, 0, 0]
+        }
+      ],
+      "reload": false,
+      "setup": [
+        {
+          "pos": [1, 0, 0],
+          "state": "minecraft:lever[powered=false,face=floor]"
+        }
+      ],
+      "watch": [
+        [1, 0, 0]
+      ],
+      "output": {
+        "type": "minecraft:wind_charge",
+        "birthMotion": [
+          1.2952427181233078E-4,
+          -1.057824059586254,
+          -0.06418130018289207
+        ],
+        "item": "{}",
+        "impactTicks": 3,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "1051 0",
+          "3021 1"
+        ],
+        "explosions": [
+          {
+            "center": [0.5003061101480899, 0.25, 0.34831763940027294],
+            "radius": 1.2,
+            "blocks": 61,
+            "particle": "minecraft:gust_emitter_small",
+            "sound": "minecraft:entity.wind_charge.wind_burst"
+          }
+        ],
+        "fireBlocks": 0,
+        "blocks": [
+          "1,0,0 minecraft:lever[face=floor,powered=true]"
+        ],
+        "sounds": [
+          "minecraft:block.lever.click 1.500,0.500,0.500 volume 0.30 pitchBits 1058642330 seed 3780524077795069487 category block"
+        ],
+        "blockEvents": [],
+        "random": 147348147906600
+      }
+    },
+    {
+      "name": "wind_lever_powered_true",
+      "stack": "{id:\"minecraft:wind_charge\",count:1}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [0.5, 2.5, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [4, 0, 0]
+        }
+      ],
+      "reload": false,
+      "setup": [
+        {
+          "pos": [1, 0, 0],
+          "state": "minecraft:lever[powered=true,face=floor]"
+        }
+      ],
+      "watch": [
+        [1, 0, 0]
+      ],
+      "output": {
+        "type": "minecraft:wind_charge",
+        "birthMotion": [
+          1.2952427181233078E-4,
+          -1.057824059586254,
+          -0.06418130018289207
+        ],
+        "item": "{}",
+        "impactTicks": 3,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "1051 0",
+          "3021 1"
+        ],
+        "explosions": [
+          {
+            "center": [0.5003061101480899, 0.25, 0.34831763940027294],
+            "radius": 1.2,
+            "blocks": 61,
+            "particle": "minecraft:gust_emitter_small",
+            "sound": "minecraft:entity.wind_charge.wind_burst"
+          }
+        ],
+        "fireBlocks": 0,
+        "blocks": [
+          "1,0,0 minecraft:lever[face=floor]"
+        ],
+        "sounds": [
+          "minecraft:block.lever.click 1.500,0.500,0.500 volume 0.30 pitchBits 1056964608 seed 3780524077795069487 category block"
+        ],
+        "blockEvents": [],
+        "random": 147348147906600
+      }
+    },
+    {
+      "name": "wind_bell_powered_false",
+      "stack": "{id:\"minecraft:wind_charge\",count:1}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [0.5, 2.5, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [4, 0, 0]
+        }
+      ],
+      "reload": false,
+      "setup": [
+        {
+          "pos": [1, 0, 0],
+          "state": "minecraft:bell[powered=false,attachment=floor]"
+        }
+      ],
+      "watch": [
+        [1, 0, 0]
+      ],
+      "output": {
+        "type": "minecraft:wind_charge",
+        "birthMotion": [
+          1.2952427181233078E-4,
+          -1.057824059586254,
+          -0.06418130018289207
+        ],
+        "item": "{}",
+        "impactTicks": 3,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "1051 0",
+          "3021 1"
+        ],
+        "explosions": [
+          {
+            "center": [0.5003061101480899, 0.25, 0.34831763940027294],
+            "radius": 1.2,
+            "blocks": 61,
+            "particle": "minecraft:gust_emitter_small",
+            "sound": "minecraft:entity.wind_charge.wind_burst"
+          }
+        ],
+        "fireBlocks": 0,
+        "blocks": [
+          "1,0,0 minecraft:bell"
+        ],
+        "sounds": [
+          "minecraft:block.bell.use 1.500,0.500,0.500 volume 2.00 pitchBits 1065353216 seed 3780524077795069487 category block"
+        ],
+        "blockEvents": [
+          "1,0,0 1 2"
+        ],
+        "random": 147348147906600
+      }
+    },
+    {
+      "name": "wind_bell_powered_true",
+      "stack": "{id:\"minecraft:wind_charge\",count:1}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [0.5, 2.5, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [4, 0, 0]
+        }
+      ],
+      "reload": false,
+      "setup": [
+        {
+          "pos": [1, 0, 0],
+          "state": "minecraft:bell[powered=true,attachment=floor]"
+        }
+      ],
+      "watch": [
+        [1, 0, 0]
+      ],
+      "output": {
+        "type": "minecraft:wind_charge",
+        "birthMotion": [
+          1.2952427181233078E-4,
+          -1.057824059586254,
+          -0.06418130018289207
+        ],
+        "item": "{}",
+        "impactTicks": 3,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "1051 0",
+          "3021 1"
+        ],
+        "explosions": [
+          {
+            "center": [0.5003061101480899, 0.25, 0.34831763940027294],
+            "radius": 1.2,
+            "blocks": 61,
+            "particle": "minecraft:gust_emitter_small",
+            "sound": "minecraft:entity.wind_charge.wind_burst"
+          }
+        ],
+        "fireBlocks": 0,
+        "blocks": [
+          "1,0,0 minecraft:bell[powered=true]"
+        ],
+        "sounds": [
+          "minecraft:block.bell.use 1.500,0.500,0.500 volume 2.00 pitchBits 1065353216 seed 3780524077795069487 category block"
+        ],
+        "blockEvents": [
+          "1,0,0 1 2"
+        ],
+        "random": 147348147906600
+      }
+    },
+    {
+      "name": "ominous_potion_color_weaving",
+      "stack": "{id:\"minecraft:lingering_potion\",count:1,components:{\"minecraft:potion_contents\":{potion:\"minecraft:weaving\"}}}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [2.5, 2.25, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [2.5, 0, 0.5]
+        }
+      ],
+      "reload": false,
+      "output": {
+        "type": "minecraft:lingering_potion",
+        "birthMotion": [
+          8.014314509464114E-5,
+          -1.4107786377220242,
+          -0.03971218043497664
+        ],
+        "item": "{components:{\"minecraft:potion_contents\":{potion:\"minecraft:weaving\"}},count:1,id:\"minecraft:lingering_potion\"}",
+        "impactTicks": 1,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "3021 1",
+          "2002 -8885926",
+          "1053 0"
+        ],
+        "explosions": [],
+        "fireBlocks": 0
+      }
+    },
+    {
+      "name": "ominous_potion_color_oozing",
+      "stack": "{id:\"minecraft:lingering_potion\",count:1,components:{\"minecraft:potion_contents\":{potion:\"minecraft:oozing\"}}}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [2.5, 2.25, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [2.5, 0, 0.5]
+        }
+      ],
+      "reload": false,
+      "output": {
+        "type": "minecraft:lingering_potion",
+        "birthMotion": [
+          8.014314509464114E-5,
+          -1.4107786377220242,
+          -0.03971218043497664
+        ],
+        "item": "{components:{\"minecraft:potion_contents\":{potion:\"minecraft:oozing\"}},count:1,id:\"minecraft:lingering_potion\"}",
+        "impactTicks": 1,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "3021 1",
+          "2002 -6684765",
+          "1053 0"
+        ],
+        "explosions": [],
+        "fireBlocks": 0
+      }
+    },
+    {
+      "name": "ominous_potion_color_infested",
+      "stack": "{id:\"minecraft:lingering_potion\",count:1,components:{\"minecraft:potion_contents\":{potion:\"minecraft:infested\"}}}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [2.5, 2.25, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [2.5, 0, 0.5]
+        }
+      ],
+      "reload": false,
+      "output": {
+        "type": "minecraft:lingering_potion",
+        "birthMotion": [
+          8.014314509464114E-5,
+          -1.4107786377220242,
+          -0.03971218043497664
+        ],
+        "item": "{components:{\"minecraft:potion_contents\":{potion:\"minecraft:infested\"}},count:1,id:\"minecraft:lingering_potion\"}",
+        "impactTicks": 1,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "3021 1",
+          "2002 -7562356",
+          "1053 0"
+        ],
+        "explosions": [],
+        "fireBlocks": 0
+      }
+    },
+    {
+      "name": "ominous_potion_color_wind_charged",
+      "stack": "{id:\"minecraft:lingering_potion\",count:1,components:{\"minecraft:potion_contents\":{potion:\"minecraft:wind_charged\"}}}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [2.5, 2.25, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [2.5, 0, 0.5]
+        }
+      ],
+      "reload": false,
+      "output": {
+        "type": "minecraft:lingering_potion",
+        "birthMotion": [
+          8.014314509464114E-5,
+          -1.4107786377220242,
+          -0.03971218043497664
+        ],
+        "item": "{components:{\"minecraft:potion_contents\":{potion:\"minecraft:wind_charged\"}},count:1,id:\"minecraft:lingering_potion\"}",
+        "impactTicks": 1,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "3021 1",
+          "2002 -4339201",
+          "1053 0"
+        ],
+        "explosions": [],
+        "fireBlocks": 0
+      }
+    },
+    {
+      "name": "custom_instant_effect_uses_normal_break",
+      "stack": "{id:\"minecraft:lingering_potion\",count:1,components:{\"minecraft:potion_contents\":{custom_effects:[{id:\"minecraft:instant_damage\",duration:1,show_icon:0b}]}}}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [2.5, 2.25, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [2.5, 0, 0.5]
+        }
+      ],
+      "reload": false,
+      "output": {
+        "type": "minecraft:lingering_potion",
+        "birthMotion": [
+          8.014314509464114E-5,
+          -1.4107786377220242,
+          -0.03971218043497664
+        ],
+        "item": "{components:{\"minecraft:potion_contents\":{custom_effects:[{duration:1,id:\"minecraft:instant_damage\",show_icon:0b}]}},count:1,id:\"minecraft:lingering_potion\"}",
+        "impactTicks": 1,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "3021 1",
+          "2002 -5675670",
+          "1053 0"
+        ],
+        "explosions": [],
+        "fireBlocks": 0
+      }
+    },
+    {
+      "name": "base_instant_potion_uses_instant_break",
+      "stack": "{id:\"minecraft:lingering_potion\",count:1,components:{\"minecraft:potion_contents\":{potion:\"minecraft:harming\"}}}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [2.5, 2.25, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [2.5, 0, 0.5]
+        }
+      ],
+      "reload": false,
+      "output": {
+        "type": "minecraft:lingering_potion",
+        "birthMotion": [
+          8.014314509464114E-5,
+          -1.4107786377220242,
+          -0.03971218043497664
+        ],
+        "item": "{components:{\"minecraft:potion_contents\":{potion:\"minecraft:harming\"}},count:1,id:\"minecraft:lingering_potion\"}",
+        "impactTicks": 1,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "3021 1",
+          "2007 -5675670",
+          "1054 0"
+        ],
+        "explosions": [],
+        "fireBlocks": 0
+      }
+    },
+    {
+      "name": "potion_color_weights_visible_effects",
+      "stack": "{id:\"minecraft:lingering_potion\",count:1,components:{\"minecraft:potion_contents\":{potion:\"minecraft:weaving\",custom_effects:[{id:\"minecraft:poison\",duration:40,amplifier:2b,show_icon:0b},{id:\"minecraft:instant_damage\",duration:1,amplifier:4b,show_particles:0b,show_icon:0b}]}}}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [2.5, 2.25, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [2.5, 0, 0.5]
+        }
+      ],
+      "reload": false,
+      "output": {
+        "type": "minecraft:lingering_potion",
+        "birthMotion": [
+          8.014314509464114E-5,
+          -1.4107786377220242,
+          -0.03971218043497664
+        ],
+        "item": "{components:{\"minecraft:potion_contents\":{custom_effects:[{amplifier:2b,duration:40,id:\"minecraft:poison\",show_icon:0b},{amplifier:4b,duration:1,id:\"minecraft:instant_damage\",show_icon:0b,show_particles:0b}],potion:\"minecraft:weaving\"}},count:1,id:\"minecraft:lingering_potion\"}",
+        "impactTicks": 1,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "3021 1",
+          "2002 -8154016",
+          "1053 0"
+        ],
+        "explosions": [],
+        "fireBlocks": 0
+      }
+    },
+    {
+      "name": "potion_invisible_effect_uses_default_color",
+      "stack": "{id:\"minecraft:lingering_potion\",count:1,components:{\"minecraft:potion_contents\":{custom_effects:[{id:\"minecraft:poison\",duration:40,show_particles:0b,show_icon:0b}]}}}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [2.5, 2.25, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [2.5, 0, 0.5]
+        }
+      ],
+      "reload": false,
+      "output": {
+        "type": "minecraft:lingering_potion",
+        "birthMotion": [
+          8.014314509464114E-5,
+          -1.4107786377220242,
+          -0.03971218043497664
+        ],
+        "item": "{components:{\"minecraft:potion_contents\":{custom_effects:[{duration:40,id:\"minecraft:poison\",show_icon:0b,show_particles:0b}]}},count:1,id:\"minecraft:lingering_potion\"}",
+        "impactTicks": 1,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "3021 1",
+          "2002 -13083194",
+          "1053 0"
+        ],
+        "explosions": [],
+        "fireBlocks": 0
+      }
+    },
+    {
+      "name": "empty_potion_uses_default_color",
+      "stack": "{id:\"minecraft:lingering_potion\",count:1}",
+      "seed": 7541,
+      "shotSeed": 4913,
+      "pos": [2.5, 2.25, 0.5],
+      "targets": [
+        {
+          "name": "ImpactNear",
+          "pos": [2.5, 0, 0.5]
+        }
+      ],
+      "reload": false,
+      "output": {
+        "type": "minecraft:lingering_potion",
+        "birthMotion": [
+          8.014314509464114E-5,
+          -1.4107786377220242,
+          -0.03971218043497664
+        ],
+        "item": "{count:1,id:\"minecraft:lingering_potion\"}",
+        "impactTicks": 1,
+        "removed": true,
+        "targets": [
+          {
+            "health": 20.0,
+            "burning": false,
+            "motion": [0.0, 0.0, 0.0],
+            "effects": []
+          }
+        ],
+        "levelEvents": [
+          "3021 1",
+          "2002 -13083194",
+          "1053 0"
+        ],
+        "explosions": [],
+        "fireBlocks": 0
+      }
     }
   ]
 }
