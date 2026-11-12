@@ -18,6 +18,7 @@ namespace Obsidian.AssetGenerator;
 /// </remarks>
 internal static class ScenarioCaptures
 {
+    public const string Invisibility = "invisibility";
     public const string Redstone = "redstone";
     public const string Fluids = "fluids";
     public const string Daylight = "daylight";
@@ -90,8 +91,8 @@ internal static class ScenarioCaptures
             CommandBlocks, StructureBlocks, JigsawBlocks, SpecialBlocks];
 
     public static readonly string[] All =
-        [Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps, SavedHeightmaps, Mining,
-            Placement, CopperWeathering, Fire, TickingBlocks, BlockUse, TurtleEggs, Frogspawn,
+        [Invisibility, Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps, SavedHeightmaps,
+            Mining, Placement, CopperWeathering, Fire, TickingBlocks, BlockUse, TurtleEggs, Frogspawn,
             GrowingPlantTicks, MeltingWeather, FurnaceResults, EyeblossomGhastPortal, Brushing, ArmorStandUse,
             WaxingBellsOre, FoodHarvest, Cauldrons, ProjectileHits, Dispenser, Shelves, StrawBeds,
             GoldenDandelions, Lightning, TrialSpawners, Vaults, CommandBlocks, StructureBlocks, JigsawBlocks,
@@ -155,6 +156,13 @@ internal static class ScenarioCaptures
                 + "armor_stand_use, waxing_bells_ore, food_and_harvest, cauldrons, projectile_hits, dispenser, "
                 + "shelves, straw_beds, golden_dandelions, lightning, trial_spawners, vaults, growing_plant_ticks, "
                 + "command_blocks, structure_blocks, jigsaw_blocks or special_blocks.");
+        }
+
+        if (fixtures.Contains(Invisibility))
+        {
+            await FixtureDumper.DumpInvisibilityAsync(server, Path.Combine(assetsDirectory, "invisibility.json"));
+            if (fixtures.Count == 1)
+                return;
         }
 
         if (fixtures.Contains(CopperWeathering))

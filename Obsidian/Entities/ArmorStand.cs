@@ -12,6 +12,15 @@ namespace Obsidian.Entities;
 [MinecraftEntity("minecraft:armor_stand")]
 public sealed partial class ArmorStand : Living
 {
+    /// <summary>
+    /// Vanilla's <c>ArmorStand.updateInvisibilityStatus</c>: the stand keeps its own invisible flag, so an effect
+    /// neither hides a visible stand nor shows an invisible one.
+    /// </summary>
+    internal override void UpdateInvisibilityStatus(bool broadcast = true)
+    {
+        // The owner and save loader set Invisible directly; effects never change the stand's flag.
+    }
+
     // Vanilla's default pose, which saves leave out (ArmorStand.ArmorStandPose.DEFAULT).
     private static readonly VectorF defaultHead = new(0, 0, 0);
     private static readonly VectorF defaultBody = new(0, 0, 0);
