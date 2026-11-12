@@ -171,7 +171,62 @@ Rides with: plan phase 3 (entity contact). It is the phase's foundation, not an 
 
 ### 4. Typed block-state properties on the hot paths
 
-*Measured. No behaviour change, but touches many call sites if done widely, so do it narrowly.*
+*Done, narrowly (PR #758). No behaviour change: the handles match the by-name API for every vanilla state.*
+
+What landed:
+
+- The blocks generator emits `BlocksRegistry.TypedPropertyLayouts`: for each of the ten properties below, the
+  stride and values of every block that has it. Vanilla numbers a block's states over its properties in name order,
+  the last varying fastest.
+- `PropertyHandles` (`Obsidian/Registries/PropertyHandles.cs`, internal) holds one handle per property: integer
+  (`Power`, `Age`, `Distance`, `Level`), boolean (`Powered`, `Open`, `Waterlogged`, `Enabled`, `Lit`) and direction
+  (`Facing`). Get and set are arithmetic on the state id. A block without the property, or a value it doesn't take,
+  gives what the by-name API gives: no value, and the block unchanged. Plugin blocks fall back to the by-name API.
+- `BlockStatePropertyHandles` compares every handle with the by-name API over every vanilla state, for get and set.
+- Call sites converted:
+  - `RedstoneWire`: `power`, read and written on every step
+  - repeaters and comparators: `powered` and `facing`
+  - `Hoppers.MoveItemsAsync`, which the tick and item pickup both run: `enabled` and `facing`
+  - `ShapeUpdater.ScheduleFluidTick`: `waterlogged`
+  - leaves: `distance` in `LeavesBlockBehavior`
+  - crops and other aging plants: `age` through `Growth.Age` and `Growth.GrownState`
+
+The block probe has three handle cases (`Handle/*`) next to the by-name ones. Before (`886bcfff2`) and after
+(`0999f0e88`) are medians of three interleaved runs of that probe on 2026-11-11 (.NET 11.0.0, Windows 11, x64,
+Release, a shared machine). The handle cases didn't exist before, so their before column is the matching by-name
+case.
+
+| Operation | Before (ns/op) | After (ns/op) |
+|---|---:|---:|
+| `waterlogged` on stone (`GetProperty` → `Waterlogged.IsTrue`) | 4.69 | 2.11 |
+| dust `power` get (`int.Parse(GetProperty)` → `Power.Get`) | 16.74 | 4.99 |
+| dust `power` set (`WithProperty` → `Power.With`) | 14.41 | 4.49 |
+| UpdateShape / stone | 6.94 | 4.74 |
+| UpdateShape / air | 12.52 | 10.35 |
+| UpdateShape / generation-fence | 59.67 | 51.09 |
+| Pipeline / toggle 15 dust | 201,090 | 191,997 |
+| Pipeline / toggle 30 dust | 199,477 | 191,212 |
+| Level / toggle 15 dust | 279,664 | 275,366 |
+
+- The `UpdateShape` rows include `ScheduleFluidTick`'s `waterlogged` read.
+- Dust toggles through the pipeline are about 4% faster; the level's 1.5% is within run-to-run noise.
+- Allocations didn't change.
+
+What's left:
+
+- Properties on the converted components that still go by name:
+  - repeater `locked` and `delay`
+  - comparator `mode`
+  - dust's side connections (`north`, `east`, `south` and `west`) in `RedstoneWire.GetSignal` and `WireConnections`
+  - leaf `persistent`
+  - sapling `stage` and propagule `hanging`
+- `Open`, `Lit` and `Level` have handles, and are tested, but no call site uses them yet. Doors, lamps and fluids are
+  candidates once a profile shows them.
+- Worldgen's leaf distance (`LeafDistanceUpdater`) still writes `distance` by name.
+- Adding a handle for another property is one name in the generator's `TypedProperties` and one field in
+  `PropertyHandles`; the equivalence test needs it added to its lists too.
+
+The proposal as written:
 
 `GetProperty(name)` finds the state's property dictionary, then the value by name, and returns a string that the
 caller compares or parses. `WithProperty(name, value)` looks up a `(state, property, value)` tuple in a concurrent
@@ -417,9 +472,11 @@ Rides with: plan phase 5 (furnaces, brewing, campfires and the other ticking blo
   synchronously. Fold into item 2 or 6. Keep the pipeline's own lock: not every caller holds the tick lock.
   `NotifyNeighborsAsync` (`AbstractLevel.BlockNotifications.cs:76`) enqueues and drains without it, and pressure
   plates and lever and button use reach it that way. Removing the lock needs those callers serialized first.
-- **Hoppers.** Besides the property reads in item 4, each transfer resolves item access for the hopper and its
-  targets again, allocating a combined access for double chests. Measure a hopper line before changing anything:
-  the timings contraptions depend on are easy to break.
+- **Hoppers.** The property reads are done: since item 4, `Hoppers.MoveItemsAsync` reads `enabled` and `facing`
+  through `PropertyHandles.Enabled` and `PropertyHandles.Facing`, on the tick and on item pickup alike. What's left is
+  item access: each transfer resolves item access for the hopper and its targets again, allocating a combined access
+  for double chests. Measure a hopper line before changing anything: the timings contraptions depend on are easy to
+  break.
 
 ## Measuring before and after
 
