@@ -525,7 +525,9 @@ public partial class Living : Entity, ILiving
     /// and spawn data and the wandering trader's night check read the flag straight away. Entities whose invisibility
     /// is not the effect's (an armor stand's saved flag) override it.
     /// </summary>
-    internal virtual void UpdateInvisibilityStatus()
+    /// <param name="broadcast">False while restoring saved state: spawn metadata carries the flag, and loading
+    /// may hold a chunk entity lock, which must never acquire the owning transfer lock.</param>
+    internal virtual void UpdateInvisibilityStatus(bool broadcast = true)
     {
         lock (this.invisibilityLock)
         {
@@ -538,7 +540,8 @@ public partial class Living : Entity, ILiving
             this.Invisible = desired;
         }
 
-        this.BroadcastInvisibility();
+        if (broadcast)
+            this.BroadcastInvisibility();
     }
 
     /// <summary>
@@ -575,7 +578,7 @@ public partial class Living : Entity, ILiving
             };
             if (id == (int)PotionEffect.JumpBoost - 1)
                 this.RefreshJumpBoostFallProtection();
-            this.UpdateInvisibilityStatus();
+            this.UpdateInvisibilityStatus(broadcast: false);
         }
     }
 

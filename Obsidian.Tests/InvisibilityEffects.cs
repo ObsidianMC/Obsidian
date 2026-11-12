@@ -6,8 +6,10 @@ using Obsidian.API;
 using Obsidian.API.Effects;
 using Obsidian.Entities;
 using Obsidian.Net;
+using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Tests.Fakes;
+using Obsidian.Tests.Utilities;
 using Obsidian.WorldData;
 using Xunit;
 
@@ -72,6 +74,57 @@ public class InvisibilityEffects
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task LoadingInvisibilityDoesNotEnterTheOwningTransferLock()
+    {
+        await using var context = TestServerFactory.CreateServer($"invisibility-load-lock-{Guid.NewGuid():N}");
+        var chunk = WorldBlockEntities.AddEmptyChunk(context.World);
+        var original = new Pig { Level = context.World, Position = new VectorD(8, 64, 8) };
+        original.AddPotionEffect(InvisibilityId, 200);
+        var saved = EntityNbt.Save(original)!;
+        var pending = EntityNbt.ToGeneratedEntity(saved)
+            ?? throw new InvalidOperationException("The invisible pig must be savable.");
+        chunk.PendingEntities.Add(pending);
+        var player = new ServerPlayer(Guid.NewGuid(), "LoadingSpectator", null!, context.World);
+
+        var restores = new (string Name, Func<Living> Load)[]
+        {
+            ("pending mob NBT", () => Assert.IsType<Pig>(EntityNbt.Load(
+                EntityNbt.ToNbt(Assert.Single(chunk.PendingEntities)), context.World))),
+            ("legacy effect restore", () =>
+            {
+                var restored = new Pig { Level = context.World };
+                restored.RestorePotionEffect(InvisibilityId, 200, 0);
+                return restored;
+            }),
+            ("saved spectator", () =>
+            {
+                player.ReadNbt(new NbtCompound
+                {
+                    new NbtTag<int>("playerGameType", (int)GameMode.Spectator)
+                });
+                return player;
+            })
+        };
+
+        FixtureCases.AssertAll(restores, restore => restore.Name, restore =>
+        {
+            // A different transfer lock makes any owning-lock acquisition fail immediately, rather than deadlock.
+            // Acquire it before EntityLock, then reproduce SpawnPendingEntities' locked EntityNbt.Load phase.
+            using var unrelatedTransfer = new EntityTransferLock().Enter();
+            using var entities = chunk.EntityLock.EnterScope();
+            var loaded = restore.Load();
+
+            Assert.True(loaded.HasPotionEffect(InvisibilityId) || loaded is ServerPlayer);
+            using var metadata = new NetworkBuffer();
+            loaded.Write(metadata);
+            metadata.Offset = 0;
+            Assert.Equal(0, metadata.ReadByte());
+            Assert.Equal((int)EntityMetadataType.Byte, metadata.ReadVarInt());
+            Assert.Equal(0x20, metadata.ReadByte());
+        });
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task ConcurrentRemovalCannotLeaveAnAddedEffectFlagStale()
     {
         await using var context = TestServerFactory.CreateServer($"invisibility-race-{Guid.NewGuid():N}");
@@ -131,14 +184,14 @@ public class InvisibilityEffects
             set => base.Invisible = value;
         }
 
-        internal override void UpdateInvisibilityStatus()
+        internal override void UpdateInvisibilityStatus(bool broadcast = true)
         {
             if (!this.HasPotionEffect(InvisibilityId))
             {
                 this.RemovedEffect.Set();
                 this.ResumeRemoval.Wait();
             }
-            base.UpdateInvisibilityStatus();
+            base.UpdateInvisibilityStatus(broadcast);
         }
     }
 

@@ -172,7 +172,7 @@ public partial class PlayerBase
             // Like vanilla, a new player starts in the world's default game mode.
             this.UnmodeledData = new();
             Position = Level.LevelData.SpawnPosition;
-            GameMode = Level.LevelData.DefaultGamemode;
+            this.SetGameMode(Level.LevelData.DefaultGamemode, broadcast: false);
             return;
         }
 
@@ -642,7 +642,8 @@ public partial class PlayerBase
         T Read<T>(string name, T fallback) => tag.TryGetTagValue<T>(name, out var value) ? value : fallback;
 
         var gameMode = (GameMode)Read("playerGameType", (int)this.Level.LevelData.DefaultGamemode);
-        this.GameMode = Enum.IsDefined(gameMode) ? gameMode : this.Level.LevelData.DefaultGamemode;
+        var restoredGameMode = Enum.IsDefined(gameMode) ? gameMode : this.Level.LevelData.DefaultGamemode;
+        this.SetGameMode(restoredGameMode, broadcast: false);
 
         var dimensionName = Read<string?>("Dimension", null);
         var parentWorld = this.Level is IDimension dimension ? dimension.ParentWorld as World : this.Level as World;

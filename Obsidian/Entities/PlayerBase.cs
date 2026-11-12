@@ -182,24 +182,29 @@ public abstract partial class PlayerBase : Avatar, IPlayer
         Events.MainEventHandler.RefreshWindowAsync(this, this.OpenedContainer ?? this.Inventory, stateId: 0);
 
 
+    private GameMode gameMode;
+
     public GameMode GameMode
     {
-        get => field;
-        set
+        get => this.gameMode;
+        set => this.SetGameMode(value, broadcast: true);
+    }
+
+    // Loading sets the same abilities and flag without notifying observers before the player's spawn.
+    private void SetGameMode(GameMode value, bool broadcast)
+    {
+        // Validated before it's stored, so an unknown mode throws without changing the player.
+        Abilities = value switch
         {
-            // Validated before it's stored, so an unknown mode throws without changing the player.
-            Abilities = value switch
-            {
-                GameMode.Creative => PlayerAbility.CreativeMode | PlayerAbility.AllowFlying | PlayerAbility.Invulnerable,
-                GameMode.Spectator => PlayerAbility.AllowFlying | PlayerAbility.Invulnerable,
-                GameMode.Survival or GameMode.Adventure => PlayerAbility.None,
-                _ => throw new ArgumentOutOfRangeException(nameof(value), value, "Unknown gamemode.")
-            };
-            Abilities |= this.GrantedFlight;
-            field = value;
-            // Vanilla's setGameMode runs onUpdateAbilities, which makes a spectator invisible and shows others again.
-            UpdateInvisibilityStatus();
-        }
+            GameMode.Creative => PlayerAbility.CreativeMode | PlayerAbility.AllowFlying | PlayerAbility.Invulnerable,
+            GameMode.Spectator => PlayerAbility.AllowFlying | PlayerAbility.Invulnerable,
+            GameMode.Survival or GameMode.Adventure => PlayerAbility.None,
+            _ => throw new ArgumentOutOfRangeException(nameof(value), value, "Unknown gamemode.")
+        };
+        Abilities |= this.GrantedFlight;
+        this.gameMode = value;
+        // Vanilla's setGameMode runs onUpdateAbilities, which makes a spectator invisible and shows others again.
+        UpdateInvisibilityStatus(broadcast);
     }
 
     public PlayerAbility Abilities { get; set; }

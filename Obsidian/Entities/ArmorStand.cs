@@ -16,7 +16,7 @@ public sealed partial class ArmorStand : Living
     /// Vanilla's <c>ArmorStand.updateInvisibilityStatus</c>: the stand keeps its own invisible flag, so an effect
     /// neither hides a visible stand nor shows an invisible one.
     /// </summary>
-    internal override void UpdateInvisibilityStatus()
+    internal override void UpdateInvisibilityStatus(bool broadcast = true)
     {
         // The owner and save loader set Invisible directly; effects never change the stand's flag.
     }
