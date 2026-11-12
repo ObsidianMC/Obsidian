@@ -2528,6 +2528,9 @@ public partial class Region : IRegion
                 if (blockEntity is TrialSpawners.TrialSpawnerBlockEntity spawner)
                     spawner.LoadState(chunk.GetBlock(position.X, position.Y, position.Z));
 
+                if (blockEntity is JigsawBlockEntity jigsaw)
+                    jigsaw.ResolveJointDefault(chunk.GetBlock(position.X, position.Y, position.Z));
+
                 chunk.SetBlockEntity(position.X, position.Y, position.Z, blockEntity);
             }
         }

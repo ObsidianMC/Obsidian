@@ -55,6 +55,7 @@
 		<EmbeddedResource Include="Assets\dispenser.json" />
 		<EmbeddedResource Include="Assets\command_blocks.json" />
 		<EmbeddedResource Include="Assets\structure_blocks.json" />
+		<EmbeddedResource Include="Assets\jigsaw_blocks.json" />
 		<EmbeddedResource Include="Assets\special_blocks.json" />
 
 		<EmbeddedResource Include="Assets\heightmaps.json" />

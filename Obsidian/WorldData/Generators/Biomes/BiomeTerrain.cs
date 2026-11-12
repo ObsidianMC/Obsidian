@@ -173,6 +173,9 @@ internal sealed class BiomeTerrain
 
     public ClimateSource Source { get; }
 
+    /// <summary>Noise-only terrain queries used when a jigsaw editor assembles pieces.</summary>
+    internal IStructureTerrain StructureTerrain => this.columns;
+
     private Obsidian.API.Registry.Codecs.Dimensions.DimensionCodec DimensionCodec =>
         CodecRegistry.TryGetDimension(this.dimensionTypeId, out var codec) ? codec!
             : throw new InvalidOperationException($"Unknown dimension {this.dimensionTypeId}.");
