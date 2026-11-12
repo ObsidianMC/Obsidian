@@ -115,6 +115,141 @@ public sealed class JoinAndLeaveRaces
         Assert.Equal<IPlayer>([renamed], server.PlayersInListOrder);
     }
 
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task AJoinThatStartsAsTheConnectionIsDisposedAdmitsNothing()
+    {
+        await using var context = TestServerFactory.CreateServer($"join-races-{Guid.NewGuid():N}");
+        var server = context.Server;
+        var watching = await JoinWatcherAsync(context);
+        var joining = CreateConfiguringPlayer(context, "Alice");
+        var client = (Client)joining.Client;
+
+        var joinEvents = 0;
+        context.EventDispatcher.RegisterEvent(null, (Func<PlayerJoinEventArgs, ValueTask>)(args =>
+        {
+            if (args.Player.Uuid == joining.Uuid)
+                Interlocked.Increment(ref joinEvents);
+
+            return ValueTask.CompletedTask;
+        }));
+
+        // The join runs to its end once the connection is disposed, before the disconnect goes on.
+        client.Disconnected += _ =>
+        {
+            var join = Task.Run(() => new FinishConfigurationPacket().HandleAsync(server, joining).AsTask());
+            join.GetAwaiter().GetResult();
+        };
+
+        client.Disconnect();
+        await server.WaitForLeavesAsync("Alice");
+
+        Assert.Equal(0, Volatile.Read(ref joinEvents));
+        Assert.False(server.IsPlayerOnline(joining.Uuid));
+        AssertOutOfTheLevel(context, joining);
+        Assert.False(WasEverListedFor(watching, joining.Uuid));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task AJoinHandlerThatWaitsForTheShutdownDoesNotHoldItUp()
+    {
+        await using var context = TestServerFactory.CreateServer($"join-races-{Guid.NewGuid():N}");
+        var server = context.Server;
+        var joining = CreateConfiguringPlayer(context, "Alice");
+
+        // As the server stops, her connection closes, and a plugin's join handler waits for the stop. The stop waits
+        // for her leave, which waits for her join to end.
+        context.EventDispatcher.RegisterEvent(null, (Func<PlayerJoinEventArgs, ValueTask>)(async args =>
+        {
+            if (args.Player.Uuid != joining.Uuid)
+                return;
+
+            ((Client)joining.Client).Disconnect();
+            await server.StopAsync();
+        }));
+
+        await new FinishConfigurationPacket().HandleAsync(server, joining);
+        await server.StopAsync();
+
+        AssertOutOfTheLevel(context, joining);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task AServerPlayersLeaveHandlerCannotWaitToReplaceThemUnderTheirName()
+    {
+        await using var context = TestServerFactory.CreateServer($"join-races-{Guid.NewGuid():N}");
+        var server = context.Server;
+        var uuid = Guid.NewGuid();
+        var departing = await server.AddServerPlayerAsync(uuid, "Alice", context.World);
+
+        // Her leave handler adds a new player under her name. Its join would wait for the leave running the handler.
+        var attempt = new TaskCompletionSource<Exception?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        context.EventDispatcher.RegisterEvent(null, (Func<PlayerLeaveEventArgs, ValueTask>)(async args =>
+        {
+            if (args.Player.Uuid != uuid)
+                return;
+
+            var failure = await Record.ExceptionAsync(
+                () => server.AddServerPlayerAsync(Guid.NewGuid(), "Alice", context.World));
+            attempt.SetResult(failure);
+        }));
+
+        Assert.True(await server.RemoveServerPlayerAsync(departing));
+        Assert.IsType<InvalidOperationException>(await attempt.Task);
+
+        // Once she left, the name is free.
+        var replacement = await server.AddServerPlayerAsync(Guid.NewGuid(), "Alice", context.World);
+        Assert.Same(replacement, server.GetPlayer("Alice"));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task AServerPlayerJoiningUnderANameBeingFreedWaitsForItsLeave()
+    {
+        await using var context = TestServerFactory.CreateServer($"join-races-{Guid.NewGuid():N}");
+        var server = context.Server;
+        var departing = await server.AddServerPlayerAsync(Guid.NewGuid(), "Alice", context.World);
+        var newUuid = Guid.NewGuid();
+
+        // Holds the old Alice's leave in its event.
+        var finishLeave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        context.EventDispatcher.RegisterEvent(null, (Func<PlayerLeaveEventArgs, ValueTask>)(async args =>
+        {
+            if (args.Player.Uuid == departing.Uuid)
+                await finishLeave.Task;
+        }));
+
+        // She's removed once the new Alice has loaded, before the new one registers. The removal frees the name and
+        // runs until its leave is held, all on this flow, which then goes on to the new Alice's registration.
+        Task<bool>? removal = null;
+        var loads = 0;
+        server.ServerPlayerLoaded = player =>
+        {
+            if (player.Uuid != newUuid)
+                return;
+
+            loads++;
+            if (loads == 1)
+                removal = server.RemoveServerPlayerAsync(departing);
+        };
+
+        var registeredWhileLeaving = false;
+        server.PlayerRegistered = player =>
+        {
+            if (player.Uuid == newUuid)
+                registeredWhileLeaving = !server.WaitForLeavesAsync("Alice").IsCompleted;
+        };
+
+        var adding = server.AddServerPlayerAsync(newUuid, "Alice", context.World);
+        Assert.NotNull(removal);
+
+        finishLeave.SetResult();
+        Assert.True(await removal);
+        var added = await adding;
+
+        Assert.False(registeredWhileLeaving);
+        Assert.Equal(2, loads);
+        Assert.Same(added, server.GetPlayer("Alice"));
+    }
+
     // A player whose client finished logging in and is configuring, as the join finds them.
     private static Entities.Player CreateConfiguringPlayer(RealServerContext context, string username)
     {
@@ -149,6 +284,13 @@ public sealed class JoinAndLeaveRaces
         var nearby = context.World.GetEntitiesInRange(player.Position, 1f);
         Assert.DoesNotContain(nearby, entity => entity.EntityId == player.EntityId);
     }
+
+    // Whether the client was ever sent the player's tab list entry.
+    private static bool WasEverListedFor(TestClient client, Guid uuid) =>
+        client.SentPackets
+            .OfType<PlayerInfoUpdatePacket>()
+            .Any(update => update.Players.TryGetValue(uuid, out var actions)
+                && actions.OfType<AddPlayerInfoAction>().Any());
 
     // Whether the last tab list change the client was sent for the player adds them.
     private static bool IsListedFor(TestClient client, Guid uuid)

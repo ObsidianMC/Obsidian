@@ -616,8 +616,10 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
     /// The shutdown waits for the server's loop, and so for the ticks, and for the plugins' changes as it disposes
     /// them. Asked for from a flow one of those waits for, it goes on in the background and this returns at once,
     /// whether it started the shutdown or one had started already: from inside a level's tick, or a player's tick,
-    /// grant or save (<c>/stop</c> run by a command block minecart, say), or from a change to the plugins (a plugin's
-    /// load, ready or unloading callback, or a plugin's dimension being created, its generator finding a spawn).
+    /// grant or save (<c>/stop</c> run by a command block minecart, say), from a change to the plugins (a plugin's
+    /// load, ready or unloading callback, or a plugin's dimension being created, its generator finding a spawn), or
+    /// from a join still admitting its player (a join handler), whose leave the shutdown waits for and which waits for
+    /// the join's end.
     /// </remarks>
     public Task StopAsync()
     {
@@ -634,7 +636,9 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
             shutdown = this.shutdownTask;
         }
 
-        var waitedFor = WorldData.AbstractLevel.MustNotWaitForGates || Plugins.PluginManager.InsideChange;
+        var waitedFor = WorldData.AbstractLevel.MustNotWaitForGates
+            || Plugins.PluginManager.InsideChange
+            || Client.InsideAdmission;
         return waitedFor ? Task.CompletedTask : shutdown;
     }
 
@@ -841,10 +845,26 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
         }
     }
 
-    public bool AddPlayer(IPlayer player)
+    public bool AddPlayer(IPlayer player) => this.TryRegister(player, unlessLeaving: false, out _);
+
+    // Registers the player in the online players, the name mappings and the player list together. With unlessLeaving,
+    // a leave under the player's name still under way keeps it out, and is handed back to wait for: it's checked under
+    // the registrations' lock, under which a removal frees the name and tracks its leave (see RemoveServerPlayerAsync).
+    private bool TryRegister(IPlayer player, bool unlessLeaving, out Task? leaving)
     {
+        leaving = null;
         lock (this.playerList)
         {
+            if (unlessLeaving)
+            {
+                var pending = this.WaitForLeavesAsync(player.Username);
+                if (!pending.IsCompleted)
+                {
+                    leaving = pending;
+                    return false;
+                }
+            }
+
             if (!this.OnlinePlayers.TryAdd(player.Uuid, player))
                 return false;
 
@@ -868,6 +888,12 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
     /// disconnect the player and join them again there.
     /// </summary>
     internal Action<IPlayer>? PlayerRegistered { get; set; }
+
+    /// <summary>
+    /// Runs in <see cref="AddServerPlayerAsync(Guid, string, IWorld?, PluginContainer?)"/> each time the player is
+    /// loaded, before it's registered; tests use it to remove a player with the name in that window.
+    /// </summary>
+    internal Action<ServerPlayer>? ServerPlayerLoaded { get; set; }
 
     /// <summary>
     /// The online players in vanilla's player list order: the order they joined in, but a player who respawned (after
@@ -934,29 +960,27 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
     {
         plugin?.ThrowIfClosing();
 
-        // A player with the name may still be leaving (see RemoveServerPlayerAsync); one removed from a tick leaves
-        // only once the ticks end. The join waits for that, like a network player's, unless a tick is asking: the
-        // leave may wait for that tick (it's the player's own, or a leave handler saves its level).
-        var leaving = this.WaitForLeavesAsync(username);
-        if (!leaving.IsCompleted)
+        ServerPlayer player;
+        while (true)
         {
-            if (WorldData.AbstractLevel.MustNotWaitForGates)
+            await this.WaitForLeavesBeforeJoiningAsync(username);
+
+            player = new ServerPlayer(uuid, username, this, world ?? this.DefaultWorld)
             {
-                throw new InvalidOperationException(
-                    $"Player '{username}' is still leaving; add them once the ticks end.");
-            }
+                SpawnedBy = plugin
+            };
+            await player.LoadAsync();
+            this.ServerPlayerLoaded?.Invoke(player);
 
-            await leaving;
+            if (this.TryRegister(player, unlessLeaving: true, out var leaving))
+                break;
+
+            if (leaving is null)
+                throw new InvalidOperationException($"Player '{username}' ({uuid}) is already online.");
+
+            // A player with the name was removed while this one loaded. The join waits for that leave too and loads
+            // again, so that it loads what the leave saved.
         }
-
-        var player = new ServerPlayer(uuid, username, this, world ?? this.DefaultWorld)
-        {
-            SpawnedBy = plugin
-        };
-        await player.LoadAsync();
-
-        if (!this.AddPlayer(player))
-            throw new InvalidOperationException($"Player '{username}' ({uuid}) is already online.");
 
         try
         {
@@ -986,6 +1010,29 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
 
         return player;
     }
+
+    // A player with the name may still be leaving (see RemoveServerPlayerAsync); one removed from a tick leaves only
+    // once the ticks end. A join waits for that, like a network player's, unless a tick is asking (the leave may wait
+    // for that tick: it's the player's own, or a leave handler saves its level), or the leave's own handler is: that
+    // leave ends only once the handler returns.
+    private Task WaitForLeavesBeforeJoiningAsync(string username)
+    {
+        var leaving = this.WaitForLeavesAsync(username);
+        if (leaving.IsCompleted)
+            return leaving;
+
+        if (WorldData.AbstractLevel.MustNotWaitForGates)
+            throw new InvalidOperationException($"Player '{username}' is still leaving; add them once the ticks end.");
+
+        var departing = raisingServerPlayerLeave.Value;
+        if (departing is not null && string.Equals(departing.Username, username, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException($"Player '{username}' is still leaving; add them once they left.");
+
+        return leaving;
+    }
+
+    // The server-side player whose leave event is being raised on this flow (see LeaveServerPlayerAsync).
+    private static readonly AsyncLocal<ServerPlayer?> raisingServerPlayerLeave = new();
 
     /// <summary>
     /// The server as the code running now sees it: a plugin's own instance during the plugin's calls (see
@@ -1122,6 +1169,7 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
     // The leave of a server-side player whose registration was claimed.
     private async Task LeaveServerPlayerAsync(ServerPlayer player)
     {
+        raisingServerPlayerLeave.Value = player;
         var result = EventResult.Failed;
         try
         {

@@ -662,19 +662,20 @@ public sealed partial class Client : IClient
             this.disconnected = true;
         }
 
-        this.Dispose();
-        Disconnected?.Invoke(this);
-
         // A player whose client closed the connection (as vanilla's clients do to quit) leaves too and is saved, and
         // other players stop seeing them. A player still logging in or configuring, or whose join hasn't started
         // admitting them, hasn't joined, so there's nothing to leave: that join sees the connection closed and admits
-        // nothing (see AdmitAsync).
+        // nothing (see AdmitAsync). It's closed for the join before anything else, so that no join is admitted for a
+        // connection already disposed.
         bool joined;
         lock (this.leavingLock)
         {
             this.connectionClosed = true;
             joined = this.joinStage != JoinStage.None;
         }
+
+        this.Dispose();
+        Disconnected?.Invoke(this);
 
         if (joined)
             _ = this.LeaveAsync();
@@ -1119,6 +1120,23 @@ public sealed partial class Client : IClient
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Whether the code running now is part of a join still admitting its player (a join handler, say). A leave asked
+    /// for meanwhile waits for the join to end, so the join must not wait for anything that waits for that leave, such
+    /// as the server's shutdown.
+    /// </summary>
+    internal static bool InsideAdmission
+    {
+        get
+        {
+            if (admitting.Value is not Client client)
+                return false;
+
+            lock (client.leavingLock)
+                return client.joinStage == JoinStage.Joining;
+        }
     }
 
     // Ends the join, and starts the leave asked for while it ran.
