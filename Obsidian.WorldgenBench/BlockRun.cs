@@ -1,5 +1,7 @@
 using Obsidian.API;
 using Obsidian.API.Blocks;
+using Obsidian.API.Containers;
+using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.World.Features;
@@ -116,6 +118,7 @@ internal static class BlockRun
 
         BlockEntityPass();
         EntityContacts();
+        HopperTransfers();
 
         GC.KeepAlive(result);
         GC.KeepAlive(flag);
@@ -307,16 +310,7 @@ internal static class BlockRun
 
     private static void MeasureLiveLevel(World world)
     {
-        for (var chunkX = -1; chunkX <= 1; chunkX++)
-        {
-            for (var chunkZ = -1; chunkZ <= 1; chunkZ++)
-            {
-                var chunk = new Chunk(chunkX, chunkZ);
-                chunk.SetChunkStatus(ChunkGenStage.full);
-                world.LoadRegionByChunk(chunkX, chunkZ).SetChunk(chunk);
-                Complete(world.GetChunkAsync(chunkX, chunkZ, scheduleGeneration: false).AsTask());
-            }
-        }
+        LoadEmptyChunks(world);
 
         // A change inside solid stone, as the test world case above.
         for (var x = 3; x <= 5; x++)
@@ -353,6 +347,120 @@ internal static class BlockRun
 
         if (world.BlockNotifications.DroppedWork != 0)
             throw new InvalidOperationException("Live dust benchmark exceeded the pipeline work limit.");
+    }
+
+    // Hoppers moving items through item access on a real level, as their block entity tick runs them (without the
+    // tick lock). Each hopper's cooldown is set to run on every operation, and the containers are refilled and
+    // emptied every 1,000 operations, so that each operation is a steady-state transfer; the refill is a few
+    // stacks per 1,000 operations.
+    private static void HopperTransfers() => WithTemporaryLevel(MeasureHopperTransfers);
+
+    private static void MeasureHopperTransfers(World world)
+    {
+        LoadEmptyChunks(world);
+
+        // A chest over the first of five hoppers in a line, the last feeding a double chest's left half: one
+        // operation is one tick of the line, six transfers and four searches above for containers and items.
+        var source = new Vector(0, 65, 0);
+        var line = new HopperBlockEntity[5];
+        for (var x = 0; x < line.Length; x++)
+            line[x] = PlaceHopper(world, new Vector(x, 64, 0), "east");
+
+        var sourceChest = PlaceContainer(world, source, BlocksRegistry.Chest);
+        var doubleChest = BlocksRegistry.Chest.WithProperty("facing", "north");
+        var left = PlaceContainer(world, new Vector(5, 64, 0), doubleChest.WithProperty("type", "left"));
+        var right = PlaceContainer(world, new Vector(6, 64, 0), doubleChest.WithProperty("type", "right"));
+
+        var lineOperations = 0;
+        Measure("Hopper/line-5-chest-to-double-chest", 2_000, () =>
+        {
+            if (lineOperations++ % 1_000 == 0)
+            {
+                Fill(sourceChest);
+                Empty(left);
+                Empty(right);
+            }
+
+            foreach (var hopper in line)
+                TickHopper(world, hopper);
+        });
+
+        // A chest minecart over a hopper that feeds the chest below it: one pull from the minecart, one push.
+        var cart = new Obsidian.Entities.ChestMinecart
+        {
+            Level = world,
+            EntityId = Obsidian.Server.GetNextEntityId(),
+            Position = new VectorD(10.5, 65, 0.5)
+        };
+
+        if (!world.TryAddEntity(cart))
+            throw new InvalidOperationException("The probe couldn't add a chest minecart.");
+
+        var cartHopper = PlaceHopper(world, new Vector(10, 64, 0), "down");
+        var below = PlaceContainer(world, new Vector(10, 63, 0), BlocksRegistry.Chest);
+
+        var cartOperations = 0;
+        Measure("Hopper/minecart-to-chest", 5_000, () =>
+        {
+            if (cartOperations++ % 1_000 == 0)
+            {
+                Fill(cart.Inventory);
+                Empty(below);
+            }
+
+            TickHopper(world, cartHopper);
+        });
+
+        // An empty hopper with nothing above it, which searches above for a container and for items on every tick.
+        var idle = PlaceHopper(world, new Vector(20, 64, 0), "down");
+        Measure("Hopper/idle-empty", 20_000, () => TickHopper(world, idle));
+    }
+
+    // Runs a hopper's block entity tick with its cooldown ending now.
+    private static void TickHopper(World world, HopperBlockEntity hopper)
+    {
+        hopper.Cooldown = 1;
+        Complete(Hoppers.TickAsync(world, hopper));
+    }
+
+    private static HopperBlockEntity PlaceHopper(World world, Vector position, string facing) =>
+        (HopperBlockEntity)PlaceBlockEntity(world, position, BlocksRegistry.Hopper.WithProperty("facing", facing));
+
+    private static BaseContainer PlaceContainer(World world, Vector position, IBlock block) =>
+        ((Obsidian.API.BlockEntities.ContainerBlockEntity)PlaceBlockEntity(world, position, block)).Inventory;
+
+    private static IBlockEntity PlaceBlockEntity(World world, Vector position, IBlock block)
+    {
+        Complete(world.SetBlockAsync(position, block));
+        return world.BlockUpdates.GetBlockEntity(position)
+            ?? throw new InvalidOperationException($"The probe's {block} at {position} has no block entity.");
+    }
+
+    private static void Fill(BaseContainer inventory)
+    {
+        for (var slot = 0; slot < inventory.Size; slot++)
+            inventory[slot] = new ItemStack(ItemsRegistry.Stone, 64);
+    }
+
+    private static void Empty(BaseContainer inventory)
+    {
+        for (var slot = 0; slot < inventory.Size; slot++)
+            inventory[slot] = null;
+    }
+
+    // Empty, full chunks around the origin, loaded as the level loads them.
+    private static void LoadEmptyChunks(World world)
+    {
+        for (var chunkX = -1; chunkX <= 1; chunkX++)
+        {
+            for (var chunkZ = -1; chunkZ <= 1; chunkZ++)
+            {
+                var chunk = new Chunk(chunkX, chunkZ);
+                chunk.SetChunkStatus(ChunkGenStage.full);
+                world.LoadRegionByChunk(chunkX, chunkZ).SetChunk(chunk);
+                Complete(world.GetChunkAsync(chunkX, chunkZ, scheduleGeneration: false).AsTask());
+            }
+        }
     }
 
     // A block stored without updates, as a case's setup.
