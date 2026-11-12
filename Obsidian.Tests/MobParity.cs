@@ -130,6 +130,26 @@ public sealed class MobParity
     }
 
     [Fact]
+    public async Task WardenLegacySaveRestoresUsablePoseAndDefaultCooldowns()
+    {
+        await using var context = TestServerFactory.CreateServer($"warden-legacy-{Guid.NewGuid():N}");
+        var warden = new Warden { Level = context.World };
+        warden.InitializeAi(false);
+        var saved = EntityNbt.Save(warden)!;
+        saved.Set(new NbtTag<int>("ObsidianWardenPose", (int)Pose.Emerging));
+        saved.Remove("ObsidianWardenPoseTicks");
+        saved.Remove("ObsidianWardenSniffCooldown");
+        saved.Remove("ObsidianWardenSonicCooldown");
+
+        var loaded = Assert.IsType<Warden>(EntityNbt.Load(saved, context.World));
+        var restored = EntityNbt.Save(loaded)!;
+
+        Assert.Equal(Pose.Standing, loaded.Pose);
+        Assert.Equal(100, restored.GetInt("ObsidianWardenSniffCooldown"));
+        Assert.Equal(200, restored.GetInt("ObsidianWardenSonicCooldown"));
+    }
+
+    [Fact]
     public async Task InfinitePotionDurationSurvivesTicksAndSaving()
     {
         await using var context = TestServerFactory.CreateServer($"potion-infinite-{Guid.NewGuid():N}");

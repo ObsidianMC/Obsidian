@@ -14,6 +14,9 @@ public class Animal : AgeableMob
     }
 
     public int LoveTicks { get; internal set; }
+
+    protected override int GetExperienceReward() => IsBaby ? 0 : Random.Next(1, 4);
+
     internal virtual bool CanBreed => Alive && !IsRemoved && Age == 0 && LoveTicks > 0;
     internal virtual bool CanMateWith(Animal mate) => !ReferenceEquals(this, mate) && mate.Type == Type && mate.CanBreed;
     protected virtual bool CanEat(Obsidian.API.Inventory.ItemStack? item) => false;
@@ -81,7 +84,8 @@ public class Animal : AgeableMob
         CreateOffspring(mate);
         Age = mate.Age = 6000;
         LoveTicks = mate.LoveTicks = 0;
-        Level.SpawnExperienceOrbs(Position, (short)Random.Next(1, 8));
+        if (Level.LevelData.GetBooleanRule("mob_drops"))
+            Level.SpawnExperienceOrbs(Position, (short)Random.Next(1, 8));
     }
 
     protected virtual IEntity CreateOffspring(Animal mate) =>

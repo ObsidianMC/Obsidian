@@ -67,7 +67,8 @@ internal sealed class PluginMob(EntityDefinition definition) : PathfinderMob
     // A flying mob paths through the air with the flying move control, like vanilla's flying mobs.
     internal override bool FlyingNavigation => this.Flying;
 
-    protected override bool TakesFallDamage => !this.Flying;
+    // Flying plugin mobs never take fall damage; walking ones still honour fall_damage_immune.
+    protected override bool TakesFallDamage => !this.Flying && base.TakesFallDamage;
 
     // A seat per passenger attachment, at least one.
     protected override int MaximumPassengers => Math.Max(1, definition.Settings.PassengerAttachments.Length);

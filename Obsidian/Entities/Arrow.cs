@@ -268,6 +268,10 @@ public partial class Arrow : Entity
     {
         foreach (var part in dragon.Parts)
         {
+            // Pierced parts are recorded by their own id, so the dragon's other parts can still be hit.
+            if (piercedEntities.Contains(part.EntityId))
+                continue;
+
             if (MobTerrain.RayIntersection(part.BoundingBox, Position, Motion) is double partHit && partHit < fraction)
             {
                 fraction = partHit;
@@ -295,12 +299,13 @@ public partial class Arrow : Entity
     private async ValueTask HitEntityAsync(AbstractLevel level, IEntity target)
     {
         level.EmitGameEvent(MobGameEvent.ProjectileLand, Position, this, Owner);
-        var health = target.Health;
-        var accepted = (target as Living)?.AcceptedDamageCount;
+        var damageTarget = target is EnderDragonPart part ? part.Parent : target;
+        var health = damageTarget.Health;
+        var accepted = (damageTarget as Living)?.AcceptedDamageCount;
         var vehicleHit = await DamageTargetAsync(target);
         var damaged = vehicleHit
-            || target.Health < health
-            || target is Living hitLiving && hitLiving.AcceptedDamageCount != accepted;
+            || damageTarget.Health < health
+            || damageTarget is Living hitLiving && hitLiving.AcceptedDamageCount != accepted;
 
         await ApplyHitEffectsAsync(target, damaged);
 

@@ -53,7 +53,7 @@ public partial class Mob
 {
     internal SoundCategory ContactSoundCategory => this.MobSoundCategory;
 
-    internal bool ContactFallDamage => this.TakesFallDamage && this is not Chicken;
+    internal bool ContactFallDamage => this.TakesFallDamage;
 
     internal float ContactSafeFallDistance => this.SafeFallDistance;
 

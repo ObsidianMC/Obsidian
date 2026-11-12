@@ -16,10 +16,33 @@ public partial class Horse : AbstractHorse
     protected override IEntity CreateOffspring(Animal mate)
     {
         var offspring = base.CreateOffspring(mate);
-        if (offspring is not Horse child) return offspring;
+        if (offspring is not Horse child)
+            return offspring;
+
+        var mateHorse = (Horse)mate;
         HorseMask |= HorseMask.HasBred;
-        ((Horse)mate).HorseMask |= HorseMask.HasBred;
-        child.Variant = Random.Next(2) == 0 ? Variant : ((Horse)mate).Variant;
+        mateHorse.HorseMask |= HorseMask.HasBred;
+
+        // Vanilla draws the coat (4/9 this parent, 4/9 the mate, 1/9 random) and then the markings
+        // (2/5, 2/5, 1/5) separately; the draw order matters for seeded breeding.
+        var otherVariant = mateHorse.Variant;
+        var coatRoll = Random.Next(9);
+        var coat = coatRoll switch
+        {
+            < 4 => Variant & 255,
+            < 8 => otherVariant & 255,
+            _ => Random.Next(7)
+        };
+
+        var markingsRoll = Random.Next(5);
+        var markings = markingsRoll switch
+        {
+            < 2 => (Variant >> 8) & 255,
+            < 4 => (otherVariant >> 8) & 255,
+            _ => Random.Next(5)
+        };
+
+        child.Variant = coat | (markings << 8);
         child.SynchronizeMetadata();
         return child;
     }

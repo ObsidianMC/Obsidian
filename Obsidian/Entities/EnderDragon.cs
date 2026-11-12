@@ -404,6 +404,8 @@ public sealed partial class EnderDragon : BossMob
             return;
         }
 
+        // Vanilla's charge phase can count twice in one tick (once above, once here), which
+        // shortens the recovery; keep it so the dragon returns to holding on vanilla's tick.
         if (HasReachedOrLostDestination())
             chargeRecoveryTicks++;
     }
@@ -595,12 +597,13 @@ public sealed partial class EnderDragon : BossMob
             && source is not EndCrystal
             && IncomingDamageKind != CombatDamageKind.Explosion;
         var ignored = IsRemoved
+            || !Alive
             || phase == DragonPhase.Dying
             || source.Level != Level
             || !float.IsFinite(amount)
             || amount <= 0
             || wrongSource
-            || IsPerched && projectile;
+            || IsPerched && (projectile || IncomingDamageKind == CombatDamageKind.Projectile);
         if (ignored)
             return;
 
@@ -622,6 +625,7 @@ public sealed partial class EnderDragon : BossMob
             lastDamage = amount;
         }
 
+        AcceptedDamageCount++;
         Health -= amount;
         var hurt = new HurtAnimationPacket { EntityId = EntityId, Yaw = 0 };
         PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, hurt);
@@ -843,7 +847,10 @@ public sealed partial class EnderDragon : BossMob
 
         var deathTime = tag.TryGetNumber<int>("DragonDeathTime", out var savedDeathTime) ? savedDeathTime : 0;
         if (phase == DragonPhase.Dying && deathTime > 0)
+        {
             Health = 0;
+            phaseTicks = Math.Clamp(deathTime, 0, 199);
+        }
     }
 }
 

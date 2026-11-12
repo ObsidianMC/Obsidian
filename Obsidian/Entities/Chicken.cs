@@ -11,6 +11,17 @@ public sealed partial class Chicken : FarmAnimal
     public int Variant { get; set; } = 1;
     public int EggLayTime { get; internal set; } = Random.Shared.Next(6000, 12000);
     public bool IsChickenJockey { get; set; }
+    protected override bool CanDespawn => IsChickenJockey;
+
+    // Vanilla drops no experience for any baby (no random draw either), jockey or not.
+    protected override int GetExperienceReward()
+    {
+        if (IsBaby)
+            return 0;
+
+        return IsChickenJockey ? 10 : base.GetExperienceReward();
+    }
+
     protected override string? SoundName => "chicken";
     protected override float PanicSpeed => 1.4f;
     protected override float TemptSpeed => 1;

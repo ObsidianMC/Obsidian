@@ -80,7 +80,9 @@ public partial class Slime : CubeMob
                 child.Size = Size / 2;
                 child.Health = child.Size * child.Size;
                 child.CustomName = CustomName;
+                child.CustomNameVisible = CustomNameVisible;
                 child.PersistenceRequired = PersistenceRequired;
+                child.MobBitMask = MobBitMask;
                 Level.SpawnEntity(child);
             }
         }

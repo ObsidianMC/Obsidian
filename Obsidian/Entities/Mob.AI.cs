@@ -56,7 +56,7 @@ public partial class Mob
         }
     }
     internal virtual float JumpPower => 0.42f;
-    protected virtual bool TakesFallDamage => true;
+    protected virtual bool TakesFallDamage => !TagsRegistry.EntityType.FallDamageImmune.Entries.Contains(TypeId);
     protected virtual float SafeFallDistance => 3;
     protected virtual bool CanDespawn => this is not Animal;
     protected virtual bool WaterSensitive => false;
