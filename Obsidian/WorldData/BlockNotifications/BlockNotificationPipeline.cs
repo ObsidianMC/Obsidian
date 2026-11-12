@@ -25,7 +25,9 @@ internal sealed class BlockNotificationPipeline
     // Vanilla BlockBehaviour.UPDATE_SHAPE_ORDER, which neighbor notifications also use.
     private static readonly BlockFace[] order = [BlockFace.West, BlockFace.East, BlockFace.North, BlockFace.South, BlockFace.Down, BlockFace.Up];
 
-    private readonly object sync = new();
+    // The pipeline's own lock, not the tick lock: some callers queue and drain without the tick lock, such as
+    // AbstractLevel's NotifyNeighborsAsync, which pressure plates and lever and button use reach.
+    private readonly System.Threading.Lock sync = new();
     private readonly Queue<NotificationWork> queue = new();
     private readonly HashSet<NotificationWork> queued = [];
     private readonly IBlockChangeWorld world;
@@ -143,7 +145,14 @@ internal sealed class BlockNotificationPipeline
                 }
 
                 processed++;
-                await this.ProcessAsync(work);
+
+                // Most steps finish synchronously (no reaction, or one that doesn't yield): finish those inline and
+                // await only a step that is still running.
+                var step = this.Process(work);
+                if (step.IsCompletedSuccessfully)
+                    step.GetAwaiter().GetResult();
+                else
+                    await step;
             }
         }
         catch
@@ -162,58 +171,72 @@ internal sealed class BlockNotificationPipeline
             this.queue.Enqueue(work);
     }
 
-    private async ValueTask ProcessAsync(NotificationWork work)
+    // Not an async method: a step that completes synchronously returns a completed ValueTask without building a state
+    // machine. Only placement, which may await two behaviours in turn, gets one.
+    private ValueTask Process(NotificationWork work)
     {
         // Read at processing time, so each step sees the state committed before it.
         var state = this.world.GetLoadedBlock(work.Position);
         if (state is null)
-            return;
+            return ValueTask.CompletedTask;
 
-        if (work.Kind == WorkKind.Placed)
+        return work.Kind switch
         {
-            if (work.OldState is IBlock old)
-            {
-                var change = new BlockChange(work.Position, old, state);
-                if (this.behaviors.TryGetRemoved(old, out var removed))
-                    await removed.OnRemovedAsync(change, this.world);
+            WorkKind.Placed => this.ProcessPlacedAsync(work, state),
+            WorkKind.Shape => this.ProcessShape(work, state),
+            _ => this.ProcessNeighbor(work, state)
+        };
+    }
 
-                if (this.behaviors.TryGetPlaced(state, out var placed))
-                    await placed.OnPlacedAsync(change, this.world);
-            }
-
+    private async ValueTask ProcessPlacedAsync(NotificationWork work, IBlock state)
+    {
+        if (work.OldState is not IBlock old)
             return;
+
+        var change = new BlockChange(work.Position, old, state);
+        if (this.behaviors.TryGetRemoved(old, out var removed))
+            await removed.OnRemovedAsync(change, this.world);
+
+        if (this.behaviors.TryGetPlaced(state, out var placed))
+            await placed.OnPlacedAsync(change, this.world);
+    }
+
+    private ValueTask ProcessShape(NotificationWork work, IBlock state)
+    {
+        var source = this.world.GetLoadedBlock(work.Source);
+        if (source is null)
+            return ValueTask.CompletedTask;
+
+        ShapeUpdater.ScheduleFluidTick(this.shapeView, state, work.Position, source);
+        var updated = this.world.UpdateShape(work.Position, state, work.Face, work.Source, source)
+            ?? ShapeUpdater.UpdateShape(this.shapeView, state, work.Position, work.Face, source,
+                scheduleFluidTick: false);
+        if (updated.IsSameState(state))
+            return ValueTask.CompletedTask;
+
+        if (updated.IsAir && !state.IsAir)
+        {
+            // BaseRailBlock and RedstoneWireBlock use dropResources/removeBlock (no 2001 event); ordinary
+            // shape-destroyed blocks use Level.destroyBlock and do emit it.
+            var playEffect = state.BlockClass() != "RedstoneWireBlock" && !Rails.IsRail(state);
+            this.world.DropAndRemove(work.Position, state, playEffect);
+            return ValueTask.CompletedTask;
         }
+
+        return this.world.SetBlockAsync(work.Position, updated);
+    }
+
+    private ValueTask ProcessNeighbor(NotificationWork work, IBlock state)
+    {
+        // Most neighbours have no reaction: check that first, so their step reads nothing more. The check happens
+        // here rather than when the step is queued, because queueing must not read the world (it runs under the
+        // fluid lock) and the reaction belongs to whatever block is committed when the step runs.
+        if (!this.behaviors.TryGet(state, out var behavior))
+            return ValueTask.CompletedTask;
 
         var source = this.world.GetLoadedBlock(work.Source);
-        if (work.Kind == WorkKind.Shape)
-        {
-            if (source is null)
-                return;
-
-            ShapeUpdater.ScheduleFluidTick(this.shapeView, state, work.Position, source);
-            var updated = this.world.UpdateShape(work.Position, state, work.Face, work.Source, source)
-                ?? ShapeUpdater.UpdateShape(this.shapeView, state, work.Position, work.Face, source,
-                    scheduleFluidTick: false);
-            if (!updated.IsSameState(state))
-            {
-                if (updated.IsAir && !state.IsAir)
-                {
-                    // BaseRailBlock and RedstoneWireBlock use dropResources/removeBlock (no 2001 event); ordinary
-                    // shape-destroyed blocks use Level.destroyBlock and do emit it.
-                    var playEffect = state.BlockClass() != "RedstoneWireBlock" && !Rails.IsRail(state);
-                    this.world.DropAndRemove(work.Position, state, playEffect);
-                }
-                else
-                {
-                    await this.world.SetBlockAsync(work.Position, updated);
-                }
-            }
-
-            return;
-        }
-
-        if (this.behaviors.TryGet(state, out var behavior))
-            await behavior.OnNeighborChangedAsync(new NeighborChange(work.Position, state, work.Source, source), this.world);
+        var change = new NeighborChange(work.Position, state, work.Source, source);
+        return behavior.OnNeighborChangedAsync(change, this.world);
     }
 
     private enum WorkKind
@@ -223,6 +246,54 @@ internal sealed class BlockNotificationPipeline
         Neighbor
     }
 
-    // Face is the direction from Position toward Source, for shape reactions; neighbor reactions don't use it.
-    private readonly record struct NotificationWork(WorkKind Kind, Vector Position, Vector Source, BlockFace Face, IBlock? OldState = null);
+    /// <summary>
+    /// One queued step, and its coalescing key: two steps are duplicates when every field matches, the old state by
+    /// its own equality. Face is the direction from Position toward Source, for shape reactions; neighbor reactions
+    /// don't use it, but it still tells their keys apart.
+    /// </summary>
+    /// <remarks>
+    /// Hand-written rather than a record struct, whose hash runs every field through its default comparer: this one
+    /// hashes the coordinates alone, which is enough to spread the work queued around a change, and leaves the
+    /// other fields to <see cref="Equals(NotificationWork)"/>.
+    /// </remarks>
+    private readonly struct NotificationWork(
+        WorkKind kind, Vector position, Vector source, BlockFace face, IBlock? oldState = null)
+        : IEquatable<NotificationWork>
+    {
+        public WorkKind Kind { get; } = kind;
+
+        public Vector Position { get; } = position;
+
+        public Vector Source { get; } = source;
+
+        public BlockFace Face { get; } = face;
+
+        public IBlock? OldState { get; } = oldState;
+
+        public bool Equals(NotificationWork other)
+        {
+            if (this.Kind != other.Kind || this.Face != other.Face)
+                return false;
+
+            if (!this.Position.Equals(other.Position) || !this.Source.Equals(other.Source))
+                return false;
+
+            return EqualityComparer<IBlock?>.Default.Equals(this.OldState, other.OldState);
+        }
+
+        public override bool Equals(object? obj) => obj is NotificationWork other && this.Equals(other);
+
+        public override int GetHashCode()
+        {
+            var position = this.Position;
+            var source = this.Source;
+            var hash = position.X * 73856093;
+            hash ^= position.Y * 19349663;
+            hash ^= position.Z * 83492791;
+            hash = hash * 31 + source.X;
+            hash = hash * 31 + source.Y;
+            hash = hash * 31 + source.Z;
+            return hash;
+        }
+    }
 }

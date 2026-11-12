@@ -106,10 +106,11 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IRedstoneLevel,
 
     void IBlockChangeWorld.ScheduleFluidTick(Vector position) => this.Fluids.ScheduleShapeFluidTick(position);
 
-    async ValueTask IBlockChangeWorld.NotifyNeighborsAsync(Vector position)
+    // Queue and drain, passing the drain's task straight back: no state machine for a drain that finishes inline.
+    ValueTask IBlockChangeWorld.NotifyNeighborsAsync(Vector position)
     {
         this.BlockNotifications.EnqueueNeighbors(position);
-        await this.BlockNotifications.DrainAsync();
+        return this.BlockNotifications.DrainAsync();
     }
 
     void IRedstoneLevel.BroadcastLevelEvent(int type, Vector position, int data) => this.BroadcastLevelEvent(type, position, data);
@@ -201,10 +202,10 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IRedstoneLevel,
         }
     }
 
-    async ValueTask IRedstoneLevel.NotifyNeighborAsync(Vector target, Vector source)
+    ValueTask IRedstoneLevel.NotifyNeighborAsync(Vector target, Vector source)
     {
         this.BlockNotifications.EnqueueNeighbor(target, source);
-        await this.BlockNotifications.DrainAsync();
+        return this.BlockNotifications.DrainAsync();
     }
 
     async ValueTask IRedstoneLevel.NotifyComparatorsAroundAsync(Vector position)

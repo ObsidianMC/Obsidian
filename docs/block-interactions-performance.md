@@ -466,12 +466,35 @@ Rides with: plan phase 5 (furnaces, brewing, campfires and the other ticking blo
 
 ### 9. Smaller items
 
-- **Pipeline bookkeeping.** `BlockNotificationPipeline` takes its own lock for every enqueue and dequeue, makes an
-  async call per step, and dedupes steps in a hash set of five-field records. Check the block's behaviour flag
-  before queueing a neighbour step's work, and keep the per-step path synchronous when the behaviour completes
-  synchronously. Fold into item 2 or 6. Keep the pipeline's own lock: not every caller holds the tick lock.
-  `NotifyNeighborsAsync` (`AbstractLevel.BlockNotifications.cs:76`) enqueues and drains without it, and pressure
-  plates and lever and button use reach it that way. Removing the lock needs those callers serialized first.
+- **Pipeline bookkeeping.** *Done: a neighbour step that reaches a block with no reaction costs about a third less,
+  and every pipeline and level case in the probe is 10 to 20 percent faster. Update order and allocations are
+  unchanged.* `BlockNotificationPipeline` took its own lock for every enqueue and dequeue, made an async call per
+  step, and deduped steps in a hash set of five-field records. Now:
+  - A step runs through a plain method that returns the behaviour's own `ValueTask`. The drain finishes a completed
+    one inline and awaits only a step that yields; only placement, which can await two behaviours, keeps an async
+    method. `NotifyNeighborsAsync` and `NotifyNeighborAsync` return the drain's task instead of wrapping it.
+  - A neighbour step checks for the block's reaction first and reads the source only when there is one. The check
+    happens when the step runs, not when it is queued: queueing runs under the fluid lock and must not read the
+    world, and the reaction belongs to whatever block is committed when the step runs.
+  - The dedupe key keeps the same fields and equality but hashes only the two positions; the record struct ran every
+    field, the old state included, through its default comparer.
+  - The lock stays, as a `System.Threading.Lock`: not every caller holds the tick lock. `NotifyNeighborsAsync`
+    (`AbstractLevel.BlockNotifications.cs`) enqueues and drains without it, and pressure plates and lever and button
+    use reach it that way. Removing the lock needs those callers serialized first.
+
+  Measured with the re-runnable block probe below, which gained a `Pipeline/notify-neighbors-in-stone` case: six
+  neighbour steps around a block inside stone, with no write and no shape pass. Before is `7fb280c6f`; the two
+  Release builds ran alternately, three times each, on 2026-11-11 on the machine described below (.NET 11.0.0).
+  Ranges are over the three runs.
+
+  | Case | Before (ns/op) | After (ns/op) | B/op (both) |
+  |---|---:|---:|---:|
+  | Pipeline / notify neighbours in stone | 316 to 353 | 223 to 238 | 0 |
+  | Pipeline / change inside solid stone | 882 to 943 | 691 to 750 | 32 |
+  | Pipeline / toggle 15 dust | 193,386 to 204,264 | 168,058 to 179,570 | 17,698 |
+  | Pipeline / toggle 30 dust | 193,695 to 202,915 | 169,918 to 178,601 | 17,890 |
+  | Level / change inside solid stone | 1,460 to 1,566 | 1,343 to 1,349 | 1,760 |
+  | Level / toggle 15 dust | 269,045 to 282,024 | 239,912 to 251,249 | 107,408 |
 - **Hoppers.** The property reads are done: since item 4, `Hoppers.MoveItemsAsync` reads `enabled` and `facing`
   through `PropertyHandles.Enabled` and `PropertyHandles.Facing`, on the tick and on item pickup alike. What's left is
   item access: each transfer resolves item access for the hopper and its targets again, allocating a combined access

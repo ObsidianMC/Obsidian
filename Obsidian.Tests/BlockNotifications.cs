@@ -18,6 +18,7 @@ public class BlockNotifications
 {
     private const string Stone = "minecraft:stone";
     private const string Dirt = "minecraft:dirt";
+    private const string Granite = "minecraft:granite";
     // This is a synthetic toggle target for the bounded-queue test. Redstone lamp now has a real R4 neighbor behavior.
     private const string Lamp = "minecraft:redstone_ore";
 
@@ -188,6 +189,93 @@ public class BlockNotifications
         Assert.Null(world.GetLoadedBlock(new Vector(16, 64, 1)));
     }
 
+    [Fact]
+    public async Task AYieldingReactionHoldsTheDrainUntilItFinishes()
+    {
+        var world = new RedstoneTestWorld();
+        world.Load(0, 3, 62, 66, 0, 3);
+        var west = new Vector(0, 64, 1);
+        var source = new Vector(1, 64, 1);
+        var east = new Vector(2, 64, 1);
+        world.Commit(west, BlocksRegistry.Get(Dirt));
+        world.Commit(east, BlocksRegistry.Get(Dirt));
+
+        // The west dirt's reaction waits on a gate the test opens, so its step can't finish synchronously.
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var log = new List<(Vector Position, Vector Source)>();
+        world.Neighbors.Register(Dirt, new Recorder(async (change, _) =>
+        {
+            log.Add((change.Position, change.Source));
+            if (change.Position == west)
+                await gate.Task;
+        }));
+
+        // The first drain stops at the west reaction; a drain started meanwhile only queues its work and returns.
+        world.Pipeline.EnqueueNeighbors(source);
+        var first = world.Pipeline.DrainAsync().AsTask();
+        Assert.False(first.IsCompleted);
+
+        var later = new Vector(2, 64, 2);
+        world.Pipeline.EnqueueNeighbor(east, later);
+        var second = world.Pipeline.DrainAsync();
+        Assert.True(second.IsCompletedSuccessfully);
+        Assert.Equal([(west, source)], log);
+
+        // Once the gate opens, the first drain finishes its own steps, then the one queued while it waited.
+        gate.SetResult();
+        await first;
+        Assert.Equal([(west, source), (east, source), (east, later)], log);
+    }
+
+    [Fact]
+    public async Task AFailedReactionLeavesTheRestQueuedForTheNextDrain()
+    {
+        var world = new RedstoneTestWorld();
+        world.Load(0, 3, 62, 66, 0, 3);
+        var west = new Vector(0, 64, 1);
+        var east = new Vector(2, 64, 1);
+        world.Commit(west, BlocksRegistry.Get(Dirt));
+        world.Commit(east, BlocksRegistry.Get(Dirt));
+
+        // The west reaction throws before it returns a task, the east one records.
+        var reacted = new List<Vector>();
+        world.Neighbors.Register(Dirt, new Recorder((change, _) =>
+        {
+            if (change.Position == west)
+                throw new InvalidOperationException("The reaction failed.");
+
+            reacted.Add(change.Position);
+            return ValueTask.CompletedTask;
+        }));
+
+        world.Pipeline.EnqueueNeighbors(new Vector(1, 64, 1));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => world.Pipeline.DrainAsync().AsTask());
+        Assert.Empty(reacted);
+
+        await world.Pipeline.DrainAsync();
+        Assert.Equal([east], reacted);
+    }
+
+    [Fact]
+    public async Task PendingPlacementsCoalesceOnlyWithTheSameOldState()
+    {
+        var world = new RedstoneTestWorld();
+        world.Load(0, 3, 62, 66, 0, 3);
+        var removed = new List<string>();
+        var recorder = new RemovalRecorder(change => removed.Add(change.Old.UnlocalizedName));
+        world.Neighbors.RegisterRemoved(Dirt, recorder);
+        world.Neighbors.RegisterRemoved(Granite, recorder);
+
+        // Three placements at one position before a drain: the repeated one is coalesced, the other old state isn't.
+        var change = world.Commit(new Vector(1, 64, 1), BlocksRegistry.Get(Stone));
+        world.Pipeline.Enqueue(change with { Old = BlocksRegistry.Get(Dirt) });
+        world.Pipeline.Enqueue(change with { Old = BlocksRegistry.Get(Dirt) });
+        world.Pipeline.Enqueue(change with { Old = BlocksRegistry.Get(Granite) });
+        await world.Pipeline.DrainAsync();
+
+        Assert.Equal([Dirt, Granite], removed);
+    }
+
     // Runs one scripted sequence and records every reaction in order: the same input must give the same record.
     private static async Task<List<string>> RunScenarioAsync()
     {
@@ -211,5 +299,14 @@ public class BlockNotifications
     private sealed class Recorder(Func<NeighborChange, IBlockChangeWorld, ValueTask> onChange) : INeighborChangedBehavior
     {
         public ValueTask OnNeighborChangedAsync(NeighborChange change, IBlockChangeWorld world) => onChange(change, world);
+    }
+
+    private sealed class RemovalRecorder(Action<BlockChange> onRemoved) : IRemovalBehavior
+    {
+        public ValueTask OnRemovedAsync(BlockChange change, IBlockChangeWorld world)
+        {
+            onRemoved(change);
+            return ValueTask.CompletedTask;
+        }
     }
 }
