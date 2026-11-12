@@ -361,6 +361,9 @@ public partial class Living : Entity, ILiving
     // Serialize refreshes so a concurrent effect removal cannot leave a stale attribute modifier.
     private readonly System.Threading.Lock potionAttributeLock = new();
 
+    // Effect commands and ticks may overlap. Read the rule and write the flag in one critical section.
+    private readonly System.Threading.Lock invisibilityLock = new();
+
     // A live read-only view made once: mobs read their effects several times a tick, and each AsReadOnly allocated.
     private readonly IReadOnlyDictionary<int, EffectWithCurrentDuration> activePotionEffectsView;
     private int fireTicks;
@@ -524,34 +527,41 @@ public partial class Living : Entity, ILiving
     /// </summary>
     internal virtual void UpdateInvisibilityStatus()
     {
-        var spectator = this is IPlayer { GameMode: GameMode.Spectator };
-        ApplyInvisible(spectator || HasPotionEffect((int)PotionEffect.Invisibility - 1));
+        lock (this.invisibilityLock)
+        {
+            var current = this.Invisible;
+            var spectator = this is IPlayer { GameMode: GameMode.Spectator };
+            var desired = spectator || this.HasPotionEffect((int)PotionEffect.Invisibility - 1);
+            if (current == desired)
+                return;
+
+            this.Invisible = desired;
+        }
+
+        this.BroadcastInvisibility();
     }
 
     /// <summary>
-    /// Sets the invisible flag and, when it changes on an entity the level holds, sends its data to the players in
-    /// range, as the burning flag is sent. An entity still being built, loaded or spawned is not sent.
+    /// Sends a changed invisible flag to the players in range. An entity still being built, loaded or spawned
+    /// is not sent.
     /// </summary>
-    private protected void ApplyInvisible(bool invisible)
+    private void BroadcastInvisibility()
     {
-        if (Invisible == invisible)
-            return;
+        ILevel level;
+        VectorD position;
+        using (this.EnterOwningLevel(out level))
+        {
+            // Region membership briefly lags Position during ordinary movement. The grid stays attached throughout
+            // that move, and removal and level transfers change it under this same lock.
+            if (level is not AbstractLevel || !this.IsAmongEntitiesOf(level))
+                return;
 
-        Invisible = invisible;
-        if (IsLiveInLevel())
-            PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new SetEntityDataPacket { EntityId = EntityId, Entity = this });
-    }
+            position = this.Position;
+        }
 
-    // A mob is live once its level's regions hold it. A player is kept in the level's player table instead.
-    private bool IsLiveInLevel()
-    {
-        if (Level is not AbstractLevel level)
-            return false;
-
-        if (this is IPlayer)
-            return level.Players.TryGetValue(Uuid, out var resident) && ReferenceEquals(resident, this);
-
-        return IsMemberOf(level);
+        // Metadata reads the entity's final flag when serialized. Never call the broadcaster under either lock.
+        level.PacketBroadcaster.QueuePacketToLevelInRange(level, position,
+            new SetEntityDataPacket { EntityId = this.EntityId, Entity = this });
     }
 
     internal void RestorePotionEffect(int id, int duration, int amplifier)

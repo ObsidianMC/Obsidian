@@ -5,6 +5,15 @@ internal static class FixtureDumper
 {
     private static string Source(string name) => Path.Combine(AppContext.BaseDirectory, "Java", name);
 
+    internal static Task DumpInvisibilityAsync(VanillaServer server, string fixture)
+    {
+        var world = Path.Combine(server.ScratchDirectory, $"invisibility-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(world);
+        return VanillaServer.RunJavaAsync(world, TimeSpan.FromMinutes(5),
+            "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+            "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("InvisibilityFixtures.java"), fixture);
+    }
+
     internal static Task DumpCopperWeatheringAsync(VanillaServer server, string fixture) =>
         VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
             Source("CopperWeatheringFixtures.java"), fixture);

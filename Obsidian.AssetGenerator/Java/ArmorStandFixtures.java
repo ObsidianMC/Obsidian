@@ -111,6 +111,24 @@ public final class ArmorStandFixtures {
         Runtime.getRuntime().halt(0);
     }
 
+    /** Reuses the dedicated-server and connected-player harness for shared entity flag captures. */
+    static void captureInvisibility(Path fixture) throws Exception {
+        startServer();
+        var captured = server.submit(() -> {
+            try {
+                var user = new ProbePlayer(server, server.overworld(), profile("VisibilityUser"));
+                user.connection = recorder(new ArrayList<Packet<?>>());
+                user.connection.player = user;
+                return InvisibilityFixtures.capture(server, user);
+            } catch (Exception error) {
+                throw new RuntimeException(error);
+            }
+        }).join();
+        var gson = new GsonBuilder().setPrettyPrinting().create();
+        var json = gson.toJson(captured).replace("\r\n", "\n").replace("\n", "\r\n");
+        Files.writeString(fixture, json + "\r\n", StandardCharsets.UTF_8);
+    }
+
     private static void forceArea(JsonObject root) throws Exception {
         var target = position(root.getAsJsonArray("target"));
         var level = server.overworld();

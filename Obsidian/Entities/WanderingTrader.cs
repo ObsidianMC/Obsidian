@@ -68,7 +68,6 @@ public sealed partial class WanderingTrader : AgeableMob
         else
             RemovePotionEffect((int)PotionEffect.Invisibility - 1);
         PlayMobSound(night ? "disappeared" : "reappeared");
-        SynchronizeMetadata();
     }
 
     protected override void WriteAdditionalSave(INbtWriter writer)
