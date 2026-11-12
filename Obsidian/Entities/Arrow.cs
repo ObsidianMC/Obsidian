@@ -397,8 +397,8 @@ public partial class Arrow : Entity
         if (KnockbackLevel > 0)
             CombatEffects.Knockback(living, Motion, KnockbackLevel * 0.6f);
 
-        if (PickupItem?.Is(ItemsRegistry.TippedArrow) == true)
-            await ApplyTippedEffectsAsync(living);
+        if (PickupItem?.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents) is not null)
+            this.ApplyPotionHitEffects(living);
 
         if (Owner is Living attacker)
             await CombatEffects.PostAttackAsync(attacker, living, Type == EntityType.Trident ? Weapon : null);
@@ -569,30 +569,23 @@ public partial class Arrow : Entity
         }
     }
 
-    private async ValueTask ApplyTippedEffectsAsync(Living target)
+    private void ApplyPotionHitEffects(Living target)
     {
         var contents = PickupItem?.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents);
+        var scale = 1f;
+        if (this.PickupItem is ItemStack stack
+            && !stack.RemoveComponents.Contains(DataComponentType.PotionDurationScale))
+        {
+            var defaults = CombatItems.Component(stack, "potion_duration_scale");
+            scale = stack.GetComponent<SimpleDataComponent<float>>(DataComponentType.PotionDurationScale)?.Value
+                ?? (defaults.ValueKind == System.Text.Json.JsonValueKind.Number ? defaults.GetSingle() : 1f);
+        }
+
         foreach (var effect in ArrowPotionEffects.Get(contents))
         {
-            if (effect.Id == (int)PotionEffect.InstantHealth - 1 || effect.Id == (int)PotionEffect.InstantDamage - 1)
-                await ApplyInstantEffectAsync(target, effect);
-            else
-                target.AddPotionEffect(effect.Id, Math.Max(1, effect.Duration / 8), effect.Amplifier);
-        }
-    }
-
-    private async ValueTask ApplyInstantEffectAsync(Living target, PotionEffectData effect)
-    {
-        var harms = (effect.Id == (int)PotionEffect.InstantDamage - 1) != CombatEffects.IsUndead(target.Type);
-        if (harms)
-        {
-            var damage = (float)Math.Floor(0.125 * (6 << effect.Amplifier) + 0.5);
-            await target.DamageCombatAsync(Owner ?? this, damage, CombatDamageKind.Magic);
-        }
-        else
-        {
-            var healing = (float)Math.Floor(0.125 * (4 << effect.Amplifier) + 0.5);
-            target.Health = Math.Min(target.GetAttributeValue("minecraft:max_health"), target.Health + healing);
+            var duration = effect.Duration == -1 ? -1 : Math.Max(1, (int)(effect.Duration * scale));
+            target.AddPotionEffect(effect.Id, duration, effect.Amplifier,
+                EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon);
         }
     }
 

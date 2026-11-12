@@ -332,7 +332,8 @@ public sealed class LootRegistryGenerator : IIncrementalGenerator
                     var memberName = MemberName(table.Name.StartsWith(prefix, StringComparison.Ordinal)
                         ? table.Name.Substring(prefix.Length)
                         : table.Name);
-                    var expression = category is "blocks" or "entities" or "gameplay"
+                    // Equipment tables contain inline loot tables; the runtime reader already supports those.
+                    var expression = category is "blocks" or "entities" or "gameplay" or "equipment"
                         ? $"global::Obsidian.API.Loot.LootTableJson.Parse({Literal(category == "gameplay" ? this.ExpandEnchantmentOptions(table.Value) : table.Value.GetRawText())}, "
                             + $"{Literal(table.Name)})"
                         : this.EmitObject(lootTable, table.Value, null, $"Identifier = {Literal(table.Name)}");

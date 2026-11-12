@@ -11,6 +11,16 @@ internal sealed class BreezeWindCharge : Entity
     private Guid ownerUuid;
     private int age;
 
+    internal static BreezeWindCharge FromOminous(OminousItemSpawner spawner, VectorD motion) => new(spawner.Level)
+    {
+        EntityId = Server.GetNextEntityId(),
+        Type = EntityType.WindCharge,
+        Position = spawner.Position,
+        Motion = motion,
+        owner = spawner,
+        ownerUuid = spawner.Uuid
+    };
+
     [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
     internal BreezeWindCharge(ILevel level)
     {
@@ -95,6 +105,12 @@ internal sealed class BreezeWindCharge : Entity
 
     private async ValueTask BurstAsync(MobTerrain terrain, VectorD burst)
     {
+        if (this.Type == EntityType.WindCharge && this.Level is AbstractLevel windLevel)
+        {
+            await windLevel.BurstWindChargeAsync(this, burst);
+            return;
+        }
+
         // What the burst reaches is measured from it. The charge itself stays where it is: moving it would leave its
         // region membership behind, and its removal would look in the wrong region.
         if (Level is AbstractLevel level)
