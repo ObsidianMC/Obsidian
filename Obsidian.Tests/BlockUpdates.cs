@@ -1185,12 +1185,15 @@ public sealed class BlockUpdates : IDisposable
 
     // The blocks a client was sent, by block updates and section updates alike, in the order sent.
     internal static IEnumerable<(Vector Position, int StateId)> SentBlocks(TestClient client) =>
-        client.SentPackets.SelectMany(packet => packet switch
-        {
-            BlockUpdatePacket update => [(update.Position, update.BlockId)],
-            SectionBlocksUpdatePacket section => section.Blocks(),
-            _ => Enumerable.Empty<(Vector, int)>(),
-        });
+        client.SentPackets.SelectMany(SentBlocksOf);
+
+    // The blocks a block update or section update sends; none for other packets.
+    internal static IEnumerable<(Vector Position, int StateId)> SentBlocksOf(IClientboundPacket packet) => packet switch
+    {
+        BlockUpdatePacket update => [(update.Position, update.BlockId)],
+        SectionBlocksUpdatePacket section => section.Blocks(),
+        _ => [],
+    };
 
     // A player using their main hand on the face of the block at position, at cursor on that block (0 to 1 on each
     // axis), or else at the middle of its top.

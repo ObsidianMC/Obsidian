@@ -61,17 +61,9 @@ public partial class UseItemOnPacket
 
     public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
-        // The acknowledgement follows the block changes the use makes, which go out with the next world tick.
-        var acknowledging = player as PlayerBase;
-        acknowledging?.BeginBlockAcknowledgementHold();
-        try
-        {
-            await this.UseAsync(server, player);
-        }
-        finally
-        {
-            acknowledging?.EndBlockAcknowledgementHold();
-        }
+        // The acknowledgement follows the block changes the use makes, with the next flush of the player's level.
+        using var acknowledgement = (player as PlayerBase)?.BeginBlockAcknowledgementScope();
+        await this.UseAsync(server, player);
     }
 
     /// <summary>Handles the click and returns how it went, or null when it was refused before any use.</summary>

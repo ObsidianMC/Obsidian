@@ -23,7 +23,7 @@ using System.Threading.Channels;
 
 namespace Obsidian;
 
-public sealed partial class Client : IClient
+public sealed partial class Client : IClient, IConditionalPacketSender
 {
     private const int MaxBufferSize = 1024 * 8;
 
@@ -413,6 +413,37 @@ public sealed partial class Client : IClient
 
         var bodies = shared?.Get(this.ReadsPluginEntityData(packet));
         return this.Enqueue(new Outgoing(packet, RunsHandlers: false, Work: null, Bodies: bodies));
+    }
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// With nothing queued, the check and the direct write share <c>sendLock</c>, which admits every queued entry too:
+    /// an entry admitted before is written before, and what made it (a respawn, a forgotten chunk) is visible to the
+    /// check. Otherwise the check runs in the pipeline, at the packet's turn (see <see cref="QueueInTurn"/>).
+    /// </remarks>
+    bool IConditionalPacketSender.SendPacketIf(SharedPacketBodies shared, Func<bool> wanted)
+    {
+        var packet = shared.Packet;
+        lock (this.sendLock)
+        {
+            if (this.IsClosing || this.disconnectRequested)
+                return false;
+
+            if (Volatile.Read(ref this.unsent) == 0)
+                return wanted() && this.SendAsync(packet, bodies: shared.Get(this.ReadsPluginEntityData(packet)));
+        }
+
+        // Serialized here, like a queued broadcast's packet (see SendPacket), and checked at its turn.
+        var bodies = shared.Get(this.ReadsPluginEntityData(packet));
+        this.QueueInTurn(() =>
+        {
+            if (wanted())
+                this.SendAsync(packet, bodies: bodies);
+
+            return ValueTask.CompletedTask;
+        });
+
+        return true;
     }
 
     /// <summary>

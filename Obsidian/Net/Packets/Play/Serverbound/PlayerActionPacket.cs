@@ -32,17 +32,9 @@ public partial class PlayerActionPacket
 
     public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
-        // The acknowledgement follows the block changes the action makes, which go out with the next world tick.
-        var acknowledging = player as PlayerBase;
-        acknowledging?.BeginBlockAcknowledgementHold();
-        try
-        {
-            await this.ActAsync(server, player);
-        }
-        finally
-        {
-            acknowledging?.EndBlockAcknowledgementHold();
-        }
+        // The acknowledgement follows the block changes the action makes, with the next flush of the player's level.
+        using var acknowledgement = (player as PlayerBase)?.BeginBlockAcknowledgementScope();
+        await this.ActAsync(server, player);
     }
 
     private async ValueTask ActAsync(IServer server, IClientPlayer player)

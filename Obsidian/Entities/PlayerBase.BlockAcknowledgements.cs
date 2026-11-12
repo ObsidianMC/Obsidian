@@ -1,80 +1,115 @@
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData;
 using System.Threading;
 
 namespace Obsidian.Entities;
 
 public partial class PlayerBase
 {
+    // The handler running in the current flow, whose queued sequence it acknowledges once it's done.
+    private static readonly AsyncLocal<BlockAcknowledgementScope?> acknowledgementScope = new();
+
     private readonly Lock blockAcknowledgementLock = new();
-    private int pendingBlockSequence = -1;
 
-    // The world ticks begun when the last handler that queued the acknowledgement finished: it waits for a world tick
-    // begun after that to finish, which has sent that handler's block changes.
-    private long blockAcknowledgementTicks = -1;
-
-    // The handlers running that may queue an acknowledgement: none is sent before their block changes are made.
-    private int blockAcknowledgementHolds;
+    // The highest sequence queued outside any handler's scope (by code calling a handler's work directly), sent by
+    // FlushBlockAcknowledgement.
+    private int unscopedBlockSequence = -1;
 
     /// <summary>
-    /// Records the highest received block prediction sequence. Vanilla acknowledges that maximum once per tick.
-    /// Completion may happen after a later click, so it sends corrections independently and never queues an ack.
+    /// Records a received block prediction sequence. Vanilla acknowledges the highest one once its block changes are
+    /// sent: within a handler (see <see cref="BeginBlockAcknowledgementScope"/>), the handler acknowledges it when
+    /// done. Completion may happen after a later click, so it sends corrections independently and never queues an ack.
     /// </summary>
     internal void QueueBlockAcknowledgement(int sequence)
     {
+        if (acknowledgementScope.Value is BlockAcknowledgementScope scope && scope.TryAdd(this, sequence))
+            return;
+
+        lock (this.blockAcknowledgementLock)
+            this.unscopedBlockSequence = Math.Max(this.unscopedBlockSequence, sequence);
+    }
+
+    /// <summary>
+    /// Starts a packet handler that may queue an acknowledgement, for the rest of the current flow. Disposing the scope
+    /// when the handler is done hands the highest sequence it queued to the player's level, whose next flush of block
+    /// changes sends the handler's changes and then the acknowledgement (see
+    /// <see cref="AbstractLevel.AcknowledgeAfterBlockChanges"/>): a client given the acknowledgement first would drop
+    /// its prediction and show the old block until the change came.
+    /// </summary>
+    internal BlockAcknowledgementScope BeginBlockAcknowledgementScope()
+    {
+        var scope = new BlockAcknowledgementScope(this);
+        acknowledgementScope.Value = scope;
+        return scope;
+    }
+
+    /// <summary>
+    /// Sends the highest sequence queued outside any handler's scope, if any: for callers that run a handler's work
+    /// directly and have sent its block changes themselves.
+    /// </summary>
+    internal void FlushBlockAcknowledgement()
+    {
+        int sequence;
         lock (this.blockAcknowledgementLock)
         {
-            this.pendingBlockSequence = Math.Max(this.pendingBlockSequence, sequence);
-            this.blockAcknowledgementTicks = this.WorldTicksStarted();
+            sequence = this.unscopedBlockSequence;
+            this.unscopedBlockSequence = -1;
         }
+
+        if (sequence >= 0)
+            this.SendPacket(new BlockChangedAckPacket { SequenceID = sequence });
+    }
+
+    // The handler's changes went to the player's level as it is when the handler is done. A player in no level gets
+    // the acknowledgement at once: there's no flush to wait for.
+    private void AcknowledgeAfterBlockChanges(int sequence)
+    {
+        if (this.Level is AbstractLevel level)
+            level.AcknowledgeAfterBlockChanges(this, sequence);
+        else
+            this.SendPacket(new BlockChangedAckPacket { SequenceID = sequence });
     }
 
     /// <summary>
-    /// Holds acknowledgements back while a handler that may queue one runs, until
-    /// <see cref="EndBlockAcknowledgementHold"/>.
+    /// A packet handler's acknowledgement: the highest sequence it queued, handed on when it's disposed (see
+    /// <see cref="BeginBlockAcknowledgementScope"/>).
     /// </summary>
-    internal void BeginBlockAcknowledgementHold()
+    internal sealed class BlockAcknowledgementScope(PlayerBase player) : IDisposable
     {
-        lock (this.blockAcknowledgementLock)
-            this.blockAcknowledgementHolds++;
-    }
+        private readonly Lock gate = new();
+        private int sequence = -1;
+        private bool ended;
 
-    /// <summary>
-    /// Ends a handler's hold, and holds the queued acknowledgement back until the handler's block changes have been
-    /// sent: block changes go out with the level's tick (see <see cref="AbstractLevel.FlushBlockChanges"/>), and a
-    /// client given the acknowledgement first drops its prediction and shows the old block until they come.
-    /// </summary>
-    internal void EndBlockAcknowledgementHold()
-    {
-        lock (this.blockAcknowledgementLock)
+        // Queued after the handler ended (by work it left running), or for another player, it isn't this scope's.
+        public bool TryAdd(PlayerBase queuing, int queued)
         {
-            this.blockAcknowledgementHolds--;
-            if (this.pendingBlockSequence >= 0)
-                this.blockAcknowledgementTicks = this.WorldTicksStarted();
-        }
-    }
+            if (!ReferenceEquals(queuing, player))
+                return false;
 
-    /// <summary>
-    /// Sends the queued acknowledgement, if any, once no handler holds it back. With
-    /// <paramref name="waitForWorldTick"/>, only once a world tick that began after its handlers finished has finished
-    /// too; without (the server is paused and has sent the block changes itself, or a caller that has), at once.
-    /// </summary>
-    internal void FlushBlockAcknowledgement(bool waitForWorldTick = false)
-    {
-        lock (this.blockAcknowledgementLock)
-        {
-            if (this.pendingBlockSequence < 0 || this.blockAcknowledgementHolds > 0)
-                return;
-
-            if (waitForWorldTick && this.Server is Server server
-                && server.WorldTicksCompleted <= this.blockAcknowledgementTicks)
+            lock (this.gate)
             {
-                return;
+                if (this.ended)
+                    return false;
+
+                this.sequence = Math.Max(this.sequence, queued);
+                return true;
+            }
+        }
+
+        public void Dispose()
+        {
+            int queued;
+            lock (this.gate)
+            {
+                if (this.ended)
+                    return;
+
+                this.ended = true;
+                queued = this.sequence;
             }
 
-            this.SendPacket(new BlockChangedAckPacket { SequenceID = this.pendingBlockSequence });
-            this.pendingBlockSequence = -1;
+            if (queued >= 0)
+                player.AcknowledgeAfterBlockChanges(queued);
         }
     }
-
-    private long WorldTicksStarted() => this.Server is Server server ? server.WorldTicksStarted : 0;
 }

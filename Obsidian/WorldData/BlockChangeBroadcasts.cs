@@ -1,3 +1,5 @@
+using Obsidian.Entities;
+using Obsidian.Net;
 using Obsidian.Net.Packets.Play.Clientbound;
 using System.Threading;
 
@@ -6,7 +8,7 @@ namespace Obsidian.WorldData;
 /// <summary>
 /// Collects the blocks a level changed for its players, and sends them once a tick per chunk section, like vanilla's
 /// <c>ChunkHolder</c>: a block update for a section with one changed block, or a section update listing the current
-/// state of each changed block.
+/// state of each changed block. Prediction acknowledgements go out behind them (see <see cref="Acknowledge"/>).
 /// </summary>
 /// <remarks>
 /// Changes are recorded from any thread (the level's tick, packet handlers, plugins). <see cref="Flush"/> runs at the
@@ -16,14 +18,19 @@ namespace Obsidian.WorldData;
 /// </remarks>
 internal sealed class BlockChangeBroadcasts(AbstractLevel level)
 {
-    // Taken only to record a change or swap the pending ones out; nothing is called under it.
+    // Guards everything below; nothing is sent or called under it.
     private readonly Lock pendingLock = new();
 
-    // Held for a whole flush, so two flushes (a tick's and a paused connection pass's) never interleave their packets.
-    private readonly Lock flushLock = new();
-
-    // The chunks with changes, in the order they first changed since the last flush.
+    // The chunks with changes, in the order they first changed since the last flush took them.
     private OrderedDictionary<long, ChangedChunk> pending = [];
+
+    // The highest sequence each player's finished handlers queued since the last flush took them.
+    private Dictionary<PlayerBase, int> acknowledgements = [];
+
+    // Whether a flush is under way, which owns sending: two flushes never interleave their packets, and a flush asked
+    // for meanwhile (flushAgain) is run by the one under way rather than waiting for it.
+    private bool flushing;
+    private bool flushAgain;
 
     /// <summary>Records that the block at <paramref name="position"/> changed, for the next flush.</summary>
     public void Changed(Vector position)
@@ -50,43 +57,138 @@ internal sealed class BlockChangeBroadcasts(AbstractLevel level)
     }
 
     /// <summary>
-    /// Sends the changes recorded since the last flush to the players who have their chunks: per chunk, its sections
-    /// from the bottom up. Changes in chunks that are no longer loaded are dropped, as vanilla drops them.
+    /// Acknowledges <paramref name="sequence"/> to <paramref name="player"/> after the next flush's block changes,
+    /// which include those of the handler that queued it, now finished. Vanilla acknowledges from its connection tick,
+    /// after the levels' ticks; a client sees the same order of block changes and acknowledgement, but here the tick's
+    /// block events come after the acknowledgement rather than before it.
     /// </summary>
+    /// <remarks>
+    /// The acknowledgement goes out even if the player has left the level by then: it carries no block, and a client
+    /// that has moved to another level has dropped the predictions it ends.
+    /// </remarks>
+    public void Acknowledge(PlayerBase player, int sequence)
+    {
+        lock (this.pendingLock)
+        {
+            var highest = this.acknowledgements.GetValueOrDefault(player, -1);
+            this.acknowledgements[player] = Math.Max(highest, sequence);
+        }
+    }
+
+    /// <summary>
+    /// Sends the changes recorded since the last flush to the players who have their chunks, per chunk its sections
+    /// from the bottom up, then the acknowledgements recorded before it. Changes in chunks that are no longer loaded
+    /// are dropped, as vanilla drops them.
+    /// </summary>
+    /// <remarks>
+    /// If another flush is under way, this one returns at once and that one sends these changes too, after its own:
+    /// no flush waits for another's sends, which a stuck connection could hold.
+    /// </remarks>
     public void Flush()
     {
-        lock (this.flushLock)
+        lock (this.pendingLock)
         {
-            OrderedDictionary<long, ChangedChunk> changed;
-            lock (this.pendingLock)
+            if (this.flushing)
             {
-                if (this.pending.Count == 0)
-                    return;
+                this.flushAgain = true;
+                return;
+            }
 
+            this.flushing = true;
+            this.flushAgain = true;
+        }
+
+        try
+        {
+            while (this.TakePending(out var changed, out var acknowledged))
+            {
+                if (changed is not null)
+                    this.Send(changed);
+
+                if (acknowledged is null)
+                    continue;
+
+                foreach (var (player, sequence) in acknowledged)
+                    player.SendPacket(new BlockChangedAckPacket { SequenceID = sequence });
+            }
+        }
+        catch
+        {
+            lock (this.pendingLock)
+                this.flushing = false;
+
+            throw;
+        }
+    }
+
+    // Takes what's pending if a flush was asked for since the last take, or else ends the flush under way. Null for
+    // none.
+    private bool TakePending(
+        out OrderedDictionary<long, ChangedChunk>? changed, out Dictionary<PlayerBase, int>? acknowledged)
+    {
+        lock (this.pendingLock)
+        {
+            changed = null;
+            acknowledged = null;
+            if (!this.flushAgain)
+            {
+                this.flushing = false;
+                return false;
+            }
+
+            this.flushAgain = false;
+            if (this.pending.Count > 0)
+            {
                 changed = this.pending;
                 this.pending = [];
             }
 
-            foreach (var (key, chunk) in changed)
+            if (this.acknowledgements.Count > 0)
             {
-                var players = PlayersWithChunk(key);
-                if (players.Count == 0)
-                    continue;
+                acknowledged = this.acknowledgements;
+                this.acknowledgements = [];
+            }
 
-                foreach (var packet in this.ReadPackets(chunk))
-                    level.PacketBroadcaster.BroadcastTo(packet, players);
+            return true;
+        }
+    }
+
+    private void Send(OrderedDictionary<long, ChangedChunk> changed)
+    {
+        foreach (var (key, chunk) in changed)
+        {
+            var players = this.PlayersWithChunk(key);
+            if (players.Count == 0)
+                continue;
+
+            foreach (var packet in this.ReadPackets(chunk))
+            {
+                var shared = new SharedPacketBodies(packet);
+                foreach (var (player, wanted) in players)
+                    Send(player, shared, wanted);
             }
         }
     }
 
-    // The players that have the chunk, read once for all its sections.
-    private List<IPlayer> PlayersWithChunk(long key)
+    // Block packets name no level: one a player received after leaving for another level would change that level's
+    // block there. Each is sent only if the player still has the chunk, in this level, at the packet's place in their
+    // output, which follows the respawn of a level change (see IConditionalPacketSender).
+    private static void Send(IPlayer player, SharedPacketBodies shared, Func<bool> wanted)
     {
-        var players = new List<IPlayer>();
+        if (player is PlayerBase { Connection: IConditionalPacketSender connection })
+            connection.SendPacketIf(shared, wanted);
+        else if (wanted())
+            player.SendPacket(shared.Packet);
+    }
+
+    // The players that have the chunk, read once for all its sections, each with the check made again as it's sent.
+    private List<(IPlayer Player, Func<bool> Wanted)> PlayersWithChunk(long key)
+    {
+        var players = new List<(IPlayer, Func<bool>)>();
         foreach (var (_, player) in level.Players)
         {
             if (player.LoadedChunks.Contains(key))
-                players.Add(player);
+                players.Add((player, () => ReferenceEquals(player.Level, level) && player.LoadedChunks.Contains(key)));
         }
 
         return players;

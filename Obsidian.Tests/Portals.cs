@@ -49,7 +49,8 @@ public partial class Portals
 
         var frame = await PortalFrame.FindAsync(world.GetBlockAsync, new Vector(0, 64, 0), "x", world.MinY);
         Assert.True(frame!.Value.IsComplete);
-        player.FlushBlockAcknowledgement();
+        // The acknowledgement follows the use's block changes, with the level's next flush.
+        world.FlushBlockChanges();
         Assert.Contains(((TestClient)player.Client).SentPackets, packet => packet is BlockChangedAckPacket);
         // The acting client predicts flint and steel; only the bystander receives its server sound.
         Assert.DoesNotContain(((TestClient)player.Client).SentPackets, packet => packet is SoundPacket

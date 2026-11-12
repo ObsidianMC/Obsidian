@@ -1224,16 +1224,14 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
     }
 
     /// <summary>
-    /// One pass of the independent 50 ms connection loop. Play-state prediction acknowledgements must not depend
-    /// on world ticks succeeding, simulation being unpaused, or a travelling player belonging to a level: an
-    /// acknowledgement waits for the world tick that sends its block changes (see
-    /// <see cref="PlayerBase.FlushBlockAcknowledgement"/>), and while the server is paused, this pass sends the levels'
-    /// block changes itself, then the acknowledgements, like vanilla's paused (frozen) server.
+    /// One pass of the independent 50 ms connection loop. While the server is paused, it flushes the levels' block
+    /// changes, and with them the prediction acknowledgements that follow them (see
+    /// <see cref="AbstractLevel.AcknowledgeAfterBlockChanges"/>), like vanilla's paused (frozen) server, whose ticks
+    /// still broadcast. Otherwise the levels' ticks flush them.
     /// </summary>
     internal async Task TickConnectionsAsync(bool sendKeepAlive)
     {
-        var paused = this.Paused;
-        if (paused)
+        if (this.Paused)
         {
             foreach (var level in this.Levels())
                 level.FlushBlockChanges();
@@ -1242,10 +1240,7 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
         await this.ForEachConnectionAsync(client =>
         {
             if (client.Connected && client.State == ClientState.Play && client.Player is Player player)
-            {
                 player.TickTeleportClock();
-                player.FlushBlockAcknowledgement(waitForWorldTick: !paused);
-            }
 
             return sendKeepAlive ? SendKeepAliveAsync(client) : ValueTask.CompletedTask;
         }, this.keepAliveFailures);
@@ -1429,22 +1424,11 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
         this.EndIdleSession();
         var tickStart = Stopwatch.GetTimestamp();
         Volatile.Write(ref this.tickStarted, tickStart);
-        Interlocked.Increment(ref this.worldTicksStarted);
         try
         {
             // Connections are flushed once the tick is done, rather than for each packet it sends.
             using var output = OutputBatch.Begin();
-            try
-            {
-                await this.WorldManager.TickWorldsAsync();
-            }
-            finally
-            {
-                // Like vanilla's connection tick after the levels': the acknowledgements whose block changes the
-                // levels have now sent go out behind them, failed tick or not.
-                Interlocked.Increment(ref this.worldTicksCompleted);
-                await this.ForEachConnectionAsync(SendBlockAcknowledgement, this.keepAliveFailures);
-            }
+            await this.WorldManager.TickWorldsAsync();
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !cancelTokenSource.IsCancellationRequested)
         {
@@ -1459,25 +1443,6 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
             this.RecordTickTime(elapsed);
             this.worldTickTimes.Record(elapsed.TotalMilliseconds);
         }
-    }
-
-    // Counts of the world ticks begun and finished, which hold back prediction acknowledgements until the tick that
-    // sends their block changes is done (see PlayerBase.FlushBlockAcknowledgement).
-    private long worldTicksStarted;
-    private long worldTicksCompleted;
-
-    /// <summary>How many world ticks have begun.</summary>
-    internal long WorldTicksStarted => Interlocked.Read(ref this.worldTicksStarted);
-
-    /// <summary>How many world ticks have finished, whether or not they failed.</summary>
-    internal long WorldTicksCompleted => Interlocked.Read(ref this.worldTicksCompleted);
-
-    private static ValueTask SendBlockAcknowledgement(IClient client)
-    {
-        if (client.Connected && client.State == ClientState.Play && client.Player is Player player)
-            player.FlushBlockAcknowledgement(waitForWorldTick: true);
-
-        return ValueTask.CompletedTask;
     }
 
     // Every level of every world: each world's own and its dimensions.

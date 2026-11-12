@@ -124,7 +124,7 @@ public sealed class BlockUseSafety
             pool.Return(reused);
             Assert.Empty(client.SentPackets.OfType<BlockChangedAckPacket>());
             if (acknowledgeBeforeDrain)
-                player.FlushBlockAcknowledgement();
+                world.FlushBlockChanges();
 
             var beforeDrain = client.SentPackets.Count;
             await world.RunQueuedEntityActionsAsync();
@@ -134,14 +134,14 @@ public sealed class BlockUseSafety
             Assert.Contains(corrections, packet => packet is ContainerSetSlotPacket);
             Assert.Equal(1, player.GetHeldItem()?.Count);
 
-            player.FlushBlockAcknowledgement();
+            world.FlushBlockChanges();
             Assert.Equal(12, Assert.Single(client.SentPackets.OfType<BlockChangedAckPacket>()).SequenceID);
             if (!acknowledgeBeforeDrain)
                 Assert.IsType<BlockChangedAckPacket>(client.SentPackets.Last());
 
-            // Another tick can acknowledge a newer sequence, never a late completion's older one.
+            // Another flush can acknowledge a newer sequence, never a late completion's older one.
             await BlockUpdates.UseOn(later, BlockFace.Up, sequence: 13).HandleAsync(context.Server, player);
-            player.FlushBlockAcknowledgement();
+            world.FlushBlockChanges();
             Assert.Equal(new[] { 12, 13 },
                 client.SentPackets.OfType<BlockChangedAckPacket>().Select(packet => packet.SequenceID));
             world.TryRemovePlayer(player);

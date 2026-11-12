@@ -745,6 +745,13 @@ public abstract partial class AbstractLevel : ILevel
     internal void FlushBlockChanges() => this.blockChanges.Flush();
 
     /// <summary>
+    /// Sends <paramref name="player"/> the acknowledgement of <paramref name="sequence"/> after this level's next flush
+    /// of block changes (see <see cref="BlockChangeBroadcasts.Acknowledge"/>).
+    /// </summary>
+    internal void AcknowledgeAfterBlockChanges(PlayerBase player, int sequence) =>
+        this.blockChanges.Acknowledge(player, sequence);
+
+    /// <summary>
     /// Sends a level event (a sound or particle effect, like lava fizzing) to the players that have its chunk.
     /// </summary>
     internal void BroadcastLevelEvent(int type, Vector location, int data)

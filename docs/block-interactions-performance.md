@@ -259,13 +259,23 @@ What landed:
   chunk broadcast: one block update for a section with one change, otherwise one section update, each with the
   block's state at the flush. A change made outside the tick (a plugin, a command, a packet handler) goes out at the
   next flush. Only players who have the chunk get it.
-- Prediction acknowledgements wait for the world tick that sends their block changes:
-  - The server counts world ticks begun and finished, and sends acknowledgements at the end of each world tick,
-    behind its flushes.
-  - An acknowledgement waits for a world tick that began after its handler finished. No acknowledgement is sent while
-    a handler that may queue one is still running.
-  - The 50 ms connection pass sends what's due. While the server is paused (vanilla's frozen game still flushes), it
-    flushes every level's block changes first and then sends acknowledgements at once.
+- Prediction acknowledgements go out with the flush that carries their block changes:
+  - A use or break handler records the sequences it queues. When it's done, it hands the highest to its player's
+    level, whose next flush sends the player its block changes and then the acknowledgement. A tick that fails before
+    its flush sends neither, and steady use is acknowledged at every flush.
+  - Vanilla sends acknowledgements from its connection tick, after the levels' ticks, so a tick's block events reach
+    the client before them. Obsidian's go out at the flush, before the tick's block events. The order of block changes
+    and acknowledgement is the same.
+  - A player who left the level by then still gets the acknowledgement. It carries no block, and the client dropped its
+    predictions with the level it left.
+  - While the server is paused (vanilla's frozen game still broadcasts), the 50 ms connection pass flushes every
+    level, acknowledgements included.
+- A flush sends nothing under a lock. One flush per level sends at a time. A flush asked for while another runs
+  leaves its changes to the running one and returns, so a stuck connection holds up only the flush that is sending
+  to it.
+- A block packet names no level. Each one is sent to a player only if the player is still in the level and has the
+  chunk at the packet's place in their connection's output: a player who left for another level never gets it after
+  their respawn.
 - Block events go out as the tick dispatches them. The block changes they make go out at the next tick's flush, as
   in vanilla.
 - Vanilla doesn't send a moving piston's block or its block-entity data. Obsidian sent both from the block-entity
@@ -288,8 +298,6 @@ What's left:
 - Block-entity data still goes out at the end of the block-entity pass rather than with the block change in the
   flush, and light updates at the end of the tick rather than with the chunk broadcast.
 - Vanilla's chunks broadcast in hash-map order. Obsidian's go in the order of each chunk's first change.
-- A handler that finishes while a world tick runs may miss that tick's flush, so its acknowledgement waits for the
-  next tick. Vanilla handles packets between ticks and never waits.
 - Corrections (refused uses, buckets, aborted breaks) still go out at once, as in vanilla.
 
 The proposal as written:
