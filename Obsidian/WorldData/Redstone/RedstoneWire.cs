@@ -100,7 +100,7 @@ internal sealed class RedstoneWire(IRedstoneLevel level, RedstoneEngine engine)
             return;
 
         // Vanilla writes with flag 2 before explicitly notifying both rings of neighbours.
-        await level.WriteAsync(position, state.WithProperty("power", target), BlockUpdateFlags.Clients);
+        await level.WriteAsync(position, PropertyHandles.Power.With(state, target), BlockUpdateFlags.Clients);
         await world.NotifyNeighborsAsync(position);
         foreach (var face in RedstoneEngine.Directions)
             await world.NotifyNeighborsAsync(position.Offset(face));
@@ -145,5 +145,5 @@ internal sealed class RedstoneWire(IRedstoneLevel level, RedstoneEngine engine)
     private static int WirePower(IBlockChangeWorld world, Vector position) =>
         world.GetLoadedBlock(position) is IBlock state && state.BlockClass() == BlockClass ? Power(state) : 0;
 
-    private static int Power(IBlock state) => int.Parse(state.GetProperty("power"));
+    private static int Power(IBlock state) => PropertyHandles.Power.Get(state);
 }

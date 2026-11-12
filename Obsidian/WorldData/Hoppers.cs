@@ -62,12 +62,12 @@ internal static class Hoppers
             return;
 
         var state = level.BlockUpdates.GetBlock(hopper.BlockPosition);
-        if (state.GetProperty("enabled") != "true" || hopper.GetItemAccess(side: null) is not IItemAccess own)
+        if (!PropertyHandles.Enabled.IsTrue(state) || hopper.GetItemAccess(side: null) is not IItemAccess own)
             return;
 
         var changed = false;
         if (!IsEmpty(own))
-            changed = Eject(level, hopper, own, FeatureHelpers.ParseFace(state.GetProperty("facing")));
+            changed = Eject(level, hopper, own, PropertyHandles.Facing.Get(state));
 
         if (!IsFull(own))
         {
