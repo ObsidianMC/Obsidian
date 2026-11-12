@@ -23,6 +23,8 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -427,7 +429,7 @@ public sealed class SectionBlocksUpdates
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task ChangesAndAcknowledgementsArrivingDuringAFlushsLastSendStillGoOut()
+    public async Task ChangesAndAcknowledgementsArrivingDuringAFlushGoOutWithTheNext()
     {
         await using var context = TestServerFactory.CreateServer($"section-stranded-{Guid.NewGuid():N}");
         var world = context.World;
@@ -438,15 +440,148 @@ public sealed class SectionBlocksUpdates
         var flush = Task.Run(world.FlushBlockChanges);
         await entered.Task;
 
-        // While the flush sends the last of what it took, a change and an acknowledgement come in. Nothing flushes
-        // again (the server could be paused, its ticks stopped), so the flush under way must send them.
+        // While the flush sends what it took, a change and an acknowledgement come in, and another flush, finding
+        // this one under way, returns at once. The flush under way sends only what it took.
         var changed = new Vector(3, 64, 3);
         world.BlockUpdates.SetBlock(changed, BlocksRegistry.Dirt);
         Acknowledge(world, player, 9);
+        world.FlushBlockChanges();
         release.SetResult();
         await flush;
+        Assert.DoesNotContain((changed, BlocksRegistry.Dirt.GetHashCode()), BlockUpdates.SentBlocks(client));
+        Assert.DoesNotContain(client.SentPackets, packet => packet is BlockChangedAckPacket);
 
+        // Nothing is lost: it's still pending when the flush ends, and the next flush (the next tick's, or the next
+        // paused pass's) sends it.
+        world.FlushBlockChanges();
         AssertChangeThenAcknowledgement(client, changed, BlocksRegistry.Dirt, 9);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task AFlushEndsThoughChangesKeepComingWhileItSends()
+    {
+        await using var context = TestServerFactory.CreateServer($"section-endless-{Guid.NewGuid():N}");
+        var world = context.World;
+        WorldBlockEntities.AddEmptyChunk(world);
+        await world.GetBlockAsync(Target);
+        world.FlushBlockChanges();
+        var (player, client) = Join(context, new VectorD(8.5, 64, 10.5));
+
+        // Every block packet sent records another change, as a writer that never stops would. It stops after 100,
+        // so that a flush that doesn't end on its own still ends here.
+        var sends = 0;
+        client.BeforeSend = packet =>
+        {
+            if (packet is BlockUpdatePacket or SectionBlocksUpdatePacket && ++sends < 100)
+                world.BlockChanged(Target);
+        };
+        world.BlockChanged(Target);
+        world.FlushBlockChanges();
+        Assert.Equal(1, sends);
+
+        // The change recorded meanwhile waits for the next flush.
+        world.FlushBlockChanges();
+        Assert.Equal(2, sends);
+        Assert.Same(player, client.Player);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ADestinationsBlocksWaitForTheRespawnThatTakesThePlayerThere()
+    {
+        await using var context = TestServerFactory.CreateServer($"section-arrival-{Guid.NewGuid():N}");
+        var world = context.World;
+        var nether = LevelTransfers.AddNether(context);
+        LevelTransfers.AddEmptyChunk(nether);
+        var (player, client) = await PrepareAsync(context);
+        Assert.True(context.Server.AddPlayer(player));
+        Assert.True(world.TryAddEntity(player));
+        await player.TeleportAsync(nether, new VectorD(8, 70, 8));
+        var key = NumericsHelper.IntsToLong(0, 0);
+        player.LoadedChunks.Add(key);
+
+        // The player is on the way back to the overworld: the transfer has made it their level and registered them
+        // there, but hasn't queued the respawn yet, and their chunks are still the nether's.
+        player.Level = world;
+        Assert.True(world.TryAddPlayer(player));
+        Assert.Contains(key, player.LoadedChunks);
+
+        // The overworld flushes in that window: its block would change the nether's on the client.
+        var changed = new Vector(3, 64, 3);
+        world.BlockUpdates.SetBlock(changed, BlocksRegistry.Dirt);
+        world.FlushBlockChanges();
+
+        var packets = client.SentPackets.ToList();
+        var respawn = packets.FindLastIndex(packet => packet is RespawnPacket);
+        Assert.True(respawn >= 0, "The player wasn't sent the respawn.");
+        var after = packets.Skip(respawn + 1).SelectMany(BlockUpdates.SentBlocksOf);
+        Assert.DoesNotContain(after, block => block.Position == changed);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task AStalePausedPassLeavesARunningTicksAcknowledgementsToIt()
+    {
+        await using var context = TestServerFactory.CreateServer($"section-stale-{Guid.NewGuid():N}");
+        var world = context.World;
+        await BlockUpdates.AddChunksAsync(world);
+        world.LevelData.GameRules["random_tick_speed"] = "0";
+        world.LevelData.GameRules["spawn_mobs"] = "false";
+        var note = new Vector(0, 72, 0);
+        world.BlockUpdates.SetBlock(note, BlocksRegistry.NoteBlock,
+            BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace);
+        world.FlushBlockChanges();
+        var (player, client) = Join(context, new VectorD(0.5, 72, 2.5));
+        Assert.True(await context.Server.PauseAsync());
+
+        // A connection pass read Paused before a resume, and runs on while the resumed tick is in its block events:
+        // the tick holds the tick gate, as the server's loop does, and has flushed its change, but not yet sent the
+        // acknowledgement that follows its events.
+        var tickGate = (SemaphoreSlim)context.Server.GetType()
+            .GetField("tickGate", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetValue(context.Server)!;
+        await tickGate.WaitAsync();
+        var changed = new Vector(3, 72, 3);
+        world.BlockUpdates.SetBlock(changed, BlocksRegistry.Stone,
+            BlockUpdateFlags.Clients | BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace);
+        Acknowledge(world, player, 6);
+        var (entered, release) = (Gate(), Gate());
+        world.QueueBlockEvent(note, BlockIds.NoteBlock, 0, 0, async () =>
+        {
+            entered.SetResult();
+            await release.Task;
+            return true;
+        });
+        var tick = Task.Run(world.DoWorldTickAsync);
+        await entered.Task;
+        await Task.Run(() => context.Server.TickConnectionsAsync(sendKeepAlive: false));
+        release.SetResult();
+        await tick;
+        tickGate.Release();
+
+        var packets = client.SentPackets.ToList();
+        var change = packets.FindIndex(packet => BlockUpdates.SentBlocksOf(packet)
+            .Contains((changed, BlocksRegistry.Stone.GetHashCode())));
+        var played = packets.FindIndex(packet => packet is BlockEventPacket blockEvent && blockEvent.Position == note);
+        var acknowledgement = packets.FindIndex(packet => packet is BlockChangedAckPacket { SequenceID: 6 });
+        Assert.True(change >= 0, "The client wasn't sent the change.");
+        Assert.True(played > change, "The block event didn't follow the change.");
+        Assert.True(acknowledgement > played, "The acknowledgement didn't follow the tick's block events.");
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ATickFailingBeforeItsFlushStillSendsItsChangesAndThenItsAcknowledgements()
+    {
+        await using var context = TestServerFactory.CreateServer($"section-throws-{Guid.NewGuid():N}");
+        var world = context.World;
+        var (player, client) = await PrepareAsync(context);
+        var changed = new Vector(3, 64, 3);
+        world.BlockUpdates.SetBlock(changed, BlocksRegistry.Dirt);
+        Acknowledge(world, player, 4);
+
+        // The level's tick fails in its entity actions, before its flush, as it might every tick.
+        world.EnqueueEntityAction(() => throw new InvalidOperationException("Injected tick failure"));
+        await Assert.ThrowsAsync<InvalidOperationException>(world.DoWorldTickAsync);
+
+        AssertChangeThenAcknowledgement(client, changed, BlocksRegistry.Dirt, 4);
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
@@ -570,8 +705,11 @@ public sealed class SectionBlocksUpdates
     }
 
     // A finished handler's acknowledgement of sequence, received while the player's connection is in its current level.
-    private static void Acknowledge(AbstractLevel level, Entities.Player player, int sequence) =>
-        level.AcknowledgeAfterBlockChanges(player, new Entities.BlockAcknowledgement(sequence, player.LevelEpoch));
+    private static void Acknowledge(AbstractLevel level, Entities.Player player, int sequence)
+    {
+        var epoch = player.LevelEpoch?.Number ?? 0;
+        level.AcknowledgeAfterBlockChanges(player, new Entities.BlockAcknowledgement(sequence, epoch));
+    }
 
     private static TaskCompletionSource Gate() => new(TaskCreationOptions.RunContinuationsAsynchronously);
 

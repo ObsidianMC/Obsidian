@@ -82,9 +82,10 @@ public sealed partial class Client : IClient, IConditionalPacketSender
     // Entries queued and not yet sent or dropped. A direct send waits behind them (see SendPacket).
     private int unsent;
 
-    // The level changes admitted to the output so far (see IConditionalPacketSender.LevelEpoch). Written under
-    // sendLock, which admits every entry and direct send, so it counts them in output order.
-    private int levelEpoch;
+    // The level changes admitted to the output so far, and the level of the last (see
+    // IConditionalPacketSender.LevelEpoch). Replaced under sendLock, which admits every entry and direct send, so it
+    // follows them in output order.
+    private LevelEpoch levelEpoch = new(0, null);
 
     private readonly Task packetQueueTask;
     private readonly CancellationToken cancellationToken;
@@ -464,7 +465,7 @@ public sealed partial class Client : IClient, IConditionalPacketSender
     }
 
     /// <inheritdoc/>
-    int IConditionalPacketSender.LevelEpoch => Volatile.Read(ref this.levelEpoch);
+    LevelEpoch IConditionalPacketSender.LevelEpoch => Volatile.Read(ref this.levelEpoch);
 
     /// <inheritdoc/>
     /// <remarks>
@@ -480,7 +481,7 @@ public sealed partial class Client : IClient, IConditionalPacketSender
         var bodies = shared.Get(this.ReadsPluginEntityData(packet));
         lock (this.sendLock)
         {
-            if (this.IsClosing || this.disconnectRequested || this.levelEpoch != levelEpoch || !wanted())
+            if (this.IsClosing || this.disconnectRequested || this.levelEpoch.Number != levelEpoch || !wanted())
                 return false;
 
             if (Volatile.Read(ref this.unsent) == 0)
@@ -598,12 +599,12 @@ public sealed partial class Client : IClient, IConditionalPacketSender
     }
 
     // Called under sendLock as a packet is admitted. A respawn, or the login packet that starts play, puts the client
-    // in another level (or the same one afresh) from its place in the output on. Counted even if a plugin's handler
-    // cancels it later: a block packet of the level it may have left is dropped, which is safe.
+    // in the player's level (another, or the same one afresh) from its place in the output on. Counted even if a
+    // plugin's handler cancels it later: a block packet of the level it may have left is dropped, which is safe.
     private void CountLevelChange(IClientboundPacket packet)
     {
         if (packet is Net.Packets.Play.Clientbound.RespawnPacket or Net.Packets.Play.Clientbound.LoginPacket)
-            Volatile.Write(ref this.levelEpoch, this.levelEpoch + 1);
+            Volatile.Write(ref this.levelEpoch, new(this.levelEpoch.Number + 1, this.Player?.Level));
     }
 
     private bool IsClosing => this.disposed || this.cancellationToken.IsCancellationRequested;

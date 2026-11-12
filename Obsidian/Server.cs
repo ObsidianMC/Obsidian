@@ -1317,12 +1317,28 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
     /// <see cref="AbstractLevel.FlushBlockChanges"/>), like vanilla's paused (frozen) server, whose ticks still
     /// broadcast. Otherwise the levels' ticks flush them.
     /// </summary>
+    /// <remarks>
+    /// The paused flush holds the tick gate, as the world ticks do, and checks again that the server is paused once it
+    /// has it: a pass that saw the server paused just before it resumed would otherwise send a resumed tick's
+    /// acknowledgements ahead of that tick's block events. It doesn't wait for the gate. Whoever holds it is a world
+    /// tick, which flushes its own levels, or a pause under way, after which the next pass flushes.
+    /// </remarks>
     internal async Task TickConnectionsAsync(bool sendKeepAlive)
     {
-        if (this.Paused)
+        if (this.Paused && this.tickGate.Wait(0))
         {
-            foreach (var level in this.Levels())
-                level.FlushBlockChanges();
+            try
+            {
+                if (this.Paused)
+                {
+                    foreach (var level in this.Levels())
+                        level.FlushBlockChanges();
+                }
+            }
+            finally
+            {
+                this.tickGate.Release();
+            }
         }
 
         await this.ForEachConnectionAsync(client =>

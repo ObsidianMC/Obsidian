@@ -57,13 +57,15 @@ internal sealed class TestClient(IServer server, bool connected = true) : IClien
         return true;
     }
 
-    // Like Client's: level changes counted, and the checks made, under the lock every packet is added under.
-    public int LevelEpoch
+    // Like Client's: level changes counted, and the checks made, under the lock every packet is added under. A test
+    // client starts in play without a login packet: until it's sent a level change, it's in its player's level, which
+    // tests set as they need.
+    public LevelEpoch LevelEpoch
     {
         get
         {
             lock (this.packets)
-                return this.levelEpoch;
+                return this.levelEpoch ?? new LevelEpoch(0, this.Player?.Level);
         }
     }
 
@@ -72,7 +74,7 @@ internal sealed class TestClient(IServer server, bool connected = true) : IClien
         this.BeforeSend?.Invoke(shared.Packet);
         lock (this.packets)
         {
-            if (this.levelEpoch != levelEpoch || !wanted())
+            if ((this.levelEpoch?.Number ?? 0) != levelEpoch || !wanted())
                 return false;
 
             this.packets.Add(shared.Packet);
@@ -81,7 +83,7 @@ internal sealed class TestClient(IServer server, bool connected = true) : IClien
         return true;
     }
 
-    private int levelEpoch;
+    private LevelEpoch? levelEpoch;
 
     private void Add(IClientboundPacket packet)
     {
@@ -89,7 +91,7 @@ internal sealed class TestClient(IServer server, bool connected = true) : IClien
         {
             this.packets.Add(packet);
             if (packet is RespawnPacket or LoginPacket)
-                this.levelEpoch++;
+                this.levelEpoch = new LevelEpoch((this.levelEpoch?.Number ?? 0) + 1, this.Player?.Level);
         }
     }
 

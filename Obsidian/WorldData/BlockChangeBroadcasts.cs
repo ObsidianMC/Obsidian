@@ -38,8 +38,8 @@ internal sealed class BlockChangeBroadcasts(AbstractLevel level)
     // Acknowledgements whose changes a flush has sent, waiting for SendAcknowledgements.
     private Dictionary<PlayerBase, BlockAcknowledgement> flushed = [];
 
-    // Whether a flush is under way, which owns sending: two flushes never interleave their packets, and what's
-    // recorded meanwhile is sent by the one under way before it ends, not left for a flush that may never come.
+    // Whether a flush is under way, which owns sending: two flushes never interleave their packets. What's recorded
+    // meanwhile stays pending for the next flush.
     private bool flushing;
 
     /// <summary>Records that the block at <paramref name="position"/> changed, for the next flush.</summary>
@@ -89,44 +89,59 @@ internal sealed class BlockChangeBroadcasts(AbstractLevel level)
     /// acknowledgements recorded before it are sent at the next <see cref="SendAcknowledgements"/>.
     /// </summary>
     /// <remarks>
-    /// If another flush is under way, this one returns at once and that one sends these changes too, after its own:
-    /// no flush waits for another's sends, which a stuck connection could hold. A flush ends only once nothing is
-    /// pending, so what's recorded while it sends its last changes isn't left for a flush that may never come.
+    /// A flush sends what was recorded when it began, once: what's recorded while it sends waits for the next flush,
+    /// so a writer that never stops can't hold the level's tick here. The next flush always comes, with the next tick
+    /// or, while the server is paused, the next connection pass. If another flush is under way, this one returns at
+    /// once, and what it would have sent is either taken by that one or still pending when that one ends: no flush
+    /// waits for another's sends, which a stuck connection could hold.
     /// </remarks>
     public void Flush()
     {
+        OrderedDictionary<long, ChangedChunk>? changed;
+        Dictionary<PlayerBase, BlockAcknowledgement>? acknowledged;
         lock (this.pendingLock)
         {
             if (this.flushing)
                 return;
 
             this.flushing = true;
+            changed = this.pending.Count > 0 ? this.pending : null;
+            acknowledged = this.acknowledgements.Count > 0 ? this.acknowledgements : null;
+            if (changed is not null)
+                this.pending = [];
+
+            if (acknowledged is not null)
+                this.acknowledgements = [];
         }
 
+        var sent = false;
         try
         {
-            while (this.TakePending(out var changed, out var acknowledged))
-            {
-                if (changed is not null)
-                    this.Send(changed);
+            if (changed is not null)
+                this.Send(changed);
 
-                if (acknowledged is not null)
-                    this.MarkFlushed(acknowledged);
-            }
+            sent = true;
         }
-        catch
+        finally
         {
+            // Ownership ends under the lock that records changes, with the acknowledgements whose changes went out.
+            // A send that failed part way drops them: a later, higher acknowledgement covers them.
             lock (this.pendingLock)
-                this.flushing = false;
+            {
+                if (sent && acknowledged is not null)
+                {
+                    foreach (var (player, acknowledgement) in acknowledged)
+                        Record(this.flushed, player, acknowledgement);
+                }
 
-            throw;
+                this.flushing = false;
+            }
         }
     }
 
     /// <summary>
     /// Sends the acknowledgements whose block changes a flush has sent. The level's tick calls it after its block
-    /// events, as vanilla's connection tick follows the levels' ticks; a tick that fails before then leaves them for
-    /// the next call.
+    /// events, as vanilla's connection tick follows the levels' ticks, and after a last flush if it fails.
     /// </summary>
     public void SendAcknowledgements()
     {
@@ -144,50 +159,9 @@ internal sealed class BlockChangeBroadcasts(AbstractLevel level)
             player.SendBlockAcknowledgement(acknowledgement);
     }
 
-    // The acknowledgements taken with changes that are now sent.
-    private void MarkFlushed(Dictionary<PlayerBase, BlockAcknowledgement> acknowledged)
-    {
-        lock (this.pendingLock)
-        {
-            foreach (var (player, acknowledgement) in acknowledged)
-                Record(this.flushed, player, acknowledgement);
-        }
-    }
-
     private static void Record(
         Dictionary<PlayerBase, BlockAcknowledgement> into, PlayerBase player, BlockAcknowledgement acknowledgement) =>
         into[player] = into.TryGetValue(player, out var known) ? acknowledgement.Max(known) : acknowledgement;
-
-    // Takes what's pending, or else ends the flush under way: checked under the lock that records changes, so nothing
-    // recorded is left once the flush has ended. Null for none.
-    private bool TakePending(out OrderedDictionary<long, ChangedChunk>? changed,
-        out Dictionary<PlayerBase, BlockAcknowledgement>? acknowledged)
-    {
-        lock (this.pendingLock)
-        {
-            changed = null;
-            acknowledged = null;
-            if (this.pending.Count == 0 && this.acknowledgements.Count == 0)
-            {
-                this.flushing = false;
-                return false;
-            }
-
-            if (this.pending.Count > 0)
-            {
-                changed = this.pending;
-                this.pending = [];
-            }
-
-            if (this.acknowledgements.Count > 0)
-            {
-                acknowledged = this.acknowledgements;
-                this.acknowledgements = [];
-            }
-
-            return true;
-        }
-    }
 
     private void Send(OrderedDictionary<long, ChangedChunk> changed)
     {
@@ -226,11 +200,16 @@ internal sealed class BlockChangeBroadcasts(AbstractLevel level)
         var players = new List<Recipient>();
         foreach (var (_, player) in level.Players)
         {
-            // The epoch first: a level change sets the player's level before it admits its respawn.
-            var epoch = (player as PlayerBase)?.LevelEpoch ?? 0;
+            // The epoch first: a level change sets the player's level before it admits its respawn. A player whose
+            // client hasn't been sent their move to this level yet isn't a recipient: their level and chunks may
+            // already be this level's, but the client is still in the level they're leaving.
+            var epoch = (player as PlayerBase)?.LevelEpoch;
+            if (epoch is not null && !ReferenceEquals(epoch.Level, level))
+                continue;
+
             bool Wanted() => ReferenceEquals(player.Level, level) && player.LoadedChunks.Contains(key);
             if (Wanted())
-                players.Add(new Recipient(player, epoch, Wanted));
+                players.Add(new Recipient(player, epoch?.Number ?? 0, Wanted));
         }
 
         return players;

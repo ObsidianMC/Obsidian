@@ -1078,7 +1078,18 @@ public abstract partial class AbstractLevel : ILevel
 
             // Set in this method, it flows into what the tick awaits but not back to the caller.
             tickingLevel.Value = new TickFlow(this, this.CurrentTickId);
-            await TickLevelAsync();
+            try
+            {
+                await TickLevelAsync();
+            }
+            catch
+            {
+                // A tick that fails, every tick perhaps, still sends the blocks changed so far and then the
+                // acknowledgements that follow them, as the old immediate broadcasts did. If it failed before its block
+                // events, there are none to wait for.
+                this.FlushBlockChanges();
+                throw;
+            }
         }
         finally
         {

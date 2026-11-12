@@ -20,10 +20,10 @@ public partial class PlayerBase
     private BlockAcknowledgement lastAcknowledgement = new(-1, -1);
 
     /// <summary>
-    /// The connection's level epoch (see <see cref="IConditionalPacketSender.LevelEpoch"/>), or zero for a connection
+    /// The connection's level epoch (see <see cref="IConditionalPacketSender.LevelEpoch"/>), or null for a connection
     /// that doesn't count level changes.
     /// </summary>
-    internal int LevelEpoch => (this.Connection as IConditionalPacketSender)?.LevelEpoch ?? 0;
+    internal LevelEpoch? LevelEpoch => (this.Connection as IConditionalPacketSender)?.LevelEpoch;
 
     /// <summary>
     /// Records a received block prediction sequence. Vanilla acknowledges the highest one once its block changes are
@@ -32,7 +32,7 @@ public partial class PlayerBase
     /// </summary>
     internal void QueueBlockAcknowledgement(int sequence)
     {
-        var acknowledgement = new BlockAcknowledgement(sequence, this.LevelEpoch);
+        var acknowledgement = new BlockAcknowledgement(sequence, this.LevelEpoch?.Number ?? 0);
         if (acknowledgementScope.Value is BlockAcknowledgementScope scope && scope.TryAdd(this, acknowledgement))
             return;
 
