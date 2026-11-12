@@ -84,7 +84,7 @@ internal sealed partial class LeavesBlockBehavior : IRandomTickBehavior, ISchedu
                 break;
         }
 
-        return block.WithProperty("distance", distance.ToString());
+        return PropertyHandles.Distance.With(block, distance);
     }
 
     private static int OptionalDistance(IBlock block)
@@ -101,7 +101,7 @@ internal sealed partial class LeavesBlockBehavior : IRandomTickBehavior, ISchedu
         block.GetProperty("persistent") != "true" && Distance(block) == DecayDistance;
 
     private static int Distance(IBlock block) =>
-        int.TryParse(block.GetProperty("distance"), out var distance) ? distance : DecayDistance;
+        PropertyHandles.Distance.TryGet(block, out var distance) ? distance : DecayDistance;
 
     private static partial class Log
     {

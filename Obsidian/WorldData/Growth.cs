@@ -622,7 +622,7 @@ internal static partial class Growth
 
     private static bool IsHanging(IBlock block) => block.GetProperty("hanging") == "true";
 
-    internal static int Age(IBlock block) => int.TryParse(block.GetProperty("age"), out var age) ? age : 0;
+    internal static int Age(IBlock block) => PropertyHandles.Age.TryGet(block, out var age) ? age : 0;
 
     // A crop's last age: 7, or 3 for beetroots and 2 for torchflowers, whose crop's own states stop at 1.
     internal static int MaxAge(IBlock block) => block.RegistryId switch
@@ -636,7 +636,7 @@ internal static partial class Growth
     internal static IBlock GrownState(IBlock block, int age) =>
         block.RegistryId == BlockIds.TorchflowerCrop && age == MaxAge(block)
             ? BlocksRegistry.GetDefault(BlockIds.Torchflower)
-            : block.WithProperty("age", age);
+            : PropertyHandles.Age.With(block, age);
 
     private static partial class Log
     {

@@ -42,6 +42,7 @@ public sealed partial class BlocksGenerator : IIncrementalGenerator
         else if (asm == "Obsidian")
         {
             GenerateBlocks(assets.Blocks, output.compilation, context);
+            GenerateTypedPropertyLayouts(assets.Blocks, context);
         }
     }
 }

@@ -63,6 +63,9 @@ internal static class BlockRun
             flag = int.Parse(power, CultureInfo.InvariantCulture) != 0;
         });
         Measure("WithProperty/wire-power", 2_000_000, () => result = wire.WithProperty("power", 7));
+        Measure("Handle/stone-waterlogged", 2_000_000, () => flag = PropertyHandles.Waterlogged.IsTrue(stone));
+        Measure("Handle/wire-power-get", 2_000_000, () => flag = PropertyHandles.Power.Get(wire) != 0);
+        Measure("Handle/wire-power-with", 2_000_000, () => result = PropertyHandles.Power.With(wire, 7));
 
         Measure("NeighborTryGet/stone", 2_000_000, () => flag = world.Neighbors.TryGet(stone, out _));
         Measure("NeighborTryGet/wire", 2_000_000, () => flag = world.Neighbors.TryGet(wire, out _));

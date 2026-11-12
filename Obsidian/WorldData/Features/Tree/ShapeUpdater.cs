@@ -108,7 +108,7 @@ internal static class ShapeUpdater
             if (state.IsFluidSource() || neighbor.IsFluidSource())
                 level.ScheduleFluidTick(position);
         }
-        else if (state.GetProperty("waterlogged") == "true"
+        else if (PropertyHandles.Waterlogged.IsTrue(state)
             || state.RegistryId is BlockIds.Seagrass or BlockIds.Kelp or BlockIds.KelpPlant or BlockIds.BubbleColumn)
         {
             level.ScheduleFluidTick(position);

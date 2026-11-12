@@ -429,8 +429,10 @@ public sealed class WorldBlockEntities : IDisposable
             Assert.InRange(drop.Position.Z, 4.125, 4.875);
             Assert.InRange(drop.Motion.Y, 0.2 - 0.11485, 0.2 + 0.11485);
         });
-        Assert.All(drops.Where(drop => drop.Item.Is(ItemsRegistry.Stone)).SkipLast(1), drop =>
-            Assert.InRange(drop.Item.Count, 10, 30));
+        // The range query doesn't return drops in spawn order, so only the count of small stacks is checked.
+        var stones = drops.Where(drop => drop.Item.Is(ItemsRegistry.Stone)).ToArray();
+        Assert.All(stones, drop => Assert.InRange(drop.Item.Count, 1, 30));
+        Assert.True(stones.Count(drop => drop.Item.Count < 10) <= 1);
 
         // A shulker box keeps its items, which vanilla's box item holds.
         await context.World.SetBlockAsync(position, BlocksRegistry.ShulkerBox);

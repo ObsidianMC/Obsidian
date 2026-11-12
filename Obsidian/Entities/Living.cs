@@ -2,6 +2,7 @@ using Obsidian.API.Effects;
 using Obsidian.API.Inventory;
 using Obsidian.Nbt;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData;
 using Obsidian.Entities.AI;
 
 namespace Obsidian.Entities;
@@ -360,6 +361,9 @@ public partial class Living : Entity, ILiving
     // Serialize refreshes so a concurrent effect removal cannot leave a stale attribute modifier.
     private readonly System.Threading.Lock potionAttributeLock = new();
 
+    // Effect commands and ticks may overlap. Read the rule and write the flag in one critical section.
+    private readonly System.Threading.Lock invisibilityLock = new();
+
     // A live read-only view made once: mobs read their effects several times a tick, and each AsReadOnly allocated.
     private readonly IReadOnlyDictionary<int, EffectWithCurrentDuration> activePotionEffectsView;
     private int fireTicks;
@@ -449,6 +453,7 @@ public partial class Living : Entity, ILiving
                     activePotionEffects[potion] = new() { EffectData = hidden, CurrentDuration = hidden.Duration };
                     if (potion == (int)PotionEffect.JumpBoost - 1)
                         this.RefreshJumpBoostFallProtection();
+                    this.UpdateInvisibilityStatus();
                     if (this is Mob && potion == (int)PotionEffect.Absorption - 1)
                         AbsorptionHealth = Math.Min(AbsorptionHealth, 4 * (hidden.Amplifier + 1));
                     SendPotionEffect(hidden);
@@ -513,6 +518,55 @@ public partial class Living : Entity, ILiving
 
     public bool HasPotionEffect(int effectId) => activePotionEffects.ContainsKey(effectId);
 
+    /// <summary>
+    /// Vanilla's <c>LivingEntity.updateInvisibilityStatus</c>, run as the effects change and as a player's game mode
+    /// changes: the entity is invisible while it has the invisibility effect, and a spectator player always is. Vanilla
+    /// runs it in the tick before the entity's data is synced; running it at the change leaves the same synced state,
+    /// and spawn data and the wandering trader's night check read the flag straight away. Entities whose invisibility
+    /// is not the effect's (an armor stand's saved flag) override it.
+    /// </summary>
+    /// <param name="broadcast">False while restoring saved state: spawn metadata carries the flag, and loading
+    /// may hold a chunk entity lock, which must never acquire the owning transfer lock.</param>
+    internal virtual void UpdateInvisibilityStatus(bool broadcast = true)
+    {
+        lock (this.invisibilityLock)
+        {
+            var current = this.Invisible;
+            var spectator = this is IPlayer { GameMode: GameMode.Spectator };
+            var desired = spectator || this.HasPotionEffect((int)PotionEffect.Invisibility - 1);
+            if (current == desired)
+                return;
+
+            this.Invisible = desired;
+        }
+
+        if (broadcast)
+            this.BroadcastInvisibility();
+    }
+
+    /// <summary>
+    /// Sends a changed invisible flag to the players in range. An entity still being built, loaded or spawned
+    /// is not sent.
+    /// </summary>
+    private void BroadcastInvisibility()
+    {
+        ILevel level;
+        VectorD position;
+        using (this.EnterOwningLevel(out level))
+        {
+            // Region membership briefly lags Position during ordinary movement. The grid stays attached throughout
+            // that move, and removal and level transfers change it under this same lock.
+            if (level is not AbstractLevel || !this.IsAmongEntitiesOf(level))
+                return;
+
+            position = this.Position;
+        }
+
+        // Metadata reads the entity's final flag when serialized. Never call the broadcaster under either lock.
+        level.PacketBroadcaster.QueuePacketToLevelInRange(level, position,
+            new SetEntityDataPacket { EntityId = this.EntityId, Entity = this });
+    }
+
     internal void RestorePotionEffect(int id, int duration, int amplifier)
     {
         if (duration == -1 || duration > 0)
@@ -524,6 +578,7 @@ public partial class Living : Entity, ILiving
             };
             if (id == (int)PotionEffect.JumpBoost - 1)
                 this.RefreshJumpBoostFallProtection();
+            this.UpdateInvisibilityStatus(broadcast: false);
         }
     }
 
@@ -567,6 +622,7 @@ public partial class Living : Entity, ILiving
         });
         if (effectId == (int)PotionEffect.JumpBoost - 1)
             this.RefreshJumpBoostFallProtection();
+        this.UpdateInvisibilityStatus();
 
         if (this is Mob && effectId == (int)PotionEffect.Absorption - 1)
             AbsorptionHealth = Math.Min(4 * (updated.EffectData.Amplifier + 1), Math.Max(AbsorptionHealth, 4 * (amplifier + 1)));
@@ -603,6 +659,7 @@ public partial class Living : Entity, ILiving
         activePotionEffects.TryRemove(effectId, out _);
         if (effectId == (int)PotionEffect.JumpBoost - 1)
             this.RefreshJumpBoostFallProtection();
+        this.UpdateInvisibilityStatus();
         if (this is Mob && effectId == (int)PotionEffect.Absorption - 1)
             AbsorptionHealth = 0;
     }
