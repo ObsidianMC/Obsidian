@@ -1592,7 +1592,7 @@ public abstract partial class AbstractLevel : ILevel
             var chunksToKeep = new List<long>();
             Players.Values.ForEach(p =>
             {
-                chunksToKeep.AddRange(p.LoadedChunks);
+                chunksToKeep.AddRange(p.LoadedChunks.ToArray());
             });
 
             foreach (var chunk in LoadedChunks.Except(chunksToKeep).Except(this.spawnChunks))
