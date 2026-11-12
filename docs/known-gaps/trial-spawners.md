@@ -15,7 +15,9 @@ server sends no particle packets. Ominous trials convert Bad Omen during a spawn
 level, Trial Omen amplifier zero), switch configs with level event 3020, discard the old mobs while dropping their
 preserved equipment, and create ominous item spawners above eligible players or mobs. Spawn-data equipment tables
 equip their loot and apply their slot drop chances. `ominous_trials.json` checks these changes, the item spawners'
-saved and client item data, timers, sounds, release events and random draws against 26.3. What's left:
+saved and client item data, timers, sounds, release events and random draws against 26.3. Eight additional probes
+follow real releases through impact, including potion reloads, ordinary arrows carrying potion contents and the
+player wind charge's separate burst. Loaded chunks outside simulation range pause item-spawner timers. What's left:
 
 ## Left for later trial work
 
@@ -55,9 +57,9 @@ saved and client item data, timers, sounds, release events and random draws agai
 
 ## Found along the way
 
-- **Released projectile impacts.** Ominous item releases are checked at birth, then the probe discards the released
-  entities before flight. Subsequent flight and impacts use the existing projectile runtime; lingering potions still
-  don't create their area-effect clouds. Those effects need their own implementation and capture.
+- **Lingering potion clouds.** Released lingering potions shatter with vanilla's particle and sound level events,
+  without direct damage, fire or splash effects. They still don't create area-effect clouds; cloud lifetime, radius
+  and effect application need their own implementation and capture.
 - **NoAI mobs fall.** Vanilla's NoAI mobs don't move, even under gravity; Obsidian's still travel. The capture gives
   its mobs `NoGravity` as well, which changes nothing in vanilla.
 - **Tiny moves.** Vanilla's `Entity.move` leaves an entity in place when collision cut its move to under 1e-7 squared,

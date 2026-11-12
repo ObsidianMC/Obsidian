@@ -105,6 +105,12 @@ internal sealed class BreezeWindCharge : Entity
 
     private async ValueTask BurstAsync(MobTerrain terrain, VectorD burst)
     {
+        if (this.Type == EntityType.WindCharge && this.Level is AbstractLevel windLevel)
+        {
+            await windLevel.BurstWindChargeAsync(this, burst);
+            return;
+        }
+
         // What the burst reaches is measured from it. The charge itself stays where it is: moving it would leave its
         // region membership behind, and its removal would look in the wrong region.
         if (Level is AbstractLevel level)

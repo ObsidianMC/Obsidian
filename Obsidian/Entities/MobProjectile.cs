@@ -216,6 +216,9 @@ internal sealed class MobProjectile : Entity
             case EntityType.SplashPotion:
                 await SplashAsync(null);
                 break;
+            case EntityType.LingeringPotion:
+                this.SendPotionBreak();
+                break;
             case EntityType.Fireball:
                 await level.ExplodeAsync(this, 1, Owner);
 
@@ -264,6 +267,15 @@ internal sealed class MobProjectile : Entity
         {
             await SplashAsync(target);
             await RemoveAsync();
+            return;
+        }
+
+        if (Type == EntityType.LingeringPotion)
+        {
+            // Cloud application is still a documented gap. A lingering potion must nevertheless shatter without
+            // entering the fireball damage/fire path or applying its effects as a splash.
+            this.SendPotionBreak();
+            await this.RemoveAsync();
             return;
         }
 
@@ -356,8 +368,12 @@ internal sealed class MobProjectile : Entity
         tag.Set(new NbtTag<int>("ObsidianSplashEffect", SplashEffect));
         tag.Set(new NbtTag<int>("ObsidianSplashDuration", SplashDuration));
         tag.Set(new NbtTag<int>("ObsidianSplashAmplifier", SplashAmplifier));
-        if (ownerUuid != Guid.Empty)
-            tag.Set(new NbtArray<int>("Owner", EntityNbt.UuidToInts(ownerUuid)));
+        if (this.Type is EntityType.SplashPotion or EntityType.LingeringPotion && this.SplashItem is ItemStack item)
+            tag.Set(item.ToNbt("Item"));
+
+        var owner = this.Owner?.Uuid ?? this.ownerUuid;
+        if (owner != Guid.Empty)
+            tag.Set(new NbtArray<int>("Owner", EntityNbt.UuidToInts(owner)));
     }
 
     internal override void ReadNbt(NbtCompound tag)
@@ -368,6 +384,13 @@ internal sealed class MobProjectile : Entity
         SplashDuration = Math.Max(0, duration);
         var amplifier = tag.TryGetNumber<int>("ObsidianSplashAmplifier", out var savedAmplifier) ? savedAmplifier : 0;
         SplashAmplifier = Math.Clamp(amplifier, 0, 10);
+        if (this.Type is EntityType.SplashPotion or EntityType.LingeringPotion
+            && tag.TryGetTag<NbtCompound>("Item", out var item))
+        {
+            this.SplashItem = item.ItemFromNbt();
+            var contents = this.SplashItem?.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents);
+            this.SplashEffects = [.. ArrowPotionEffects.Get(contents)];
+        }
         if (tag.TryGetNumber<int>("ObsidianLife", out var life))
             age = Math.Clamp(life, 0, 600);
 
@@ -414,11 +437,19 @@ internal sealed class MobProjectile : Entity
                 await ApplySplashEffectAsync(living, effect, strength, undead);
         }
 
-        // Vanilla's AbstractThrownPotion.onHit: the splash's particles (instant ones for an instant potion), then its
+        this.SendPotionBreak();
+    }
+
+    private void SendPotionBreak()
+    {
+        var effects = this.GetSplashEffects();
+        var contents = this.SplashItem?.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents);
+        var color = contents?.CustomColor ?? 0x385dc6;
+        // Vanilla's AbstractThrownPotion.onHit: the potion's particles (instant ones for an instant potion), then its
         // sound, which is a level event of its own.
         var block = (Vector)Position.Floor();
         var instant = effects.Any(effect => IsInstant(effect.Id));
-        var particles = new LevelEventPacket(instant ? 2007 : 2002, block, 0x385dc6);
+        var particles = new LevelEventPacket(instant ? 2007 : 2002, block, color);
         PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, particles);
         if (!Silent)
         {
@@ -452,7 +483,8 @@ internal sealed class MobProjectile : Entity
 
     private bool IsOutOfSplash(Living living) =>
         !living.Alive
-        || Math.Abs(living.Position.Y - Position.Y) > 2
+        || living.Position.Y + living.Dimension.Height <= this.Position.Y - 2
+        || living.Position.Y >= this.Position.Y + this.Dimension.Height + 2
         || living is IPlayer { GameMode: GameMode.Creative or GameMode.Spectator };
 
     private static bool IsSplashUndead(EntityType? type) =>

@@ -71,6 +71,7 @@ public sealed partial class VanillaTrialSpawners
     public async Task OminousItemSaveRestartsDelayAndPreservesClientItem()
     {
         await using var replay = await TrialWorld.CreateAsync(1);
+        using var ticket = replay.Level.AddChunkTicket(0, 0);
         var tag = SnbtReader.ReadCompound("{id:'minecraft:ominous_item_spawner',spawn_item_after_ticks:80L,"
             + "item:{id:'minecraft:lingering_potion',count:1,components:"
             + "{'minecraft:potion_contents':{potion:'minecraft:weaving'}}}}");

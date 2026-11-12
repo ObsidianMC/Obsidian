@@ -241,6 +241,15 @@ internal static class FixtureDumper
             "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("BlockUseInstrumentation.java"),
             server.ClassPath[0], observed);
         var observedJar = Path.Combine(observed, "vanilla-observed.jar");
+        if (Path.GetFileName(fixture) == "ominous_trials.json")
+        {
+            var seeded = Path.Combine(world, "seeded-shots");
+            await VanillaServer.RunJavaAsync(world,
+                "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("OminousTrialInstrumentation.java"),
+                observedJar, seeded);
+            observedJar = Path.Combine(seeded, "vanilla-observed.jar");
+        }
+
         var classPath = string.Join(Path.PathSeparator, new[] { observedJar }.Concat(server.ClassPath.Skip(1)));
 
         // The probe finds the server in the shutdown hook vanilla's Main registers.

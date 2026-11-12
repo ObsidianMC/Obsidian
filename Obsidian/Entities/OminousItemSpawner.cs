@@ -19,6 +19,10 @@ public sealed partial class OminousItemSpawner : Entity
     private int age;
     private bool removed;
 
+    // The release-to-impact capture seeds the new projectile before its native shoot call. Normal entities use
+    // their own unseeded random, as before; this seam supplies that same private stream to the replay.
+    internal IRandomSource? ShotRandom { get; set; }
+
     /// <summary>Creates the item clients see, released after a level-random delay of 60 to 120 ticks.</summary>
     internal static OminousItemSpawner Create(AbstractLevel level, ItemStack item) => new()
     {
@@ -32,7 +36,7 @@ public sealed partial class OminousItemSpawner : Entity
 
     public override async ValueTask TickAsync()
     {
-        if (this.removed || this.Level is not AbstractLevel level)
+        if (this.removed || this.Level is not AbstractLevel level || !level.IsMobTicking(this.Position))
             return;
 
         this.age++;
@@ -91,7 +95,7 @@ public sealed partial class OminousItemSpawner : Entity
     private Entity Release(AbstractLevel level, ItemStack stack)
     {
         var id = stack.Holder.Id;
-        var random = new LegacyRandomSource(Random.Shared.NextInt64());
+        var random = this.ShotRandom ?? new LegacyRandomSource(Random.Shared.NextInt64());
         var thrown = id is ItemIds.SplashPotion or ItemIds.LingeringPotion or ItemIds.ExperienceBottle;
         var power = thrown ? 1.1f * 1.25f : 1.1f;
         var spread = thrown ? 3f : 6f;
