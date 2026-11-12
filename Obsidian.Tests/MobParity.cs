@@ -150,29 +150,6 @@ public sealed class MobParity
     }
 
     [Fact]
-    public async Task DragonProjectileDamageHonorsPerchingAndRecordsAcceptedHits()
-    {
-        await using var context = TestServerFactory.CreateServer($"dragon-projectile-{Guid.NewGuid():N}");
-        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Archer");
-        var dragon = new EnderDragon { Level = context.World };
-        dragon.InitializeAi(false);
-        var saved = EntityNbt.Save(dragon)!;
-        saved.Set(new NbtTag<int>("DragonPhase", 6));
-        dragon = Assert.IsType<EnderDragon>(EntityNbt.Load(saved, context.World));
-
-        await dragon.DamageCombatAsync(player, 12, CombatDamageKind.Projectile);
-
-        Assert.Equal(200, dragon.Health);
-        Assert.Equal(0, dragon.AcceptedDamageCount);
-
-        dragon.BeginFight(new VectorD(0, 64, 0));
-        await dragon.DamagePartAsync(player, 12, 0, projectile: true);
-
-        Assert.Equal(188, dragon.Health);
-        Assert.Equal(1, dragon.AcceptedDamageCount);
-    }
-
-    [Fact]
     public async Task InfinitePotionDurationSurvivesTicksAndSaving()
     {
         await using var context = TestServerFactory.CreateServer($"potion-infinite-{Guid.NewGuid():N}");

@@ -11,15 +11,15 @@ The project targets Java 26.3, but the available cached reference server and map
 | Fall damage | The shared default now consults `fall_damage_immune`. This covers missing exemptions for cats, ocelots, iron/copper golems and Breezes, and replaces the special-case chicken check. Existing explicit species overrides remain. |
 | Undead effects | Poison and regeneration immunity now follows `ignores_poison_and_regen`, rather than an incomplete hard-coded poison-only list. Spider poison immunity and Wither Skeleton/Parched exceptions remain. |
 | Animals | The `Animal` base supplies the adult 1–3 XP reward and zero baby XP, fixing missing defaults for horse-family mobs and parrots. Species overrides remain. Breeding XP now honors `mob_drops`. |
-| Chicken jockeys | Chickens marked as jockeys can distance-despawn and award 10 XP, as in the cached vanilla Chicken implementation. Ordinary chickens keep their existing behavior. |
+| Chicken jockeys | Chickens marked as jockeys can distance-despawn and adult ones award 10 XP, as in the cached vanilla Chicken implementation. Ordinary chickens keep their existing behavior. |
 | Horses | Coat and markings are chosen independently: each parent's coat has a 4/9 chance, with 1/9 random; each parent's markings have a 2/5 chance, with 1/5 random. Crossbreeding still produces a mule through the existing path. |
 | Slimes and Magma Cubes | Split children preserve the parent's mob flags (including NoAI) and custom-name visibility, alongside the existing name and persistence transfer. |
-| Dolphins | Add the missing adult XP reward. Breathing checks actual fluid occupancy at the eyes, including waterlogged blocks; NoAI dolphins replenish air rather than drowning. |
+| Dolphins | Add the missing adult XP reward. Breathing checks actual fluid occupancy at the eyes, including waterlogged blocks but not bubble columns; NoAI dolphins replenish air rather than drowning. |
 | Warden | A save with a missing or expired pose timer loads standing instead of stuck digging or emerging; missing sniff and sonic cooldowns load as their spawn defaults. |
-| Ender Dragon | A dead dragon ignores damage, projectile damage of any kind is ignored while perched, accepted hits are counted (arrows hitting a part check the dragon itself), and a dying dragon's death timer survives a reload. |
+| Ender Dragon | A dead dragon ignores damage, projectile damage of any kind is ignored while perched (broader than vanilla, which only ignores arrows and players' wind charges), accepted hits are counted (arrows hitting a part check the dragon itself), and a dying dragon's death timer survives a reload. |
 | Wither | Health changes are sent to clients on spawn and on each regeneration step, and it only regenerates below full health. |
 
-These rules are not covered by hand-written tests; they should be checked against vanilla captures. Two Obsidian-side checks were added to `MobParity`: a Warden save missing its pose and cooldown timers loads standing with default cooldowns, and Ender Dragon projectile damage respects perching and counts accepted hits.
+These rules are not covered by hand-written tests; they should be checked against vanilla captures. One Obsidian save check was added to `MobParity`: a Warden save missing its pose and cooldown timers loads standing with default cooldowns.
 
 ## Significant work deferred
 
