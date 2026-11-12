@@ -287,7 +287,8 @@ What landed:
   flushing one, and a block packet is admitted only if the count hasn't changed and the player is still in the level
   with the chunk, checked under the lock that admits every packet. A player leaving for another level never gets its
   blocks after their respawn, even if they have come back by then, and a player arriving gets none before it, though
-  their level is set and their old chunks still listed before the respawn is queued.
+  their level is set and their old chunks still listed before the respawn is queued. The exception is a plugin that
+  cancels the respawn packet, which leaves the client in the old level (see `known-gaps/26-3-blocks.md`).
 - Block events go out as the tick dispatches them. The block changes they make go out at the next tick's flush, as
   in vanilla.
 - Vanilla doesn't send a moving piston's block or its block-entity data. Obsidian sent both from the block-entity

@@ -394,7 +394,10 @@ public sealed class BlockUseSafety
             Assert.Equal(before + committed, player.Statistics.Get("minecraft:bone_meal", "minecraft:used"));
             Assert.Equal(committed, world.TakeGameEvents().Count(e => e.Kind == MobGameEvent.ItemInteractFinish));
             player.FlushBlockAcknowledgement();
-            Assert.Equal(3, Assert.Single(client.SentPackets.OfType<BlockChangedAckPacket>()).SequenceID);
+            if (interference == "disconnect")
+                Assert.Empty(client.SentPackets.OfType<BlockChangedAckPacket>());
+            else
+                Assert.Equal(3, Assert.Single(client.SentPackets.OfType<BlockChangedAckPacket>()).SequenceID);
             if (interference is "none" or "two_items")
                 Assert.Null(player.GetHeldItem());
             if (interference == "hand")

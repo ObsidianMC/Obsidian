@@ -74,7 +74,7 @@ internal sealed class TestClient(IServer server, bool connected = true) : IClien
         this.BeforeSend?.Invoke(shared.Packet);
         lock (this.packets)
         {
-            if ((this.levelEpoch?.Number ?? 0) != levelEpoch || !wanted())
+            if (!this.Connected || (this.levelEpoch?.Number ?? 0) != levelEpoch || !wanted())
                 return false;
 
             this.packets.Add(shared.Packet);
