@@ -389,6 +389,34 @@ public class ConcurrentHashSet<T> : IReadOnlyCollection<T>, ICollection<T>
         }
     }
 
+    /// <summary>
+    /// Copies the items to a new array, as of one moment.
+    /// </summary>
+    /// <remarks>
+    /// Unlike <see cref="System.Linq.Enumerable.ToArray{TSource}(System.Collections.Generic.IEnumerable{TSource})"/>, which counts the items before copying
+    /// them, it doesn't fail when another thread adds items meanwhile: it counts and copies under the same locks.
+    /// </remarks>
+    public T[] ToArray()
+    {
+        var locksAcquired = 0;
+        try
+        {
+            AcquireAllLocks(ref locksAcquired);
+
+            var count = 0;
+            for (var i = 0; i < _tables.Locks.Length; i++)
+                count = checked(count + _tables.CountPerLock[i]);
+
+            var array = new T[count];
+            CopyToItems(array, 0);
+            return array;
+        }
+        finally
+        {
+            ReleaseLocks(0, locksAcquired);
+        }
+    }
+
     void ICollection<T>.Add(T item) => Add(item);
 
     bool ICollection<T>.IsReadOnly => false;
