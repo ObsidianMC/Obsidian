@@ -239,14 +239,16 @@ public sealed class WorldCommandModule : CommandModuleBase
             return 0;
         }
 
-        if (!IsLoaded(level, min, max))
+        // The region's chunks are checked under the same hold of the level's tick lock as the fill, so none unloads
+        // in between; the feedback is sent once it's released.
+        Func<BiomeCodec, bool>? replaces = filter is null ? null : filter.Contains;
+        var changed = level.FillBiomes(min, max, biome, replaces, requireLoaded: true);
+        if (changed is null)
         {
             await this.CommandContext.FailAsync("That position is not loaded");
             return 0;
         }
 
-        Func<BiomeCodec, bool>? replaces = filter is null ? null : filter.Contains;
-        var changed = level.FillBiomes(min, max, biome, replaces);
         if (changed == 0)
         {
             await this.CommandContext.FailAsync("No biome entries were changed");
@@ -255,7 +257,7 @@ public sealed class WorldCommandModule : CommandModuleBase
 
         await this.CommandContext.SuccessAsync(
             $"{changed} biome entry/entries set between {Format(min)} and {Format(max)}");
-        return changed;
+        return changed.Value;
     }
 
     [Command("clone")]

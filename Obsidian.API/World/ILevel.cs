@@ -121,7 +121,8 @@ public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
     /// telling clients, this is how a plugin changes biomes players can see. Safe to call from any thread: it holds
     /// the level's tick lock while it fills, so it waits for the block updates running at the time, and runs
     /// <paramref name="filter"/> under it. Don't call it while holding a lock block hooks may wait on, such as a
-    /// window's.
+    /// window's. It holds the tick lock for time proportional to the box's area in chunks, loaded or not, so the
+    /// level's tick waits for it: keep boxes to loaded areas.
     /// </remarks>
     /// <returns>How many quarts changed biome. Zero sends nothing.</returns>
     public int FillBiomes(

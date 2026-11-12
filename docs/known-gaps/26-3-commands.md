@@ -44,9 +44,10 @@ within their limits, and distribution across targets.
   command sends them at once. The capture can't tell them apart, since it waits for the next tick; a client sees them
   at most a tick later. `/fillbiome` isn't one of the commands that take vanilla's generated grammar
   (`VanillaCommandTree.Owns`), so clients get Obsidian's tree for it: `replace` is a single-word argument, as `/fill`'s
-  modes are, rather than a literal. A biome read off the tick lock (one that doesn't wait for the level's block
-  updates) racing a fill can see a section's biomes part way through being rebuilt. Neither the packet nor the
-  command's tree has been checked on a real 26.3 client.
+  modes are, rather than a literal. A biome read that doesn't take the tick lock (natural spawning's, say) racing a
+  fill can briefly see a biome the section held before the fill, or plains, but never null. A fill holds the tick lock
+  for time proportional to its box's area in chunks, loaded or not; there's no limit for plugins' boxes. Neither the
+  packet nor the command's tree has been checked on a real 26.3 client.
 
 Whitelist defaults to on for fresh installs, whose generated `server.json` sets it explicitly; an existing
 `server.json` without a `whitelist` entry keeps it off and gets a startup notice. An empty optional IP whitelist no

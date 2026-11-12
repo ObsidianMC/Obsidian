@@ -19,7 +19,21 @@ public abstract partial class AbstractLevel
     }
 
     /// <inheritdoc/>
-    public int FillBiomes(Vector from, Vector to, BiomeCodec biome, Func<BiomeCodec, bool>? filter = null)
+    public int FillBiomes(Vector from, Vector to, BiomeCodec biome, Func<BiomeCodec, bool>? filter = null) =>
+        this.FillBiomes(from, to, biome, filter, requireLoaded: false) ?? 0;
+
+    /// <summary>
+    /// Like <see cref="FillBiomes(Vector, Vector, BiomeCodec, Func{BiomeCodec, bool}?)"/>, but with
+    /// <paramref name="requireLoaded"/> it changes nothing and returns null unless every chunk of the box is loaded,
+    /// generated and not being unloaded, checked under the same hold of the tick lock as the fill, as
+    /// <c>/fillbiome</c> requires.
+    /// </summary>
+    internal int? FillBiomes(
+        Vector from,
+        Vector to,
+        BiomeCodec biome,
+        Func<BiomeCodec, bool>? filter,
+        bool requireLoaded)
     {
         ArgumentNullException.ThrowIfNull(biome);
 
@@ -27,17 +41,21 @@ public abstract partial class AbstractLevel
         var changed = 0;
 
         // Under the tick lock, as block changes are made, so that a flush reads a chunk's biomes before or after a
-        // fill, never during one. Chunks in vanilla's order, x within z, which the packets list them in.
+        // fill, never during one, and a chunk's unload either takes the fill's changes or keeps the fill out. Chunks
+        // in vanilla's order, x within z, which the packets list them in.
         lock (this.Fluids.TickLock)
         {
+            if (requireLoaded && !this.AreChunksLive(min, max))
+                return null;
+
             for (var chunkZ = min.Z >> 4; chunkZ <= max.Z >> 4; chunkZ++)
             {
                 for (var chunkX = min.X >> 4; chunkX <= max.X >> 4; chunkX++)
                 {
-                    if (this.GetLoadedChunk(chunkX, chunkZ) is not Chunk { IsGenerated: true } chunk)
+                    if (this.LiveChunk(chunkX, chunkZ) is not Chunk chunk)
                         continue;
 
-                    var chunkChanged = FillChunkBiomes(chunk, min, max, biome, filter);
+                    var chunkChanged = this.FillChunkBiomes(chunk, min, max, biome, filter);
                     if (chunkChanged == 0)
                         continue;
 
@@ -49,6 +67,28 @@ public abstract partial class AbstractLevel
 
         return changed;
     }
+
+    // Under the tick lock: whether every chunk of the box is live (see LiveChunk).
+    private bool AreChunksLive(Vector min, Vector max)
+    {
+        for (var chunkZ = min.Z >> 4; chunkZ <= max.Z >> 4; chunkZ++)
+        {
+            for (var chunkX = min.X >> 4; chunkX <= max.X >> 4; chunkX++)
+            {
+                if (this.LiveChunk(chunkX, chunkZ) is null)
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    // Under the tick lock: the chunk if it's loaded, generated and still resident. One a region unload has already
+    // snapshotted is still in its slot, but a change to it would be lost with it, as other live writes check.
+    private Chunk? LiveChunk(int chunkX, int chunkZ) =>
+        this.GetLoadedChunk(chunkX, chunkZ) is Chunk { IsGenerated: true } chunk && this.Fluids.IsResident(chunk)
+            ? chunk
+            : null;
 
     /// <summary>
     /// The corners of the quarts <paramref name="from"/> and <paramref name="to"/> are in, lowest first: the box
@@ -66,57 +106,78 @@ public abstract partial class AbstractLevel
     private static Vector QuartCorner(Vector position) => new(position.X & ~3, position.Y & ~3, position.Z & ~3);
 
     // Fills one chunk's quarts in the box, returning how many changed biome. A chunk with changes has every section's
-    // biomes rebuilt, as vanilla's fill rebuilds each section's container (see Rebuild).
+    // biomes rebuilt, as vanilla's fill rebuilds each section's container (see Rebuild). A first pass, without holding
+    // the sections, finds whether anything changes, so that an unchanged chunk is left as it is. Then each section is
+    // read again and rebuilt under its container's lock, which every biome write takes, so that a biome set
+    // meanwhile through the chunk or its sections without the tick lock is kept, not overwritten.
     private int FillChunkBiomes(Chunk chunk, Vector min, Vector max, BiomeCodec biome, Func<BiomeCodec, bool>? filter)
     {
         lock (chunk.BlockLock)
         {
             var sections = chunk.Sections;
-            var filled = new BiomeCodec[sections.Length][];
+            var values = new BiomeCodec[QuartsInSection];
+            var changes = 0;
+            for (var sectionIndex = 0; sectionIndex < sections.Length && changes == 0; sectionIndex++)
+            {
+                var biomes = sections[sectionIndex].BiomeContainer;
+                changes += this.FillSection(chunk, sectionIndex, biomes, min, max, biome, filter, values);
+            }
+
+            if (changes == 0)
+                return 0;
+
             var changed = 0;
             for (var sectionIndex = 0; sectionIndex < sections.Length; sectionIndex++)
             {
-                var sectionY = (this.MinY >> 4) + sectionIndex;
                 var biomes = sections[sectionIndex].BiomeContainer;
-                var section = filled[sectionIndex] = new BiomeCodec[QuartsInSection];
-                var index = 0;
-                for (var x = 0; x < QuartsPerSection; x++)
-                {
-                    for (var y = 0; y < QuartsPerSection; y++)
-                    {
-                        for (var z = 0; z < QuartsPerSection; z++)
-                        {
-                            var current = biomes.Get(x, y, z) ?? CodecRegistry.Biomes.Plains;
-                            var corner = new Vector(
-                                chunk.X << 4 | x << 2,
-                                sectionY << 4 | y << 2,
-                                chunk.Z << 4 | z << 2);
-                            var fills = IsInside(corner, min, max) && (filter?.Invoke(current) ?? true);
-                            if (fills && current.Id != biome.Id)
-                                changed++;
-
-                            section[index++] = fills ? biome : current;
-                        }
-                    }
-                }
+                using var scope = biomes.EnterScope();
+                changed += this.FillSection(chunk, sectionIndex, biomes, min, max, biome, filter, values);
+                Rebuild(biomes, values);
             }
-
-            if (changed == 0)
-                return 0;
-
-            for (var sectionIndex = 0; sectionIndex < sections.Length; sectionIndex++)
-                Rebuild(sections[sectionIndex].BiomeContainer, filled[sectionIndex]);
 
             return changed;
         }
     }
 
+    // Lists a section's biomes after the fill in values, x, y, z, and returns how many quarts change.
+    private int FillSection(
+        Chunk chunk,
+        int sectionIndex,
+        DataContainer<BiomeCodec> biomes,
+        Vector min,
+        Vector max,
+        BiomeCodec biome,
+        Func<BiomeCodec, bool>? filter,
+        BiomeCodec[] values)
+    {
+        var sectionY = (this.MinY >> 4) + sectionIndex;
+        var changed = 0;
+        var index = 0;
+        for (var x = 0; x < QuartsPerSection; x++)
+        {
+            for (var y = 0; y < QuartsPerSection; y++)
+            {
+                for (var z = 0; z < QuartsPerSection; z++)
+                {
+                    var current = biomes.Get(x, y, z);
+                    var corner = new Vector(chunk.X << 4 | x << 2, sectionY << 4 | y << 2, chunk.Z << 4 | z << 2);
+                    var fills = IsInside(corner, min, max) && (filter?.Invoke(current) ?? true);
+                    if (fills && current.Id != biome.Id)
+                        changed++;
+
+                    values[index++] = fills ? biome : current;
+                }
+            }
+        }
+
+        return changed;
+    }
+
     // Replaces a section's biomes with values, listed x, y, z, in the palette vanilla's fill leaves (see
     // FilledPalette). Obsidian's palette grows at the sizes vanilla's does, so adding the entries in that order gives
-    // the same palette and bits. Under the container's lock, so that a save snapshots it before or after.
+    // the same palette and bits. Called holding the container's lock, so that a save snapshots it before or after.
     private static void Rebuild(DataContainer<BiomeCodec> biomes, BiomeCodec[] values)
     {
-        using var scope = biomes.EnterScope();
         var palette = FilledPalette(FirstPaletteEntry(biomes), values);
         biomes.Reset();
         foreach (var entry in palette)
