@@ -4,11 +4,9 @@ namespace Obsidian.API.Containers;
 
 public class SmeltingContainer : ResultContainer
 {
-    // Its slots are its own, behind its own lock (see LocksOnlyItself). Sealed with LockParts, so that no subclass
-    // can keep slots elsewhere while still claiming it.
-    internal sealed override bool LocksOnlyItself => true;
-
-    internal sealed override IEnumerable<BaseContainer> LockParts => [this];
+    // Its slots are its own, behind its own lock (see LocksOnlyItself). Only for this exact type: a subclass can
+    // override GetItem and SetItem to keep its slots elsewhere, so it goes through Lock like any other container.
+    internal sealed override bool LocksOnlyItself => this.GetType() == typeof(SmeltingContainer);
 
     public string Id { get; }
 

@@ -289,6 +289,48 @@ public sealed class ItemAccess
         Assert.Equal(1, backing.TransactionLock.CurrentCount);
     }
 
+    [Fact(DisplayName = "A plugin's component copy never runs holding a crafter's lock")]
+    public void CrafterInsertHookRunsNoComponentCopyUnderTheLock()
+    {
+        var crafter = new CrafterBlockEntity(new Vector(0, 64, 0));
+        var access = crafter.GetItemAccess(side: null)!;
+        var copiesUnderLock = 0;
+
+        int CountUnderLock(int value)
+        {
+            if (crafter.Inventory.TransactionLock.CurrentCount == 0)
+                copiesUnderLock++;
+
+            return value;
+        }
+
+        var maxStackSize = new SimpleDataComponent<int>(
+            DataComponentType.MaxStackSize,
+            "minecraft:max_stack_size",
+            (writer, value) => writer.WriteVarInt(value),
+            reader => reader.ReadVarInt(),
+            CountUnderLock)
+        {
+            Value = 16
+        };
+
+        // The insert hook compares slot 0's count with its max stack size before spreading to the empty slot 1.
+        crafter.Inventory[0] = new ItemStack(ItemsRegistry.Stone, 5, maxStackSize);
+        Assert.Null(access.Insert(new ItemStack(ItemsRegistry.Stone, 1)));
+
+        Assert.Equal(1, crafter.Inventory[1]?.Count);
+        Assert.Equal(0, copiesUnderLock);
+    }
+
+    [Fact(DisplayName = "Only a smelting container itself skips the general lock; a subclass may keep its slots elsewhere")]
+    public void SmeltingSubclassesGoThroughTheGeneralLock()
+    {
+        Assert.True(new SmeltingContainer(InventoryType.Furnace, 3, "minecraft:furnace").LocksOnlyItself);
+        Assert.False(new RedirectingSmelter().LocksOnlyItself);
+    }
+
+    private sealed class RedirectingSmelter() : SmeltingContainer(InventoryType.Furnace, 3, "minecraft:furnace");
+
     // A block entity over a menu that records, on each insert, whether the menu's backing container was locked.
     private sealed class BackingCheck(MenuContainer menu, BaseContainer backing) : ContainerBlockEntity(menu)
     {
