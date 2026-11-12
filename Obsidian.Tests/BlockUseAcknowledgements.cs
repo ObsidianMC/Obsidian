@@ -14,7 +14,7 @@ namespace Obsidian.Tests;
 public sealed class BlockUseAcknowledgements
 {
     [Fact]
-    public async Task ConnectionPassAcknowledgesRefusalsWhilePausedAndOutsideLevelMembership()
+    public async Task TickLoopAcknowledgesRefusalsWhilePausedAndOutsideLevelMembership()
     {
         await using var context = TestServerFactory.CreateServer($"connection-acks-{Guid.NewGuid():N}");
         var world = context.World;
@@ -47,8 +47,8 @@ public sealed class BlockUseAcknowledgements
             Assert.Contains(client.SentPackets, packet => packet is ContainerSetSlotPacket);
         }
 
-        // Drive the same periodic connection pass as the live server, without a timer or a world tick.
-        await context.Server.TickConnectionsAsync(sendKeepAlive: false);
+        // Drive the same turn of the tick loop as the live paused server, without a timer.
+        await context.Server.RunTickTurnAsync();
         foreach (var player in new[] { paused, arriving })
         {
             var client = (TestClient)player.Client;
@@ -57,7 +57,7 @@ public sealed class BlockUseAcknowledgements
             Assert.Equal(1, player.GetHeldItem()?.Count);
         }
 
-        await context.Server.TickConnectionsAsync(sendKeepAlive: false);
+        await context.Server.RunTickTurnAsync();
         Assert.Single(((TestClient)paused.Client).SentPackets.OfType<BlockChangedAckPacket>());
         Assert.Single(((TestClient)arriving.Client).SentPackets.OfType<BlockChangedAckPacket>());
         Assert.True(context.Server.Paused);

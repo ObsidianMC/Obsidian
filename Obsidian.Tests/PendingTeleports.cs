@@ -74,7 +74,9 @@ public sealed partial class PendingTeleports
             && corrected == support);
         Assert.Contains(client.SentPackets, packet => packet is BlockUpdatePacket { Position: var corrected }
             && corrected == support + Vector.Up);
-        await context.Server.TickConnectionsAsync(sendKeepAlive: false);
+
+        // The acknowledgement goes out with the level's next flush, behind its block changes.
+        context.World.FlushBlockChanges();
         Assert.Equal(use.Sequence, Assert.Single(client.SentPackets.OfType<BlockChangedAckPacket>()).SequenceID);
 
         // The 26.3 confirmation's reported position is applied from the server destination, with cleared flags.
@@ -529,7 +531,9 @@ public sealed partial class PendingTeleports
         Assert.Equal(2, client.SentPackets.OfType<BlockUpdatePacket>().Count());
         Assert.Contains(client.SentPackets, packet => packet is ContainerSetSlotPacket);
         Assert.DoesNotContain(client.SentPackets, packet => packet is BlockChangedAckPacket);
-        await context.Server.TickConnectionsAsync(sendKeepAlive: false);
+
+        // Run directly, the use has no handler to acknowledge it once done: the caller sends it.
+        player.FlushBlockAcknowledgement();
         Assert.Equal(71, Assert.Single(client.SentPackets.OfType<BlockChangedAckPacket>()).SequenceID);
     }
 

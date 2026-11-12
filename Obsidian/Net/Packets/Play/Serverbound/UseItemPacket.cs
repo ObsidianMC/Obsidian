@@ -28,8 +28,12 @@ public partial class UseItemPacket
         this.Pitch = reader.ReadSingle();
     }
 
-    public override async ValueTask HandleAsync(IServer server, IClientPlayer player) =>
+    public override async ValueTask HandleAsync(IServer server, IClientPlayer player)
+    {
+        // The acknowledgement follows the block changes the use makes, with the next flush of the player's level.
+        using var acknowledgement = (player as PlayerBase)?.BeginBlockAcknowledgementScope();
         await this.UseAsync(server, player);
+    }
 
     internal async ValueTask<UseResult> UseAsync(IServer server, IClientPlayer player)
     {

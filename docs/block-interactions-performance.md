@@ -246,7 +246,74 @@ Rides with: plan phases 4 and 5, for the components each batch touches.
 
 ### 5. Send block changes to clients once per tick per section
 
-*From the code. Changes packet timing to vanilla's, so it needs a check on a real client. Approved 2026-11-09.*
+*Done (branch `perf/section-block-updates`). Matches a vanilla capture of the packets a client receives; still needs
+a check on a real 26.3 client: pistons, note blocks, and placing and breaking with prediction.*
+
+What landed:
+
+- `SectionBlocksUpdatePacket` is hand-written: section coordinates packed into a long, then each change as a var-long
+  of state id and position in the section. Its bytes match vanilla's capture.
+- `BlockChangeBroadcasts` (`Obsidian/WorldData/BlockChangeBroadcasts.cs`) collects each level's changed positions
+  per chunk section. A section's positions come out in the order of vanilla's `ShortOpenHashSet`, which the client
+  applies in turn. The level's tick flushes them after block and fluid ticks and before block events, like vanilla's
+  chunk broadcast: one block update for a section with one change, otherwise one section update, each with the
+  block's state at the flush. A change made outside the tick (a plugin, a command, a packet handler) goes out at the
+  next flush. Only players who have the chunk get it.
+- Prediction acknowledgements follow the flush that carries their block changes, and that tick's block events:
+  - A use or break handler records the sequences it queues. When it's done, it hands the highest to its player's
+    level. The level's next flush sends the player its block changes, and the acknowledgement goes out once the tick's
+    block events have, as vanilla's connection tick sends it after the levels' ticks. Until then the client keeps the
+    server's corrections in its prediction cache and runs block events against the block it predicted.
+  - A level tick that fails still sends the blocks changed so far and then the acknowledgements that follow them, as
+    it ends; if it failed before its block events, there are none to wait for. Steady use is acknowledged every tick.
+  - While the server is paused (vanilla's frozen game still broadcasts, and runs no block events), each turn of the
+    tick loop flushes every level and then sends its acknowledgements, in place of the world tick. The turn holds the
+    tick gate, as a world tick does, so the paused flush never runs beside a tick, and a resumed tick's
+    acknowledgements never overtake that tick's block events. It's the loop's own work, so nothing else taking the
+    gate can starve it. A level whose paused flush fails is reported like a failing tick; the others still flush.
+  - The client numbers its predictions afresh in each level. An acknowledgement is dropped if the client has been sent
+    a level change since its sequence came in (it dropped those predictions with the level), or if an equal or higher
+    one of the same level went out before it (a level whose flush came later).
+  - Acknowledgements still waiting when a level is disposed are dropped: its players have left it, or a later, higher
+    acknowledgement covers them.
+- A flush sends nothing under a lock, and sends once what was recorded when it began: what's recorded while it
+  sends waits for the next flush, which the next tick (or paused turn) brings, so a writer that never stops can't hold
+  the tick. If a send throws, the flush puts what it took back, changes and acknowledgements, and the next flush
+  sends it again; a player may get a correction twice, which does no harm. One flush per level sends at a time. A
+  flush asked for while another runs returns at once, and its changes are either taken by the running one or still
+  pending when it ends, so a stuck connection holds up only the flush that is sending to it.
+- A block packet names no level. Each connection counts the level changes (respawns) admitted to its output, and
+  records the level each one put the client in. A flush chooses a player only if their client's current level is the
+  flushing one, and a block packet is admitted only if the count hasn't changed and the player is still in the level
+  with the chunk, checked under the lock that admits every packet. A player leaving for another level never gets its
+  blocks after their respawn, even if they have come back by then, and a player arriving gets none before it, though
+  their level is set and their old chunks still listed before the respawn is queued. The exception is a plugin that
+  cancels the respawn packet, which leaves the client in the old level (see `known-gaps/26-3-blocks.md`).
+- Block events go out as the tick dispatches them. The block changes they make go out at the next tick's flush, as
+  in vanilla.
+- Vanilla doesn't send a moving piston's block or its block-entity data. Obsidian sent both from the block-entity
+  pass, and no longer does.
+- Breaking a block no longer sends the breaker an extra air update before the flush's, which vanilla doesn't send.
+
+`block_change_packets.json` (`VanillaBlockChangePackets`) replays vanilla's packets in order: a dust line toggled,
+a piston push, a note block, a place and a break with acknowledgements, and water spreading in two sections in one
+tick. The block probe's `Packets/toggle-15-dust` case counts block update and section update packets, and their
+bytes, sent to one player per toggle of a 15-dust line spanning two chunks. Each case uses the same harness
+(.NET 11.0.0, Windows 11, x64, Release), measured on 2026-11-11.
+
+| Toggle 15 dust | Before | After |
+|---|---:|---:|
+| Packets per tick | 40.50 | 2.00 |
+| Bytes per tick (id and body, before compression) | 445.00 | 83.00 |
+
+What's left:
+
+- Block-entity data still goes out at the end of the block-entity pass rather than with the block change in the
+  flush, and light updates at the end of the tick rather than with the chunk broadcast.
+- Vanilla's chunks broadcast in hash-map order. Obsidian's go in the order of each chunk's first change.
+- Corrections (refused uses, buckets, aborted breaks) still go out at once, as in vanilla.
+
+The proposal as written:
 
 `LevelFluids.OnBlockStored` broadcasts a `BlockUpdatePacket` for every block write as it happens, and
 `PlayersWithChunk` walks every player in the level for each one. Vanilla collects changed positions per chunk

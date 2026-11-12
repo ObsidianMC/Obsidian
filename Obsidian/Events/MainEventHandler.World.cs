@@ -132,8 +132,6 @@ public partial class MainEventHandler
 
         player.AddExhaustion(0.005f);
 
-        player.SendPacket(new BlockUpdatePacket(location, BlocksRegistry.Air.GetHashCode()));
-
         world.PacketBroadcaster.QueuePacketToLevel(world, 0, new BlockDestructionPacket
         {
             EntityId = player.EntityId,

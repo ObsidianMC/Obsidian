@@ -83,7 +83,12 @@ internal sealed class FakeWorldManager(IWorld defaultWorld, bool worldsLoaded = 
     public Task FlushLoadedWorldsAsync() =>
         this.FlushFailure is Exception failure ? Task.FromException(failure) : Task.CompletedTask;
 
-    public Task TickWorldsAsync() => Task.CompletedTask;
+    /// <summary>
+    /// What ticking the worlds does, for tests that tick through the server's tick loop; nothing by default.
+    /// </summary>
+    public Func<Task>? TickWorlds { get; init; }
+
+    public Task TickWorldsAsync() => this.TickWorlds?.Invoke() ?? Task.CompletedTask;
 
     public bool TryGetWorld(string name, [NotNullWhen(true)] out IWorld? world)
     {

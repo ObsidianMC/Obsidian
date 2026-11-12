@@ -183,10 +183,9 @@ public sealed class BlockUseTransactions
                 Assert.Equal(fault == "effect" ? 1 : 2, stack.Count);
                 Assert.Contains(target, notified);
                 Assert.Contains(other, notified);
-                Assert.Contains(client.SentPackets.OfType<BlockUpdatePacket>(),
-                    packet => packet.Position == target && packet.BlockId == BlocksRegistry.Dirt.GetHashCode());
-                Assert.Contains(client.SentPackets.OfType<BlockUpdatePacket>(),
-                    packet => packet.Position == other && packet.BlockId == BlocksRegistry.Cobblestone.GetHashCode());
+                world.FlushBlockChanges();
+                Assert.Contains((target, BlocksRegistry.Dirt.GetHashCode()), BlockUpdates.SentBlocks(client));
+                Assert.Contains((other, BlocksRegistry.Cobblestone.GetHashCode()), BlockUpdates.SentBlocks(client));
 
                 // A caller can recover: a later exchange consumes once and publishes its own visible effects.
                 notified.Clear();
@@ -199,8 +198,8 @@ public sealed class BlockUseTransactions
                 }, consumeItem: true));
                 Assert.Equal(fault == "effect" ? 0 : 1, player.GetHeldItem()?.Count ?? 0);
                 Assert.Contains(target, notified);
-                Assert.Contains(client.SentPackets.OfType<BlockUpdatePacket>(),
-                    packet => packet.Position == target && packet.BlockId == BlocksRegistry.Stone.GetHashCode());
+                world.FlushBlockChanges();
+                Assert.Contains((target, BlocksRegistry.Stone.GetHashCode()), BlockUpdates.SentBlocks(client));
             }
         }
         finally

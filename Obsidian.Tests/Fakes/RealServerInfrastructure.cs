@@ -29,7 +29,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Tests.Fakes;
 
-internal sealed class TestClient(IServer server, bool connected = true) : IClient
+internal sealed class TestClient(IServer server, bool connected = true) : IClient, IConditionalPacketSender
 {
     private readonly List<IClientboundPacket> packets = [];
 
@@ -52,9 +52,51 @@ internal sealed class TestClient(IServer server, bool connected = true) : IClien
 
     public bool SendPacket(IClientboundPacket packet)
     {
-        this.packets.Add(packet);
+        this.BeforeSend?.Invoke(packet);
+        this.Add(packet);
         return true;
     }
+
+    // Like Client's: level changes counted, and the checks made, under the lock every packet is added under. A test
+    // client starts in play without a login packet: until it's sent a level change, it's in its player's level, which
+    // tests set as they need.
+    public LevelEpoch LevelEpoch
+    {
+        get
+        {
+            lock (this.packets)
+                return this.levelEpoch ?? new LevelEpoch(0, this.Player?.Level);
+        }
+    }
+
+    public bool SendPacketIf(SharedPacketBodies shared, int levelEpoch, Func<bool> wanted)
+    {
+        this.BeforeSend?.Invoke(shared.Packet);
+        lock (this.packets)
+        {
+            if (!this.Connected || (this.levelEpoch?.Number ?? 0) != levelEpoch || !wanted())
+                return false;
+
+            this.packets.Add(shared.Packet);
+        }
+
+        return true;
+    }
+
+    private LevelEpoch? levelEpoch;
+
+    private void Add(IClientboundPacket packet)
+    {
+        lock (this.packets)
+        {
+            this.packets.Add(packet);
+            if (packet is RespawnPacket or LoginPacket)
+                this.levelEpoch = new LevelEpoch((this.levelEpoch?.Number ?? 0) + 1, this.Player?.Level);
+        }
+    }
+
+    // Runs before a packet is sent, on the sending thread: tests can hold a sender there with a gate.
+    internal Action<IClientboundPacket>? BeforeSend { get; set; }
 
     public ReadOnlySpan<byte> SetSharedKeyAndDecodeVerifyToken(
         ReadOnlySpan<byte> sharedKey, ReadOnlySpan<byte> verifyToken) => verifyToken;
@@ -68,7 +110,7 @@ internal sealed class TestClient(IServer server, bool connected = true) : IClien
 
     public ValueTask QueuePacketAsync(IClientboundPacket packet)
     {
-        this.packets.Add(packet);
+        this.Add(packet);
         return this.AfterQueue?.Invoke(packet) ?? default;
     }
 
@@ -87,7 +129,11 @@ internal sealed class TestClient(IServer server, bool connected = true) : IClien
     public ValueTask<bool> SendPayloadAsync<TPayload>(TPayload payload) where TPayload : ICustomPayload<TPayload> =>
         ValueTask.FromResult(false);
 
-    public void ClearPackets() => this.packets.Clear();
+    public void ClearPackets()
+    {
+        lock (this.packets)
+            this.packets.Clear();
+    }
 
     // A 26.3 client confirms with its resolved position and rotation, not just the id. Tests can hold an older
     // packet to simulate a delayed confirmation, or omit it to confirm the latest one received.

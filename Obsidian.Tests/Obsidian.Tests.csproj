@@ -30,6 +30,7 @@
 		<EmbeddedResource Include="Assets\copper_weathering.json" />
 		<EmbeddedResource Include="Assets\mining_progress.json" />
 		<EmbeddedResource Include="Assets\block_placement.json" />
+		<EmbeddedResource Include="Assets\block_change_packets.json" />
 		<EmbeddedResource Include="Assets\ticking_blocks.json" />
 		<EmbeddedResource Include="Assets\block_use.json" />
 		<EmbeddedResource Include="Assets\brushing.json" />

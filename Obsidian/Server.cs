@@ -1312,18 +1312,15 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
     }
 
     /// <summary>
-    /// One pass of the independent 50 ms connection loop. Play-state prediction acknowledgements must not depend
-    /// on world ticks succeeding, simulation being unpaused, or a travelling player belonging to a level.
+    /// One pass of the independent 50 ms connection loop. Block changes and the prediction acknowledgements that follow
+    /// them don't go out here: the tick loop sends them, ticking or paused (see <see cref="RunTickTurnAsync"/>).
     /// </summary>
-    internal Task TickConnectionsAsync(bool sendKeepAlive)
+    internal async Task TickConnectionsAsync(bool sendKeepAlive)
     {
-        return this.ForEachConnectionAsync(client =>
+        await this.ForEachConnectionAsync(client =>
         {
             if (client.Connected && client.State == ClientState.Play && client.Player is Player player)
-            {
                 player.TickTeleportClock();
-                player.FlushBlockAcknowledgement();
-            }
 
             return sendKeepAlive ? SendKeepAliveAsync(client) : ValueTask.CompletedTask;
         }, this.keepAliveFailures);
@@ -1431,9 +1428,7 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
     /// </summary>
     private void ReportTickStats()
     {
-        var levels = this.WorldManager.GetAvailableWorlds()
-            .OfType<World>()
-            .SelectMany(world => world.dimensions.Values.OfType<AbstractLevel>().Prepend(world))
+        var levels = this.Levels()
             .Select(level => (Level: level, Times: level.TickTimes.Take()))
             .ToArray();
         var worldTicks = this.worldTickTimes.Take();
@@ -1469,10 +1464,8 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
     }
 
     // Each level's tick stage, e.g. "overworld: ticking entities, the_nether: waiting for simulation gate".
-    private string DescribeLevelTicks() => string.Join(", ", this.WorldManager.GetAvailableWorlds()
-        .OfType<World>()
-        .SelectMany(world => world.dimensions.Values.OfType<AbstractLevel>().Prepend(world))
-        .Select(level => $"{level.Name}: {level.TickStage}"));
+    private string DescribeLevelTicks() =>
+        string.Join(", ", this.Levels().Select(level => $"{level.Name}: {level.TickStage}"));
 
     /// <summary>
     /// The mean time the last 100 world ticks took to run, in milliseconds, like vanilla's smoothed tick time (the busy
@@ -1502,10 +1495,59 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
     }
 
     /// <summary>
-    /// Ticks the worlds once and records how long it took. A failing tick is reported rather than thrown, so the loop
-    /// goes on.
+    /// One turn of the tick loop, under the tick gate, so a pause lands between two turns (see
+    /// <see cref="PauseAsync"/>): a world tick, or while the server is paused, a flush of every level's block changes
+    /// and then the prediction acknowledgements that follow them (see <see cref="AbstractLevel.FlushBlockChanges"/>),
+    /// like vanilla's frozen server, whose ticks still broadcast. A paused server runs no block events, so there are
+    /// none for the acknowledgements to wait for.
     /// </summary>
-    private async Task TickWorldsOnceAsync()
+    /// <remarks>
+    /// Under the gate, the paused flush never runs beside a world tick, and finds the server paused or not as the
+    /// tick would: a resumed tick's acknowledgements can't overtake its block events. It's the loop's own turn, so
+    /// nothing else that takes the gate starves it. Internal for tests, which drive the turns without the timer.
+    /// </remarks>
+    /// <returns>Whether the worlds ticked.</returns>
+    internal async Task<bool> RunTickTurnAsync()
+    {
+        await this.tickGate.WaitAsync();
+        try
+        {
+            if (this.Paused)
+            {
+                foreach (var level in this.Levels())
+                    this.FlushPausedLevel(level);
+
+                return false;
+            }
+
+            await this.TickWorldsOnceAsync();
+            return true;
+        }
+        finally
+        {
+            this.tickGate.Release();
+        }
+    }
+
+    // A failing flush is reported like a failing tick, so the loop goes on and the other levels still flush. What it
+    // didn't send waits for the next turn.
+    private void FlushPausedLevel(AbstractLevel level)
+    {
+        try
+        {
+            level.FlushBlockChanges();
+        }
+        catch (Exception ex)
+        {
+            this.ReportTickFailure(ex);
+        }
+    }
+
+    /// <summary>
+    /// Ticks the worlds once and records how long it took. A failing tick is reported rather than thrown, so the loop
+    /// goes on. Internal for tests, which drive the tick loop's ticks without its timer.
+    /// </summary>
+    internal async Task TickWorldsOnceAsync()
     {
         TickStage = "ticking worlds";
         this.EndIdleSession();
@@ -1532,6 +1574,11 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
         }
     }
 
+    // Every level of every world: each world's own and its dimensions.
+    private IEnumerable<AbstractLevel> Levels() => this.WorldManager.GetAvailableWorlds()
+        .OfType<World>()
+        .SelectMany(world => world.dimensions.Values.OfType<AbstractLevel>().Prepend(world));
+
     private async Task LoopAsync()
     {
         var worldTicks = 0;
@@ -1547,26 +1594,13 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
             while (await timer.WaitForNextTickAsync())
             {
                 // Like vanilla, worlds tick once they're loaded: ticking chunks while the rest generate (fluids in complete
-                // chunks) would change them before the world is ready.
-                if (this.WorldManager.ReadyToJoin)
+                // chunks) would change them before the world is ready. No player is in play before then, so there are
+                // no block changes to send either.
+                if (this.WorldManager.ReadyToJoin && await this.RunTickTurnAsync())
                 {
-                    // Under the gate, so a pause lands between two ticks (see PauseAsync).
-                    await this.tickGate.WaitAsync();
-                    try
-                    {
-                        if (!this.Paused)
-                        {
-                            await this.TickWorldsOnceAsync();
-
-                            // The autosave runs beside the ticks, and is skipped while the previous one still runs.
-                            if (++worldTicks % AutosaveInterval == 0 && autosave.IsCompleted)
-                                autosave = this.SaveEverythingAsync(autosave: true);
-                        }
-                    }
-                    finally
-                    {
-                        this.tickGate.Release();
-                    }
+                    // The autosave runs beside the ticks, and is skipped while the previous one still runs.
+                    if (++worldTicks % AutosaveInterval == 0 && autosave.IsCompleted)
+                        autosave = this.SaveEverythingAsync(autosave: true);
                 }
 
                 long elapsedTicks = stopwatch.ElapsedTicks;

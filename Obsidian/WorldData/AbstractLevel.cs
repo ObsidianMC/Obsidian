@@ -502,6 +502,9 @@ public abstract partial class AbstractLevel : ILevel
     // on generator or loading threads.
     private readonly ConcurrentQueue<Chunk> entitySpawns = new();
 
+    // The blocks changed for players since the last flush (see BlockChanged).
+    private readonly BlockChangeBroadcasts blockChanges;
+
 
 
     public AbstractLevel(ILogger logger, IPacketBroadcaster packetBroadcaster, IOptionsMonitor<ServerConfiguration> configuration,
@@ -528,6 +531,7 @@ public abstract partial class AbstractLevel : ILevel
         this.Lighting = new RuntimeLightEngine(
             this.Fluids.TickLock, () => this.DimensionType?.Element.HasSkylight ?? true);
         this.Portals = new LevelPortals(this);
+        this.blockChanges = new BlockChangeBroadcasts(this);
 
         var spawnChunkCount = 2 * this.Configuration.SpawnChunkRadius + 1;
         this.spawnChunks = new long[spawnChunkCount * spawnChunkCount];
@@ -747,16 +751,31 @@ public abstract partial class AbstractLevel : ILevel
         return true;
     }
 
-    internal void BroadcastBlockChange(IBlock block, Vector location)
-    {
-        if (this.ActiveBlockUse is BlockUseEffects effects)
-        {
-            effects.After(() => this.BroadcastBlockChange(block, location));
-            return;
-        }
+    /// <summary>
+    /// Records that the block at <paramref name="location"/> changed, for the players who have its chunk. They're sent
+    /// its state as it is at the next flush (see <see cref="FlushBlockChanges"/>), with the other changes in its
+    /// section.
+    /// </summary>
+    internal void BlockChanged(Vector location) => this.blockChanges.Changed(location);
 
-        this.PacketBroadcaster.BroadcastTo(new BlockUpdatePacket(location, block.GetHashCode()), PlayersInRange(location));
+    /// <summary>
+    /// Sends the players the blocks changed since the last flush, once per chunk section, like vanilla's chunk
+    /// broadcast, and then the prediction acknowledgements whose changes have gone out. The server's tick loop calls
+    /// it while the server is paused, when no block events run (see <see cref="Server.RunTickTurnAsync"/>). The
+    /// level's tick sends the two apart, with its block events between them.
+    /// </summary>
+    internal void FlushBlockChanges()
+    {
+        this.blockChanges.Flush();
+        this.blockChanges.SendAcknowledgements();
     }
+
+    /// <summary>
+    /// Sends <paramref name="player"/> <paramref name="acknowledgement"/> after this level's next flush of block
+    /// changes, and after that tick's block events (see <see cref="BlockChangeBroadcasts.Acknowledge"/>).
+    /// </summary>
+    internal void AcknowledgeAfterBlockChanges(PlayerBase player, BlockAcknowledgement acknowledgement) =>
+        this.blockChanges.Acknowledge(player, acknowledgement);
 
     /// <summary>
     /// Sends a level event (a sound or particle effect, like lava fizzing) to the players that have its chunk.
@@ -775,7 +794,7 @@ public abstract partial class AbstractLevel : ILevel
     public IEnumerable<IPlayer> PlayersInRange(Vector location) => this.PlayersWithChunk(location);
 
     // The players that have the chunk at the location loaded. It reads the players as it goes rather than copying them
-    // first: a copy of a ConcurrentDictionary's values takes all its locks, and this runs for every block change sent.
+    // first: a copy of a ConcurrentDictionary's values takes all its locks.
     private IEnumerable<IPlayer> PlayersWithChunk(Vector location)
     {
         var (x, z) = location.ToChunkCoord();
@@ -1059,7 +1078,18 @@ public abstract partial class AbstractLevel : ILevel
 
             // Set in this method, it flows into what the tick awaits but not back to the caller.
             tickingLevel.Value = new TickFlow(this, this.CurrentTickId);
-            await TickLevelAsync();
+            try
+            {
+                await TickLevelAsync();
+            }
+            catch
+            {
+                // A tick that fails, every tick perhaps, still sends the blocks changed so far and then the
+                // acknowledgements that follow them, as the old immediate broadcasts did. If it failed before its block
+                // events, there are none to wait for.
+                this.FlushBlockChanges();
+                throw;
+            }
         }
         finally
         {
@@ -1187,9 +1217,19 @@ public abstract partial class AbstractLevel : ILevel
         this.TickRandomBlocks();
         timings.Lap("random ticks");
 
+        // Like vanilla's chunk broadcast, which ends its chunk ticks: the blocks changed since the last one, before
+        // block events, so the events' changes go out in the next tick's.
+        TickStage = "sending block changes";
+        this.blockChanges.Flush();
+        timings.Lap("block changes");
+
         // Like ServerLevel's block-event phase, after chunk ticks and before entity ticks.
         await this.ProcessBlockEventsAsync();
         timings.Lap("block events");
+
+        // Vanilla acknowledges predictions from its connection tick, after the levels' ticks: a client sees the tick's
+        // block events before the acknowledgement, while the block it predicted still stands in for the server's.
+        this.blockChanges.SendAcknowledgements();
 
         foreach (var entity in this.SnapshotEntities())
         {

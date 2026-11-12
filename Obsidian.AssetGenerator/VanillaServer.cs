@@ -125,6 +125,18 @@ internal sealed record VanillaServer(
         }
     }
 
+    /// <summary>The version's network protocol: <c>protocol_version</c> in its <c>version.json</c>.</summary>
+    public int ProtocolVersion
+    {
+        get
+        {
+            using var serverJar = this.OpenServerJar();
+            using var stream = VersionInfo(serverJar).Open();
+            using var info = JsonDocument.Parse(stream);
+            return info.RootElement.GetProperty("protocol_version").GetInt32();
+        }
+    }
+
     // The bundler lists the server jar first, before its libraries.
     private ZipArchive OpenServerJar() => ZipFile.OpenRead(ClassPath[0]);
 
