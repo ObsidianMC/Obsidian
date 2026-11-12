@@ -202,6 +202,36 @@ public sealed class JoinAndLeaveRaces
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ANetworkPlayersLeaveHandlerCannotWaitToReplaceThemUnderTheirName()
+    {
+        await using var context = TestServerFactory.CreateServer($"join-races-{Guid.NewGuid():N}");
+        var server = context.Server;
+        var departing = CreateConfiguringPlayer(context, "Alice");
+        await new FinishConfigurationPacket().HandleAsync(server, departing);
+
+        // Her leave handler adds a server-side player under her name. Its join would wait for the leave running the
+        // handler.
+        var attempt = new TaskCompletionSource<Exception?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        context.EventDispatcher.RegisterEvent(null, (Func<PlayerLeaveEventArgs, ValueTask>)(async args =>
+        {
+            if (args.Player.Uuid != departing.Uuid)
+                return;
+
+            var failure = await Record.ExceptionAsync(
+                () => server.AddServerPlayerAsync(Guid.NewGuid(), "Alice", context.World));
+            attempt.SetResult(failure);
+        }));
+
+        ((Client)departing.Client).Disconnect();
+        await server.WaitForLeavesAsync("Alice");
+        Assert.IsType<InvalidOperationException>(await attempt.Task);
+
+        // Once she left, the name is free.
+        var replacement = await server.AddServerPlayerAsync(Guid.NewGuid(), "Alice", context.World);
+        Assert.Same(replacement, server.GetPlayer("Alice"));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task AServerPlayerJoiningUnderANameBeingFreedWaitsForItsLeave()
     {
         await using var context = TestServerFactory.CreateServer($"join-races-{Guid.NewGuid():N}");

@@ -1011,10 +1011,20 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
         return player;
     }
 
-    // A player with the name may still be leaving (see RemoveServerPlayerAsync); one removed from a tick leaves only
-    // once the ticks end. A join waits for that, like a network player's, unless a tick is asking (the leave may wait
-    // for that tick: it's the player's own, or a leave handler saves its level), or the leave's own handler is: that
-    // leave ends only once the handler returns.
+    /// <summary>
+    /// Waits for the leaves under way of players named <paramref name="username"/>, before a join under the name: a
+    /// server-side player's (see <see cref="RemoveServerPlayerAsync"/>), which from a tick only starts once the ticks
+    /// end, or a network player's. A join waits for them, like a network player's join, unless that would never end.
+    /// </summary>
+    /// <remarks>
+    /// It fails at once instead when a tick is asking (the leave may wait for that tick: it's the player's own, or a
+    /// leave handler saves its level), or when the leave of a player with the name is being raised on this flow: that
+    /// leave ends only once its handlers return. That flow is marked with an <see cref="AsyncLocal{T}"/>, so a task a
+    /// leave handler starts and doesn't await carries the mark too, and fails at once while the leave is still under
+    /// way rather than waiting for it. That's intended: telling the two apart isn't worth it, and the task can add the
+    /// player again once the leave ends.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">Waiting would never end, as described above.</exception>
     private Task WaitForLeavesBeforeJoiningAsync(string username)
     {
         var leaving = this.WaitForLeavesAsync(username);
@@ -1024,11 +1034,20 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
         if (WorldData.AbstractLevel.MustNotWaitForGates)
             throw new InvalidOperationException($"Player '{username}' is still leaving; add them once the ticks end.");
 
-        var departing = raisingServerPlayerLeave.Value;
-        if (departing is not null && string.Equals(departing.Username, username, StringComparison.OrdinalIgnoreCase))
+        if (IsRaisingLeaveOf(username))
             throw new InvalidOperationException($"Player '{username}' is still leaving; add them once they left.");
 
         return leaving;
+    }
+
+    // Whether this flow is raising the leave of a player named username: a server-side player's or a network player's.
+    private static bool IsRaisingLeaveOf(string username)
+    {
+        var serverPlayer = raisingServerPlayerLeave.Value?.Username;
+        var networkPlayer = Client.LeavingUsername;
+
+        return string.Equals(serverPlayer, username, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(networkPlayer, username, StringComparison.OrdinalIgnoreCase);
     }
 
     // The server-side player whose leave event is being raised on this flow (see LeaveServerPlayerAsync).

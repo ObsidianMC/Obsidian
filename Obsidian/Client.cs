@@ -133,6 +133,12 @@ public sealed partial class Client : IClient
     private static readonly AsyncLocal<Client?> raisingLeave = new();
 
     /// <summary>
+    /// The name of the player whose leave event is being raised on this flow, if any: a leave handler, or a task it
+    /// started. The leave ends only once its handlers return, so they must not wait for it.
+    /// </summary>
+    internal static string? LeavingUsername => raisingLeave.Value?.Player?.Username;
+
+    /// <summary>
     /// Used to handle packets while the client is in a <see cref="ClientState.Play"/> state.
     /// </summary>
     private readonly FrozenDictionary<ClientState, ClientHandler> handlers;
