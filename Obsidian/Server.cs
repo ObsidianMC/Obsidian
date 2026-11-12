@@ -1045,26 +1045,27 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
         if (WorldData.AbstractLevel.MustNotWaitForGates)
             throw new InvalidOperationException($"Player '{username}' is still leaving; add them once the ticks end.");
 
-        if (WaitsForItself(username))
+        if (this.WaitsForItself(username))
             throw new InvalidOperationException($"Player '{username}' is still leaving; add them once they left.");
 
         return leaving;
     }
 
-    // Whether a leave of a player named username can only end after this flow does: this flow raises that leave (a
-    // server-side player's or a network player's), or is the join it waits for.
-    private static bool WaitsForItself(string username)
-    {
-        var serverPlayer = raisingServerPlayerLeave.Value?.Username;
-        var networkPlayer = Client.LeavingUsername;
+    // Whether a pending leave of a player named username can only end after this flow does: this flow raises that
+    // very leave (a server-side player's or a network player's), or is the join it waits for. A flow marked by a leave
+    // that has ended since (a task its handler started) waits like any other.
+    private bool WaitsForItself(string username) =>
+        this.IsPendingLeaveOf(raisingServerPlayerLeave.Value, username)
+        || this.IsPendingLeaveOf(Client.RaisingLeave, username)
+        || Client.IsAdmittingWithDeferredLeaveOf(username);
 
-        return string.Equals(serverPlayer, username, StringComparison.OrdinalIgnoreCase)
-            || string.Equals(networkPlayer, username, StringComparison.OrdinalIgnoreCase)
-            || Client.IsAdmittingWithDeferredLeaveOf(username);
-    }
+    private bool IsPendingLeaveOf(Task? leave, string username) =>
+        leave is { IsCompleted: false }
+        && this.pendingLeaves.TryGetValue(leave, out var leaving)
+        && string.Equals(leaving, username, StringComparison.OrdinalIgnoreCase);
 
-    // The server-side player whose leave event is being raised on this flow (see LeaveServerPlayerAsync).
-    private static readonly AsyncLocal<ServerPlayer?> raisingServerPlayerLeave = new();
+    // The leave of a server-side player whose event is being raised on this flow (see LeaveServerPlayerAsync).
+    private static readonly AsyncLocal<Task?> raisingServerPlayerLeave = new();
 
     /// <summary>
     /// The server as the code running now sees it: a plugin's own instance during the plugin's calls (see
@@ -1165,7 +1166,7 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
         {
             try
             {
-                await this.LeaveServerPlayerAsync(serverPlayer);
+                await this.LeaveServerPlayerAsync(serverPlayer, left.Task);
             }
             finally
             {
@@ -1182,7 +1183,7 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
                 // Nobody awaits it, so it logs its own failure, like a network player's leave.
                 try
                 {
-                    await this.LeaveServerPlayerAsync(serverPlayer);
+                    await this.LeaveServerPlayerAsync(serverPlayer, left.Task);
                 }
                 catch (Exception ex)
                 {
@@ -1198,10 +1199,10 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
         return true;
     }
 
-    // The leave of a server-side player whose registration was claimed.
-    private async Task LeaveServerPlayerAsync(ServerPlayer player)
+    // The leave of a server-side player whose registration was claimed; leave is the task tracking it.
+    private async Task LeaveServerPlayerAsync(ServerPlayer player, Task leave)
     {
-        raisingServerPlayerLeave.Value = player;
+        raisingServerPlayerLeave.Value = leave;
         var result = EventResult.Failed;
         try
         {

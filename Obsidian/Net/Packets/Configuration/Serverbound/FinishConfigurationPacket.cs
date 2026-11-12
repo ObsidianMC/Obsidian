@@ -36,8 +36,16 @@ public sealed partial class FinishConfigurationPacket
                 return;
             }
 
-            // A player with the name started leaving while this one loaded: wait for that leave too and load again.
-            // Loading replaces what the last load read (see PlayerBase.ReadNbt).
+            // A player with the name started leaving while this one loaded: wait for that leave too and load again,
+            // into a fresh player, so that nothing the first load read outlives what the leave saved. A connection that
+            // closed meanwhile admits nothing. (Tests' stand-in clients can't renew their player and load it again.)
+            if (client is Client renewing)
+            {
+                if (renewing.RenewJoiningPlayer() is not Entities.Player fresh)
+                    return;
+
+                player = fresh;
+            }
         }
 
         // The connection may close at any point of the join. One that closed first admits nothing, so the player is

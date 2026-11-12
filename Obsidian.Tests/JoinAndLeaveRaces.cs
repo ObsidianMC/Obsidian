@@ -254,7 +254,7 @@ public sealed class JoinAndLeaveRaces
         var loads = 0;
         server.PlayerLoadedForJoin = player =>
         {
-            if (!ReferenceEquals(player, joining))
+            if (player.Uuid != joining.Uuid)
                 return;
 
             loads++;
@@ -265,7 +265,7 @@ public sealed class JoinAndLeaveRaces
         var registeredWhileLeaving = false;
         server.PlayerRegistered = player =>
         {
-            if (ReferenceEquals(player, joining))
+            if (player.Uuid == joining.Uuid)
                 registeredWhileLeaving = !server.WaitForLeavesAsync("Alice").IsCompleted;
         };
 
@@ -276,9 +276,11 @@ public sealed class JoinAndLeaveRaces
         Assert.True(await removal);
         await join;
 
+        // The second load went into a fresh player (see ANetworkJoinThatLoadsAgainLoadsLikeAFreshPlayer).
         Assert.False(registeredWhileLeaving);
         Assert.Equal(2, loads);
-        Assert.Same(joining, server.GetPlayer("Alice"));
+        Assert.Same(joining.Client.Player, server.GetPlayer("Alice"));
+        Assert.Equal(joining.Uuid, server.GetPlayer("Alice")!.Uuid);
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
@@ -307,6 +309,130 @@ public sealed class JoinAndLeaveRaces
 
         Assert.IsType<InvalidOperationException>(await attempt.Task);
         AssertOutOfTheLevel(context, joining);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ATaskAnEndedServerPlayerLeaveStartedWaitsForTheNextLeave()
+    {
+        await using var context = TestServerFactory.CreateServer($"join-races-{Guid.NewGuid():N}");
+        var server = context.Server;
+        var first = await server.AddServerPlayerAsync(Guid.NewGuid(), "Alice", context.World);
+
+        // Her leave handler starts a task it doesn't await, which runs on in the handler's context.
+        var handlerContext = CaptureLeaveHandlerContextAsync(context, first.Uuid);
+        Assert.True(await server.RemoveServerPlayerAsync(first));
+
+        await AssertAStaleTaskWaitsForTheNextLeaveAsync(context, (await handlerContext)!);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ATaskAnEndedNetworkLeaveStartedWaitsForTheNextLeave()
+    {
+        await using var context = TestServerFactory.CreateServer($"join-races-{Guid.NewGuid():N}");
+        var server = context.Server;
+        var first = CreateConfiguringPlayer(context, "Alice");
+        await new FinishConfigurationPacket().HandleAsync(server, first);
+
+        // Her leave handler starts a task it doesn't await, which runs on in the handler's context.
+        var handlerContext = CaptureLeaveHandlerContextAsync(context, first.Uuid);
+        ((Client)first.Client).Disconnect();
+        await server.WaitForLeavesAsync("Alice");
+
+        await AssertAStaleTaskWaitsForTheNextLeaveAsync(context, (await handlerContext)!);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ATaskAnEndedJoinStartedWaitsForTheNextJoinsKick()
+    {
+        await using var context = TestServerFactory.CreateServer($"join-races-{Guid.NewGuid():N}");
+        var server = context.Server;
+        var joining = CreateConfiguringPlayer(context, "Alice");
+        var client = (Client)joining.Client;
+
+        // A handler of her join starts a task it doesn't await, which runs on in the join's context.
+        ExecutionContext? joinContext = null;
+        Assert.True(await client.AdmitAsync(() =>
+        {
+            joinContext = ExecutionContext.Capture();
+            return ValueTask.CompletedTask;
+        }));
+
+        // The connection joins again, as after reconfiguration, and a handler of that join kicks her. Her leave waits
+        // for that join, but the old task isn't part of it, so the task waits for the leave.
+        Task<IPlayer>? adding = null;
+        Assert.True(await client.AdmitAsync(async () =>
+        {
+            await client.DisconnectAsync("Kicked");
+            ExecutionContext.Run(
+                joinContext!,
+                _ => adding = server.AddServerPlayerAsync(Guid.NewGuid(), "Alice", context.World),
+                null);
+        }));
+
+        Assert.False(adding!.IsFaulted);
+        await server.WaitForLeavesAsync("Alice");
+        var added = await adding;
+        Assert.Same(added, server.GetPlayer("Alice"));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ANetworkJoinThatLoadsAgainLoadsLikeAFreshPlayer()
+    {
+        await using var context = TestServerFactory.CreateServer($"join-races-{Guid.NewGuid():N}");
+        var server = context.Server;
+        var uuid = Guid.NewGuid();
+
+        // Alice was saved on the ground, with a custom name.
+        await SaveAliceAsync(context, uuid, player =>
+        {
+            player.CustomName = ChatMessage.Simple("Old");
+            player.MovementFlags |= MovementFlags.OnGround;
+        });
+
+        // A server-side player under her name leaves while she loads, and her data is saved again meanwhile, in the
+        // air and without the name.
+        var departing = await server.AddServerPlayerAsync(Guid.NewGuid(), "Alice", context.World);
+        var savedAgain = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var finishLeave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        context.EventDispatcher.RegisterEvent(null, (Func<PlayerLeaveEventArgs, ValueTask>)(async args =>
+        {
+            if (args.Player.Uuid != departing.Uuid)
+                return;
+
+            await SaveAliceAsync(context, uuid, player =>
+            {
+                player.CustomName = null;
+                player.MovementFlags &= ~MovementFlags.OnGround;
+            });
+            savedAgain.SetResult();
+            await finishLeave.Task;
+        }));
+
+        var joining = CreateConfiguringPlayer(context, "Alice", uuid);
+        Task<bool>? removal = null;
+        server.PlayerLoadedForJoin = player =>
+        {
+            if (ReferenceEquals(player, joining))
+                removal = server.RemoveServerPlayerAsync(departing);
+        };
+
+        // Her join loads her, finds the name leaving, waits for that leave and loads her again.
+        var join = new FinishConfigurationPacket().HandleAsync(server, joining).AsTask();
+        await savedAgain.Task;
+        finishLeave.SetResult();
+        Assert.True(await removal!);
+        await join;
+
+        var joined = Assert.IsType<Entities.Player>(server.GetPlayer("Alice"));
+        var fresh = CreateConfiguringPlayer(context, "Alice", uuid);
+        await fresh.LoadAsync();
+
+        Assert.Null(fresh.CustomName);
+        Assert.Equal(fresh.CustomName, joined.CustomName);
+        Assert.Equal(
+            fresh.MovementFlags.HasFlag(MovementFlags.OnGround),
+            joined.MovementFlags.HasFlag(MovementFlags.OnGround));
+        Assert.Equal(fresh.Position, joined.Position);
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
@@ -359,15 +485,16 @@ public sealed class JoinAndLeaveRaces
     }
 
     // A player whose client finished logging in and is configuring, as the join finds them.
-    private static Entities.Player CreateConfiguringPlayer(RealServerContext context, string username)
+    private static Entities.Player CreateConfiguringPlayer(
+        RealServerContext context, string username, Guid? uuid = null)
     {
         var client = new Client(
             context.EventDispatcher, context.Server, NullLoggerFactory.Instance,
-            new FakeUserCache(), null!, context.Provider, null!);
+            new FakeUserCache(), null!, new HostServices(context), null!);
         client.SetState(ClientState.Configuration);
 
         var spawn = context.World.LevelData.SpawnPosition;
-        var player = new Entities.Player(Guid.NewGuid(), username, client, context.World)
+        var player = new Entities.Player(uuid ?? Guid.NewGuid(), username, client, context.World)
         {
             Server = context.Server,
             Position = spawn,
@@ -375,6 +502,67 @@ public sealed class JoinAndLeaveRaces
         };
         typeof(Client).GetProperty(nameof(Client.Player))!.SetValue(client, player);
         return player;
+    }
+
+    // The test server's services, with the server itself as the host registers it, for the players a client creates.
+    private sealed class HostServices(RealServerContext context) : IServiceProvider
+    {
+        public object? GetService(Type serviceType) =>
+            serviceType == typeof(IServer) ? context.Server : context.Provider.GetService(serviceType);
+    }
+
+    // The context a leave handler of the player runs in, as a task the handler starts without awaiting would carry it.
+    private static Task<ExecutionContext?> CaptureLeaveHandlerContextAsync(RealServerContext context, Guid uuid)
+    {
+        var captured = new TaskCompletionSource<ExecutionContext?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        context.EventDispatcher.RegisterEvent(null, (Func<PlayerLeaveEventArgs, ValueTask>)(args =>
+        {
+            if (args.Player.Uuid == uuid)
+                captured.TrySetResult(ExecutionContext.Capture());
+
+            return ValueTask.CompletedTask;
+        }));
+
+        return captured.Task;
+    }
+
+    // Another Alice joins and starts leaving, held in her leave event. The stale task then adds Alice: it isn't part of
+    // that leave, so it waits for it rather than failing, and joins once the leave is over.
+    private static async Task AssertAStaleTaskWaitsForTheNextLeaveAsync(
+        RealServerContext context, ExecutionContext staleContext)
+    {
+        var server = context.Server;
+        var second = await server.AddServerPlayerAsync(Guid.NewGuid(), "Alice", context.World);
+        var finishLeave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        context.EventDispatcher.RegisterEvent(null, (Func<PlayerLeaveEventArgs, ValueTask>)(async args =>
+        {
+            if (args.Player.Uuid == second.Uuid)
+                await finishLeave.Task;
+        }));
+
+        var removal = server.RemoveServerPlayerAsync(second);
+
+        Task<IPlayer>? adding = null;
+        ExecutionContext.Run(
+            staleContext,
+            _ => adding = server.AddServerPlayerAsync(Guid.NewGuid(), "Alice", context.World),
+            null);
+        var failedAtOnce = adding!.IsFaulted;
+
+        finishLeave.SetResult();
+        Assert.True(await removal);
+        Assert.False(failedAtOnce);
+        var added = await adding;
+        Assert.Same(added, server.GetPlayer("Alice"));
+    }
+
+    // Saves Alice's data as changed by change, as her connection's leave would.
+    private static async Task SaveAliceAsync(RealServerContext context, Guid uuid, Action<Entities.Player> change)
+    {
+        var player = CreateConfiguringPlayer(context, "Alice", uuid);
+        await player.LoadAsync();
+        change(player);
+        await player.SaveAsync();
     }
 
     // A player already online, who sees the others' tab list entries.

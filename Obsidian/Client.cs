@@ -100,15 +100,25 @@ public sealed partial class Client : IClient
     // It also orders the join's admission against the connection closing (see AdmitAsync and Disconnect).
     private readonly Lock leavingLock = new();
 
-    // How far the player's join got, whether the connection closed, and whether a leave asked for during the join waits
-    // for its end. All guarded by leavingLock.
+    // How far the player's join got, the admission under way if any, whether the connection closed, and whether a leave
+    // asked for during the join waits for its end. All guarded by leavingLock.
     private JoinStage joinStage;
+    private Admission? admission;
     private bool connectionClosed;
     private bool leaveDeferred;
 
-    // The client whose join is admitting its player on this flow, so a join handler that kicks the player doesn't wait
-    // for the leave, which waits for the join.
-    private static readonly AsyncLocal<Client?> admitting = new();
+    // The admission this flow is part of, so a join handler that kicks the player doesn't wait for the leave, which
+    // waits for the join. It identifies that one admission: a task the join started that outlives it isn't part of the
+    // connection's next join (after reconfiguration).
+    private static readonly AsyncLocal<Admission?> admitting = new();
+
+    private sealed class Admission(Client client)
+    {
+        public Client Client { get; } = client;
+
+        // Whether this admission is the connection's one under way. Call holding the client's leavingLock.
+        public bool IsUnderWay => ReferenceEquals(this.Client.admission, this);
+    }
 
     private enum JoinStage
     {
@@ -128,15 +138,17 @@ public sealed partial class Client : IClient
     private bool disconnected;
     private readonly Lock lifecycleLock = new();
 
-    // The client whose leave event is being raised on this flow, so a leave handler that disconnects the same player
-    // doesn't wait for the leave it's part of.
-    private static readonly AsyncLocal<Client?> raisingLeave = new();
+    // The leave whose event is being raised on this flow, and its client, so a leave handler that disconnects the same
+    // player doesn't wait for the leave it's part of.
+    private static readonly AsyncLocal<RaisedLeave?> raisingLeave = new();
+
+    private sealed record RaisedLeave(Client Client, Task Leave);
 
     /// <summary>
-    /// The name of the player whose leave event is being raised on this flow, if any: a leave handler, or a task it
-    /// started. The leave ends only once its handlers return, so they must not wait for it.
+    /// The leave whose event is being raised on this flow, if any: on a leave handler's flow, or a task it started.
+    /// That leave ends only once its handlers return, so they must not wait for it while it's pending.
     /// </summary>
-    internal static string? LeavingUsername => raisingLeave.Value?.Player?.Username;
+    internal static Task? RaisingLeave => raisingLeave.Value?.Leave;
 
     /// <summary>
     /// Used to handle packets while the client is in a <see cref="ClientState.Play"/> state.
@@ -1028,6 +1040,35 @@ public sealed partial class Client : IClient
         this.StartConfiguration();
     }
 
+    /// <summary>
+    /// Replaces the player who finished configuring with a fresh one, for a join that loads them again (a player with
+    /// the name left while they loaded): loading into the same player would keep what the first load read and the
+    /// second doesn't set. Like reconfiguration's fresh player, it keeps what the login and configuration gave the
+    /// player (their skin and client information) and starts in the default world, as the login does.
+    /// </summary>
+    /// <returns>
+    /// The fresh player, or <see langword="null"/> if the connection closed or the player started leaving.
+    /// </returns>
+    internal Player? RenewJoiningPlayer()
+    {
+        if (this.Player is not Player current)
+            return null;
+
+        var fresh = this.CreatePlayer(current.Uuid, current.Username, this.HostServer.DefaultWorld);
+        fresh.SkinProperties = current.SkinProperties;
+        fresh.ClientInformation = current.ClientInformation;
+
+        lock (this.leavingLock)
+        {
+            if (this.connectionClosed || this.leaving is not null)
+                return null;
+
+            this.Player = fresh;
+        }
+
+        return fresh;
+    }
+
     private Player CreatePlayer(Guid uuid, string username, IWorld world) => new(uuid, username, this, world)
     {
         Server = this.serviceProvider.GetRequiredService<IServer>(),
@@ -1048,7 +1089,7 @@ public sealed partial class Client : IClient
     /// </summary>
     private Task LeaveAsync()
     {
-        if (raisingLeave.Value == this)
+        if (raisingLeave.Value?.Client == this)
             return Task.CompletedTask;
 
         Player player;
@@ -1067,7 +1108,7 @@ public sealed partial class Client : IClient
             var joining = this.joinStage == JoinStage.Joining;
             cannotWait = player.IsInOwnTick
                 || WorldData.AbstractLevel.MustNotWaitForGates
-                || (joining && admitting.Value == this);
+                || (joining && admitting.Value is { } mark && mark.Client == this && mark.IsUnderWay);
 
             if (this.leaving is TaskCompletionSource started)
                 return cannotWait ? Task.CompletedTask : started.Task;
@@ -1107,15 +1148,17 @@ public sealed partial class Client : IClient
     /// <returns>Whether the player was admitted; if not, the caller undoes what it did before.</returns>
     internal async ValueTask<bool> AdmitAsync(Func<ValueTask> admit)
     {
+        var current = new Admission(this);
         lock (this.leavingLock)
         {
             if (this.connectionClosed || this.leaving is not null)
                 return false;
 
             this.joinStage = JoinStage.Joining;
+            this.admission = current;
         }
 
-        admitting.Value = this;
+        admitting.Value = current;
         try
         {
             await admit();
@@ -1137,11 +1180,11 @@ public sealed partial class Client : IClient
     {
         get
         {
-            if (admitting.Value is not Client client)
+            if (admitting.Value is not Admission mark)
                 return false;
 
-            lock (client.leavingLock)
-                return client.joinStage == JoinStage.Joining;
+            lock (mark.Client.leavingLock)
+                return mark.IsUnderWay;
         }
     }
 
@@ -1152,12 +1195,13 @@ public sealed partial class Client : IClient
     /// </summary>
     internal static bool IsAdmittingWithDeferredLeaveOf(string username)
     {
-        if (admitting.Value is not Client client)
+        if (admitting.Value is not Admission mark)
             return false;
 
+        var client = mark.Client;
         lock (client.leavingLock)
         {
-            return client.joinStage == JoinStage.Joining
+            return mark.IsUnderWay
                 && client.leaveDeferred
                 && string.Equals(client.Player?.Username, username, StringComparison.OrdinalIgnoreCase);
         }
@@ -1171,6 +1215,7 @@ public sealed partial class Client : IClient
         lock (this.leavingLock)
         {
             this.joinStage = JoinStage.Joined;
+            this.admission = null;
             if (this.leaveDeferred)
             {
                 this.leaveDeferred = false;
@@ -1186,7 +1231,7 @@ public sealed partial class Client : IClient
     // Raises the leave event and completes the leave; it never throws.
     private async Task RaiseLeaveAsync(Player player, TaskCompletionSource leave)
     {
-        raisingLeave.Value = this;
+        raisingLeave.Value = new RaisedLeave(this, leave.Task);
         try
         {
             EventResult result;
