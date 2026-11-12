@@ -57,6 +57,7 @@ internal static class VanillaBlockEntities
         "minecraft:vault" => new TrialSpawners.VaultBlockEntity(),
         CommandBlockEntity.TypeId => new CommandBlockEntity(),
         StructureBlockEntity.TypeId => new StructureBlockEntity(),
+        JigsawBlockEntity.TypeId => new JigsawBlockEntity(),
         _ => null
     };
 

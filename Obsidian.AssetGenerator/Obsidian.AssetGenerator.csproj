@@ -56,9 +56,13 @@
 		<VanillaDumperInput Remove="Java\GoldenDandelionFixtures.java" />
 		<VanillaDumperInput Remove="Java\CommandBlockFixtures.java" />
 		<VanillaDumperInput Remove="Java\StructureBlockFixtures.java" />
+		<VanillaDumperInput Remove="Java\JigsawBlockFixtures.java" />
+		<VanillaDumperInput Remove="Java\JigsawBlockInstrumentation.java" />
 
 		<None Update="@(VanillaDumperInput)" CopyToOutputDirectory="PreserveNewest" />
 		<!-- Gameplay probes run only through their requested CaptureFixtures entry. -->
+		<None Update="Java\JigsawBlockFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\JigsawBlockInstrumentation.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\MoreBlockFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\SulfurFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\HeightmapFixtures.java" CopyToOutputDirectory="PreserveNewest" />

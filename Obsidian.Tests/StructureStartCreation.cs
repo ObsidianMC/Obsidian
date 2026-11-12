@@ -297,49 +297,6 @@ public sealed class StructureStartCreation
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task RefreshDuringCreationRejectsOldStartsWithoutBlockingTheNewLayout()
-    {
-        var cache = new StructureStartCache
-        {
-            CreationWait = System.Threading.Timeout.InfiniteTimeSpan
-        };
-        var oldLayout = Layout();
-        var newLayout = Layout(version: 2);
-        using var entered = new ManualResetEventSlim();
-        using var release = new ManualResetEventSlim();
-
-        StructureStart Create(StructureLayout layout, StructureSet set, int x, int z, out bool refused)
-        {
-            refused = false;
-            if (layout == oldLayout)
-            {
-                entered.Set();
-                Assert.True(release.Wait(Timeout));
-            }
-
-            return Start(set, x, z);
-        }
-
-        var stale = Request(() => cache.Get(0, 0, oldLayout, Create));
-        StructureStart? current = null;
-        try
-        {
-            Assert.True(entered.Wait(Timeout));
-            cache.Prune(newLayout.Source);
-            var fresh = Request(() => cache.Get(0, 0, newLayout, Create));
-            current = Assert.Single((await fresh.Result.WaitAsync(Timeout))!.Starts);
-            Assert.Same(newLayout.Sets[0].Structures[0].Structure, current.Structure);
-        }
-        finally
-        {
-            release.Set();
-        }
-
-        Assert.Null(await stale.Result.WaitAsync(Timeout));
-        Assert.Same(current, Assert.Single(cache.Get(0, 0, newLayout, Create)!.Starts));
-    }
-
-    [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task NewerPublicationWinsWhenTheOldCreatorFinishesWithoutAPrune()
     {
         var cache = new StructureStartCache

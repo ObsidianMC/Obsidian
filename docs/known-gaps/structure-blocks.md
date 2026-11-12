@@ -2,7 +2,8 @@
 
 The structure editor, saved settings, SAVE/LOAD/CORNER/DATA, corner detection and rising-edge redstone triggers
 are implemented against the cached 26.3 server. `structure_blocks.json` has 33 cases and 95 checkpoints, replayed
-by `VanillaStructureBlocks.ReplayStructureBlockReference`. Jigsaw editors and generation are a separate task.
+by `VanillaStructureBlocks.ReplayStructureBlockReference`. See [jigsaw blocks](jigsaw-blocks.md) for the jigsaw editor
+and generation coverage.
 
 ## Exact captured differences
 

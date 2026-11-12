@@ -272,6 +272,11 @@ internal static class FixtureDumper
         IReadOnlyCollection<string>? cases = null) =>
         RunInTemporaryWorldAsync(server, "StructureBlockFixtures.java", fixture, cases);
 
+    internal static Task DumpJigsawBlocksAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunInTemporaryWorldAsync(server, "JigsawBlockFixtures.java", fixture, cases,
+            "JigsawBlockInstrumentation.java");
+
     // An on-request probe: command blocks on a dedicated server of its own, in a flat world in a temporary folder that
     // is deleted afterwards.
     internal static Task DumpCommandBlocksAsync(VanillaServer server, string fixture,
@@ -318,17 +323,26 @@ internal static class FixtureDumper
         RunInTemporaryWorldAsync(server, "ArmorStandFixtures.java", fixture, cases);
 
     private static async Task RunInTemporaryWorldAsync(VanillaServer server, string probe, string fixture,
-        IReadOnlyCollection<string>? cases)
+        IReadOnlyCollection<string>? cases, string? instrumentation = null)
     {
         var world = Path.Combine(Path.GetTempPath(), $"obsidian-capture-{Guid.NewGuid():N}");
         Directory.CreateDirectory(world);
 
         try
         {
+            var classPath = server.ClassPath.ToArray();
+            if (instrumentation is not null)
+            {
+                var observed = Path.Combine(world, "observed-classes");
+                await VanillaServer.RunJavaAsync(world, "-cp", string.Join(Path.PathSeparator, classPath),
+                    Source(instrumentation), classPath[0], observed);
+                classPath[0] = Path.Combine(observed, "vanilla-observed.jar");
+            }
+
             // The probe finds the server in the shutdown hook vanilla's Main registers.
             await VanillaServer.RunJavaAsync(world,
                 "--add-opens", "java.base/java.lang=ALL-UNNAMED",
-                "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source(probe), Path.GetFullPath(fixture),
+                "-cp", string.Join(Path.PathSeparator, classPath), Source(probe), Path.GetFullPath(fixture),
                 cases is null ? "" : string.Join('+', cases));
         }
         finally
