@@ -141,7 +141,7 @@ public sealed class SectionBlocksUpdates
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task PausedPassHoldsTheAcknowledgementOfAUseFinishingAfterItsLevelFlushed()
+    public async Task PausedTurnHoldsTheAcknowledgementOfAUseFinishingAfterItsLevelFlushed()
     {
         await using var context = TestServerFactory.CreateServer($"section-paused-{Guid.NewGuid():N}");
         var nether = LevelTransfers.AddNether(context);
@@ -149,31 +149,31 @@ public sealed class SectionBlocksUpdates
         var (player, client) = await PrepareAsync(context);
         var placed = Target + Vector.Up;
 
-        // A nether player whose send holds the pass after the overworld's flush, before it visits the connections.
+        // A nether player whose send holds the paused turn after the overworld's flush.
         var (entered, release) = (Gate(), Gate());
         var blocker = BlockOnFirstBlockPacket(context, nether, entered, release);
         nether.BlockUpdates.SetBlock(new Vector(1, 64, 1), BlocksRegistry.Stone);
         Assert.True(await context.Server.PauseAsync());
 
         Task use;
-        Task pass;
+        Task turn;
         using (await player.Inventory.LockAsync())
         {
             use = BlockUpdates.UseOn(Target, BlockFace.Up, sequence: 7).HandleAsync(context.Server, player).AsTask();
             Assert.False(use.IsCompleted);
-            pass = Task.Run(() => context.Server.TickConnectionsAsync(sendKeepAlive: false));
+            turn = Task.Run(context.Server.RunTickTurnAsync);
             await entered.Task;
         }
 
-        // The use finishes after the overworld was flushed: its change waits for the next pass, and so must its
+        // The use finishes after the overworld was flushed: its change waits for the next turn, and so must its
         // acknowledgement.
         await use;
         client.ClearPackets();
         release.SetResult();
-        await pass;
+        await turn;
         Assert.DoesNotContain(client.SentPackets, packet => packet is BlockChangedAckPacket);
 
-        await context.Server.TickConnectionsAsync(sendKeepAlive: false);
+        await context.Server.RunTickTurnAsync();
         AssertChangeThenAcknowledgement(client, placed, BlocksRegistry.Stone, 7);
         Assert.Contains((new Vector(1, 64, 1), BlocksRegistry.Stone.GetHashCode()),
             BlockUpdates.SentBlocks((TestClient)blocker.Client));
@@ -288,10 +288,10 @@ public sealed class SectionBlocksUpdates
         nether.BlockUpdates.SetBlock(new Vector(1, 64, 1), BlocksRegistry.Stone);
         Assert.True(await context.Server.PauseAsync());
 
-        // The overworld's flush is stuck in a send; the paused pass still flushes the nether.
+        // The overworld's flush is stuck in a send; the paused turn still flushes the nether.
         var stuck = Task.Run(world.FlushBlockChanges);
         await entered.Task;
-        await Task.Run(() => context.Server.TickConnectionsAsync(sendKeepAlive: false));
+        await Task.Run(context.Server.RunTickTurnAsync);
         Assert.Contains((new Vector(1, 64, 1), BlocksRegistry.Stone.GetHashCode()),
             BlockUpdates.SentBlocks((TestClient)viewer.Client));
 
@@ -333,6 +333,21 @@ public sealed class SectionBlocksUpdates
         Assert.True(world.TryAddEntity(player));
         player.LoadedChunks.Add(key);
 
+        // The connection is as a join leaves it: the player is the client's, and its login put it in the overworld.
+        typeof(Client).GetProperty(nameof(Client.Player))!.SetValue(client, player);
+        await client.QueuePacketAsync(new LoginPacket
+        {
+            EntityId = player.EntityId,
+            DimensionNames = ["minecraft:overworld", "minecraft:the_nether"],
+            CommonPlayerSpawnInfo = player.CreateSpawnInfo(),
+        });
+
+        // Before it leaves, the player gets the overworld's blocks.
+        var stone = BlocksRegistry.Stone.GetHashCode();
+        var before = new Vector(5, 64, 5);
+        world.BlockUpdates.SetBlock(before, BlocksRegistry.Stone);
+        world.FlushBlockChanges();
+
         // A plugin's handler holds the client's pipeline: what's queued from here waits, in order.
         var hold = CustomPayloadPacket.ClientboundPlay with
         {
@@ -369,6 +384,11 @@ public sealed class SectionBlocksUpdates
         await flush;
         await player.TeleportAsync(world, new VectorD(8.5, 64, 10.5));
         player.LoadedChunks.Add(key);
+
+        // Back in the overworld, behind its respawn, the player gets its blocks again.
+        var back = new Vector(6, 64, 6);
+        world.BlockUpdates.SetBlock(back, BlocksRegistry.Stone);
+        world.FlushBlockChanges();
         resume.SetResult();
         await client.FlushAsync();
         var marker = CustomPayloadPacket.ClientboundPlay with
@@ -378,14 +398,24 @@ public sealed class SectionBlocksUpdates
         };
         Assert.True(client.SendPacket(marker));
 
-        // An overworld block, written between the nether's respawn and the overworld's, would land in the nether.
         var bodies = await ReadFramesUntilAsync(peer.GetStream(), Body(marker));
-        var respawn = bodies.FindIndex(body => body[0] == RespawnPacket.PacketId);
-        Assert.True(respawn >= 0, "The client wasn't sent the respawn.");
+        var respawns = bodies.Select((body, index) => (body, index))
+            .Where(frame => frame.body[0] == RespawnPacket.PacketId)
+            .Select(frame => frame.index)
+            .ToList();
+        Assert.True(respawns.Count >= 2, "The client wasn't sent both respawns.");
+        int Find(Vector position, int block) =>
+            bodies.FindIndex(body => body.AsSpan().SequenceEqual(Body(new BlockUpdatePacket(position, block))));
+
+        var sentBefore = Find(before, stone);
+        Assert.True(sentBefore >= 0 && sentBefore < respawns[0], "The overworld's block didn't come before leaving.");
+        Assert.True(Find(back, stone) > respawns[^1], "The overworld's block didn't come after the return.");
+
+        // An overworld block, written between the nether's respawn and the overworld's, would land in the nether.
         foreach (var position in changed)
         {
             var block = Body(new BlockUpdatePacket(position, BlocksRegistry.Dirt.GetHashCode()));
-            Assert.DoesNotContain(bodies.Skip(respawn + 1), body => body.AsSpan().SequenceEqual(block));
+            Assert.DoesNotContain(bodies.Skip(respawns[0] + 1), body => body.AsSpan().SequenceEqual(block));
         }
     }
 
@@ -452,7 +482,7 @@ public sealed class SectionBlocksUpdates
         Assert.DoesNotContain(client.SentPackets, packet => packet is BlockChangedAckPacket);
 
         // Nothing is lost: it's still pending when the flush ends, and the next flush (the next tick's, or the next
-        // paused pass's) sends it.
+        // paused turn's) sends it.
         world.FlushBlockChanges();
         AssertChangeThenAcknowledgement(client, changed, BlocksRegistry.Dirt, 9);
     }
@@ -515,10 +545,103 @@ public sealed class SectionBlocksUpdates
         Assert.True(respawn >= 0, "The player wasn't sent the respawn.");
         var after = packets.Skip(respawn + 1).SelectMany(BlockUpdates.SentBlocksOf);
         Assert.DoesNotContain(after, block => block.Position == changed);
+
+        // Once the return's respawn is queued, the player is a recipient again.
+        await client.QueuePacketAsync(new RespawnPacket { CommonPlayerSpawnInfo = player.CreateSpawnInfo() });
+        client.ClearPackets();
+        var arrived = new Vector(5, 64, 5);
+        world.BlockUpdates.SetBlock(arrived, BlocksRegistry.Stone);
+        world.FlushBlockChanges();
+        Assert.Contains((arrived, BlocksRegistry.Stone.GetHashCode()), BlockUpdates.SentBlocks(client));
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task AStalePausedPassLeavesARunningTicksAcknowledgementsToIt()
+    public async Task AFailedSendLeavesItsChangesAndAcknowledgementsForTheNextFlush()
+    {
+        await using var context = TestServerFactory.CreateServer($"section-failed-{Guid.NewGuid():N}");
+        var world = context.World;
+        var (player, client) = await PrepareAsync(context);
+        var (entered, release) = (Gate(), Gate());
+        var failing = (TestClient)BlockOnFirstBlockPacket(context, world, entered, release).Client;
+        release.SetResult();
+        var failed = false;
+        failing.BeforeSend = packet =>
+        {
+            if (packet is BlockUpdatePacket or SectionBlocksUpdatePacket && !failed)
+            {
+                failed = true;
+                throw new InvalidOperationException("Injected send failure");
+            }
+        };
+        var changed = new Vector(3, 64, 3);
+        world.BlockUpdates.SetBlock(changed, BlocksRegistry.Dirt);
+        Acknowledge(world, player, 8);
+
+        // One recipient's send fails once, part way through the flush.
+        Assert.Throws<InvalidOperationException>(world.FlushBlockChanges);
+
+        // The next flush sends what that one took: a correction sent twice does no harm.
+        world.FlushBlockChanges();
+        AssertChangeThenAcknowledgement(client, changed, BlocksRegistry.Dirt, 8);
+        Assert.Contains((changed, BlocksRegistry.Dirt.GetHashCode()), BlockUpdates.SentBlocks(failing));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task APausedServerFlushesOnEveryTurnOfItsTickLoop()
+    {
+        await using var context = TestServerFactory.CreateServer($"section-turns-{Guid.NewGuid():N}");
+        var world = context.World;
+        var (player, client) = await PrepareAsync(context);
+        Assert.True(await context.Server.PauseAsync());
+
+        // The loop takes the tick gate every turn while paused. The flush is that turn's own work, so it can't lose
+        // the gate to the loop, as a connection pass that only tried the gate could.
+        var changed = new Vector(3, 64, 3);
+        world.BlockUpdates.SetBlock(changed, BlocksRegistry.Dirt);
+        Acknowledge(world, player, 5);
+        Assert.False(await context.Server.RunTickTurnAsync());
+        AssertChangeThenAcknowledgement(client, changed, BlocksRegistry.Dirt, 5);
+
+        // A connection pass sends neither: they're the loop's.
+        client.ClearPackets();
+        world.BlockUpdates.SetBlock(changed, BlocksRegistry.Stone);
+        await context.Server.TickConnectionsAsync(sendKeepAlive: false);
+        Assert.Empty(BlockUpdates.SentBlocks(client));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task APausedTurnWhoseFlushFailsGoesOnAndSendsItAtTheNext()
+    {
+        await using var context = TestServerFactory.CreateServer($"section-turn-fails-{Guid.NewGuid():N}");
+        var world = context.World;
+        var (player, client) = await PrepareAsync(context);
+        var (entered, release) = (Gate(), Gate());
+        var failing = (TestClient)BlockOnFirstBlockPacket(context, world, entered, release).Client;
+        release.SetResult();
+        var failed = false;
+        failing.BeforeSend = packet =>
+        {
+            if (packet is BlockUpdatePacket or SectionBlocksUpdatePacket && !failed)
+            {
+                failed = true;
+                throw new InvalidOperationException("Injected send failure");
+            }
+        };
+        var changed = new Vector(3, 64, 3);
+        world.BlockUpdates.SetBlock(changed, BlocksRegistry.Dirt);
+        Acknowledge(world, player, 3);
+        Assert.True(await context.Server.PauseAsync());
+
+        // The failure is the turn's to report, as a failing tick's is: the loop goes on, and its next turn sends.
+        Assert.False(await context.Server.RunTickTurnAsync());
+        Assert.True(failed);
+        Assert.False(await context.Server.RunTickTurnAsync());
+        AssertChangeThenAcknowledgement(client, changed, BlocksRegistry.Dirt, 3);
+        Assert.Contains((changed, BlocksRegistry.Dirt.GetHashCode()), BlockUpdates.SentBlocks(failing));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task APausedTurnWaitsForTheTickHoldingTheGate()
     {
         await using var context = TestServerFactory.CreateServer($"section-stale-{Guid.NewGuid():N}");
         var world = context.World;
@@ -532,9 +655,9 @@ public sealed class SectionBlocksUpdates
         var (player, client) = Join(context, new VectorD(0.5, 72, 2.5));
         Assert.True(await context.Server.PauseAsync());
 
-        // A connection pass read Paused before a resume, and runs on while the resumed tick is in its block events:
-        // the tick holds the tick gate, as the server's loop does, and has flushed its change, but not yet sent the
-        // acknowledgement that follows its events.
+        // A tick is in its block events, holding the tick gate as the server's loop does: it has flushed its change,
+        // but not yet sent the acknowledgement that follows its events. The server reads as paused, as it would to a
+        // turn queued on the gate just before a resume.
         var tickGate = (SemaphoreSlim)context.Server.GetType()
             .GetField("tickGate", BindingFlags.Instance | BindingFlags.NonPublic)!
             .GetValue(context.Server)!;
@@ -552,10 +675,13 @@ public sealed class SectionBlocksUpdates
         });
         var tick = Task.Run(world.DoWorldTickAsync);
         await entered.Task;
-        await Task.Run(() => context.Server.TickConnectionsAsync(sendKeepAlive: false));
+
+        // The paused turn waits for the gate, and with it for the tick's acknowledgement.
+        var turn = Task.Run(context.Server.RunTickTurnAsync);
         release.SetResult();
         await tick;
         tickGate.Release();
+        Assert.False(await turn);
 
         var packets = client.SentPackets.ToList();
         var change = packets.FindIndex(packet => BlockUpdates.SentBlocksOf(packet)

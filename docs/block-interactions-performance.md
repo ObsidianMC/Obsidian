@@ -266,21 +266,22 @@ What landed:
     server's corrections in its prediction cache and runs block events against the block it predicted.
   - A level tick that fails still sends the blocks changed so far and then the acknowledgements that follow them, as
     it ends; if it failed before its block events, there are none to wait for. Steady use is acknowledged every tick.
-  - While the server is paused (vanilla's frozen game still broadcasts, and runs no block events), the 50 ms
-    connection pass flushes every level and then sends its acknowledgements. It does so holding the tick gate, as the
-    world ticks do, and only if the server is still paused once it has it, so a pass that saw the server paused just
-    before a resume never sends a resumed tick's acknowledgements ahead of that tick's block events. It doesn't wait
-    for the gate: a world tick holding it flushes its own levels.
+  - While the server is paused (vanilla's frozen game still broadcasts, and runs no block events), each turn of the
+    tick loop flushes every level and then sends its acknowledgements, in place of the world tick. The turn holds the
+    tick gate, as a world tick does, so the paused flush never runs beside a tick, and a resumed tick's
+    acknowledgements never overtake that tick's block events. It's the loop's own work, so nothing else taking the
+    gate can starve it. A level whose paused flush fails is reported like a failing tick; the others still flush.
   - The client numbers its predictions afresh in each level. An acknowledgement is dropped if the client has been sent
     a level change since its sequence came in (it dropped those predictions with the level), or if an equal or higher
     one of the same level went out before it (a level whose flush came later).
   - Acknowledgements still waiting when a level is disposed are dropped: its players have left it, or a later, higher
     acknowledgement covers them.
 - A flush sends nothing under a lock, and sends once what was recorded when it began: what's recorded while it
-  sends waits for the next flush, which the next tick (or paused pass) brings, so a writer that never stops can't hold
-  the tick. One flush per level sends at a time. A flush asked for while another runs returns at once, and its
-  changes are either taken by the running one or still pending when it ends, so a stuck connection holds up only the
-  flush that is sending to it.
+  sends waits for the next flush, which the next tick (or paused turn) brings, so a writer that never stops can't hold
+  the tick. If a send throws, the flush puts what it took back, changes and acknowledgements, and the next flush
+  sends it again; a player may get a correction twice, which does no harm. One flush per level sends at a time. A
+  flush asked for while another runs returns at once, and its changes are either taken by the running one or still
+  pending when it ends, so a stuck connection holds up only the flush that is sending to it.
 - A block packet names no level. Each connection counts the level changes (respawns) admitted to its output, and
   records the level each one put the client in. A flush chooses a player only if their client's current level is the
   flushing one, and a block packet is admitted only if the count hasn't changed and the player is still in the level

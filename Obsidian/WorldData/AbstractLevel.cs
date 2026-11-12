@@ -760,9 +760,9 @@ public abstract partial class AbstractLevel : ILevel
 
     /// <summary>
     /// Sends the players the blocks changed since the last flush, once per chunk section, like vanilla's chunk
-    /// broadcast, and then the prediction acknowledgements whose changes have gone out. The server's connection pass
-    /// calls it while the server is paused, when no block events run. The level's tick sends the two apart, with its
-    /// block events between them.
+    /// broadcast, and then the prediction acknowledgements whose changes have gone out. The server's tick loop calls
+    /// it while the server is paused, when no block events run (see <see cref="Server.RunTickTurnAsync"/>). The
+    /// level's tick sends the two apart, with its block events between them.
     /// </summary>
     internal void FlushBlockChanges()
     {

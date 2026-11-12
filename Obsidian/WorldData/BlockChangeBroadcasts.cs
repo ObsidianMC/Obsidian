@@ -14,9 +14,9 @@ namespace Obsidian.WorldData;
 /// <remarks>
 /// <para>
 /// Changes are recorded from any thread (the level's tick, packet handlers, plugins). <see cref="Flush"/> runs at the
-/// level tick's chunk broadcast and, while the server is paused, on its connection pass; changes made anywhere else
-/// wait for the next one. A flush reads each block's state as it is then, so a block changed several times in a tick
-/// is sent once, in its final state.
+/// level tick's chunk broadcast and, while the server is paused, on each turn of its tick loop; changes made anywhere
+/// else wait for the next one. A flush reads each block's state as it is then, so a block changed several times in a
+/// tick is sent once, in its final state.
 /// </para>
 /// <para>
 /// Acknowledgements still waiting when the level is disposed are dropped. Its players have left it by then, and a
@@ -91,9 +91,10 @@ internal sealed class BlockChangeBroadcasts(AbstractLevel level)
     /// <remarks>
     /// A flush sends what was recorded when it began, once: what's recorded while it sends waits for the next flush,
     /// so a writer that never stops can't hold the level's tick here. The next flush always comes, with the next tick
-    /// or, while the server is paused, the next connection pass. If another flush is under way, this one returns at
+    /// or, while the server is paused, the tick loop's next turn. If another flush is under way, this one returns at
     /// once, and what it would have sent is either taken by that one or still pending when that one ends: no flush
-    /// waits for another's sends, which a stuck connection could hold.
+    /// waits for another's sends, which a stuck connection could hold. A flush whose send throws puts back what it
+    /// took, for the next flush to send again.
     /// </remarks>
     public void Flush()
     {
@@ -114,28 +115,58 @@ internal sealed class BlockChangeBroadcasts(AbstractLevel level)
                 this.acknowledgements = [];
         }
 
-        var sent = false;
         try
         {
             if (changed is not null)
                 this.Send(changed);
-
-            sent = true;
         }
-        finally
+        catch
         {
-            // Ownership ends under the lock that records changes, with the acknowledgements whose changes went out.
-            // A send that failed part way drops them: a later, higher acknowledgement covers them.
+            // A send that failed part way leaves what was taken for the next flush, which sends it again: a
+            // correction a player gets twice does no harm.
             lock (this.pendingLock)
             {
-                if (sent && acknowledged is not null)
-                {
-                    foreach (var (player, acknowledgement) in acknowledged)
-                        Record(this.flushed, player, acknowledgement);
-                }
-
+                this.Restore(changed, acknowledged);
                 this.flushing = false;
             }
+
+            throw;
+        }
+
+        // Ownership ends under the lock that records changes, with the acknowledgements whose changes went out.
+        lock (this.pendingLock)
+        {
+            if (acknowledged is not null)
+            {
+                foreach (var (player, acknowledgement) in acknowledged)
+                    Record(this.flushed, player, acknowledgement);
+            }
+
+            this.flushing = false;
+        }
+    }
+
+    // Called under pendingLock: puts what a failed flush took back ahead of what was recorded since.
+    private void Restore(
+        OrderedDictionary<long, ChangedChunk>? changed, Dictionary<PlayerBase, BlockAcknowledgement>? acknowledged)
+    {
+        if (changed is not null)
+        {
+            foreach (var (key, chunk) in this.pending)
+            {
+                if (changed.TryGetValue(key, out var earlier))
+                    earlier.Add(chunk);
+                else
+                    changed.Add(key, chunk);
+            }
+
+            this.pending = changed;
+        }
+
+        if (acknowledged is not null)
+        {
+            foreach (var (player, acknowledgement) in acknowledged)
+                Record(this.acknowledgements, player, acknowledgement);
         }
     }
 
@@ -276,6 +307,19 @@ internal sealed class BlockChangeBroadcasts(AbstractLevel level)
         {
             var section = this.Sections[sectionIndex] ??= new SectionChanges();
             section.Add(positionInSection);
+        }
+
+        // Adds the positions another record of this chunk's changes holds.
+        public void Add(ChangedChunk other)
+        {
+            for (var sectionIndex = 0; sectionIndex < other.Sections.Length; sectionIndex++)
+            {
+                if (other.Sections[sectionIndex] is not SectionChanges section)
+                    continue;
+
+                foreach (var position in section.ToArray())
+                    this.Add(sectionIndex, position);
+            }
         }
     }
 }

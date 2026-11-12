@@ -27,9 +27,9 @@ namespace Obsidian.Tests;
 /// </summary>
 /// <remarks>
 /// The capture's server is frozen and stepped; here the server is paused, its analog. Vanilla's frozen server still
-/// ticks, sending the block changes made since its last tick and then the acknowledgements; a paused server's
-/// connection pass does the same (<see cref="Server.TickConnectionsAsync"/>). A step is a world tick, and each segment
-/// ends, like the capture's, with the first frozen tick after it: one connection pass.
+/// ticks, sending the block changes made since its last tick and then the acknowledgements; a paused server's tick
+/// loop does the same (<see cref="Server.RunTickTurnAsync"/>). A step is a world tick, and each segment ends, like the
+/// capture's, with the first frozen tick after it: one paused turn of the tick loop.
 /// </remarks>
 public sealed class VanillaBlockChangePackets
 {
@@ -83,7 +83,7 @@ public sealed class VanillaBlockChangePackets
         }
 
         // What the setup sent isn't part of the case.
-        await context.Server.TickConnectionsAsync(sendKeepAlive: false);
+        await context.Server.RunTickTurnAsync();
         client.ClearPackets();
 
         var differences = new List<string>();
@@ -95,7 +95,7 @@ public sealed class VanillaBlockChangePackets
             if (tick > 0)
             {
                 await world.DoWorldTickAsync();
-                await context.Server.TickConnectionsAsync(sendKeepAlive: false);
+                await context.Server.RunTickTurnAsync();
                 Compare(differences, segments, tick, "tick", client);
             }
 
@@ -112,7 +112,7 @@ public sealed class VanillaBlockChangePackets
         for (var tick = 0; tick < DrainTicks; tick++)
         {
             await world.DoWorldTickAsync();
-            await context.Server.TickConnectionsAsync(sendKeepAlive: false);
+            await context.Server.RunTickTurnAsync();
         }
 
         client.ClearPackets();
@@ -148,7 +148,7 @@ public sealed class VanillaBlockChangePackets
             throw new InvalidOperationException($"Unknown action {action}.");
         }
 
-        await context.Server.TickConnectionsAsync(sendKeepAlive: false);
+        await context.Server.RunTickTurnAsync();
     }
 
     private static void Compare(List<string> differences, JsonElement[] segments, int tick, string after,
