@@ -259,23 +259,27 @@ What landed:
   chunk broadcast: one block update for a section with one change, otherwise one section update, each with the
   block's state at the flush. A change made outside the tick (a plugin, a command, a packet handler) goes out at the
   next flush. Only players who have the chunk get it.
-- Prediction acknowledgements go out with the flush that carries their block changes:
+- Prediction acknowledgements follow the flush that carries their block changes, and that tick's block events:
   - A use or break handler records the sequences it queues. When it's done, it hands the highest to its player's
-    level, whose next flush sends the player its block changes and then the acknowledgement. A tick that fails before
-    its flush sends neither, and steady use is acknowledged at every flush.
-  - Vanilla sends acknowledgements from its connection tick, after the levels' ticks, so a tick's block events reach
-    the client before them. Obsidian's go out at the flush, before the tick's block events. The order of block changes
-    and acknowledgement is the same.
-  - A player who left the level by then still gets the acknowledgement. It carries no block, and the client dropped its
-    predictions with the level it left.
-  - While the server is paused (vanilla's frozen game still broadcasts), the 50 ms connection pass flushes every
-    level, acknowledgements included.
+    level. The level's next flush sends the player its block changes, and the acknowledgement goes out once the tick's
+    block events have, as vanilla's connection tick sends it after the levels' ticks. Until then the client keeps the
+    server's corrections in its prediction cache and runs block events against the block it predicted.
+  - A tick that fails before its flush sends neither; one that fails after it leaves the acknowledgement for the next
+    tick's send. Steady use is acknowledged every tick.
+  - While the server is paused (vanilla's frozen game still broadcasts, and runs no block events), the 50 ms
+    connection pass flushes every level and then sends its acknowledgements.
+  - The client numbers its predictions afresh in each level. An acknowledgement is dropped if the client has been sent
+    a level change since its sequence came in (it dropped those predictions with the level), or if an equal or higher
+    one of the same level went out before it (a level whose flush came later).
+  - Acknowledgements still waiting when a level is disposed are dropped: its players have left it, or a later, higher
+    acknowledgement covers them.
 - A flush sends nothing under a lock. One flush per level sends at a time. A flush asked for while another runs
   leaves its changes to the running one and returns, so a stuck connection holds up only the flush that is sending
-  to it.
-- A block packet names no level. Each one is sent to a player only if the player is still in the level and has the
-  chunk at the packet's place in their connection's output: a player who left for another level never gets it after
-  their respawn.
+  to it. The running one ends only once nothing is pending, so nothing recorded while it sends is left behind.
+- A block packet names no level. Each connection counts the level changes (respawns) admitted to its output. A
+  flush reads that count for each player it chooses, and a block packet is admitted only if the count hasn't changed
+  and the player is still in the level with the chunk, checked under the lock that admits every packet. A player who
+  left for another level never gets it after their respawn, even one who has come back by then.
 - Block events go out as the tick dispatches them. The block changes they make go out at the next tick's flush, as
   in vanilla.
 - Vanilla doesn't send a moving piston's block or its block-entity data. Obsidian sent both from the block-entity

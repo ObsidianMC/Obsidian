@@ -1225,9 +1225,9 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
 
     /// <summary>
     /// One pass of the independent 50 ms connection loop. While the server is paused, it flushes the levels' block
-    /// changes, and with them the prediction acknowledgements that follow them (see
-    /// <see cref="AbstractLevel.AcknowledgeAfterBlockChanges"/>), like vanilla's paused (frozen) server, whose ticks
-    /// still broadcast. Otherwise the levels' ticks flush them.
+    /// changes, and then the prediction acknowledgements that follow them (see
+    /// <see cref="AbstractLevel.FlushBlockChanges"/>), like vanilla's paused (frozen) server, whose ticks still
+    /// broadcast. Otherwise the levels' ticks flush them.
     /// </summary>
     internal async Task TickConnectionsAsync(bool sendKeepAlive)
     {

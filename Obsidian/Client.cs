@@ -82,6 +82,10 @@ public sealed partial class Client : IClient, IConditionalPacketSender
     // Entries queued and not yet sent or dropped. A direct send waits behind them (see SendPacket).
     private int unsent;
 
+    // The level changes admitted to the output so far (see IConditionalPacketSender.LevelEpoch). Written under
+    // sendLock, which admits every entry and direct send, so it counts them in output order.
+    private int levelEpoch;
+
     private readonly Task packetQueueTask;
     private readonly CancellationToken cancellationToken;
 
@@ -408,7 +412,10 @@ public sealed partial class Client : IClient, IConditionalPacketSender
 
             // Admission and the direct write share the lock, so a new entry cannot slip between them.
             if (Volatile.Read(ref this.unsent) == 0)
+            {
+                this.CountLevelChange(packet);
                 return this.SendAsync(packet, bodies: shared?.Get(this.ReadsPluginEntityData(packet)));
+            }
         }
 
         var bodies = shared?.Get(this.ReadsPluginEntityData(packet));
@@ -416,34 +423,35 @@ public sealed partial class Client : IClient, IConditionalPacketSender
     }
 
     /// <inheritdoc/>
+    int IConditionalPacketSender.LevelEpoch => Volatile.Read(ref this.levelEpoch);
+
+    /// <inheritdoc/>
     /// <remarks>
-    /// With nothing queued, the check and the direct write share <c>sendLock</c>, which admits every queued entry too:
-    /// an entry admitted before is written before, and what made it (a respawn, a forgotten chunk) is visible to the
-    /// check. Otherwise the check runs in the pipeline, at the packet's turn (see <see cref="QueueInTurn"/>).
+    /// The checks and the admission (a direct write, or an entry queued behind the others) share <c>sendLock</c>, which
+    /// admits every entry: a respawn admitted before has changed the epoch, and one admitted after is written after.
+    /// Nothing is checked later in the pipeline, where the player's level could be one they left and came back to.
     /// </remarks>
-    bool IConditionalPacketSender.SendPacketIf(SharedPacketBodies shared, Func<bool> wanted)
+    bool IConditionalPacketSender.SendPacketIf(SharedPacketBodies shared, int levelEpoch, Func<bool> wanted)
     {
         var packet = shared.Packet;
+
+        // Serialized here, like a queued broadcast's packet (see SendPacket), so no serializing runs under the lock.
+        var bodies = shared.Get(this.ReadsPluginEntityData(packet));
         lock (this.sendLock)
         {
-            if (this.IsClosing || this.disconnectRequested)
+            if (this.IsClosing || this.disconnectRequested || this.levelEpoch != levelEpoch || !wanted())
                 return false;
 
             if (Volatile.Read(ref this.unsent) == 0)
-                return wanted() && this.SendAsync(packet, bodies: shared.Get(this.ReadsPluginEntityData(packet)));
+                return this.SendAsync(packet, bodies: bodies);
+
+            var entry = new Outgoing(packet, RunsHandlers: false, Work: null, Bodies: bodies);
+            if (this.TryAdmit(entry, out var admitted))
+                return admitted;
         }
 
-        // Serialized here, like a queued broadcast's packet (see SendPacket), and checked at its turn.
-        var bodies = shared.Get(this.ReadsPluginEntityData(packet));
-        this.QueueInTurn(() =>
-        {
-            if (wanted())
-                this.SendAsync(packet, bodies: bodies);
-
-            return ValueTask.CompletedTask;
-        });
-
-        return true;
+        this.Disconnect();
+        return false;
     }
 
     /// <summary>
@@ -501,21 +509,34 @@ public sealed partial class Client : IClient, IConditionalPacketSender
     {
         lock (this.sendLock)
         {
-            if (this.disconnectRequested
-                || (entry.Packet is IClientboundPacket packet ? !this.CanReceive(packet) : this.IsClosing))
-            {
-                return false;
-            }
-
-            if (Volatile.Read(ref this.unsent) < MaximumOutgoingEntries)
-                return this.WriteOutgoing(entry);
-
-            // Like vanilla's overflowing connections, shed the client rather than waiting for its pipeline.
-            Log.OutgoingOverflow(this.Logger, MaximumOutgoingEntries);
-            this.disconnectRequested = true;
+            if (this.TryAdmit(entry, out var admitted))
+                return admitted;
         }
 
         this.Disconnect();
+        return false;
+    }
+
+    // Called under sendLock. Admits the entry if the client can receive it, or returns false if the pipeline is full
+    // and the client is to be shed (outside the lock).
+    private bool TryAdmit(Outgoing entry, out bool admitted)
+    {
+        admitted = false;
+        if (this.disconnectRequested
+            || (entry.Packet is IClientboundPacket packet ? !this.CanReceive(packet) : this.IsClosing))
+        {
+            return true;
+        }
+
+        if (Volatile.Read(ref this.unsent) < MaximumOutgoingEntries)
+        {
+            admitted = this.WriteOutgoing(entry);
+            return true;
+        }
+
+        // Like vanilla's overflowing connections, shed the client rather than waiting for its pipeline.
+        Log.OutgoingOverflow(this.Logger, MaximumOutgoingEntries);
+        this.disconnectRequested = true;
         return false;
     }
 
@@ -524,10 +545,24 @@ public sealed partial class Client : IClient, IConditionalPacketSender
     {
         Interlocked.Increment(ref this.unsent);
         if (this.packetQueue.Writer.TryWrite(entry))
+        {
+            if (entry.Packet is IClientboundPacket packet)
+                this.CountLevelChange(packet);
+
             return true;
+        }
 
         Interlocked.Decrement(ref this.unsent);
         return false;
+    }
+
+    // Called under sendLock as a packet is admitted. A respawn, or the login packet that starts play, puts the client
+    // in another level (or the same one afresh) from its place in the output on. Counted even if a plugin's handler
+    // cancels it later: a block packet of the level it may have left is dropped, which is safe.
+    private void CountLevelChange(IClientboundPacket packet)
+    {
+        if (packet is Net.Packets.Play.Clientbound.RespawnPacket or Net.Packets.Play.Clientbound.LoginPacket)
+            Volatile.Write(ref this.levelEpoch, this.levelEpoch + 1);
     }
 
     private bool IsClosing => this.disposed || this.cancellationToken.IsCancellationRequested;

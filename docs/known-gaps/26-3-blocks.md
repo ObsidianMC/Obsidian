@@ -36,9 +36,8 @@ the block type at dispatch, and retries events in inactive chunks on a later tic
 vanilla's block-ticking fringe around players and ticking tickets, beyond entity ticking; loaded-only tickets do
 not activate it. Event packets and note sounds send as the events dispatch, and the block changes an event makes go
 out at the next tick's flush of block changes, as with vanilla's chunk broadcast (a piston's moving blocks aren't sent
-at all). Prediction acknowledgements follow the flush with the handler's changes, before that tick's block events,
-where vanilla sends them after. This order matches a vanilla capture, but hasn't been checked on a real client.
-Container lid
+at all). Prediction acknowledgements follow the flush with the handler's changes and that tick's block events, as
+in vanilla. This order matches a vanilla capture, but hasn't been checked on a real client. Container lid
 events carry the number of viewers of each physical block, including separate ender inventories and both double-
 chest halves. Window lifecycle changes mark physical containers dirty, including direct opens, replacement,
 disconnect, death and dimension changes; the level counts and enqueues on its simulation path. Lid event payloads

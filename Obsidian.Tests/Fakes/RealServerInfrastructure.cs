@@ -53,25 +53,44 @@ internal sealed class TestClient(IServer server, bool connected = true) : IClien
     public bool SendPacket(IClientboundPacket packet)
     {
         this.BeforeSend?.Invoke(packet);
-        lock (this.packets)
-            this.packets.Add(packet);
-
+        this.Add(packet);
         return true;
     }
 
-    // Like Client's: the check and the send share the lock every packet is added under.
-    public bool SendPacketIf(SharedPacketBodies shared, Func<bool> wanted)
+    // Like Client's: level changes counted, and the checks made, under the lock every packet is added under.
+    public int LevelEpoch
+    {
+        get
+        {
+            lock (this.packets)
+                return this.levelEpoch;
+        }
+    }
+
+    public bool SendPacketIf(SharedPacketBodies shared, int levelEpoch, Func<bool> wanted)
     {
         this.BeforeSend?.Invoke(shared.Packet);
         lock (this.packets)
         {
-            if (!wanted())
+            if (this.levelEpoch != levelEpoch || !wanted())
                 return false;
 
             this.packets.Add(shared.Packet);
         }
 
         return true;
+    }
+
+    private int levelEpoch;
+
+    private void Add(IClientboundPacket packet)
+    {
+        lock (this.packets)
+        {
+            this.packets.Add(packet);
+            if (packet is RespawnPacket or LoginPacket)
+                this.levelEpoch++;
+        }
     }
 
     // Runs before a packet is sent, on the sending thread: tests can hold a sender there with a gate.
@@ -89,9 +108,7 @@ internal sealed class TestClient(IServer server, bool connected = true) : IClien
 
     public ValueTask QueuePacketAsync(IClientboundPacket packet)
     {
-        lock (this.packets)
-            this.packets.Add(packet);
-
+        this.Add(packet);
         return this.AfterQueue?.Invoke(packet) ?? default;
     }
 

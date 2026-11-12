@@ -1,15 +1,28 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Obsidian.API;
 using Obsidian.API.Blocks;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
+using Obsidian.Events.EventArgs;
+using Obsidian.Net;
 using Obsidian.Net.Packets;
+using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
+using Obsidian.Services;
 using Obsidian.Tests.Fakes;
 using Obsidian.Utilities;
+using Obsidian.Utilities.Collections;
 using Obsidian.WorldData;
+using Obsidian.WorldData.BlockNotifications;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics.Metrics;
+using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -283,6 +296,282 @@ public sealed class SectionBlocksUpdates
         release.SetResult();
         await stuck;
     }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ABlockPacketHeldInTheOutputIsNotSentAfterALevelChangeAndBack()
+    {
+        await using var context = TestServerFactory.CreateServer($"section-held-{Guid.NewGuid():N}");
+        var world = context.World;
+        var nether = LevelTransfers.AddNether(context);
+        LevelTransfers.AddEmptyChunk(nether);
+        WorldBlockEntities.AddEmptyChunk(world);
+        await world.GetBlockAsync(Target);
+        world.FlushBlockChanges();
+        var key = NumericsHelper.IntsToLong(0, 0);
+
+        // A real connection, whose output the test reads back.
+        using var metrics = new ServiceCollection().AddMetrics().BuildServiceProvider();
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        using var peer = new TcpClient();
+        await peer.ConnectAsync((IPEndPoint)listener.LocalEndpoint);
+        using var client = new Client(
+            context.EventDispatcher, context.Server, NullLoggerFactory.Instance, new FakeUserCache(),
+            new ServerMetrics(metrics.GetRequiredService<IMeterFactory>()), context.Provider,
+            new SimpleObjectPool<SocketAsyncEventArgs>(8));
+        client.SetState(ClientState.Play);
+        await client.ConnectAsync(await listener.AcceptSocketAsync());
+        var player = new Entities.Player(Guid.NewGuid(), "Traveller", client, world)
+        {
+            Server = context.Server,
+            Position = new VectorD(8.5, 64, 10.5),
+        };
+        Assert.True(context.Server.AddPlayer(player));
+        Assert.True(world.TryAddPlayer(player));
+        Assert.True(world.TryAddEntity(player));
+        player.LoadedChunks.Add(key);
+
+        // A plugin's handler holds the client's pipeline: what's queued from here waits, in order.
+        var hold = CustomPayloadPacket.ClientboundPlay with
+        {
+            Channel = "test:hold",
+            PluginData = ReadOnlyMemory<byte>.Empty,
+        };
+        var (held, resume) = (Gate(), Gate());
+        context.EventDispatcher.RegisterEvent(null, (Func<QueuePacketEventArgs, ValueTask>)(async args =>
+        {
+            if (ReferenceEquals(args.Packet, hold))
+            {
+                held.TrySetResult();
+                await resume.Task;
+            }
+        }));
+        await client.QueuePacketAsync(hold);
+        await held.Task;
+
+        // The overworld's flush has chosen its recipients when another player's send holds it. It chooses them once
+        // for the chunk and sends its sections in turn: whichever player it visits first, the traveller's packet for
+        // the upper section goes out after the transfer.
+        Vector[] changed = [new(3, 64, 3), new(3, 80, 3)];
+        foreach (var position in changed)
+            world.BlockUpdates.SetBlock(position, BlocksRegistry.Dirt);
+
+        var (entered, release) = (Gate(), Gate());
+        BlockOnFirstBlockPacket(context, world, entered, release);
+        var flush = Task.Run(world.FlushBlockChanges);
+        await entered.Task;
+
+        // The player leaves for the nether, the flush goes on, and the player comes back before the output drains.
+        await player.TeleportAsync(nether, new VectorD(8, 70, 8));
+        release.SetResult();
+        await flush;
+        await player.TeleportAsync(world, new VectorD(8.5, 64, 10.5));
+        player.LoadedChunks.Add(key);
+        resume.SetResult();
+        await client.FlushAsync();
+        var marker = CustomPayloadPacket.ClientboundPlay with
+        {
+            Channel = "test:marker",
+            PluginData = ReadOnlyMemory<byte>.Empty,
+        };
+        Assert.True(client.SendPacket(marker));
+
+        // An overworld block, written between the nether's respawn and the overworld's, would land in the nether.
+        var bodies = await ReadFramesUntilAsync(peer.GetStream(), Body(marker));
+        var respawn = bodies.FindIndex(body => body[0] == RespawnPacket.PacketId);
+        Assert.True(respawn >= 0, "The client wasn't sent the respawn.");
+        foreach (var position in changed)
+        {
+            var block = Body(new BlockUpdatePacket(position, BlocksRegistry.Dirt.GetHashCode()));
+            Assert.DoesNotContain(bodies.Skip(respawn + 1), body => body.AsSpan().SequenceEqual(block));
+        }
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ABlockPacketCheckedAfterARespawnIsDroppedThoughThePlayerIsBackInItsLevel()
+    {
+        await using var context = TestServerFactory.CreateServer($"section-epoch-{Guid.NewGuid():N}");
+        var world = context.World;
+        var nether = LevelTransfers.AddNether(context);
+        LevelTransfers.AddEmptyChunk(nether);
+        var (player, client) = await PrepareAsync(context);
+        Assert.True(context.Server.AddPlayer(player));
+        Assert.True(world.TryAddEntity(player));
+        var changed = new Vector(3, 64, 3);
+        world.BlockUpdates.SetBlock(changed, BlocksRegistry.Dirt);
+
+        // The flush has chosen the player and is about to send.
+        var (entered, release) = (Gate(), Gate());
+        client.BeforeSend = packet =>
+        {
+            if (packet is BlockUpdatePacket or SectionBlocksUpdatePacket && entered.TrySetResult())
+                release.Task.Wait();
+        };
+        var flush = Task.Run(world.FlushBlockChanges);
+        await entered.Task;
+        client.BeforeSend = null;
+
+        // The player left for the nether and is on the way back: the return has set the level but not yet queued its
+        // respawn, and the chunk the player has is still the nether's.
+        await player.TeleportAsync(nether, new VectorD(8, 70, 8));
+        player.Level = world;
+        player.LoadedChunks.Add(NumericsHelper.IntsToLong(0, 0));
+        release.SetResult();
+        await flush;
+
+        var packets = client.SentPackets.ToList();
+        var respawn = packets.FindLastIndex(packet => packet is RespawnPacket);
+        Assert.True(respawn >= 0, "The player wasn't sent the respawn.");
+        var after = packets.Skip(respawn + 1).SelectMany(BlockUpdates.SentBlocksOf);
+        Assert.DoesNotContain(after, block => block.Position == changed);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ChangesAndAcknowledgementsArrivingDuringAFlushsLastSendStillGoOut()
+    {
+        await using var context = TestServerFactory.CreateServer($"section-stranded-{Guid.NewGuid():N}");
+        var world = context.World;
+        var (player, client) = await PrepareAsync(context);
+        var (entered, release) = (Gate(), Gate());
+        BlockOnFirstBlockPacket(context, world, entered, release);
+        world.BlockUpdates.SetBlock(new Vector(1, 64, 1), BlocksRegistry.Stone);
+        var flush = Task.Run(world.FlushBlockChanges);
+        await entered.Task;
+
+        // While the flush sends the last of what it took, a change and an acknowledgement come in. Nothing flushes
+        // again (the server could be paused, its ticks stopped), so the flush under way must send them.
+        var changed = new Vector(3, 64, 3);
+        world.BlockUpdates.SetBlock(changed, BlocksRegistry.Dirt);
+        Acknowledge(world, player, 9);
+        release.SetResult();
+        await flush;
+
+        AssertChangeThenAcknowledgement(client, changed, BlocksRegistry.Dirt, 9);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task AcknowledgementsNeverGoBackwardsAcrossLevels()
+    {
+        await using var context = TestServerFactory.CreateServer($"section-backwards-{Guid.NewGuid():N}");
+        var world = context.World;
+        var nether = LevelTransfers.AddNether(context);
+        var (player, client) = await PrepareAsync(context);
+
+        // Sequence 21 finishes in the overworld; the player moves to the nether, where 22 finishes and is flushed
+        // first. The client ends its predictions up to 22, so 21 after it is stale.
+        Acknowledge(world, player, 21);
+        player.Level = nether;
+        Acknowledge(nether, player, 22);
+        nether.FlushBlockChanges();
+        world.FlushBlockChanges();
+
+        Assert.Equal([22], client.SentPackets.OfType<BlockChangedAckPacket>().Select(ack => ack.SequenceID));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task AcknowledgementsStartAgainInTheLevelAPlayerChangesTo()
+    {
+        await using var context = TestServerFactory.CreateServer($"section-renumbered-{Guid.NewGuid():N}");
+        var world = context.World;
+        var nether = LevelTransfers.AddNether(context);
+        LevelTransfers.AddEmptyChunk(nether);
+        var (player, client) = await PrepareAsync(context);
+        Assert.True(context.Server.AddPlayer(player));
+        Assert.True(world.TryAddEntity(player));
+        Acknowledge(world, player, 21);
+        world.FlushBlockChanges();
+
+        // Sequence 22 finishes in the overworld, but the player leaves for the nether before it's flushed. The client
+        // dropped its overworld predictions with the level, and numbers the nether's afresh.
+        Acknowledge(world, player, 22);
+        await player.TeleportAsync(nether, new VectorD(8, 70, 8));
+        Acknowledge(nether, player, 1);
+        nether.FlushBlockChanges();
+        world.FlushBlockChanges();
+
+        Assert.Equal([21, 1], client.SentPackets.OfType<BlockChangedAckPacket>().Select(ack => ack.SequenceID));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task AnAcknowledgementFollowsTheBlockEventsOfTheTickThatSendsItsChanges()
+    {
+        await using var context = TestServerFactory.CreateServer($"section-events-{Guid.NewGuid():N}");
+        var world = context.World;
+        await BlockUpdates.AddChunksAsync(world);
+        world.LevelData.GameRules["random_tick_speed"] = "0";
+        world.LevelData.GameRules["spawn_mobs"] = "false";
+        var note = new Vector(0, 72, 0);
+        world.BlockUpdates.SetBlock(note, BlocksRegistry.NoteBlock,
+            BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace);
+        world.FlushBlockChanges();
+        var (player, client) = Join(context, new VectorD(0.5, 72, 2.5));
+
+        // A use finished between ticks, with its change and acknowledgement, and a note block plays in the next tick.
+        // Vanilla's client keeps a server's correction in its prediction cache until the acknowledgement, and runs
+        // block events against the predicted block: the acknowledgement comes after the tick's events, as vanilla's
+        // connection tick sends it after the levels' ticks.
+        var changed = new Vector(3, 72, 3);
+        world.BlockUpdates.SetBlock(changed, BlocksRegistry.Stone,
+            BlockUpdateFlags.Clients | BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace);
+        Acknowledge(world, player, 6);
+        world.PlayNoteBlock(note);
+        await world.DoWorldTickAsync();
+
+        var packets = client.SentPackets.ToList();
+        var change = packets.FindIndex(packet => BlockUpdates.SentBlocksOf(packet)
+            .Contains((changed, BlocksRegistry.Stone.GetHashCode())));
+        var played = packets.FindIndex(packet => packet is BlockEventPacket blockEvent
+            && blockEvent.BlockType == BlockIds.NoteBlock && blockEvent.Position == note);
+        var acknowledgement = packets.FindIndex(packet => packet is BlockChangedAckPacket { SequenceID: 6 });
+        Assert.True(change >= 0, "The client wasn't sent the change.");
+        Assert.True(played > change, "The note event didn't follow the change.");
+        Assert.True(acknowledgement > played, "The acknowledgement didn't follow the tick's block events.");
+    }
+
+    // An uncompressed frame's body, as a connection without compression writes it: the packet's id and payload.
+    private static byte[] Body(IClientboundPacket packet)
+    {
+        using var frame = new NetworkBuffer();
+        frame.WritePacket(packet);
+        var bytes = frame.AsSpan(0, frame.Size).ToArray();
+        var length = 1;
+        while ((bytes[length - 1] & 0x80) != 0)
+            length++;
+
+        return bytes[length..];
+    }
+
+    // Reads uncompressed frames until one's body is the marker's, and returns the bodies before it.
+    private static async Task<List<byte[]>> ReadFramesUntilAsync(Stream stream, byte[] marker)
+    {
+        var bodies = new List<byte[]>();
+        while (true)
+        {
+            var body = new byte[await ReadVarIntAsync(stream)];
+            await stream.ReadExactlyAsync(body);
+            if (body.AsSpan().SequenceEqual(marker))
+                return bodies;
+
+            bodies.Add(body);
+        }
+    }
+
+    private static async Task<int> ReadVarIntAsync(Stream stream)
+    {
+        var value = 0;
+        var one = new byte[1];
+        for (var shift = 0; ; shift += 7)
+        {
+            await stream.ReadExactlyAsync(one);
+            value |= (one[0] & 0x7F) << shift;
+            if ((one[0] & 0x80) == 0)
+                return value;
+        }
+    }
+
+    // A finished handler's acknowledgement of sequence, received while the player's connection is in its current level.
+    private static void Acknowledge(AbstractLevel level, Entities.Player player, int sequence) =>
+        level.AcknowledgeAfterBlockChanges(player, new Entities.BlockAcknowledgement(sequence, player.LevelEpoch));
 
     private static TaskCompletionSource Gate() => new(TaskCreationOptions.RunContinuationsAsynchronously);
 

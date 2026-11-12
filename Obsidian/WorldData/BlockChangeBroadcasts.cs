@@ -8,13 +8,21 @@ namespace Obsidian.WorldData;
 /// <summary>
 /// Collects the blocks a level changed for its players, and sends them once a tick per chunk section, like vanilla's
 /// <c>ChunkHolder</c>: a block update for a section with one changed block, or a section update listing the current
-/// state of each changed block. Prediction acknowledgements go out behind them (see <see cref="Acknowledge"/>).
+/// state of each changed block. Prediction acknowledgements go out behind them, after the tick's block events (see
+/// <see cref="Acknowledge"/>).
 /// </summary>
 /// <remarks>
+/// <para>
 /// Changes are recorded from any thread (the level's tick, packet handlers, plugins). <see cref="Flush"/> runs at the
 /// level tick's chunk broadcast and, while the server is paused, on its connection pass; changes made anywhere else
 /// wait for the next one. A flush reads each block's state as it is then, so a block changed several times in a tick
 /// is sent once, in its final state.
+/// </para>
+/// <para>
+/// Acknowledgements still waiting when the level is disposed are dropped. Its players have left it by then, and a
+/// client that left a level dropped its predictions with it; one that hasn't is covered by its next acknowledgement,
+/// which ends every prediction up to a higher sequence.
+/// </para>
 /// </remarks>
 internal sealed class BlockChangeBroadcasts(AbstractLevel level)
 {
@@ -24,13 +32,15 @@ internal sealed class BlockChangeBroadcasts(AbstractLevel level)
     // The chunks with changes, in the order they first changed since the last flush took them.
     private OrderedDictionary<long, ChangedChunk> pending = [];
 
-    // The highest sequence each player's finished handlers queued since the last flush took them.
-    private Dictionary<PlayerBase, int> acknowledgements = [];
+    // Each player's acknowledgement from finished handlers, waiting for a flush to send their changes.
+    private Dictionary<PlayerBase, BlockAcknowledgement> acknowledgements = [];
 
-    // Whether a flush is under way, which owns sending: two flushes never interleave their packets, and a flush asked
-    // for meanwhile (flushAgain) is run by the one under way rather than waiting for it.
+    // Acknowledgements whose changes a flush has sent, waiting for SendAcknowledgements.
+    private Dictionary<PlayerBase, BlockAcknowledgement> flushed = [];
+
+    // Whether a flush is under way, which owns sending: two flushes never interleave their packets, and what's
+    // recorded meanwhile is sent by the one under way before it ends, not left for a flush that may never come.
     private bool flushing;
-    private bool flushAgain;
 
     /// <summary>Records that the block at <paramref name="position"/> changed, for the next flush.</summary>
     public void Changed(Vector position)
@@ -57,45 +67,40 @@ internal sealed class BlockChangeBroadcasts(AbstractLevel level)
     }
 
     /// <summary>
-    /// Acknowledges <paramref name="sequence"/> to <paramref name="player"/> after the next flush's block changes,
-    /// which include those of the handler that queued it, now finished. Vanilla acknowledges from its connection tick,
-    /// after the levels' ticks; a client sees the same order of block changes and acknowledgement, but here the tick's
-    /// block events come after the acknowledgement rather than before it.
+    /// Acknowledges a finished handler's sequence to <paramref name="player"/> once the next flush has sent its block
+    /// changes, at the next <see cref="SendAcknowledgements"/>. Vanilla acknowledges from its connection tick, after
+    /// the levels' ticks, so a client sees a tick's block changes, then its block events, then the acknowledgement.
+    /// Until the acknowledgement, the client keeps the server's corrections in its prediction cache, and runs block
+    /// events against the block it predicted.
     /// </summary>
     /// <remarks>
-    /// The acknowledgement goes out even if the player has left the level by then: it carries no block, and a client
-    /// that has moved to another level has dropped the predictions it ends.
+    /// An acknowledgement for a player who has left the level by then goes out only if the client hasn't been sent the
+    /// level change yet (see <see cref="PlayerBase.SendBlockAcknowledgement"/>).
     /// </remarks>
-    public void Acknowledge(PlayerBase player, int sequence)
+    public void Acknowledge(PlayerBase player, BlockAcknowledgement acknowledgement)
     {
         lock (this.pendingLock)
-        {
-            var highest = this.acknowledgements.GetValueOrDefault(player, -1);
-            this.acknowledgements[player] = Math.Max(highest, sequence);
-        }
+            Record(this.acknowledgements, player, acknowledgement);
     }
 
     /// <summary>
     /// Sends the changes recorded since the last flush to the players who have their chunks, per chunk its sections
-    /// from the bottom up, then the acknowledgements recorded before it. Changes in chunks that are no longer loaded
-    /// are dropped, as vanilla drops them.
+    /// from the bottom up. Changes in chunks that are no longer loaded are dropped, as vanilla drops them. The
+    /// acknowledgements recorded before it are sent at the next <see cref="SendAcknowledgements"/>.
     /// </summary>
     /// <remarks>
     /// If another flush is under way, this one returns at once and that one sends these changes too, after its own:
-    /// no flush waits for another's sends, which a stuck connection could hold.
+    /// no flush waits for another's sends, which a stuck connection could hold. A flush ends only once nothing is
+    /// pending, so what's recorded while it sends its last changes isn't left for a flush that may never come.
     /// </remarks>
     public void Flush()
     {
         lock (this.pendingLock)
         {
             if (this.flushing)
-            {
-                this.flushAgain = true;
                 return;
-            }
 
             this.flushing = true;
-            this.flushAgain = true;
         }
 
         try
@@ -105,11 +110,8 @@ internal sealed class BlockChangeBroadcasts(AbstractLevel level)
                 if (changed is not null)
                     this.Send(changed);
 
-                if (acknowledged is null)
-                    continue;
-
-                foreach (var (player, sequence) in acknowledged)
-                    player.SendPacket(new BlockChangedAckPacket { SequenceID = sequence });
+                if (acknowledged is not null)
+                    this.MarkFlushed(acknowledged);
             }
         }
         catch
@@ -121,22 +123,56 @@ internal sealed class BlockChangeBroadcasts(AbstractLevel level)
         }
     }
 
-    // Takes what's pending if a flush was asked for since the last take, or else ends the flush under way. Null for
-    // none.
-    private bool TakePending(
-        out OrderedDictionary<long, ChangedChunk>? changed, out Dictionary<PlayerBase, int>? acknowledged)
+    /// <summary>
+    /// Sends the acknowledgements whose block changes a flush has sent. The level's tick calls it after its block
+    /// events, as vanilla's connection tick follows the levels' ticks; a tick that fails before then leaves them for
+    /// the next call.
+    /// </summary>
+    public void SendAcknowledgements()
+    {
+        Dictionary<PlayerBase, BlockAcknowledgement> due;
+        lock (this.pendingLock)
+        {
+            if (this.flushed.Count == 0)
+                return;
+
+            due = this.flushed;
+            this.flushed = [];
+        }
+
+        foreach (var (player, acknowledgement) in due)
+            player.SendBlockAcknowledgement(acknowledgement);
+    }
+
+    // The acknowledgements taken with changes that are now sent.
+    private void MarkFlushed(Dictionary<PlayerBase, BlockAcknowledgement> acknowledged)
+    {
+        lock (this.pendingLock)
+        {
+            foreach (var (player, acknowledgement) in acknowledged)
+                Record(this.flushed, player, acknowledgement);
+        }
+    }
+
+    private static void Record(
+        Dictionary<PlayerBase, BlockAcknowledgement> into, PlayerBase player, BlockAcknowledgement acknowledgement) =>
+        into[player] = into.TryGetValue(player, out var known) ? acknowledgement.Max(known) : acknowledgement;
+
+    // Takes what's pending, or else ends the flush under way: checked under the lock that records changes, so nothing
+    // recorded is left once the flush has ended. Null for none.
+    private bool TakePending(out OrderedDictionary<long, ChangedChunk>? changed,
+        out Dictionary<PlayerBase, BlockAcknowledgement>? acknowledged)
     {
         lock (this.pendingLock)
         {
             changed = null;
             acknowledged = null;
-            if (!this.flushAgain)
+            if (this.pending.Count == 0 && this.acknowledgements.Count == 0)
             {
                 this.flushing = false;
                 return false;
             }
 
-            this.flushAgain = false;
             if (this.pending.Count > 0)
             {
                 changed = this.pending;
@@ -164,35 +200,43 @@ internal sealed class BlockChangeBroadcasts(AbstractLevel level)
             foreach (var packet in this.ReadPackets(chunk))
             {
                 var shared = new SharedPacketBodies(packet);
-                foreach (var (player, wanted) in players)
-                    Send(player, shared, wanted);
+                foreach (var recipient in players)
+                    Send(recipient, shared);
             }
         }
     }
 
     // Block packets name no level: one a player received after leaving for another level would change that level's
-    // block there. Each is sent only if the player still has the chunk, in this level, at the packet's place in their
-    // output, which follows the respawn of a level change (see IConditionalPacketSender).
-    private static void Send(IPlayer player, SharedPacketBodies shared, Func<bool> wanted)
+    // block there. Each is sent only if no level change was admitted to the player's output since they were chosen,
+    // and they're still in this level with the chunk, checked as the packet is admitted (see IConditionalPacketSender).
+    // The level alone wouldn't do: a player who left and came back is in it again, but a packet admitted before their
+    // return's respawn would reach the client in the level they went to.
+    private static void Send(Recipient recipient, SharedPacketBodies shared)
     {
-        if (player is PlayerBase { Connection: IConditionalPacketSender connection })
-            connection.SendPacketIf(shared, wanted);
-        else if (wanted())
-            player.SendPacket(shared.Packet);
+        if (recipient.Player is PlayerBase { Connection: IConditionalPacketSender connection })
+            connection.SendPacketIf(shared, recipient.LevelEpoch, recipient.Wanted);
+        else if (recipient.Wanted())
+            recipient.Player.SendPacket(shared.Packet);
     }
 
-    // The players that have the chunk, read once for all its sections, each with the check made again as it's sent.
-    private List<(IPlayer Player, Func<bool> Wanted)> PlayersWithChunk(long key)
+    // The players that have the chunk, read once for all its sections, each with its level epoch and the check made
+    // again as it's sent.
+    private List<Recipient> PlayersWithChunk(long key)
     {
-        var players = new List<(IPlayer, Func<bool>)>();
+        var players = new List<Recipient>();
         foreach (var (_, player) in level.Players)
         {
-            if (player.LoadedChunks.Contains(key))
-                players.Add((player, () => ReferenceEquals(player.Level, level) && player.LoadedChunks.Contains(key)));
+            // The epoch first: a level change sets the player's level before it admits its respawn.
+            var epoch = (player as PlayerBase)?.LevelEpoch ?? 0;
+            bool Wanted() => ReferenceEquals(player.Level, level) && player.LoadedChunks.Contains(key);
+            if (Wanted())
+                players.Add(new Recipient(player, epoch, Wanted));
         }
 
         return players;
     }
+
+    private readonly record struct Recipient(IPlayer Player, int LevelEpoch, Func<bool> Wanted);
 
     // The chunk's packets, with each block's state read now under the tick lock, which every block write holds.
     private List<IClientboundPacket> ReadPackets(ChangedChunk chunk)
