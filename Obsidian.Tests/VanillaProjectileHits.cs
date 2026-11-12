@@ -2,6 +2,7 @@ using Obsidian.API;
 using Obsidian.API.Advancements;
 using Obsidian.API.Blocks;
 using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Loot;
 using Obsidian.API.Registries;
 using Obsidian.API.Utilities;
@@ -62,8 +63,6 @@ public sealed class VanillaProjectileHits(ITestOutputHelper output)
     /// </summary>
     private static readonly Dictionary<(string Case, string Field), string> pinned = new()
     {
-        [("splash_potion_target", "levelEvents")] = PotionColour,
-        [("splash_potion_chorus_flower", "levelEvents")] = PotionColour,
         [("experience_bottle_target", "gameEvents")] = "experience orbs don't emit hit_ground as they land",
         [("shulker_bullet_target", "gameEvents")] =
             "the bullet stops at the block, where vanilla's moves into it first, so entity_damage is a block higher",
@@ -77,8 +76,6 @@ public sealed class VanillaProjectileHits(ITestOutputHelper output)
         [("trident_oak_button", "sounds")] = ButtonContact,
         [("trident_oak_button", "gameEvents")] = ButtonContact,
     };
-
-    private const string PotionColour = "the splash's particles have a fixed colour, not the potion's";
 
     private const string BobberRehits =
         "vanilla's grounded bobber hits the block again on ticks 2 and 4; Obsidian's rests on it";
@@ -464,6 +461,15 @@ public sealed class VanillaProjectileHits(ITestOutputHelper output)
             return CastBobber(world, owner, start, motion);
 
         var projectile = Create(world, input, shooter, start, motion);
+        if (input.TryGetProperty("potion", out var potion) && projectile is MobProjectile thrown)
+        {
+            var contents = new PotionContentsDataComponent
+            {
+                Potion = Enum.Parse<Potion>(potion.GetString()!.Replace("_", ""), ignoreCase: true)
+            };
+            thrown.SplashItem = new ItemStack(ItemsRegistry.SplashPotion, 1, contents);
+            thrown.SplashEffects = [.. ArrowPotionEffects.Get(contents)];
+        }
         projectile.EntityId = Server.GetNextEntityId();
         projectile.Position = start;
         projectile.Motion = motion;

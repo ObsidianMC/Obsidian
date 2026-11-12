@@ -137,9 +137,12 @@ internal sealed partial class TrialSpawnerBlockEntity
 
         // Counted before this tick's detection, like vanilla's.
         var additionalPlayers = Math.Max(0, trial.Data.RegisteredPlayers.Count - 1);
+        var config = trial.Config;
         this.TryDetectPlayers(trial);
 
-        var config = trial.Config;
+        if (trial.Ominous)
+            this.TrySpawnOminousItem(trial);
+
         if (trial.Data.TotalMobsSpawned >= config.TargetTotalMobs(additionalPlayers))
         {
             if (!trial.Data.CurrentMobs.IsEmpty)
@@ -322,8 +325,8 @@ internal sealed partial class TrialSpawnerBlockEntity
 
         var inSight = this.DetectPlayers(trial, requireLineOfSight: true);
 
-        // Becoming ominous (a player with Bad Omen or Trial Omen) is left for ominous trials.
-        if (trial.State == TrialSpawnerState.Cooldown)
+        var becameOminous = !trial.Ominous && this.TryBecomeOminous(trial, inSight);
+        if (trial.State == TrialSpawnerState.Cooldown && !becameOminous)
             return;
 
         var found = trial.Data.RegisteredPlayers.IsEmpty
@@ -338,8 +341,11 @@ internal sealed partial class TrialSpawnerBlockEntity
             RegisteredPlayers = registered,
             NextMobSpawnsAt = Math.Max(trial.Time + DetectedPlayerSpawnDelay, trial.Data.NextMobSpawnsAt)
         };
-        var levelEvent = trial.Ominous ? DetectPlayersOminousEvent : DetectPlayersEvent;
-        trial.Level.BroadcastLevelEvent(levelEvent, position, registered.Count);
+        if (!becameOminous)
+        {
+            var levelEvent = trial.Ominous ? DetectPlayersOminousEvent : DetectPlayersEvent;
+            trial.Level.BroadcastLevelEvent(levelEvent, position, registered.Count);
+        }
     }
 
     // Vanilla's PlayerDetector.NO_CREATIVE_PLAYERS: players but creative and spectators whose block is within the
@@ -350,7 +356,7 @@ internal sealed partial class TrialSpawnerBlockEntity
         var range = (double)trial.Data.RequiredPlayerRange;
         var terrain = new MobTerrain(trial.Level);
         var found = new List<Guid>();
-        foreach (var player in trial.Level.Players.Values)
+        foreach (var player in trial.Level.PlayersByArrival())
         {
             if (player.GameMode is GameMode.Creative or GameMode.Spectator)
                 continue;
@@ -443,6 +449,8 @@ internal sealed partial class TrialSpawnerBlockEntity
                 companions = mob.FinalizeBareSpawn(level, random);
 
             mob.PersistenceRequired = true;
+            if (spawnData.TryGetTag<NbtCompound>("equipment", out var equipment))
+                mob.EquipFromTable(equipment);
         }
 
         // A jockey the setup made: vanilla adds a baby zombie's chicken during its setup, before the mob, and a
@@ -545,7 +553,7 @@ internal sealed partial class TrialSpawnerBlockEntity
 
         public TrialSpawnerState State { get; } = TrialSpawnerStates.Of(block);
 
-        public bool Ominous { get; } = block.GetProperty("ominous") == "true";
+        public bool Ominous { get; set; } = block.GetProperty("ominous") == "true";
 
         public long Time { get; } = level.LevelData.GameTime;
 
@@ -570,6 +578,7 @@ internal sealed partial class TrialSpawnerBlockEntity
         /// <summary>Vanilla's <c>markUpdated</c>: saved, and clients told, at the end of the tick.</summary>
         public void MarkUpdated()
         {
+            this.Publish();
             this.Entity.SetChanged();
             this.Entity.SendUpdate();
         }

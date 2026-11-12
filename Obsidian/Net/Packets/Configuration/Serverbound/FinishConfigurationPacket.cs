@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -11,21 +11,44 @@ public sealed partial class FinishConfigurationPacket
     public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         var client = player.Client;
+        var host = (Server)server;
 
         client.SetState(ClientState.Play);
+        // Like the login, wait for pending same-name leaves before loading what they saved.
+        await host.WaitForLeavesAsync(player.Username);
         await player.LoadAsync();
 
         // An integrated server opened to LAN forces its game mode on players who join.
-        if (((Server)server).Integrated?.GetForcedGameMode(player.Level.LevelData) is GameMode forcedGameMode)
+        if (host.Integrated?.GetForcedGameMode(player.Level.LevelData) is GameMode forcedGameMode)
             player.GameMode = forcedGameMode;
 
-        if (!server.AddPlayer(player))
+        host.PlayerLoadedForJoin?.Invoke(player);
+        // A same-name leave may have started while loading. Reject this join: retrying with a fresh player would
+        // discard state set by configuration handlers that isn't saved, such as movement ability grants.
+        if (!host.AddPlayerUnlessLeaving(player, out _))
         {
-            await player.DisconnectAsync("Unable to complete login due to a server error. Please try again or contact an administrator.");
+            await player.DisconnectAsync(
+                "Unable to complete login due to a server error. Please try again or contact an administrator.");
             Log.AddPlayerFailed(client.Logger, player.Username);
             return;
         }
 
+        // The connection may close at any point of the join. One that closed first admits nothing, so the player is
+        // unregistered again; one that closes later leaves once the join is over, and undoes all of it.
+        if (client is not Client connection)
+        {
+            await JoinAsync(server, player);
+            return;
+        }
+
+        if (!await connection.AdmitAsync(() => JoinAsync(server, player)))
+            server.RemovePlayer(player);
+    }
+
+    // Admits the registered player to their level and sends them the world, as vanilla's PlayerList.placeNewPlayer.
+    private static async ValueTask JoinAsync(IServer server, IClientPlayer player)
+    {
+        var client = player.Client;
         var joined = (Entities.Player)player;
         await client.QueuePacketAsync(new LoginPacket
         {

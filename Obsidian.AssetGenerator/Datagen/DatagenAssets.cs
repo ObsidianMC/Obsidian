@@ -19,7 +19,8 @@ internal static class DatagenAssets
 
     // Container, block and supported entity tables evaluated by the server (see LootRegistryGenerator).
     private static readonly string[] lootTableCategories =
-        ["archaeology", "blocks", "chests", "dispensers", "pots", "spawners", "entities", "gameplay", "harvest", "carve"];
+        ["archaeology", "blocks", "chests", "dispensers", "pots", "spawners", "entities", "gameplay", "harvest", "carve",
+            "equipment"];
 
     /// <param name="generatedDirectory">The data generators' output (<c>data</c> and <c>reports</c>).</param>
     /// <param name="packetFieldsPath">The Java dumper's fields of each packet (see <see cref="JavaDumper.PacketFieldsPath"/>).</param>

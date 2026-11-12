@@ -2,12 +2,45 @@ using Obsidian.API.Effects;
 using Obsidian.Nbt;
 using Obsidian.Nbt.Interfaces;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
 
 public partial class Living
 {
     private int effectTicks;
+
+    /// <summary>Converts Bad Omen on a spawner's scan; an existing Trial Omen takes priority.</summary>
+    internal void ConvertBadOmenForTrial()
+    {
+        if (this.HasPotionEffect((int)PotionEffect.TrialOmen - 1)
+            || !this.ActivePotionEffects.TryGetValue((int)PotionEffect.BadOmen - 1, out var omen))
+        {
+            return;
+        }
+
+        var duration = 18000 * (omen.EffectData.Amplifier + 1);
+        this.RemovePotionEffect((int)PotionEffect.BadOmen - 1);
+        this.AddPotionEffect((int)PotionEffect.TrialOmen - 1, duration, effect:
+            EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon);
+    }
+
+    private void PlayOmenSound(int effectId)
+    {
+        var name = effectId == (int)PotionEffect.BadOmen - 1 ? "bad_omen" : "trial_omen";
+        if (this.Level is AbstractLevel level)
+        {
+            level.PacketBroadcaster.BroadcastToLevelInRange(level, this.Position, new SoundPacket
+            {
+                SoundLocation = "minecraft:event.mob_effect." + name,
+                SoundPosition = new SoundPosition(this.Position.X, this.Position.Y, this.Position.Z),
+                Category = this is IPlayer ? SoundCategory.Players : SoundCategory.Neutral,
+                Volume = 1,
+                Pitch = 1,
+                Seed = level.NextSoundSeed()
+            });
+        }
+    }
 
     private static bool IsLongerEffect(PotionEffectData incoming, PotionEffectData current) =>
         current.Duration != -1 && (incoming.Duration == -1 || incoming.Duration > current.Duration);

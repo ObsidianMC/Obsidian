@@ -396,7 +396,7 @@ internal sealed class CrafterBlockEntity : VanillaContainerBlockEntity
         if (current.IsNullOrAir())
             return true;
 
-        if (current.Count >= current.MaxStackSize)
+        if (current.Count >= current.StoredMaxStackSize)
             return false;
 
         for (var other = slot + 1; other < CrafterContainer.GridSize; other++)

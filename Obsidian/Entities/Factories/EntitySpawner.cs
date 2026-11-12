@@ -106,7 +106,8 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
 
     internal static Entity Create(EntityType type, ILevel level) => CreateMob(level, type) ?? (type switch
     {
-        EntityType.Fireball or EntityType.SmallFireball or EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion => new MobProjectile(level, type),
+        EntityType.Fireball or EntityType.SmallFireball or EntityType.Snowball or EntityType.LlamaSpit
+            or EntityType.SplashPotion or EntityType.LingeringPotion => new MobProjectile(level, type),
         EntityType.ExperienceOrb => new ExperienceOrb { Level = level, Value = 1 },
         EntityType.Arrow => new Arrow { Level = level },
         EntityType.SpectralArrow => new SpectralArrow { Level = level },
@@ -114,6 +115,7 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
         EntityType.EvokerFangs => new EvokerFangs { Level = level },
         EntityType.ShulkerBullet => new ShulkerBullet { Level = level },
         EntityType.BreezeWindCharge => new BreezeWindCharge(level),
+        EntityType.WindCharge => new BreezeWindCharge(level) { Type = EntityType.WindCharge },
         EntityType.WitherSkull => new WitherSkull { Level = level },
         EntityType.EndCrystal => new EndCrystal { Level = level },
         EntityType.LightningBolt => new LightningBolt { Level = level },
@@ -127,7 +129,7 @@ internal class EntitySpawner(ILevel level) : IEntitySpawner
         EntityType.Cushion => new Cushion { Level = level },
         EntityType.Interaction => new Interaction { Level = level },
         EntityType.OminousItemSpawner => new OminousItemSpawner { Level = level },
-        EntityType.Marker or EntityType.WindCharge => new Entity { Level = level, Type = type },
+        EntityType.Marker => new Entity { Level = level, Type = type },
         EntityType.Painting => new Painting { Level = level },
         EntityType.ArmorStand => new ArmorStand { Level = level },
         EntityType.LeashKnot => new LeashKnot { Level = level },

@@ -126,6 +126,17 @@ public static partial class LootTableJson
                     OnlyCompatible = ReadFlag(json, "only_compatible", true),
                     IncludeAdditionalCostComponent = ReadFlag(json, "include_additional_cost_component", false)
                 };
+            case "minecraft:set_enchantments":
+                return new SetEnchantmentsFunction
+                {
+                    Conditions = conditions,
+                    Add = ReadFlag(json, "add", false),
+                    Enchantments = json.GetProperty("enchantments").EnumerateObject().ToDictionary(
+                        entry => EnchantmentsRegistry.All.FirstOrDefault(
+                            enchantment => enchantment.Identifier == Qualify(entry.Name))
+                            ?? throw new InvalidDataException($"Unknown enchantment {entry.Name}."),
+                        entry => ReadIntNumber(entry.Value))
+                };
             case "minecraft:exploration_map":
                 return ReadExplorationMap(json, conditions);
             case "minecraft:set_name":

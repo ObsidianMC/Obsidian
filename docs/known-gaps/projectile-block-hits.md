@@ -17,8 +17,6 @@ and fails once one goes.
   contact pass (#723) runs straight after the arrow's tick, so the press follows the hit. Touching the blocks along a
   projectile's move, before it hits, is where that changes (`arrow_oak_button`, `spectral_arrow_oak_button`,
   `trident_oak_button`).
-- **A splash potion's particles have a fixed colour.** Obsidian has no effect colours to mix the potion's from
-  (`splash_potion_target`, `splash_potion_chorus_flower`).
 - **Water doesn't put out a burning arrow,** so vanilla's extinguish sound as a flaming arrow enters a waterlogged
   campfire is missing (`flaming_arrow_waterlogged_campfire`).
 - **Experience orbs don't emit `hit_ground`** as they land (`experience_bottle_target`).
@@ -30,8 +28,8 @@ and fails once one goes.
 
 ## Not captured
 
-- **Projectiles Obsidian lacks.** A player's wind charge is a plain entity with no flight or burst, and lingering
-  potions don't exist, so neither reaches the path.
+- **Other projectile coverage.** This fixture omits player wind charges and lingering potions. The ominous trial
+  release probes cover their flight, bursts and potion break events; lingering area-effect clouds remain a gap.
 - **Firework rockets** don't take the path: their flight ends on any collision.
 - **Projectile flight.** The cases start each projectile just above the block, falling straight at it, so that the hit
   lands on the same tick on both sides. Obsidian moves thrown and hurting projectiles with gravity and drag after the

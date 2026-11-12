@@ -299,6 +299,27 @@ public abstract partial class AbstractLevel : ILevel
     private TickPlayerSnapshot? tickPlayers;
     private int playerChanges;
     private readonly PlayerGrid playerGrid = new();
+    private readonly List<IPlayer> playersByArrival = [];
+
+    /// <summary>
+    /// Players in level-registration order, as vanilla's level player list. Trial scans need this order when
+    /// choosing between players with Bad Omen. Direct edits to the public dictionary are reconciled when queried.
+    /// </summary>
+    internal IPlayer[] PlayersByArrival()
+    {
+        lock (this.playerGrid.MembershipGate)
+        {
+            this.playersByArrival.RemoveAll(player => !this.Players.TryGetValue(player.Uuid, out var current)
+                || !ReferenceEquals(current, player));
+            foreach (var player in this.Players.Values)
+            {
+                if (!this.playersByArrival.Contains(player))
+                    this.playersByArrival.Add(player);
+            }
+
+            return this.playersByArrival.ToArray();
+        }
+    }
 
     private sealed record TickPlayerSnapshot(IPlayer[] Players, int Changes);
 
@@ -1023,6 +1044,7 @@ public abstract partial class AbstractLevel : ILevel
                 return false;
 
             Interlocked.Increment(ref this.playerChanges);
+            this.playersByArrival.Add(player);
             this.playerGrid.Add(player);
             return true;
         }
@@ -1037,6 +1059,7 @@ public abstract partial class AbstractLevel : ILevel
                 return false;
 
             Interlocked.Increment(ref this.playerChanges);
+            this.playersByArrival.Remove(player);
             this.playerGrid.Remove(player);
             return true;
         }

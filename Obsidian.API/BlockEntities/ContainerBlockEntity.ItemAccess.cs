@@ -1,4 +1,5 @@
 using Obsidian.API.Inventory;
+using System.Threading;
 
 namespace Obsidian.API.BlockEntities;
 
@@ -46,7 +47,7 @@ public partial class ContainerBlockEntity
     /// Called with the inventory's lock held, from any thread: read <see cref="Inventory"/>, don't wait on anything.
     /// Return zero to refuse insertion; the item's own stack size remains an upper bound.
     /// </summary>
-    protected internal virtual int SlotLimit(int slot, ItemStack stack) => stack.MaxStackSize;
+    protected internal virtual int SlotLimit(int slot, ItemStack stack) => stack.StoredMaxStackSize;
 
     // Menu clicks reach the owning plugin through its host, including when another plugin's menu shows the slot.
     internal int MenuSlotLimit(int slot, ItemStack stack) =>
@@ -118,7 +119,8 @@ internal interface IContainerItemsHost
 /// (when a hopper takes in an item entity), the inventory's click lock (<see cref="BaseContainer.Lock"/>), then the
 /// loot lock, which <see cref="ContainerBlockEntity.Save"/> takes in the same order. A call takes one inventory's lock at a time, never waits on anything else holding it, and rolls
 /// pending loot before taking it, so that it never holds a click lock while a chunk loads. Holding the tick lock, it
-/// doesn't wait for a click lock at all: a container busy at that moment takes and gives nothing.
+/// doesn't wait for a click lock at all: a container busy at that moment takes and gives nothing. Inserting a whole
+/// stack holds the lock across the slots it fills, so that no click comes between them.
 /// </remarks>
 internal sealed class ContainerItemAccess(ContainerBlockEntity owner, BlockFace? side) : IItemAccess
 {
@@ -153,13 +155,53 @@ internal sealed class ContainerItemAccess(ContainerBlockEntity owner, BlockFace?
     public ItemStack? GetItem(int slot)
     {
         var index = this.Index(slot);
-        using var gate = this.Enter();
-        if (gate is null)
+        if (!this.TryEnter(out var entry))
             return null;
 
-        return owner.Inventory[index] is { IsAir: false, Count: > 0 } stack
-            ? new ItemStack(stack, stack.Count)
-            : null;
+        try
+        {
+            return owner.Inventory[index] is { IsAir: false, Count: > 0 } stack
+                ? new ItemStack(stack, stack.Count)
+                : null;
+        }
+        finally
+        {
+            this.Exit(entry, changed: false);
+        }
+    }
+
+    /// <summary>
+    /// Whether every slot holds what <paramref name="matches"/> accepts: its stack, or null when it's empty. Gives
+    /// what <see cref="GetItem"/> for each slot in turn would, a busy or removed container reading as empty, but
+    /// reads the stacks under one hold of the lock without copying them. <paramref name="matches"/> runs holding the
+    /// lock: it must only read, and must not run plugin code, such as a component's copy (read
+    /// <see cref="ItemStack.StoredMaxStackSize"/>, not <see cref="ItemStack.MaxStackSize"/>).
+    /// </summary>
+    internal bool AllSlots(Func<ItemStack?, bool> matches)
+    {
+        // With no slots, there's nothing to read, and so no loot to roll.
+        if (this.slots.Count == 0)
+            return true;
+
+        // Every slot of a busy or removed container reads as empty.
+        if (!this.TryEnter(out var entry))
+            return matches(null);
+
+        try
+        {
+            for (var slot = 0; slot < this.slots.Count; slot++)
+            {
+                var stack = owner.Inventory[this.slots[slot]] is { IsAir: false, Count: > 0 } held ? held : null;
+                if (!matches(stack))
+                    return false;
+            }
+
+            return true;
+        }
+        finally
+        {
+            this.Exit(entry, changed: false);
+        }
     }
 
     public ItemStack? Insert(int slot, ItemStack stack, bool simulate = false)
@@ -170,36 +212,51 @@ internal sealed class ContainerItemAccess(ContainerBlockEntity owner, BlockFace?
         if (stack.IsAir || stack.Count <= 0)
             return null;
 
-        using (var gate = this.Enter())
+        if (!this.TryEnter(out var entry))
+            return stack;
+
+        var changed = false;
+        try
         {
-            if (gate is null || !owner.CanInsert(index, stack, side))
-                return stack;
+            return this.InsertHeld(index, stack, simulate, ref changed);
+        }
+        finally
+        {
+            this.Exit(entry, changed);
+        }
+    }
 
-            var existing = owner.Inventory[index];
-            var empty = existing is null || existing.IsAir || existing.Count <= 0;
-            var limit = Math.Clamp(owner.SlotLimit(index, stack), 0, stack.MaxStackSize);
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Fills the slots in their order under one hold of the inventory's lock, which gives what the slot-by-slot calls
+    /// of <see cref="IItemAccess.Insert(ItemStack, bool)"/> give when nothing comes between them.
+    /// </remarks>
+    public ItemStack? Insert(ItemStack stack, bool simulate = false)
+    {
+        ArgumentNullException.ThrowIfNull(stack);
 
-            // Vanilla's HopperBlockEntity.tryMoveInItem: an empty slot takes the stack, a stack of the same item with
-            // the same components tops up to the moving stack's size.
-            int moved;
-            if (empty)
-                moved = Math.Min(stack.Count, limit);
-            else if (existing!.Equals(stack) && existing.Count <= existing.MaxStackSize)
-                moved = Math.Clamp(limit - existing.Count, 0, stack.Count);
-            else
-                moved = 0;
+        // As the slot-by-slot calls answer: no slots leave the stack, and an empty stack goes into the first slot.
+        if (this.slots.Count == 0)
+            return stack;
 
-            if (moved <= 0)
-                return stack;
+        if (stack.IsAir || stack.Count <= 0)
+            return null;
 
-            if (!simulate)
-            {
-                owner.OnInserting();
-                owner.Inventory[index] = new ItemStack(stack, empty ? moved : existing!.Count + moved);
-                gate.Changed = true;
-            }
+        if (!this.TryEnter(out var entry))
+            return stack;
 
-            return moved == stack.Count ? null : new ItemStack(stack, stack.Count - moved);
+        var changed = false;
+        try
+        {
+            ItemStack? left = stack;
+            for (var slot = 0; slot < this.slots.Count && left is not null; slot++)
+                left = this.InsertHeld(this.slots[slot], left, simulate, ref changed);
+
+            return left;
+        }
+        finally
+        {
+            this.Exit(entry, changed);
         }
     }
 
@@ -209,80 +266,142 @@ internal sealed class ContainerItemAccess(ContainerBlockEntity owner, BlockFace?
         if (count <= 0)
             return null;
 
-        using var gate = this.Enter();
-        if (gate is null)
+        if (!this.TryEnter(out var entry))
             return null;
+
+        var changed = false;
+        try
+        {
+            var existing = owner.Inventory[index];
+            if (existing is null || existing.IsAir || existing.Count <= 0 || !owner.CanExtract(index, existing, side))
+                return null;
+
+            var taken = Math.Min(count, existing.Count);
+            var result = new ItemStack(existing, taken);
+
+            if (!simulate)
+            {
+                var rest = existing.Count - taken;
+                owner.Inventory[index] = rest > 0 ? new ItemStack(existing, rest) : null;
+                changed = true;
+            }
+
+            return result;
+        }
+        finally
+        {
+            this.Exit(entry, changed);
+        }
+    }
+
+    // Puts what fits of a non-empty stack into the inventory's slot, holding its lock; sets changed when it did.
+    private ItemStack? InsertHeld(int index, ItemStack stack, bool simulate, ref bool changed)
+    {
+        if (!owner.CanInsert(index, stack, side))
+            return stack;
 
         var existing = owner.Inventory[index];
-        if (existing is null || existing.IsAir || existing.Count <= 0 || !owner.CanExtract(index, existing, side))
-            return null;
+        var empty = existing is null || existing.IsAir || existing.Count <= 0;
+        // Stack sizes are read without component copies, which may be plugin code reading this container.
+        var limit = Math.Clamp(owner.SlotLimit(index, stack), 0, stack.StoredMaxStackSize);
 
-        var taken = Math.Min(count, existing.Count);
-        var result = new ItemStack(existing, taken);
+        // Vanilla's HopperBlockEntity.tryMoveInItem: an empty slot takes the stack, a stack of the same item with the
+        // same components tops up to the moving stack's size. A slot with no room takes nothing whatever it holds, so
+        // its stack isn't compared, which costs more than the rest.
+        int moved;
+        if (empty)
+            moved = Math.Min(stack.Count, limit);
+        else if (existing!.Count < limit && existing.Count <= existing.StoredMaxStackSize && existing.Equals(stack))
+            moved = Math.Min(limit - existing.Count, stack.Count);
+        else
+            moved = 0;
+
+        if (moved <= 0)
+            return stack;
 
         if (!simulate)
         {
-            var rest = existing.Count - taken;
-            owner.Inventory[index] = rest > 0 ? new ItemStack(existing, rest) : null;
-            gate.Changed = true;
+            owner.OnInserting();
+            owner.Inventory[index] = new ItemStack(stack, empty ? moved : existing!.Count + moved);
+            changed = true;
         }
 
-        return result;
+        return moved == stack.Count ? null : new ItemStack(stack, stack.Count - moved);
     }
 
     private int Index(int slot) => (uint)slot < (uint)this.slots.Count
         ? this.slots[slot]
         : throw new ArgumentOutOfRangeException(nameof(slot), slot, null);
 
-    // Takes the inventory's lock once its loot is rolled, or returns null when the container takes and gives nothing:
-    // it was removed, its loot can't be rolled now, or (holding the tick lock) a click has it.
-    private Gate? Enter()
+    // Takes the inventory's lock once its loot is rolled, or returns false when the container takes and gives
+    // nothing: it was removed, its loot can't be rolled now, or (holding the tick lock) a click has it. Release it
+    // with Exit.
+    private bool TryEnter(out Entry entry)
     {
+        entry = default;
         var host = owner.Host as IContainerItemsHost;
 
         // Rolling loot takes locks that come before a menu's click locks.
         if (withoutWaiting ? owner.LootTable is not null : host is not null && !host.PrepareItems(owner))
-            return null;
+            return false;
 
         var inventory = owner.Inventory;
-        IDisposable held;
-        if (withoutWaiting || host is { HoldsTickLock: true })
-        {
-            var gate = inventory.TransactionLock;
-            if (!gate.Wait(0))
-                return null;
+        var tryOnly = withoutWaiting || host is { HoldsTickLock: true };
 
-            held = new LockRelease(gate);
+        if (inventory.LocksOnlyItself)
+        {
+            // Taken directly: Lock's ordering and release handles are for several locks, and Exit reports a change.
+            var gate = inventory.TransactionLock;
+            if (tryOnly)
+            {
+                if (!gate.Wait(0))
+                    return false;
+            }
+            else
+            {
+                gate.Wait();
+            }
+
+            entry = new Entry(host, gate, null);
+        }
+        else if (tryOnly)
+        {
+            // Every container the slots are kept in (a menu's backing containers), or none of them.
+            if (!inventory.TryLock(out var held))
+                return false;
+
+            entry = new Entry(host, null, held);
         }
         else
         {
-            held = inventory.Lock();
+            entry = new Entry(host, null, inventory.Lock());
         }
 
         // Checked again under the lock: the block entity may have gone, or been given a loot table, meanwhile.
         if (owner.IsRemoved || inventory.IsRetired || owner.LootTable is not null)
         {
-            held.Dispose();
-            return null;
+            this.Exit(entry, changed: false);
+            return false;
         }
 
-        return new Gate(owner, host, held);
+        return true;
     }
 
-    // The inventory's lock for one call, which on release tells the server about a change the call made.
-    private sealed class Gate(ContainerBlockEntity owner, IContainerItemsHost? host, IDisposable held) : IDisposable
+    // Releases what TryEnter took, then tells the server about a change the call made.
+    private void Exit(Entry entry, bool changed)
     {
-        public bool Changed { get; set; }
+        if (entry.Gate is not null)
+            entry.Gate.Release();
+        else
+            entry.Held?.Dispose();
 
-        public void Dispose()
-        {
-            held.Dispose();
+        if (!changed)
+            return;
 
-            if (!this.Changed)
-                return;
-
-            owner.SetChanged();
-            host?.OnItemsChanged(owner);
-        }
+        owner.SetChanged();
+        entry.Host?.OnItemsChanged(owner);
     }
+
+    // The inventory's lock for one call: its own semaphore, or the handle of Lock for one made of several.
+    private readonly record struct Entry(IContainerItemsHost? Host, SemaphoreSlim? Gate, IDisposable? Held);
 }

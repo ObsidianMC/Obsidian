@@ -22,7 +22,7 @@ internal sealed class MobProjectile : Entity
     /// <summary>The potion item a player threw, shown to clients; a mob's splash shows its own potion.</summary>
     internal ItemStack? SplashItem { get; set; }
 
-    internal IEntity? Owner { get; private set; }
+    internal IEntity? Owner { get; set; }
 
     private Guid ownerUuid;
     private VectorD acceleration;
@@ -36,7 +36,8 @@ internal sealed class MobProjectile : Entity
         Type = type;
         var size = type == EntityType.Fireball ? 1 : 0.3125f;
         Dimension = new EntityDimension { Width = size, Height = size };
-        NoGravity = type is not (EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion);
+        NoGravity = type is not (EntityType.Snowball or EntityType.LlamaSpit
+            or EntityType.SplashPotion or EntityType.LingeringPotion);
     }
 
     [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
@@ -60,9 +61,11 @@ internal sealed class MobProjectile : Entity
         };
 
         Motion = direction * (speed ?? defaultSpeed);
-        var thrown = type is EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion;
+        var thrown = type is EntityType.Snowball or EntityType.LlamaSpit
+            or EntityType.SplashPotion or EntityType.LingeringPotion;
         acceleration = thrown ? VectorD.Zero : direction * 0.1f;
-        NoGravity = type is not (EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion);
+        NoGravity = type is not (EntityType.Snowball or EntityType.LlamaSpit
+            or EntityType.SplashPotion or EntityType.LingeringPotion);
     }
 
     /// <summary>
@@ -78,7 +81,8 @@ internal sealed class MobProjectile : Entity
         BoundingBox = Dimension.CreateBBFromPosition(Position);
         Motion = motion;
 
-        var thrown = type is EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion;
+        var thrown = type is EntityType.Snowball or EntityType.LlamaSpit
+            or EntityType.SplashPotion or EntityType.LingeringPotion;
         acceleration = thrown || motion.Magnitude < 0.0001f ? VectorD.Zero : motion / motion.Magnitude * 0.1f;
     }
 
@@ -149,10 +153,11 @@ internal sealed class MobProjectile : Entity
             return;
         }
 
-        if (Type is EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion)
+        if (Type is EntityType.Snowball or EntityType.LlamaSpit
+            or EntityType.SplashPotion or EntityType.LingeringPotion)
         {
             // Vanilla throwable flight applies gravity before air drag; arrows use the opposite order.
-            var gravity = Type == EntityType.SplashPotion ? 0.05 : 0.03;
+            var gravity = Type is EntityType.SplashPotion or EntityType.LingeringPotion ? 0.05 : 0.03;
             Motion = (Motion - new VectorD(0, gravity, 0)) * 0.99;
         }
         else
@@ -211,6 +216,9 @@ internal sealed class MobProjectile : Entity
             case EntityType.SplashPotion:
                 await SplashAsync(null);
                 break;
+            case EntityType.LingeringPotion:
+                this.SendPotionBreak();
+                break;
             case EntityType.Fireball:
                 await level.ExplodeAsync(this, 1, Owner);
 
@@ -259,6 +267,15 @@ internal sealed class MobProjectile : Entity
         {
             await SplashAsync(target);
             await RemoveAsync();
+            return;
+        }
+
+        if (Type == EntityType.LingeringPotion)
+        {
+            // Cloud application is still a documented gap. A lingering potion must nevertheless shatter without
+            // entering the fireball damage/fire path or applying its effects as a splash.
+            this.SendPotionBreak();
+            await this.RemoveAsync();
             return;
         }
 
@@ -351,8 +368,12 @@ internal sealed class MobProjectile : Entity
         tag.Set(new NbtTag<int>("ObsidianSplashEffect", SplashEffect));
         tag.Set(new NbtTag<int>("ObsidianSplashDuration", SplashDuration));
         tag.Set(new NbtTag<int>("ObsidianSplashAmplifier", SplashAmplifier));
-        if (ownerUuid != Guid.Empty)
-            tag.Set(new NbtArray<int>("Owner", EntityNbt.UuidToInts(ownerUuid)));
+        if (this.Type is EntityType.SplashPotion or EntityType.LingeringPotion && this.SplashItem is ItemStack item)
+            tag.Set(item.ToNbt("Item"));
+
+        var owner = this.Owner?.Uuid ?? this.ownerUuid;
+        if (owner != Guid.Empty)
+            tag.Set(new NbtArray<int>("Owner", EntityNbt.UuidToInts(owner)));
     }
 
     internal override void ReadNbt(NbtCompound tag)
@@ -363,11 +384,19 @@ internal sealed class MobProjectile : Entity
         SplashDuration = Math.Max(0, duration);
         var amplifier = tag.TryGetNumber<int>("ObsidianSplashAmplifier", out var savedAmplifier) ? savedAmplifier : 0;
         SplashAmplifier = Math.Clamp(amplifier, 0, 10);
+        if (this.Type is EntityType.SplashPotion or EntityType.LingeringPotion
+            && tag.TryGetTag<NbtCompound>("Item", out var item))
+        {
+            this.SplashItem = item.ItemFromNbt();
+            var contents = this.SplashItem?.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents);
+            this.SplashEffects = [.. ArrowPotionEffects.Get(contents)];
+        }
         if (tag.TryGetNumber<int>("ObsidianLife", out var life))
             age = Math.Clamp(life, 0, 600);
 
         var hasAcceleration = EntityNbt.TryReadVector(tag, "ObsidianAcceleration", out acceleration);
-        var accelerates = Type is not (EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion);
+        var accelerates = Type is not (EntityType.Snowball or EntityType.LlamaSpit
+            or EntityType.SplashPotion or EntityType.LingeringPotion);
         if (!hasAcceleration && accelerates && Motion.Magnitude > 0.001f)
             acceleration = Motion / Motion.Magnitude * 0.1f;
 
@@ -380,7 +409,7 @@ internal sealed class MobProjectile : Entity
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        if (Type != EntityType.SplashPotion)
+        if (Type is not (EntityType.SplashPotion or EntityType.LingeringPotion))
             return;
 
         writer.WriteEntityMetadataType(8, EntityMetadataType.Slot);
@@ -408,11 +437,20 @@ internal sealed class MobProjectile : Entity
                 await ApplySplashEffectAsync(living, effect, strength, undead);
         }
 
-        // Vanilla's AbstractThrownPotion.onHit: the splash's particles (instant ones for an instant potion), then its
+        this.SendPotionBreak();
+    }
+
+    private void SendPotionBreak()
+    {
+        var effects = this.GetSplashEffects();
+        var contents = this.SplashItem?.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents);
+        var color = contents?.CustomColor ?? PotionColors.Mix(effects);
+        // Vanilla's AbstractThrownPotion.onHit: the potion's particles (instant ones for an instant potion), then its
         // sound, which is a level event of its own.
         var block = (Vector)Position.Floor();
-        var instant = effects.Any(effect => IsInstant(effect.Id));
-        var particles = new LevelEventPacket(instant ? 2007 : 2002, block, 0x385dc6);
+        // Custom instant effects still use the normal break events. Only the base potion selects the instant pair.
+        var instant = contents?.Potion is Potion.Healing or Potion.StrongHealing or Potion.Harming or Potion.StrongHarming;
+        var particles = new LevelEventPacket(instant ? 2007 : 2002, block, color);
         PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, particles);
         if (!Silent)
         {
@@ -446,7 +484,8 @@ internal sealed class MobProjectile : Entity
 
     private bool IsOutOfSplash(Living living) =>
         !living.Alive
-        || Math.Abs(living.Position.Y - Position.Y) > 2
+        || living.Position.Y + living.Dimension.Height <= this.Position.Y - 2
+        || living.Position.Y >= this.Position.Y + this.Dimension.Height + 2
         || living is IPlayer { GameMode: GameMode.Creative or GameMode.Spectator };
 
     private static bool IsSplashUndead(EntityType? type) =>

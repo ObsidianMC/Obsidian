@@ -58,6 +58,12 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.OminousItemSpawner;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -136,10 +142,12 @@ public final class TrialSpawnerFixtures {
     private static ServerLevel level;
     private static Thread serverThread;
     private static BlockPos origin;
+    private static boolean ominousCapture;
 
     public static void main(String[] args) throws Exception {
         var fixturePath = Path.of(args[0]);
         var root = JsonParser.parseString(Files.readString(fixturePath)).getAsJsonObject();
+        ominousCapture = root.has("ominous") && root.get("ominous").getAsBoolean();
         var selected = args.length > 1 && !args[1].isBlank() ? Set.of(args[1].split("\\+")) : Set.<String>of();
 
         try {
@@ -176,6 +184,15 @@ public final class TrialSpawnerFixtures {
         }
 
         root.addProperty("version", server.getServerVersion());
+        if (ominousCapture)
+            root.add("releaseMotion", server.submit(TrialSpawnerFixtures::releaseMotion).join());
+
+        if (root.has("impacts")) {
+            for (var element : root.getAsJsonArray("impacts")) {
+                var probe = element.getAsJsonObject();
+                probe.add("output", server.submit(() -> captureImpact(probe)).join());
+            }
+        }
         var gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
         Files.writeString(fixturePath, (compact(gson.toJson(root)) + "\n").replace("\n", "\r\n"),
             StandardCharsets.UTF_8);
@@ -255,14 +272,20 @@ public final class TrialSpawnerFixtures {
                 act(input, state, current);
                 tickOnce();
                 broadcastChanges();
-                return checkpoint(state, current, heard, gameEvents, writes);
+                var result = checkpoint(state, current, heard, gameEvents, writes);
+                if (ominousCapture)
+                    result.add("ominous", ominousState(state));
+
+                return result;
             }).join();
             checkpoints.add(checkpoint);
         }
 
         input.add("checkpoints", checkpoints);
-        input.addProperty("finalSaved", server.submit(() -> machine().saveWithoutMetadata(level.registryAccess()))
-            .join().toString());
+        input.addProperty("finalSaved", server.submit(() -> {
+            var saved = machine().saveWithoutMetadata(level.registryAccess());
+            return ominousCapture ? normalize(saved, state) : saved.toString();
+        }).join());
         server.submit(() -> {
             System.getProperties().remove("obsidian.blockUse.writes");
             unregister(state);
@@ -278,6 +301,9 @@ public final class TrialSpawnerFixtures {
 
     private static Trial prepare(JsonObject input, int index, List<Packet<?>> heard, List<String> gameEvents,
         JsonArray writes) {
+        if (ominousCapture)
+            setGameTime(2000L + index * 10000L);
+
         applyRules(input);
         setup(input);
         if (input.has("vault"))
@@ -323,7 +349,7 @@ public final class TrialSpawnerFixtures {
 
         input.addProperty("startTime", level.getGameTime());
         level.getRandom().setSeed(input.get("seed").getAsLong());
-        if (input.has("vault"))
+        if (input.has("vault") || ominousCapture)
             seedSounds(input.get("seed").getAsLong());
 
         observeWrites(writes);
@@ -341,6 +367,183 @@ public final class TrialSpawnerFixtures {
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static void setGameTime(long time) {
+        try {
+            var field = ServerLevel.class.getDeclaredField("serverLevelData");
+            field.setAccessible(true);
+            ((net.minecraft.world.level.storage.ServerLevelData) field.get(level)).setGameTime(time);
+        } catch (ReflectiveOperationException error) {
+            throw new RuntimeException(error);
+        }
+    }
+
+    private record ImpactTarget(ProbePlayer player, List<Packet<?>> packets) {
+    }
+
+    // These probes run the actual ominous release and the projectile's native ticks. The scratch-jar hook seeds
+    // the projectile before shoot, not after release, so the recorded birth motion checks release wiring too.
+    private static JsonObject captureImpact(JsonObject input) {
+        origin = originOf(0);
+        clear();
+        discardEntities();
+        setGameTime(500000L);
+        for (var pos : BlockPos.betweenClosed(origin.offset(-8, -1, -8), origin.offset(8, -1, 8)))
+            level.setBlock(pos, Blocks.STONE.defaultBlockState(), QuietFlags);
+        setup(input);
+
+        var targets = new ArrayList<ImpactTarget>();
+        for (var element : input.getAsJsonArray("targets")) {
+            var spec = element.getAsJsonObject();
+            var player = new ProbePlayer(server, level, UUIDUtil.createOfflineProfile(spec.get("name").getAsString()));
+            var packets = new ArrayList<Packet<?>>();
+            player.connection = recorder(player, packets);
+            player.setGameMode(GameType.SURVIVAL);
+            player.snapTo(Vec3.atLowerCornerOf(origin).add(vector(spec.getAsJsonArray("pos"))));
+            players(server.getPlayerList()).add(player);
+            level.addNewPlayer(player);
+            targets.add(new ImpactTarget(player, packets));
+        }
+
+        level.getRandom().setSeed(input.get("seed").getAsLong());
+        seedSounds(input.get("seed").getAsLong());
+        var tag = parse("{item:" + input.get("stack").getAsString() + ",spawn_item_after_ticks:1L}");
+        var spawner = EntityType.loadEntityRecursive(EntityTypes.OMINOUS_ITEM_SPAWNER, tag, level,
+            EntitySpawnReason.COMMAND, value -> value);
+        spawner.snapTo(Vec3.atLowerCornerOf(origin).add(vector(input.getAsJsonArray("pos"))));
+        level.addFreshEntity(spawner);
+        for (var target : targets)
+            target.packets.clear();
+
+        java.util.function.Consumer<Object> seed = value -> ((Entity) value).getRandom()
+            .setSeed(input.get("shotSeed").getAsLong());
+        System.getProperties().put("obsidian.ominous.shotSeed", seed);
+        try {
+            spawner.tickCount++;
+            spawner.tick();
+        } finally {
+            System.getProperties().remove("obsidian.ominous.shotSeed");
+        }
+
+        var projectile = level.getEntities((Entity) null, box(), entity ->
+            entity instanceof net.minecraft.world.entity.projectile.Projectile).stream().findFirst().orElseThrow();
+        var result = new JsonObject();
+        result.addProperty("type", BuiltInRegistries.ENTITY_TYPE.getKey(projectile.getType()).toString());
+        result.add("birthMotion", point(projectile.getDeltaMovement()));
+        var saved = saveEntity(projectile);
+        result.addProperty("item", projectileItem(saved).toString());
+        if (input.has("reload") && input.get("reload").getAsBoolean()) {
+            var type = projectile.getType();
+            projectile.discard();
+            projectile = EntityType.loadEntityRecursive(type, saved, level, EntitySpawnReason.LOAD, value -> value);
+            level.addFreshEntity(projectile);
+            result.addProperty("reloadedItem", projectileItem(saveEntity(projectile)).toString());
+        }
+
+        var ticks = 0;
+        while (!projectile.isRemoved() && ticks < 8) {
+            projectile.tickCount++;
+            projectile.tick();
+            ticks++;
+        }
+        result.addProperty("impactTicks", ticks);
+        result.addProperty("removed", projectile.isRemoved());
+
+        var victims = new JsonArray();
+        for (var target : targets) {
+            var victim = new JsonObject();
+            victim.addProperty("health", target.player.getHealth());
+            victim.addProperty("burning", target.player.isOnFire());
+            victim.add("motion", point(target.player.getDeltaMovement()));
+            var effects = new JsonArray();
+            for (var effect : target.player.getActiveEffects()) {
+                effects.add(BuiltInRegistries.MOB_EFFECT.getKey(effect.getEffect().value()) + " "
+                    + effect.getDuration() + " " + effect.getAmplifier());
+            }
+            victim.add("effects", effects);
+            victims.add(victim);
+        }
+        result.add("targets", victims);
+
+        var events = new JsonArray();
+        var explosions = new JsonArray();
+        for (var packet : targets.getFirst().packets) {
+            if (packet instanceof ClientboundLevelEventPacket event)
+                events.add(event.getType() + " " + event.getData());
+
+            if (packet instanceof net.minecraft.network.protocol.game.ClientboundExplodePacket explosion) {
+                var data = new JsonObject();
+                data.add("center", point(explosion.center().subtract(Vec3.atLowerCornerOf(origin))));
+                data.addProperty("radius", explosion.radius());
+                data.addProperty("blocks", explosion.blockCount());
+                data.addProperty("particle", BuiltInRegistries.PARTICLE_TYPE.getKey(
+                    explosion.explosionParticle().getType()).toString());
+                data.addProperty("sound", explosion.explosionSound().value().location().toString());
+                explosions.add(data);
+            }
+        }
+        result.add("levelEvents", events);
+        result.add("explosions", explosions);
+        result.addProperty("fireBlocks", area().stream().filter(pos -> level.getBlockState(pos).is(Blocks.FIRE)).count());
+
+        if (input.has("watch")) {
+            try {
+                var dispatch = ServerLevel.class.getDeclaredMethod("runBlockEvents");
+                dispatch.setAccessible(true);
+                dispatch.invoke(level);
+            } catch (ReflectiveOperationException error) {
+                throw new RuntimeException(error);
+            }
+
+            var blocks = new JsonArray();
+            for (var point : input.getAsJsonArray("watch")) {
+                var pos = origin.offset(position(point.getAsJsonArray()));
+                blocks.add(offset(pos) + " " + text(level.getBlockState(pos)));
+            }
+            result.add("blocks", blocks);
+            var effects = new JsonObject();
+            recordEvents(effects, targets.getFirst().packets, List.of());
+            result.add("sounds", effects.getAsJsonArray("sounds"));
+            var blockEvents = new JsonArray();
+            for (var packet : targets.getFirst().packets) {
+                if (packet instanceof net.minecraft.network.protocol.game.ClientboundBlockEventPacket event)
+                    blockEvents.add(offset(event.getPos()) + " " + event.getB0() + " " + event.getB1());
+            }
+            result.add("blockEvents", blockEvents);
+            result.addProperty("random", randomState());
+        }
+
+        for (var target : targets) {
+            target.player.discard();
+            players(server.getPlayerList()).remove(target.player);
+            level.players().remove(target.player);
+        }
+        discardEntities();
+        clear();
+        return result;
+    }
+
+    private static CompoundTag saveEntity(Entity entity) {
+        var output = net.minecraft.world.level.storage.TagValueOutput.createWithContext(
+            ProblemReporter.DISCARDING, level.registryAccess());
+        entity.saveWithoutId(output);
+        return output.buildResult();
+    }
+
+    private static Tag projectileItem(CompoundTag tag) {
+        if (tag.contains("Item"))
+            return tag.get("Item");
+
+        return tag.getCompoundOrEmpty("item");
+    }
+
+    private static JsonArray point(Vec3 point) {
+        var array = new JsonArray();
+        array.add(point.x);
+        array.add(point.y);
+        array.add(point.z);
+        return array;
     }
 
     // The case's difficulty (normal by default), and whether spawner blocks work (they do by default).
@@ -412,13 +615,39 @@ public final class TrialSpawnerFixtures {
 
     // What happens before the tick: the case's events, then what each mob does once it has been around long enough.
     private static void act(JsonObject input, Trial state, int tick) {
+        if (ominousCapture) {
+            // Entity constructors use unseeded private randoms. Observe releases at birth, then discard them before
+            // flight: the separate seeded Projectile.getMovementToShoot probes check release motion exactly.
+            for (var entity : level.getEntities((Entity) null, chunkBox(), entity ->
+                !(entity instanceof Player) && !(entity instanceof Mob) && !(entity instanceof OminousItemSpawner))) {
+                entity.discard();
+            }
+        }
+
         if (input.has("events")) {
             for (var element : input.getAsJsonArray("events")) {
                 var event = element.getAsJsonObject();
                 if (event.get("tick").getAsInt() != tick)
                     continue;
 
+                if (event.has("spawn")) {
+                    var tag = parse(event.get("spawn").getAsString());
+                    var entity = EntityType.loadEntityRecursive(EntityTypes.OMINOUS_ITEM_SPAWNER, tag, level,
+                        EntitySpawnReason.COMMAND, value -> value);
+                    var at = Vec3.atLowerCornerOf(origin).add(vector(event.getAsJsonArray("pos")));
+                    entity.snapTo(at);
+                    level.addFreshEntity(entity);
+                    continue;
+                }
+
                 var player = player(state, event.get("player").getAsString());
+                if (event.has("effect")) {
+                    var effect = event.getAsJsonObject("effect");
+                    var holder = effect.get("id").getAsString().equals("bad_omen")
+                        ? MobEffects.BAD_OMEN : MobEffects.TRIAL_OMEN;
+                    player.addEffect(new MobEffectInstance(holder, effect.get("duration").getAsInt(),
+                        effect.get("amplifier").getAsInt()));
+                }
                 if (event.has("pos")) {
                     var at = Vec3.atLowerCornerOf(origin).add(vector(event.getAsJsonArray("pos")));
                     player.snapTo(at.x, at.y, at.z, 0, 0);
@@ -484,6 +713,8 @@ public final class TrialSpawnerFixtures {
             if (!state.appeared.containsKey(mob)) {
                 state.mobs.add(mob);
                 state.appeared.put(mob, tick);
+                if (ominousCapture)
+                    mob.setSilent(true);
             }
         }
 
@@ -605,6 +836,103 @@ public final class TrialSpawnerFixtures {
         return phases;
     }
 
+    private static JsonObject ominousState(Trial state) {
+        var result = new JsonObject();
+        var effects = new JsonArray();
+        for (var player : state.players) {
+            for (var holder : List.of(MobEffects.BAD_OMEN, MobEffects.TRIAL_OMEN)) {
+                var effect = player.getEffect(holder);
+                if (effect != null) {
+                    effects.add(player.getGameProfile().name() + " "
+                        + BuiltInRegistries.MOB_EFFECT.getKey(holder.value()) + " " + effect.getDuration()
+                        + " " + effect.getAmplifier() + " " + effect.isVisible() + " " + effect.showIcon());
+                }
+            }
+        }
+
+        var entities = new ArrayList<Entity>(level.getEntities((Entity) null, box(), entity ->
+            entity instanceof Mob || entity instanceof OminousItemSpawner || entity instanceof ItemEntity
+                || entity instanceof net.minecraft.world.entity.projectile.throwableitemprojectile.ThrowableItemProjectile));
+        entities.sort(Comparator.comparingInt(Entity::getId));
+        var data = new JsonArray();
+        var ops = level.registryAccess().createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE);
+        for (var entity : entities) {
+            if (entity instanceof Mob mob) {
+                for (var slot : EquipmentSlot.values()) {
+                    var item = mob.getItemBySlot(slot);
+                    if (!item.isEmpty()) {
+                        var stack = ItemStack.CODEC.encodeStart(ops, item).getOrThrow();
+                        data.add(mobName(state, mob.getUUID()) + " " + slot.getName() + " "
+                            + mob.getDropChances().byEquipment(slot) + " " + stack);
+                    }
+                }
+            } else if (entity instanceof OminousItemSpawner itemSpawner) {
+                // Its age is deliberately unsaved. The fixture records only its own two fields.
+                var output = net.minecraft.world.level.storage.TagValueOutput.createWithContext(
+                    ProblemReporter.DISCARDING, level.registryAccess());
+                entity.saveWithoutId(output);
+                var tag = output.buildResult();
+                var kept = new CompoundTag();
+                if (tag.contains("item"))
+                    kept.put("item", tag.get("item").copy());
+                kept.putLong("spawn_item_after_ticks", tag.getLongOr("spawn_item_after_ticks", 0));
+                data.add("item spawner " + kept);
+            } else if (entity instanceof ItemEntity item) {
+                var output = net.minecraft.world.level.storage.TagValueOutput.createWithContext(
+                    ProblemReporter.DISCARDING, level.registryAccess());
+                entity.saveWithoutId(output);
+                var saved = output.buildResult();
+                var kept = new CompoundTag();
+                kept.put("Item", saved.get("Item").copy());
+                kept.putShort("PickupDelay", saved.getShortOr("PickupDelay", (short) 0));
+                data.add("released item " + kept);
+            } else if (entity instanceof
+                net.minecraft.world.entity.projectile.throwableitemprojectile.ThrowableItemProjectile projectile) {
+                var stack = ItemStack.CODEC.encodeStart(ops, projectile.getItem()).getOrThrow();
+                data.add("released projectile " + BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()) + " " + stack);
+            }
+        }
+
+        result.add("effects", effects);
+        result.add("data", data);
+        return result;
+    }
+
+    private static JsonArray releaseMotion() {
+        var result = new JsonArray();
+        for (int index = 0; index < 4; index++) {
+            var seed = 4913L + index;
+            var power = switch (index) {
+                case 1 -> 1.1F * 1.25F;
+                case 2 -> 1F;
+                case 3 -> 0.5F;
+                default -> 1.1F;
+            };
+            var spread = switch (index) {
+                case 1 -> 3F;
+                case 2 -> 6.6666665F;
+                case 3 -> 1F;
+                default -> 6F;
+            };
+            var arrow = new net.minecraft.world.entity.projectile.arrow.Arrow(EntityTypes.ARROW, level);
+            arrow.getRandom().setSeed(seed);
+            var motion = arrow.getMovementToShoot(0, -1, 0, power, spread);
+            var sample = new JsonObject();
+            sample.addProperty("seed", seed);
+            sample.addProperty("power", power);
+            sample.addProperty("spread", spread);
+            var vector = new JsonArray();
+            vector.add(motion.x);
+            vector.add(motion.y);
+            vector.add(motion.z);
+            sample.add("motion", vector);
+            sample.addProperty("nextInt", arrow.getRandom().nextInt());
+            result.add(sample);
+        }
+
+        return result;
+    }
+
     private static JsonArray itemMotion() {
         var found = new ArrayList<Entity>(
             level.getEntities((Entity) null, box(), entity -> entity instanceof ItemEntity));
@@ -677,8 +1005,11 @@ public final class TrialSpawnerFixtures {
                 var at = new Vec3(sound.getX(), sound.getY(), sound.getZ()).subtract(Vec3.atLowerCornerOf(origin));
                 var description = sound.getSound().value().location() + " " + number(at.x, 3) + "," + number(at.y, 3)
                     + "," + number(at.z, 3) + " volume " + number(sound.getVolume(), 2);
-                if (machine() instanceof VaultBlockEntity)
+                if (machine() instanceof VaultBlockEntity || ominousCapture)
                     description += " pitchBits " + Float.floatToIntBits(sound.getPitch()) + " seed " + sound.getSeed();
+
+                if (ominousCapture)
+                    description += " category " + sound.getSource().getName();
 
                 sounds.add(description);
             } else if (packet instanceof ClientboundLevelEventPacket event) {
