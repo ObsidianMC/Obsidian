@@ -1,6 +1,8 @@
 using Obsidian.API.Builders;
 using System.Diagnostics.CodeAnalysis;
 using Obsidian.API.Commands;
+using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.API.World.Features;
 using Obsidian.Commands.Framework;
 using Obsidian.Net.Packets.Play.Clientbound;
 using static Obsidian.Commands.CommandFeedback;
@@ -8,8 +10,8 @@ using static Obsidian.Commands.CommandFeedback;
 namespace Obsidian.Commands.Modules;
 
 /// <summary>
-/// Vanilla's commands that change or query the world: <c>/setblock</c>, <c>/fill</c>, <c>/clone</c>,
-/// <c>/weather</c>, <c>/difficulty</c>, <c>/defaultgamemode</c>, <c>/setworldspawn</c>, <c>/seed</c>,
+/// Vanilla's commands that change or query the world: <c>/setblock</c>, <c>/fill</c>, <c>/fillbiome</c>,
+/// <c>/clone</c>, <c>/weather</c>, <c>/difficulty</c>, <c>/defaultgamemode</c>, <c>/setworldspawn</c>, <c>/seed</c>,
 /// <c>/particle</c> and <c>/playsound</c>.
 /// </summary>
 [RequirePermissionLevel(2)]
@@ -32,6 +34,12 @@ public sealed class WorldCommandModule : CommandModuleBase
         Keep,
         Hollow,
         Outline
+    }
+
+    // /fillbiome's only mode, which takes the biomes to replace.
+    public enum FillBiomeMode
+    {
+        Replace
     }
 
     public enum CloneMode
@@ -178,6 +186,78 @@ public sealed class WorldCommandModule : CommandModuleBase
             await this.CommandContext.FailAsync("No blocks were filled");
         else
             await this.CommandContext.SuccessAsync($"Successfully filled {changed} block(s)");
+    }
+
+    [Command("fillbiome")]
+    [CommandInfo("Fills a region with a biome.", "/fillbiome <from> <to> <biome> [replace <filter>]")]
+    public Task<int> FillBiomeAsync(Vector from, Vector to, BiomeCodec biome) =>
+        this.FillBiomeAsync(from, to, biome, FillBiomeMode.Replace, null);
+
+    /// <summary>
+    /// Like vanilla's <c>/fillbiome</c>: both corners must be in loaded chunks within the world's height, the box
+    /// between their quarts (see <see cref="ILevel.FillBiomes"/>) within the <c>max_block_modifications</c> game rule
+    /// and loaded throughout, and some quart must change. Returns how many changed. <paramref name="mode"/> is the
+    /// <c>replace</c> before the filter.
+    /// </summary>
+    [CommandOverload]
+    public async Task<int> FillBiomeAsync(
+        Vector from,
+        Vector to,
+        BiomeCodec biome,
+        FillBiomeMode mode,
+        BiomeSet? filter)
+    {
+        if (LevelOf(this.CommandContext) is not WorldData.AbstractLevel level)
+        {
+            await this.CommandContext.FailAsync("This level can't change biomes");
+            return 0;
+        }
+
+        Vector[] corners = [from, to];
+        foreach (var corner in corners)
+        {
+            if (!IsLoaded(level, corner, corner))
+            {
+                await this.CommandContext.FailAsync("That position is not loaded");
+                return 0;
+            }
+
+            if (level.IsOutsideBuildHeight(corner.Y))
+            {
+                await this.CommandContext.FailAsync("That position is out of this world!");
+                return 0;
+            }
+        }
+
+        var (min, max) = WorldData.AbstractLevel.QuartBounds(from, to);
+        var volume = (long)(max.X - min.X + 1) * (max.Y - min.Y + 1) * (max.Z - min.Z + 1);
+        var limit = level.LevelData.GetIntegerRule("max_block_modifications", MaxBlocks);
+        if (volume > limit)
+        {
+            await this.CommandContext.FailAsync(
+                $"Too many blocks in the specified volume (maximum {limit}, but specified {volume})");
+            return 0;
+        }
+
+        // The region's chunks are checked under the same hold of the level's tick lock as the fill, so none unloads
+        // in between; the feedback is sent once it's released.
+        Func<BiomeCodec, bool>? replaces = filter is null ? null : filter.Contains;
+        var changed = level.FillBiomes(min, max, biome, replaces, requireLoaded: true);
+        if (changed is null)
+        {
+            await this.CommandContext.FailAsync("That position is not loaded");
+            return 0;
+        }
+
+        if (changed == 0)
+        {
+            await this.CommandContext.FailAsync("No biome entries were changed");
+            return 0;
+        }
+
+        await this.CommandContext.SuccessAsync(
+            $"{changed} biome entry/entries set between {Format(min)} and {Format(max)}");
+        return changed.Value;
     }
 
     [Command("clone")]
@@ -555,6 +635,21 @@ public sealed class WorldCommandModule : CommandModuleBase
     }
 
     private static Task<bool> IsLoadedAsync(ILevel level, Vector position) => IsLoadedAsync(level, position, position);
+
+    // Whether every chunk of a region is loaded and generated, as vanilla's /fillbiome requires, without loading any.
+    private static bool IsLoaded(WorldData.AbstractLevel level, Vector min, Vector max)
+    {
+        for (var x = min.X >> 4; x <= max.X >> 4; x++)
+        {
+            for (var z = min.Z >> 4; z <= max.Z >> 4; z++)
+            {
+                if (level.GetLoadedChunk(x, z) is not { IsGenerated: true })
+                    return false;
+            }
+        }
+
+        return true;
+    }
 
     /// <summary>A particle without options, which <c>/particle</c> can show.</summary>
     private sealed class SimpleParticle(ParticleType type) : ParticleData

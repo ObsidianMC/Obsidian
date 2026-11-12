@@ -6,8 +6,8 @@ using System.Text.Json.Nodes;
 namespace Obsidian.AssetGenerator;
 
 /// <summary>
-/// Re-records <c>Obsidian.Tests/Assets/block_change_packets.json</c>: the block change packets vanilla sends a player,
-/// in the order the player receives them, replayed by <c>VanillaBlockChangePackets</c>.
+/// Re-records <c>Obsidian.Tests/Assets/block_change_packets.json</c>: the block and biome change packets vanilla sends
+/// a player, in the order the player receives them, replayed by <c>VanillaBlockChangePackets</c>.
 /// </summary>
 /// <remarks>
 /// The fixture is its own input: each case's fills, held item, actions and ticks are kept, and only its segments are
@@ -40,13 +40,15 @@ internal static class ScenarioPacketCaptures
         frozen server still ticks, and each of its ticks sends the block changes made since the last (vanilla's chunk
         broadcast) and then the prediction acknowledgements. Setup fills place blocks without updates (/fill strict),
         and `hand` is put in the player's main hand. Each tick t from 0 to `ticks`: for t > 0, the game steps one tick;
-        then the tick's actions run: a live /setblock (with updates), or the client using its main hand's item on a
-        block's face (clicking the face's centre) or starting to break a block, each with the prediction sequence
-        it names; the client's own sequences for waiting on ticks start at 1000000 and aren't recorded. Segments
-        hold what the client received after each step (`after: tick`) and after each tick's
-        actions (`after: actions`), up to the first server tick after it: block updates, section updates (with their
-        body's bytes), block events, and acknowledgements. States are full states with every property, sorted by
-        name; coordinates are absolute.
+        then the tick's actions run: a live /setblock (with updates), a live /fillbiome (from, to, biome and an
+        optional replace filter), or the client using its main hand's item on a block's face (clicking the face's
+        centre) or starting to break a block, each with the prediction sequence it names; the client's own sequences
+        for waiting on ticks start at 1000000 and aren't recorded. Segments hold what the client received after each
+        step (`after: tick`) and after each tick's actions (`after: actions`), up to the first server tick after it:
+        block updates, section updates (with their body's bytes), block events, chunk biome updates (each chunk's
+        position and biome data bytes) and acknowledgements; an actions segment with a /fillbiome also holds the
+        command's `feedback`, in order. States are full states with every property, sorted by name; coordinates are
+        absolute. Biome changes stay in the world for the later cases.
         """;
 
     public static async Task RunAsync(VanillaServer server, string assetsDirectory, IReadOnlyCollection<string>? cases)
@@ -137,10 +139,18 @@ internal static class ScenarioPacketCaptures
             if (tickActions.Length == 0)
                 continue;
 
+            var feedback = new JsonArray();
             foreach (var action in tickActions)
-                await PerformAsync(vanilla, client, action);
+            {
+                if (await PerformAsync(vanilla, client, action) is string text)
+                    feedback.Add(text);
+            }
 
-            segments.Add(Segment(tick, "actions", client.TakeRecorded()));
+            var segment = Segment(tick, "actions", client.TakeRecorded());
+            if (feedback.Count > 0)
+                segment["feedback"] = feedback;
+
+            segments.Add(segment);
         }
 
         scenario["segments"] = segments;
@@ -152,8 +162,8 @@ internal static class ScenarioPacketCaptures
         client.TakeRecorded();
     }
 
-    // An action, and the first server tick after it.
-    private static async Task PerformAsync(ScenarioServer vanilla, ScenarioClient client, JsonObject action)
+    // An action, and the first server tick after it. Returns a command's feedback, for those whose feedback is kept.
+    private static async Task<string?> PerformAsync(ScenarioServer vanilla, ScenarioClient client, JsonObject action)
     {
         if (action["setblock"] is JsonObject setblock)
         {
@@ -161,7 +171,14 @@ internal static class ScenarioPacketCaptures
             var state = setblock["state"]!.GetValue<string>();
             await vanilla.RunInAsync(ScenarioServer.Overworld, $"setblock {position} {state}");
             await client.SyncAsync();
-            return;
+            return null;
+        }
+
+        if (action["fillbiome"] is JsonObject fillbiome)
+        {
+            var feedback = await vanilla.RunInAsync(ScenarioServer.Overworld, FillBiomeCommand(fillbiome));
+            await client.SyncAsync();
+            return feedback;
         }
 
         if (action["use"] is JsonObject use)
@@ -171,7 +188,7 @@ internal static class ScenarioPacketCaptures
             var cursor = Cursor(face);
             var sequence = use["sequence"]!.GetValue<int>();
             await client.UseItemOnAsync(position.X, position.Y, position.Z, face, cursor, sequence);
-            return;
+            return null;
         }
 
         if (action["break"] is JsonObject breaking)
@@ -180,10 +197,20 @@ internal static class ScenarioPacketCaptures
             var face = Face(breaking["face"]!);
             var sequence = breaking["sequence"]!.GetValue<int>();
             await client.StartBreakingAsync(position.X, position.Y, position.Z, face, sequence);
-            return;
+            return null;
         }
 
         throw new InvalidOperationException($"Unknown action {action.ToJsonString()}.");
+    }
+
+    // The /fillbiome a fillbiome action runs, without its slash.
+    private static string FillBiomeCommand(JsonObject fillbiome)
+    {
+        var from = Position(fillbiome["from"]!);
+        var to = Position(fillbiome["to"]!);
+        var biome = fillbiome["biome"]!.GetValue<string>();
+        var command = $"fillbiome {from} {to} {biome}";
+        return fillbiome["filter"]?.GetValue<string>() is string filter ? $"{command} replace {filter}" : command;
     }
 
     private static JsonObject Segment(int tick, string after, List<ScenarioClient.RecordedPacket> packets)

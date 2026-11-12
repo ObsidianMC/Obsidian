@@ -15,7 +15,10 @@ public sealed class BiomeContainer : DataContainer<BiomeCodec>
     }
 
     /// <remarks>
-    /// Reads don't lock, like block reads (see <see cref="BlockStateContainer.Get"/>).
+    /// Reads don't lock, like block reads (see <see cref="BlockStateContainer.Get"/>), unless they find the container
+    /// part way through a change: then they wait for it. A read racing a biome fill may briefly see a biome the section
+    /// held before it (or plains), but never null: a container never set reads as plains, vanilla's default biome, as
+    /// clients are sent it.
     /// </remarks>
     public override BiomeCodec Get(int x, int y, int z)
     {
@@ -27,12 +30,13 @@ public sealed class BiomeContainer : DataContainer<BiomeCodec>
             if (palette is IndirectBiomePalette indirect && indirect.TryGetBiome(data[this.GetIndex(x, y, z)], out var biome))
                 return biome;
         }
-        else if (palette is SingleBiomeValuePalette single && single.IsFull)
+        else if (palette is SingleBiomeValuePalette { Value: BiomeCodec value })
         {
-            return single.Value;
+            // The value read once: a palette being filled is marked full before its value is set.
+            return value;
         }
 
-        return base.Get(x, y, z);
+        return base.Get(x, y, z) ?? CodecRegistry.Biomes.Plains;
     }
 
     /// <remarks>

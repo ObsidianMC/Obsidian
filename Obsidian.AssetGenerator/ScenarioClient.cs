@@ -11,7 +11,7 @@ namespace Obsidian.AssetGenerator;
 /// <summary>
 /// A headless offline client of a <see cref="ScenarioServer"/>, for captures that need what vanilla sends a player:
 /// it logs in, answers what a vanilla client must (keep-alives, pings, teleports, chunk batches), and records the
-/// clientbound packets about block changes in the order they arrive.
+/// clientbound packets about block and biome changes in the order they arrive.
 /// </summary>
 /// <remarks>
 /// The game is frozen between steps, but the server still ticks: each of those ticks sends the block changes made
@@ -381,6 +381,9 @@ internal sealed class ScenarioClient : IAsyncDisposable
             case "minecraft:block_event":
                 this.Record("block_event", this.ReadBlockEvent(data));
                 break;
+            case "minecraft:chunks_biomes":
+                this.Record("chunks_biomes", ReadChunksBiomes(data));
+                break;
             case "minecraft:block_changed_ack":
                 this.Acknowledged(data.ReadVarInt());
                 break;
@@ -451,6 +454,37 @@ internal sealed class ScenarioClient : IAsyncDisposable
 
             writer.WriteEndArray();
             writer.WriteString("bytes", Convert.ToHexStringLower(body));
+        });
+    }
+
+    // Each chunk's position and its biome data's bytes, in the packet's order.
+    private static JsonElement ReadChunksBiomes(PacketReader data)
+    {
+        var count = data.ReadVarInt();
+        var chunks = new List<(int X, int Z, string Bytes)>();
+        for (var index = 0; index < count; index++)
+        {
+            // ChunkPos packed as a long, z in the high half.
+            var position = data.ReadLong();
+            var bytes = data.ReadBytes(data.ReadVarInt());
+            chunks.Add(((int)position, (int)(position >> 32), Convert.ToHexStringLower(bytes)));
+        }
+
+        return Json(writer =>
+        {
+            writer.WriteStartArray("chunks");
+            foreach (var (x, z, bytes) in chunks)
+            {
+                writer.WriteStartObject();
+                writer.WriteStartArray("pos");
+                writer.WriteNumberValue(x);
+                writer.WriteNumberValue(z);
+                writer.WriteEndArray();
+                writer.WriteString("bytes", bytes);
+                writer.WriteEndObject();
+            }
+
+            writer.WriteEndArray();
         });
     }
 
@@ -844,6 +878,8 @@ internal sealed class ScenarioClient : IAsyncDisposable
         public long ReadVarLong() => this.ReadVariable(70);
 
         public string ReadString() => Encoding.UTF8.GetString(this.Take(this.ReadVarInt()));
+
+        public byte[] ReadBytes(int count) => this.Take(count).ToArray();
 
         private long ReadVariable(int maxBits)
         {

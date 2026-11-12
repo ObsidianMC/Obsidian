@@ -39,6 +39,16 @@ within their limits, and distribution across targets.
   (`oak_fence[east=true]` stays `east=true` with nothing to the east, a chest given as `left` stays `left` until its
   partner arrives); and schedule fluid ticks from the candidate state, since the level's fluid scheduling reads the
   position again and finds the block being replaced.
+- `/fillbiome` and `ILevel.FillBiomes` send the changed chunks' biomes at the level's next flush of block changes
+  (its next tick, or a turn of the tick loop while paused), ahead of the block changes it sends, where vanilla's
+  command sends them at once. The capture can't tell them apart, since it waits for the next tick; a client sees them
+  at most a tick later. `/fillbiome` isn't one of the commands that take vanilla's generated grammar
+  (`VanillaCommandTree.Owns`), so clients get Obsidian's tree for it: `replace` is a single-word argument, as `/fill`'s
+  modes are, rather than a literal. A biome read that doesn't take the tick lock (natural spawning's, say) racing a
+  fill can briefly see a biome the section held before the fill, or plains, but never null. A filter's decision is
+  made on the biome it was shown, so a quart changed by another thread between the decision and the write is filled
+  anyway. A fill holds the tick lock for time proportional to its box's area in chunks, loaded or not; there's no
+  limit for plugins' boxes. Neither the packet nor the command's tree has been checked on a real 26.3 client.
 
 Whitelist defaults to on for fresh installs, whose generated `server.json` sets it explicitly; an existing
 `server.json` without a `whitelist` entry keeps it off and gets a startup notice. An empty optional IP whitelist no

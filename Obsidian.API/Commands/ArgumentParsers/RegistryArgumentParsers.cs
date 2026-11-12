@@ -1,6 +1,8 @@
 using Obsidian.API.Inventory;
 using Obsidian.API.Loot;
 using Obsidian.API.Registries;
+using Obsidian.API.Registry.Codecs.Biomes;
+using Obsidian.API.World.Features;
 
 namespace Obsidian.API.Commands.ArgumentParsers;
 
@@ -146,6 +148,90 @@ public sealed partial class EnchantmentArgumentParser : BaseArgumentParser<Encha
         base.Write(writer);
 
         writer.WriteString("minecraft:enchantment");
+    }
+}
+
+/// <summary>
+/// Reads a biome by its identifier, like <c>minecraft:desert</c>, which the client completes from the biomes the server
+/// sent it.
+/// </summary>
+[ArgumentParser("minecraft:resource")]
+public sealed partial class BiomeArgumentParser : BaseArgumentParser<BiomeCodec>
+{
+    public override bool TryParseArgument(string input, CommandContext ctx, out BiomeCodec result)
+    {
+        result = null!;
+
+        if (!ResourceLocation.TryParse(input, out var identifier))
+            return false;
+
+        if (!CodecRegistry.TryGetBiome(identifier.Value.ToString(), out var biome) || biome is null)
+            return false;
+
+        result = biome;
+        return true;
+    }
+
+    public override void Write(INetStreamWriter writer)
+    {
+        base.Write(writer);
+
+        writer.WriteString("minecraft:worldgen/biome");
+    }
+}
+
+/// <summary>
+/// Reads a biome or a <c>#</c>-prefixed biome tag, like vanilla's <c>resource_or_tag</c> arguments for biomes, as the
+/// set of biomes it names.
+/// </summary>
+[ArgumentParser("minecraft:resource_or_tag")]
+public sealed partial class BiomeSetArgumentParser : BaseArgumentParser<BiomeSet>
+{
+    public override bool TryParseArgument(string input, CommandContext ctx, out BiomeSet result)
+    {
+        result = null!;
+
+        var isTag = input.StartsWith('#');
+        if (!ResourceLocation.TryParse(isTag ? input[1..] : input, out var identifier))
+            return false;
+
+        var name = identifier.Value.ToString();
+        if (!isTag)
+        {
+            if (!CodecRegistry.TryGetBiome(name, out _))
+                return false;
+
+            result = new BiomeSet(name);
+            return true;
+        }
+
+        var tag = new BiomeSet("#" + name);
+        if (!Resolves(tag))
+            return false;
+
+        result = tag;
+        return true;
+    }
+
+    public override void Write(INetStreamWriter writer)
+    {
+        base.Write(writer);
+
+        writer.WriteString("minecraft:worldgen/biome");
+    }
+
+    // A set resolves its tags as it's first used, and throws for one that doesn't exist.
+    private static bool Resolves(BiomeSet set)
+    {
+        try
+        {
+            set.Contains(CodecRegistry.Biomes.Plains);
+            return true;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
     }
 }
 

@@ -2,6 +2,9 @@ using Obsidian.API;
 using Obsidian.API.Blocks;
 using Obsidian.API.Inventory;
 using Obsidian.API.Registries;
+using Obsidian.Commands;
+using Obsidian.Commands.Framework;
+using Obsidian.Commands.Modules;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -22,8 +25,9 @@ using Xunit;
 namespace Obsidian.Tests;
 
 /// <summary>
-/// Replays <c>Assets/block_change_packets.json</c>: the block updates, section updates, block events and prediction
-/// acknowledgements vanilla sends a player, in the order it sends them.
+/// Replays <c>Assets/block_change_packets.json</c>: the block updates, section updates, block events, chunk biome
+/// updates and prediction acknowledgements vanilla sends a player, in the order it sends them, and what
+/// <c>/fillbiome</c> says back.
 /// </summary>
 /// <remarks>
 /// The capture's server is frozen and stepped; here the server is paused, its analog. Vanilla's frozen server still
@@ -48,6 +52,7 @@ public sealed class VanillaBlockChangePackets
         Assert.Equal(ServerConstants.ProtocolDescription, root.GetProperty("version").GetString());
 
         await using var context = TestServerFactory.CreateServer($"block-change-packets-{Guid.NewGuid():N}");
+        ((CommandHandler)context.Server.CommandHandler).RegisterCommandClass<WorldCommandModule>(null);
         var world = context.World;
         world.LevelData.GameRules["random_tick_speed"] = "0";
         world.LevelData.GameRules["spawn_mobs"] = "false";
@@ -103,10 +108,11 @@ public sealed class VanillaBlockChangePackets
             if (tickActions.Length == 0)
                 continue;
 
+            var feedback = new List<string>();
             foreach (var action in tickActions)
-                await PerformAsync(context, player, action);
+                feedback.AddRange(await PerformAsync(context, player, action));
 
-            Compare(differences, segments, tick, "actions", client);
+            Compare(differences, segments, tick, "actions", client, feedback);
         }
 
         for (var tick = 0; tick < DrainTicks; tick++)
@@ -119,16 +125,26 @@ public sealed class VanillaBlockChangePackets
         Assert.True(differences.Count == 0, string.Join(Environment.NewLine, differences));
     }
 
-    // An action, and the first frozen tick after it.
-    private static async Task PerformAsync(RealServerContext context, Entities.Player player, JsonElement action)
+    // An action, and the first frozen tick after it. Returns what a command said back.
+    private static async Task<List<string>> PerformAsync(
+        RealServerContext context, Entities.Player player, JsonElement action)
     {
         var world = context.World;
+        var feedback = new Feedback();
         if (action.TryGetProperty("setblock", out var setblock))
         {
             var position = Position(setblock.GetProperty("pos"));
             var block = VanillaSulfurBlocks.ParseState(setblock.GetProperty("state").GetString()!);
             world.PrepareObserverCommandPlacement(position, block);
             await world.SetBlockAsync(position, block, doBlockUpdate: true);
+        }
+        else if (action.TryGetProperty("fillbiome", out var fillbiome))
+        {
+            var command = new CommandContext("/" + FillBiomeCommand(fillbiome), feedback, null, context.Server)
+            {
+                Level = world
+            };
+            await ((CommandHandler)context.Server.CommandHandler).ProcessCommand(command);
         }
         else if (action.TryGetProperty("use", out var use))
         {
@@ -149,17 +165,36 @@ public sealed class VanillaBlockChangePackets
         }
 
         await context.Server.RunTickTurnAsync();
+        return feedback.Messages;
+    }
+
+    // The /fillbiome the capture ran, without its slash.
+    private static string FillBiomeCommand(JsonElement fillbiome)
+    {
+        var from = Text(Position(fillbiome.GetProperty("from"))).Replace(',', ' ');
+        var to = Text(Position(fillbiome.GetProperty("to"))).Replace(',', ' ');
+        var command = $"fillbiome {from} {to} {fillbiome.GetProperty("biome").GetString()}";
+        return fillbiome.TryGetProperty("filter", out var filter) ? $"{command} replace {filter.GetString()}" : command;
     }
 
     private static void Compare(List<string> differences, JsonElement[] segments, int tick, string after,
-        TestClient client)
+        TestClient client, List<string>? feedback = null)
     {
         var segment = segments.SingleOrDefault(candidate => candidate.GetProperty("tick").GetInt32() == tick
             && candidate.GetProperty("after").GetString() == after);
-        string[] expected = segment.ValueKind == JsonValueKind.Undefined
-            ? []
-            : segment.GetProperty("packets").EnumerateArray().Select(DescribeVanilla).ToArray();
-        var actual = client.SentPackets.Select(DescribeSent).OfType<string>().ToArray();
+        var found = segment.ValueKind != JsonValueKind.Undefined;
+        var packets = found
+            ? segment.GetProperty("packets").EnumerateArray().Select(DescribeVanilla)
+            : [];
+        var said = found && segment.TryGetProperty("feedback", out var lines)
+            ? lines.EnumerateArray().Select(line => $"feedback {line.GetString()}")
+            : [];
+        string[] expected = [.. packets, .. said];
+        string[] actual =
+        [
+            .. client.SentPackets.Select(DescribeSent).OfType<string>(),
+            .. (feedback ?? []).Select(line => $"feedback {line}")
+        ];
         client.ClearPackets();
 
         if (expected.SequenceEqual(actual))
@@ -188,6 +223,9 @@ public sealed class VanillaBlockChangePackets
                 + $"{packet.GetProperty("block").GetString()} {packet.GetProperty("action").GetInt32()} "
                 + packet.GetProperty("parameter").GetInt32(),
             "block_changed_ack" => $"block_changed_ack {packet.GetProperty("sequence").GetInt32()}",
+            "chunks_biomes" => "chunks_biomes " + string.Join(" ", packet.GetProperty("chunks").EnumerateArray()
+                .Select(chunk => $"{chunk.GetProperty("pos")[0].GetInt32()},{chunk.GetProperty("pos")[1].GetInt32()}="
+                    + chunk.GetProperty("bytes").GetString())),
             _ => throw new InvalidOperationException($"Unknown packet type {type}."),
         };
     }
@@ -204,6 +242,8 @@ public sealed class VanillaBlockChangePackets
             + $"{BlocksRegistry.GetDefault(blockEvent.BlockType).UnlocalizedName} {blockEvent.ActionId} "
             + blockEvent.ActionParam,
         BlockChangedAckPacket ack => $"block_changed_ack {ack.SequenceID}",
+        ChunksBiomesPacket biomes => "chunks_biomes " + string.Join(" ", biomes.ChunkBiomes
+            .Select(chunk => $"{chunk.X},{chunk.Z}={Convert.ToHexStringLower(chunk.Data.Span)}")),
         _ => null,
     };
 
@@ -246,11 +286,43 @@ public sealed class VanillaBlockChangePackets
         {
             for (var chunkZ = -2; chunkZ <= 2; chunkZ++)
             {
-                WorldBlockEntities.AddEmptyChunk(world, chunkX, chunkZ);
+                var chunk = WorldBlockEntities.AddEmptyChunk(world, chunkX, chunkZ);
                 await world.GetChunkAsync(chunkX, chunkZ, scheduleGeneration: false);
+                SetVoidBiomes(chunk);
                 player.LoadedChunks.Add(NumericsHelper.IntsToLong(chunkX, chunkZ));
             }
         }
+    }
+
+    // The capture world's biomes, as vanilla's void superflat generates them: each section's container is made with
+    // plains, vanilla's default, and then filled with the_void, which leaves both in its palette, plains first.
+    private static void SetVoidBiomes(IChunk chunk)
+    {
+        Assert.True(CodecRegistry.TryGetBiome("minecraft:the_void", out var theVoid));
+        foreach (var section in chunk.Sections)
+        {
+            section.BiomeContainer.Set(0, 0, 0, CodecRegistry.Biomes.Plains);
+            for (var index = 0; index < 64; index++)
+                section.BiomeContainer.Set(index & 3, index >> 4, index >> 2 & 3, theVoid!);
+        }
+    }
+
+    /// <summary>What a command says back.</summary>
+    private sealed class Feedback : ICommandSender
+    {
+        public CommandIssuers Issuer => CommandIssuers.Console;
+
+        public IPlayer? Player => null;
+
+        public List<string> Messages { get; } = [];
+
+        public Task SendMessageAsync(ChatMessage message)
+        {
+            this.Messages.Add(StoredCommand.PlainText(message));
+            return Task.CompletedTask;
+        }
+
+        public Task SendMessageAsync(ChatMessage message, Guid sender) => this.SendMessageAsync(message);
     }
 
     private static PlayerActionPacket StartBreaking(Vector position, BlockFace face, int sequence)
