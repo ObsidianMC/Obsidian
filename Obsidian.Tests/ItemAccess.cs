@@ -2,6 +2,7 @@ using Obsidian.API;
 using Obsidian.API.BlockEntities;
 using Obsidian.API.Containers;
 using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
 using Obsidian.Entities;
 using Obsidian.Registries;
@@ -195,6 +196,172 @@ public sealed class ItemAccess
         Assert.Equal(1, Inventory(world, dropper)[4]?.Count);
         Assert.Equal(1, Inventory(world, chest)[0]?.Count);
         Assert.Equal("false", (await world.GetBlockAsync(first))?.GetProperty("enabled"));
+    }
+
+    [Fact(DisplayName = "Item access holds a container's lock through a whole insert and always releases it",
+        Timeout = TestServerFactory.TestTimeout)]
+    public async Task InsertHoldsAndReleasesTheContainerLock()
+    {
+        var chest = new GatedChest();
+        var access = chest.GetItemAccess(BlockFace.Up)!;
+        var stone = new ItemStack(ItemsRegistry.Stone, 70);
+
+        // A click arriving while the insert fills its first slot gets the lock after the whole insert, not between
+        // its slots.
+        var insert = Task.Run(() => access.Insert(stone));
+        await chest.Paused.Task;
+        var click = chest.Inventory.LockAsync().AsTask();
+        Assert.False(click.IsCompleted);
+
+        chest.Resume.SetResult();
+        using (await click)
+        {
+            Assert.Equal(64, chest.Inventory[0]?.Count);
+            Assert.Equal(6, chest.Inventory[1]?.Count);
+        }
+
+        Assert.Null(await insert);
+        Assert.Equal(1, chest.Inventory.TransactionLock.CurrentCount);
+
+        // A hook that throws leaves the lock free for the next click.
+        chest.Throws = true;
+        Assert.Throws<InvalidOperationException>(() => access.Insert(stone));
+        Assert.Equal(1, chest.Inventory.TransactionLock.CurrentCount);
+    }
+
+    [Fact(DisplayName = "A plugin's component copy never runs holding a hopper's lock")]
+    public void ComponentCopiesRunOutsideTheContainerLock()
+    {
+        var hopper = new HopperBlockEntity(new Vector(0, 64, 0));
+        var access = hopper.GetItemAccess(side: null)!;
+        var copiesUnderLock = 0;
+
+        // The copy reads the hopper's own slots, as a plugin's may. Under the hopper's lock that read would wait on
+        // itself forever, so the copy counts it instead.
+        int ReadHopper(int value)
+        {
+            if (hopper.Inventory.TransactionLock.CurrentCount == 0)
+                copiesUnderLock++;
+            else
+                access.GetItem(1);
+
+            return value;
+        }
+
+        var maxStackSize = new SimpleDataComponent<int>(
+            DataComponentType.MaxStackSize,
+            "minecraft:max_stack_size",
+            (writer, value) => writer.WriteVarInt(value),
+            reader => reader.ReadVarInt(),
+            ReadHopper)
+        {
+            Value = 16
+        };
+
+        hopper.Inventory[0] = new ItemStack(ItemsRegistry.Stone, 16, maxStackSize);
+
+        // The full check, and an insert that skips the full slot for the next one.
+        Assert.False(Hoppers.IsFull(access));
+        Assert.Null(access.Insert(new ItemStack(ItemsRegistry.Stone, 4, maxStackSize)));
+
+        Assert.Equal(4, hopper.Inventory[1]?.Count);
+        Assert.Equal(0, copiesUnderLock);
+    }
+
+    [Fact(DisplayName = "Item access to a menu's block entity locks the containers the menu shows")]
+    public void MenuItemAccessLocksItsBackingContainers()
+    {
+        var backing = new Container(9);
+        var menu = new MenuContainer(new MenuDefinition(0, "item-access:backed", 1, 1), "Backed")
+        {
+            Slots = [new MenuSlot(backing, 0)]
+        };
+
+        var owner = new BackingCheck(menu, backing);
+        var access = owner.GetItemAccess(BlockFace.Up)!;
+
+        // Waiting for the locks, as a hopper's tick does, and only trying them, as under the tick lock.
+        Assert.Null(access.Insert(new ItemStack(ItemsRegistry.Stone, 1)));
+        Assert.Null(ContainerItemAccess.WithoutWaiting(() => access.Insert(new ItemStack(ItemsRegistry.Stone, 1))));
+
+        Assert.Equal(2, backing[0]?.Count);
+        Assert.Equal([true, true], owner.BackingHeld);
+        Assert.Equal(1, backing.TransactionLock.CurrentCount);
+    }
+
+    [Fact(DisplayName = "A plugin's component copy never runs holding a crafter's lock")]
+    public void CrafterInsertHookRunsNoComponentCopyUnderTheLock()
+    {
+        var crafter = new CrafterBlockEntity(new Vector(0, 64, 0));
+        var access = crafter.GetItemAccess(side: null)!;
+        var copiesUnderLock = 0;
+
+        int CountUnderLock(int value)
+        {
+            if (crafter.Inventory.TransactionLock.CurrentCount == 0)
+                copiesUnderLock++;
+
+            return value;
+        }
+
+        var maxStackSize = new SimpleDataComponent<int>(
+            DataComponentType.MaxStackSize,
+            "minecraft:max_stack_size",
+            (writer, value) => writer.WriteVarInt(value),
+            reader => reader.ReadVarInt(),
+            CountUnderLock)
+        {
+            Value = 16
+        };
+
+        // The insert hook compares slot 0's count with its max stack size before spreading to the empty slot 1.
+        crafter.Inventory[0] = new ItemStack(ItemsRegistry.Stone, 5, maxStackSize);
+        Assert.Null(access.Insert(new ItemStack(ItemsRegistry.Stone, 1)));
+
+        Assert.Equal(1, crafter.Inventory[1]?.Count);
+        Assert.Equal(0, copiesUnderLock);
+    }
+
+    [Fact(DisplayName = "Only a smelting container itself skips the general lock; a subclass may keep its slots elsewhere")]
+    public void SmeltingSubclassesGoThroughTheGeneralLock()
+    {
+        Assert.True(new SmeltingContainer(InventoryType.Furnace, 3, "minecraft:furnace").LocksOnlyItself);
+        Assert.False(new RedirectingSmelter().LocksOnlyItself);
+    }
+
+    private sealed class RedirectingSmelter() : SmeltingContainer(InventoryType.Furnace, 3, "minecraft:furnace");
+
+    // A block entity over a menu that records, on each insert, whether the menu's backing container was locked.
+    private sealed class BackingCheck(MenuContainer menu, BaseContainer backing) : ContainerBlockEntity(menu)
+    {
+        public List<bool> BackingHeld { get; } = [];
+
+        protected internal override bool CanInsert(int slot, ItemStack stack, BlockFace? side)
+        {
+            this.BackingHeld.Add(backing.TransactionLock.CurrentCount == 0);
+            return true;
+        }
+    }
+
+    // A chest whose insert hook pauses at its first slot until resumed, or throws.
+    private sealed class GatedChest() : ContainerBlockEntity(new Container(27))
+    {
+        public TaskCompletionSource Paused { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource Resume { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public bool Throws { get; set; }
+
+        protected internal override bool CanInsert(int slot, ItemStack stack, BlockFace? side)
+        {
+            if (this.Throws)
+                throw new InvalidOperationException("The hook failed.");
+
+            if (slot == 0 && this.Paused.TrySetResult())
+                this.Resume.Task.Wait();
+
+            return true;
+        }
     }
 
     private sealed record InsertRow(

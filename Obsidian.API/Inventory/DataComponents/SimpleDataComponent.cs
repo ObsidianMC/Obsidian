@@ -33,6 +33,12 @@ public record class SimpleDataComponent<TValue> : DataComponent
         init => this.value = this.Copy(value);
     }
 
+    /// <summary>
+    /// The stored value, without the defensive copy <see cref="Value"/> makes, which may run a plugin's delegate. For
+    /// code holding an inventory's lock, which must not run plugin code; only for values it reads and never keeps.
+    /// </summary>
+    internal TValue? StoredValue => this.value;
+
     private TValue? Copy(TValue? value)
     {
         if (this.copy is null)

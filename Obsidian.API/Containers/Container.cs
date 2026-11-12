@@ -19,6 +19,9 @@ public sealed class Container : BaseContainer
 
     public bool IsPlayerInventory { get; internal init; }
 
+    // Its slots are its own, behind its own lock (see LocksOnlyItself).
+    internal override bool LocksOnlyItself => true;
+
     public Container(InventoryType type = InventoryType.Generic) : this(9 * 3, type) { }
 
     public Container(int size, InventoryType type = InventoryType.Generic) : base(size, type)

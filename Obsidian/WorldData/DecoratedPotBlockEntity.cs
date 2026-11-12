@@ -173,5 +173,8 @@ internal sealed class DecoratedPotBlockEntity : VanillaContainerBlockEntity
     private sealed class PotContainer() : BaseContainer(1, InventoryType.Generic)
     {
         public Vector BlockPosition { get; set; }
+
+        // Its slots are its own, behind its own lock (see BaseContainer.LocksOnlyItself).
+        internal override bool LocksOnlyItself => true;
     }
 }
