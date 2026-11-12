@@ -74,11 +74,13 @@ public sealed partial class Wither : BossMob
             SynchronizeMetadata();
             return;
         }
-        if (AiTick % 20 == 0 && Health < GetAttributeValue("minecraft:generic.max_health"))
+        var maxHealth = GetAttributeValue("minecraft:generic.max_health");
+        if (AiTick % 20 == 0 && Health < maxHealth)
         {
-            Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + 1);
+            Health = Math.Min(maxHealth, Health + 1);
             SynchronizeMetadata();
         }
+
         if (AttackTarget != null && (!CanAttack(AttackTarget) || !CanSee(AttackTarget)))
             AttackTarget = null;
         if (headTargets[0] != (AttackTarget?.EntityId ?? 0))

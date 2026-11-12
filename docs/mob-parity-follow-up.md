@@ -1,8 +1,8 @@
 # Mob parity follow-up — 2026-11-10
 
-This pass addresses contained defects in shared mob rules and individual implementations. It does **not** establish full vanilla parity for any mob. Builds, tests and in-game checks were not run, as requested. The factory inventory and the existing [parity inventory](mob-parity.md) were used to triage the remaining scope; individual species were not exhaustively compared against vanilla.
+This pass addresses contained defects in shared mob rules and individual implementations. It does **not** establish full vanilla parity for any mob. The factory inventory and the existing [parity inventory](mob-parity.md) were used to triage the remaining scope; individual species were not exhaustively compared against vanilla.
 
-The project targets Java 26.3, but the available cached reference server and mappings are from 1.21.11. The changes below use that reference, the existing entity/tag assets and current code contracts. Exact 26.3 equivalence remains unverified. Generated assets were not modified or regenerated.
+The project targets Java 26.3, but the available cached reference server and mappings are from 1.21.11. The changes below use that reference, the existing entity/tag assets and current code contracts. Exact 26.3 equivalence remains unverified.
 
 ## Changes made
 
@@ -15,12 +15,11 @@ The project targets Java 26.3, but the available cached reference server and map
 | Horses | Coat and markings are chosen independently: each parent's coat has a 4/9 chance, with 1/9 random; each parent's markings have a 2/5 chance, with 1/5 random. Crossbreeding still produces a mule through the existing path. |
 | Slimes and Magma Cubes | Split children preserve the parent's mob flags (including NoAI) and custom-name visibility, alongside the existing name and persistence transfer. |
 | Dolphins | Add the missing adult XP reward. Breathing checks actual fluid occupancy at the eyes, including waterlogged blocks; NoAI dolphins replenish air rather than drowning. |
+| Warden | A save with a missing or expired pose timer loads standing instead of stuck digging or emerging; missing sniff and sonic cooldowns load as their spawn defaults. |
+| Ender Dragon | A dead dragon ignores damage, projectile damage of any kind is ignored while perched, accepted hits are counted (arrows hitting a part check the dragon itself), and a dying dragon's death timer survives a reload. |
+| Wither | Health changes are sent to clients on spawn and on each regeneration step, and it only regenerates below full health. |
 
-Regression tests were added for landing immunity, undead effects, slime split state and independent horse appearance inheritance. They have not been executed.
-
-File-scoped whitespace lint was run. Pre-existing warnings remain in `Living.cs`, `Mob.AI.cs` and `Mob.Environment.cs`; unrelated formatting was left intact. No build/type-check or gameplay verification was performed.
-
-The earlier Wither fire-immunity assignment was redundant: `EntityGenerator` already generates `IsFireImmune` from `entities.json`. That assignment and its redundant test were removed; the other earlier boss corrections remain.
+These rules are not covered by hand-written tests; they should be checked against vanilla captures. Two Obsidian-side checks were added to `MobParity`: a Warden save missing its pose and cooldown timers loads standing with default cooldowns, and Ender Dragon projectile damage respects perching and counts accepted hits.
 
 ## Significant work deferred
 
@@ -50,11 +49,9 @@ These are groups that cannot be brought to full parity with a small local correc
 | Sulfur Cube | The class currently exposes size/fuse/bucket metadata without enabling mob AI. A behavioral implementation and lifecycle/bucket handling are substantial new work, not a local parity patch. |
 | Giant | Vanilla does not supply attack AI. No invented combat behavior was added; shared physics, damage, spawning and presentation remain the parity scope. |
 
-The Warden, Wither and Ender Dragon were the preceding task and were not re-audited here.
-
 ## Shared blockers and corrected inventory assumptions
 
 - Complete collision/pathfinding, crowd pushing, spawning caps/context, damage attribution, loot predicates, saved memories and presentation remain cross-cutting work. These prevent an honest “all other mobs have parity” claim.
 - A general leash implementation exists in `Mob.Leash.cs`; arbitrary passenger relationships exist in `Entity.Riding.cs`. The old inventory's claims that leashes are missing and passengers are player-only are stale. Species integration and exact runtime equivalence still need verification.
 - Entity loot-table migration already covers a substantial subset. Remaining migration is gated by unsupported predicates and special death handling; do not replace those handlers with table calls until their tables and predicates are supported. See [plugin entity gaps](known-gaps/plugin-entities.md).
-- Full 26.3 coverage needs refreshed reference artifacts and targeted comparisons. This pass did not regenerate assets, run a server, change Git state or introduce dependencies.
+- Full 26.3 coverage needs refreshed reference artifacts and targeted comparisons.

@@ -404,7 +404,9 @@ public sealed partial class EnderDragon : BossMob
             return;
         }
 
-        if (chargeRecoveryTicks == 0 && HasReachedOrLostDestination())
+        // Vanilla's charge phase can count twice in one tick (once above, once here), which
+        // shortens the recovery; keep it so the dragon returns to holding on vanilla's tick.
+        if (HasReachedOrLostDestination())
             chargeRecoveryTicks++;
     }
 
