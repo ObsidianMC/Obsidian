@@ -98,6 +98,14 @@ internal static class BlockRun
             }
         }
 
+        // The pipeline's own bookkeeping: six neighbour steps that reach stone, which has no reaction, with no write
+        // and no shape pass around them.
+        Measure("Pipeline/notify-neighbors-in-stone", 200_000, () =>
+        {
+            world.Pipeline.EnqueueNeighbors(position);
+            Complete(world.Pipeline.DrainAsync());
+        });
+
         var toggle = false;
         Measure("Pipeline/solid-stone-change", 20_000, () =>
         {
