@@ -50,6 +50,8 @@ internal sealed class DoubleChestContainer : BaseContainer
 
     internal override IEnumerable<BaseContainer> LockParts => [this.First, this.Second];
 
+    internal override bool LocksOnlyItself => false;
+
     internal override bool ShowsRetired => this.First.ShowsRetired || this.Second.ShowsRetired;
 
     internal override bool SharesSlotsWith(BaseContainer other) =>

@@ -197,6 +197,58 @@ public sealed class ItemAccess
         Assert.Equal("false", (await world.GetBlockAsync(first))?.GetProperty("enabled"));
     }
 
+    [Fact(DisplayName = "Item access holds a container's lock through a whole insert and always releases it",
+        Timeout = TestServerFactory.TestTimeout)]
+    public async Task InsertHoldsAndReleasesTheContainerLock()
+    {
+        var chest = new GatedChest();
+        var access = chest.GetItemAccess(BlockFace.Up)!;
+        var stone = new ItemStack(ItemsRegistry.Stone, 70);
+
+        // A click arriving while the insert fills its first slot gets the lock after the whole insert, not between
+        // its slots.
+        var insert = Task.Run(() => access.Insert(stone));
+        await chest.Paused.Task;
+        var click = chest.Inventory.LockAsync().AsTask();
+        Assert.False(click.IsCompleted);
+
+        chest.Resume.SetResult();
+        using (await click)
+        {
+            Assert.Equal(64, chest.Inventory[0]?.Count);
+            Assert.Equal(6, chest.Inventory[1]?.Count);
+        }
+
+        Assert.Null(await insert);
+        Assert.Equal(1, chest.Inventory.TransactionLock.CurrentCount);
+
+        // A hook that throws leaves the lock free for the next click.
+        chest.Throws = true;
+        Assert.Throws<InvalidOperationException>(() => access.Insert(stone));
+        Assert.Equal(1, chest.Inventory.TransactionLock.CurrentCount);
+    }
+
+    // A chest whose insert hook pauses at its first slot until resumed, or throws.
+    private sealed class GatedChest() : ContainerBlockEntity(new Container(27))
+    {
+        public TaskCompletionSource Paused { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource Resume { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public bool Throws { get; set; }
+
+        protected internal override bool CanInsert(int slot, ItemStack stack, BlockFace? side)
+        {
+            if (this.Throws)
+                throw new InvalidOperationException("The hook failed.");
+
+            if (slot == 0 && this.Paused.TrySetResult())
+                this.Resume.Task.Wait();
+
+            return true;
+        }
+    }
+
     private sealed record InsertRow(
         string Row,
         Vector Position,
