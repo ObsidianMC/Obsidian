@@ -12,6 +12,12 @@ internal class BlockProperty
     public int? CustomOffset { get; }
     public bool IsBooleanToggled { get; }
 
+    /// <summary>The property's name as vanilla's blocks report has it (<c>waterlogged</c>).</summary>
+    public string JsonName { get; private init; } = "";
+
+    /// <summary>The property's values as vanilla's blocks report has them, in vanilla's order.</summary>
+    public string[] JsonValues { get; private init; } = [];
+
     private const string BooleanName = "bool";
     private const string IntegerName = "int";
 
@@ -43,16 +49,27 @@ internal class BlockProperty
             .Select(element => element.GetString()!)
             .ToArray();
 
+        // The enum branch below renames the values in place.
+        string[] jsonValues = [.. values];
+
         // Boolean
         if (values is { Length: 2 } && values[0] is "true" or "false")
         {
-            return new BlockProperty($"Is{name}", property.Name, BooleanName, values);
+            return new BlockProperty($"Is{name}", property.Name, BooleanName, values)
+            {
+                JsonName = property.Name,
+                JsonValues = jsonValues
+            };
         }
 
         // Integer
         if (values.All(text => int.TryParse(text, out _)))
         {
-            return new BlockProperty(name, property.Name, IntegerName, values);
+            return new BlockProperty(name, property.Name, IntegerName, values)
+            {
+                JsonName = property.Name,
+                JsonValues = jsonValues
+            };
         }
 
         // Enum
@@ -73,7 +90,11 @@ internal class BlockProperty
             enumValuesCache.Add(type, values);
         }
 
-        return new BlockProperty(name, tag, type, values);
+        return new BlockProperty(name, tag, type, values)
+        {
+            JsonName = property.Name,
+            JsonValues = jsonValues
+        };
     }
 
     /// <summary>

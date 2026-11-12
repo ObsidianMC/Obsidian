@@ -77,9 +77,9 @@ internal sealed class RedstoneComparator(IRedstoneLevel level, RedstoneEngine en
 
         entity.OutputSignal = target;
         entity.SetChanged();
-        var powered = (target > 0).ToString().ToLowerInvariant();
-        if (state.GetProperty("powered") != powered)
-            await level.WriteAsync(position, state.WithProperty("powered", powered), BlockUpdateFlags.Clients);
+        var powered = target > 0;
+        if (PropertyHandles.Powered.IsTrue(state) != powered)
+            await level.WriteAsync(position, PropertyHandles.Powered.With(state, powered), BlockUpdateFlags.Clients);
 
         // Vanilla refreshes only the front, including an unchanged compare-mode output.
         await BasicRedstoneComponents.NotifyOutputFrontAsync(level, position, Facing(state).Opposite());
@@ -174,5 +174,5 @@ internal sealed class RedstoneComparator(IRedstoneLevel level, RedstoneEngine en
     private int Output(Vector position) =>
         level.GetBlockEntityAt(position) is ComparatorBlockEntity entity ? entity.OutputSignal : 0;
 
-    private static BlockFace Facing(IBlock state) => FeatureHelpers.ParseFace(state.GetProperty("facing"));
+    private static BlockFace Facing(IBlock state) => PropertyHandles.Facing.Get(state);
 }
