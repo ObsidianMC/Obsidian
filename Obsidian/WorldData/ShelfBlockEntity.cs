@@ -136,6 +136,9 @@ internal sealed class ShelfBlockEntity : VanillaContainerBlockEntity
     private sealed class ShelfContainer() : BaseContainer(Slots, InventoryType.Generic)
     {
         public Vector BlockPosition { get; set; }
+
+        // Its slots are its own, behind its own lock (see BaseContainer.LocksOnlyItself).
+        internal override bool LocksOnlyItself => true;
     }
 
     /// <summary>

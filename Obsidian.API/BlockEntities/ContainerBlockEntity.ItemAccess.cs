@@ -47,7 +47,7 @@ public partial class ContainerBlockEntity
     /// Called with the inventory's lock held, from any thread: read <see cref="Inventory"/>, don't wait on anything.
     /// Return zero to refuse insertion; the item's own stack size remains an upper bound.
     /// </summary>
-    protected internal virtual int SlotLimit(int slot, ItemStack stack) => stack.MaxStackSize;
+    protected internal virtual int SlotLimit(int slot, ItemStack stack) => stack.StoredMaxStackSize;
 
     // Menu clicks reach the owning plugin through its host, including when another plugin's menu shows the slot.
     internal int MenuSlotLimit(int slot, ItemStack stack) =>
@@ -173,7 +173,9 @@ internal sealed class ContainerItemAccess(ContainerBlockEntity owner, BlockFace?
     /// <summary>
     /// Whether every slot holds what <paramref name="matches"/> accepts: its stack, or null when it's empty. Gives
     /// what <see cref="GetItem"/> for each slot in turn would, a busy or removed container reading as empty, but
-    /// reads the stacks under one hold of the lock without copying them: <paramref name="matches"/> must only read.
+    /// reads the stacks under one hold of the lock without copying them. <paramref name="matches"/> runs holding the
+    /// lock: it must only read, and must not run plugin code, such as a component's copy (read
+    /// <see cref="ItemStack.StoredMaxStackSize"/>, not <see cref="ItemStack.MaxStackSize"/>).
     /// </summary>
     internal bool AllSlots(Func<ItemStack?, bool> matches)
     {
@@ -300,7 +302,8 @@ internal sealed class ContainerItemAccess(ContainerBlockEntity owner, BlockFace?
 
         var existing = owner.Inventory[index];
         var empty = existing is null || existing.IsAir || existing.Count <= 0;
-        var limit = Math.Clamp(owner.SlotLimit(index, stack), 0, stack.MaxStackSize);
+        // Stack sizes are read without component copies, which may be plugin code reading this container.
+        var limit = Math.Clamp(owner.SlotLimit(index, stack), 0, stack.StoredMaxStackSize);
 
         // Vanilla's HopperBlockEntity.tryMoveInItem: an empty slot takes the stack, a stack of the same item with the
         // same components tops up to the moving stack's size. A slot with no room takes nothing whatever it holds, so
@@ -308,7 +311,7 @@ internal sealed class ContainerItemAccess(ContainerBlockEntity owner, BlockFace?
         int moved;
         if (empty)
             moved = Math.Min(stack.Count, limit);
-        else if (existing!.Count < limit && existing.Count <= existing.MaxStackSize && existing.Equals(stack))
+        else if (existing!.Count < limit && existing.Count <= existing.StoredMaxStackSize && existing.Equals(stack))
             moved = Math.Min(limit - existing.Count, stack.Count);
         else
             moved = 0;
@@ -345,19 +348,29 @@ internal sealed class ContainerItemAccess(ContainerBlockEntity owner, BlockFace?
         var inventory = owner.Inventory;
         var tryOnly = withoutWaiting || host is { HoldsTickLock: true };
 
-        var gate = inventory.TransactionLock;
-        if (tryOnly)
+        if (inventory.LocksOnlyItself)
         {
-            if (!gate.Wait(0))
-                return false;
+            // Taken directly: Lock's ordering and release handles are for several locks, and Exit reports a change.
+            var gate = inventory.TransactionLock;
+            if (tryOnly)
+            {
+                if (!gate.Wait(0))
+                    return false;
+            }
+            else
+            {
+                gate.Wait();
+            }
 
             entry = new Entry(host, gate, null);
         }
-        else if (inventory.LocksOnlyItself)
+        else if (tryOnly)
         {
-            // Taken directly: Lock's ordering and release handles are for several locks, and Exit reports a change.
-            gate.Wait();
-            entry = new Entry(host, gate, null);
+            // Every container the slots are kept in (a menu's backing containers), or none of them.
+            if (!inventory.TryLock(out var held))
+                return false;
+
+            entry = new Entry(host, null, held);
         }
         else
         {

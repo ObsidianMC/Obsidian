@@ -8,6 +8,9 @@ namespace Obsidian.API.Containers;
 /// </summary>
 public sealed class CrafterContainer : BaseContainer
 {
+    // Its slots are its own, behind its own lock (see LocksOnlyItself).
+    internal override bool LocksOnlyItself => true;
+
     public const int GridSize = 9;
 
     // The crafter window's result slot, after the player's main inventory and hotbar.

@@ -230,10 +230,11 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     internal virtual IEnumerable<BaseContainer> LockParts => [this];
 
     /// <summary>
-    /// Whether <see cref="LockParts"/> is this container alone, so that its <see cref="TransactionLock"/> guards all
-    /// its slots. Override it together with <see cref="LockParts"/>.
+    /// Whether <see cref="LockParts"/> is known to be this container alone, so that its <see cref="TransactionLock"/>
+    /// guards all its slots and can be taken directly. False unless a container type opts in: only types that keep
+    /// their slots in their own array, and whose subclasses can't change <see cref="LockParts"/>, set it.
     /// </summary>
-    internal virtual bool LocksOnlyItself => true;
+    internal virtual bool LocksOnlyItself => false;
 
     /// <summary>
     /// Takes the container's <see cref="TransactionLock"/>, and those of the containers it's made of, until the

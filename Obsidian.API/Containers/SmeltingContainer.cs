@@ -4,6 +4,12 @@ namespace Obsidian.API.Containers;
 
 public class SmeltingContainer : ResultContainer
 {
+    // Its slots are its own, behind its own lock (see LocksOnlyItself). Sealed with LockParts, so that no subclass
+    // can keep slots elsewhere while still claiming it.
+    internal sealed override bool LocksOnlyItself => true;
+
+    internal sealed override IEnumerable<BaseContainer> LockParts => [this];
+
     public string Id { get; }
 
     public short FuelBurnTime { get; set; }

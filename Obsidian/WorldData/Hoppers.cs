@@ -346,7 +346,7 @@ internal static class Hoppers
     internal static bool IsFull(IItemAccess access)
     {
         if (access is ContainerItemAccess container)
-            return container.AllSlots(static stack => stack is not null && stack.Count == stack.MaxStackSize);
+            return container.AllSlots(static stack => stack is not null && stack.Count == stack.StoredMaxStackSize);
 
         for (var slot = 0; slot < access.SlotCount; slot++)
         {
