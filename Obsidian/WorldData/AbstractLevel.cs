@@ -2300,20 +2300,49 @@ public abstract partial class AbstractLevel : ILevel
             var spawnArea = PregenerationSquare(centerX - radius, centerZ - radius, 2 * radius)
                 .Select(chunk => NumericsHelper.IntsToLong(chunk.X, chunk.Z))
                 .ToHashSet();
-            foreach (var tile in tiles)
+            // A tile is saved while the next one is staged: saving snapshots one region's chunks one at a time, which
+            // left the generation threads idle for a fifth of the time. A chunk the staging changes after its snapshot
+            // stays marked unsaved, so a later save takes it again. The unload waits for the staging, since it removes
+            // chunks as their last snapshots left them, and staging may still mark one unsaved: a structure's start
+            // chunk, further from the next tile than the unload keeps, when the staging places one of its pieces.
+            var saving = Task.CompletedTask;
+            var unloading = false;
+            try
             {
-                // Staging generates most of the tile, so it waits out a pause too. Unlike a job's start it isn't taken
-                // under the pause's lock: a pause landing as it starts lets it run, like a job already running.
-                await this.WaitWhileChunkManagementPausedAsync(cancellationToken);
-                await mojang.PrepareAsync(tile, cancellationToken);
-                await CompleteQueuedAsync(tile.Count, flushEvery: false);
-                await Task.WhenAll(jobs);
+                foreach (var tile in tiles)
+                {
+                    // Staging generates most of the tile, so it waits out a pause too. Unlike a job's start it isn't
+                    // taken under the pause's lock: a pause landing as it starts lets it run, like a job already running.
+                    await this.WaitWhileChunkManagementPausedAsync(cancellationToken);
+                    await mojang.PrepareAsync(tile, cancellationToken);
+                    await saving;
+                    if (unloading)
+                        await this.UnloadPregeneratedAsync(remaining, spawnArea);
 
-                foreach (var (x, z) in tile)
-                    remaining.Remove(NumericsHelper.IntsToLong(x, z));
+                    await CompleteQueuedAsync(tile.Count, flushEvery: false);
+                    await Task.WhenAll(jobs);
 
-                await this.FlushRegionsAsync();
-                await this.UnloadPregeneratedAsync(remaining, spawnArea);
+                    foreach (var (x, z) in tile)
+                        remaining.Remove(NumericsHelper.IntsToLong(x, z));
+
+                    // On the thread pool: its snapshots may well take no await that yields, and would hold up the staging.
+                    saving = Task.Run(this.FlushRegionsAsync);
+                    unloading = true;
+                }
+
+                await saving;
+                if (unloading)
+                    await this.UnloadPregeneratedAsync(remaining, spawnArea);
+            }
+            catch
+            {
+                // A failed or cancelled staging lets the save of the tile before it finish first. That save may have
+                // snapshotted chunks the staging changed afterwards, a structure's start chunk with a piece placed and
+                // the chunk the piece went to without it, so the level's final save takes them again (see
+                // FinalSaveAsync), rather than leave that mix on disk.
+                await saving.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+                Interlocked.Increment(ref this.jobsSinceFlush);
+                throw;
             }
         }
         else
