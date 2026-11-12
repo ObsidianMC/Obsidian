@@ -472,11 +472,36 @@ Rides with: plan phase 5 (furnaces, brewing, campfires and the other ticking blo
   synchronously. Fold into item 2 or 6. Keep the pipeline's own lock: not every caller holds the tick lock.
   `NotifyNeighborsAsync` (`AbstractLevel.BlockNotifications.cs:76`) enqueues and drains without it, and pressure
   plates and lever and button use reach it that way. Removing the lock needs those callers serialized first.
-- **Hoppers.** The property reads are done: since item 4, `Hoppers.MoveItemsAsync` reads `enabled` and `facing`
-  through `PropertyHandles.Enabled` and `PropertyHandles.Facing`, on the tick and on item pickup alike. What's left is
-  item access: each transfer resolves item access for the hopper and its targets again, allocating a combined access
-  for double chests. Measure a hopper line before changing anything: the timings contraptions depend on are easy to
-  break.
+- **Hoppers.** Done. Since item 4, `Hoppers.MoveItemsAsync` reads `enabled` and `facing` through
+  `PropertyHandles.Enabled` and `PropertyHandles.Facing`. Item access was measured next, with the `Hopper/` cases of
+  the block probe (below), and the cost wasn't where this item guessed. Resolving an access is cheap: 85 ns and 40 B
+  for a chest, 210 ns and 144 B for a double chest with its combined access, 240 ns and 880 B for a minecart found
+  by the entity search. Vanilla resolves once per push and once per pull too, so that stays. The cost was each call
+  through a container's access: every `GetItem`, `Insert` and `Extract` took the inventory's lock through
+  `BaseContainer.Lock`, which orders lock parts with LINQ, allocates a list and release handles and scans every slot
+  twice for the revision: about 110 ns and 640 B a call on a hopper, more on a chest. A transfer makes one call per
+  slot it reads, simulates or writes, and a hopper's empty and full checks copied every stack they read.
+
+  Now a container guarded by its own lock alone takes its semaphore directly (an inventory made of several still
+  goes through `Lock`). Inserting a whole stack holds the lock once across the slots it fills, and a combined access
+  lets each half do that. A hopper's empty and full checks read the slots without copying, a full slot skips the
+  stack comparison it can't pass, and the searches above a hopper allocate a list only when they find something.
+  Results are the same: the same slots in the same order, the same cooldowns, and the hopper replays pass unchanged.
+  Medians of three runs of each build, alternated (before `1c4612945`, after `2517db041`; 2026-11-11, AMD Ryzen 9
+  9950X, Windows 11 (10.0.22631), x64, .NET SDK 11.0.100, runtime .NET 11.0.0, Release):
+
+  | Operation | Before (ns/op) | After (ns/op) | Before (B/op) | After (B/op) |
+  |---|---:|---:|---:|---:|
+  | Hopper / line of 5, chest to double chest | 28668.95 | 16142.90 | 121667.12 | 62129.56 |
+  | Hopper / minecart to chest | 14015.08 | 6331.62 | 50966.64 | 24468.12 |
+  | Hopper / idle, empty | 1185.91 | 413.52 | 5360.00 | 1192.00 |
+  | BlockEntityPass / 4000 idle, 50 ticking | 205686.10 | 175904.20 | 152384.00 | 48184.00 |
+
+  What's left is in `ItemStack`, not in hoppers: copying a stack of stone costs about 430 ns and 2.7 KB, and
+  comparing two about 250 ns and 600 B. A transfer copies a stack about four times (the simulated extraction, the
+  extraction and what's left in the slot, the inserted stack), so cheaper copies are the next place to look, and
+  would help every inventory, not just hoppers. The entity searches an idle hopper runs each tick
+  (`GetEntitiesInRange`) still allocate about 470 B each.
 
 ## Measuring before and after
 
@@ -503,7 +528,8 @@ dotnet run --project Obsidian.WorldgenBench -c Release --no-build -- block > ../
 It writes CSV to standard output; keep the file outside the checkout. The probe shares `RedstoneTestWorld`, runs
 offline, excludes setup, and reports the median of seven samples after 250 ms warmup per case; one dust operation is
 an alternating on/off transition. The `Level/` cases make the same changes on a real level (both update engines),
-kept in a temporary folder that is deleted afterwards.
+kept in a temporary folder that is deleted afterwards. The `Hopper/` cases run hoppers' block entity ticks on such a
+level, each hopper's cooldown ending on every operation and the containers refilled every 1,000 operations.
 Before: docs branch point `15309c34b`; both runs: 2026-11-09, AMD Ryzen 9 9950X, Windows 11 (10.0.22631), x64,
 .NET SDK 10.0.403, runtime .NET 10.0.14, Release. Shared-machine timings include load and JIT variation.
 
