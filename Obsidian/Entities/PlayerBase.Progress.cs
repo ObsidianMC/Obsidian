@@ -121,7 +121,8 @@ public partial class PlayerBase
             await this.FireProgressAsync("changed_dimension", from: previous, to: this.Level.DimensionName);
 
         this.progressDimension = this.Level.DimensionName;
-        if (this.Sleeping && !this.progressSleeping)
+        // Vanilla's SLEPT_IN_BED fires only for a bed that set the spawn: never for a straw bed.
+        if (this.Sleeping && !this.progressSleeping && this.SleepSetSpawn)
             await this.FireProgressAsync("slept_in_bed");
 
         this.progressSleeping = this.Sleeping;
@@ -151,9 +152,10 @@ public partial class PlayerBase
 
     internal ValueTask FireProgressAsync(string trigger, ItemStack? item = null, IEntity? entity = null,
         IBlock? block = null, Vector? position = null, string? recipe = null, string? from = null,
-        string? to = null, int? levels = null)
+        string? to = null, int? levels = null, string? lootTable = null)
     {
-        ValueTask Fire() => this.FireProgressNowAsync(trigger, item, entity, block, position, recipe, from, to, levels);
+        ValueTask Fire() =>
+            this.FireProgressNowAsync(trigger, item, entity, block, position, recipe, from, to, levels, lootTable);
 
         // Gameplay firing a trigger for this player from another's tick (a hit landing in it, say) can't wait for this
         // player's gate. The event is matched now, as it is (the killer's position and dimension, say), and what it
@@ -165,7 +167,7 @@ public partial class PlayerBase
             var matched = this.ProgressAdvancements.Match(
                 $"minecraft:{trigger}",
                 conditions => ProgressConditions.Match(
-                    this, trigger, conditions, item, entity, block, position, recipe, from, to, levels));
+                    this, trigger, conditions, item, entity, block, position, recipe, from, to, levels, lootTable: lootTable));
             if (matched.Count > 0 && this.Server is Server server)
                 server.BackgroundWork.TryStart(() => this.GrantMatchedAsync(matched));
 
@@ -175,14 +177,82 @@ public partial class PlayerBase
         return DeferredInventoryWork.RunOrDeferAsync(Fire);
     }
 
+    /// <summary>
+    /// Fires a trigger for this player from a level's tick, which mustn't wait for this player's tick gate or
+    /// inventory: the event is matched now, as it is, and what it matched is granted in the server's background work
+    /// once the ticks let go of the gates (as for a trigger fired from another player's tick).
+    /// </summary>
+    /// <param name="trigger">The trigger, without its namespace.</param>
+    /// <param name="entity">The entity the trigger's conditions test: <c>target_hit</c>'s projectile, say.</param>
+    /// <param name="signal"><c>target_hit</c>'s signal strength.</param>
+    internal void QueueProgress(string trigger, IEntity? entity = null, int? signal = null) =>
+        this.QueueProgress(
+            trigger,
+            conditions => ProgressConditions.Match(
+                this, trigger, conditions, null, entity, null, null, null, null, null, null, signal));
+
+    /// <summary>
+    /// Fires a trigger for this player from a level's tick like <see cref="QueueProgress(string, IEntity?, int?)"/>,
+    /// granting the criteria whose conditions <paramref name="matches"/> accepts: for a trigger with conditions of its
+    /// own, like lightning's.
+    /// </summary>
+    internal void QueueProgress(string trigger, Func<System.Text.Json.JsonElement, bool> matches)
+    {
+        var matched = this.ProgressAdvancements.Match($"minecraft:{trigger}", matches);
+        if (matched.Count > 0 && this.Server is Server server)
+            server.BackgroundWork.TryStart(() => this.GrantMatchedAsync(matched));
+    }
+
+    /// <summary>
+    /// Matches a trigger's criteria against the world as it is now, for a use that changes the world before it can grant
+    /// them: vanilla fires some triggers before its write (honeycomb's first <c>item_used_on_block</c>, say), so their
+    /// location checks see the block as it was. <see cref="GrantProgressAsync"/> grants what matched once the change
+    /// committed.
+    /// </summary>
+    internal List<(string Advancement, string Criterion)> MatchProgress(string trigger, ItemStack? item = null,
+        IBlock? block = null, Vector? position = null) =>
+        this.ProgressAdvancements.Match(
+            $"minecraft:{trigger}",
+            conditions => ProgressConditions.Match(
+                this,
+                trigger,
+                conditions,
+                item,
+                entity: null,
+                block,
+                position,
+                recipe: null,
+                from: null,
+                to: null,
+                levels: null));
+
+    /// <summary>
+    /// Grants the criteria <see cref="MatchProgress"/> matched, the way <see cref="FireProgressAsync"/> grants them.
+    /// </summary>
+    internal ValueTask GrantProgressAsync(List<(string Advancement, string Criterion)> matched)
+    {
+        if (matched.Count == 0)
+            return ValueTask.CompletedTask;
+
+        if (this.HoldsAnotherPlayersGate)
+        {
+            if (this.Server is Server server)
+                server.BackgroundWork.TryStart(() => this.GrantMatchedAsync(matched));
+
+            return ValueTask.CompletedTask;
+        }
+
+        return DeferredInventoryWork.RunOrDeferAsync(() => new ValueTask(this.GrantMatchedAsync(matched)));
+    }
+
     // Fires the trigger at once, for a flow that holds no inventory lock: one under the player's own tick gate, say.
     private ValueTask FireProgressNowAsync(string trigger, ItemStack? item = null, IEntity? entity = null,
         IBlock? block = null, Vector? position = null, string? recipe = null, string? from = null,
-        string? to = null, int? levels = null) =>
+        string? to = null, int? levels = null, string? lootTable = null) =>
         this.ProgressAdvancements.FireAsync(
             $"minecraft:{trigger}",
             conditions => ProgressConditions.Match(
-                this, trigger, conditions, item, entity, block, position, recipe, from, to, levels));
+                this, trigger, conditions, item, entity, block, position, recipe, from, to, levels, lootTable: lootTable));
 
     private async Task GrantMatchedAsync(List<(string Advancement, string Criterion)> matched)
     {
@@ -227,14 +297,14 @@ public partial class PlayerBase
 
     internal static int Centimetres(double blocks) => (int)Math.Clamp(Math.Floor(blocks * 100 + 0.5), 0, int.MaxValue);
 
-    internal void RecordProgressDamage(IEntity source, float amount)
+    internal void RecordProgressDamage(IEntity source, float amount, float healthBefore)
     {
         var points = (int)Math.Clamp(Math.Floor(amount * 10 + 0.5), 0, int.MaxValue);
         this.Statistics.Increment("minecraft:damage_taken", points);
         if (source is IPlayer attacker && !ReferenceEquals(source, this))
         {
             attacker.Statistics.Increment("minecraft:damage_dealt",
-                (int)Math.Clamp(Math.Floor(Math.Min(this.Health, amount) * 10 + 0.5), 0, int.MaxValue));
+                (int)Math.Clamp(Math.Floor(Math.Min(healthBefore, amount) * 10 + 0.5), 0, int.MaxValue));
         }
     }
 

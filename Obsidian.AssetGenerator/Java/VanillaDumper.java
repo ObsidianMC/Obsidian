@@ -164,6 +164,7 @@ public final class VanillaDumper {
         dumper.dumpItemUseClasses();
         dumper.dumpItemClickClasses();
         dumper.dumpItemPlacedBlocks();
+        dumper.dumpFlowerPotContents();
         dumper.dumpItemAttachments();
         dumper.dumpCollisionShapes();
         dumper.dumpBlastResistance();
@@ -911,6 +912,12 @@ public final class VanillaDumper {
             ENTITY,
             "net.minecraft.world.entity.InsideBlockEffectApplier",
             "boolean");
+        // An entity standing on a block, and one landing on it, from Entity's movement; both are declared by Block.
+        var anyLevel = "net.minecraft.world.level.Level";
+        dumpOverrideClassesOf(
+            "block_step_on_classes.json", BLOCK, "stepOn", anyLevel, BLOCK_POS, BLOCK_STATE, ENTITY);
+        dumpOverrideClassesOf(
+            "block_fall_on_classes.json", BLOCK, "fallOn", anyLevel, BLOCK_STATE, BLOCK_POS, ENTITY, "double");
         dumpBlockOverrideClasses(
             "block_on_place_classes.json",
             "onPlace",
@@ -1071,16 +1078,10 @@ public final class VanillaDumper {
 
     /**
      * {@code sapling_growers.json}: the {@code TreeGrower} each sapling block holds in its {@code treeGrower} field
-     * (declared by {@code SaplingBlock}, which the mangrove propagule extends), in the shape Obsidian's
-     * {@code TreeGrower} still has: the configured features by identifier and one secondary chance. Which class owns
-     * each sapling's random tick is in {@code block_random_tick_classes.json}.
-     *
-     * <p>Since 26.1 vanilla picks from weighted lists ({@code trees}, {@code megaTrees}, {@code flowerTrees}) instead.
-     * A list's first entry is the feature ({@code tree}, {@code megaTree}, {@code flowers}), its second the secondary
-     * one, and the second's share of the weight the secondary chance, which gives 1.21.11's values for every sapling it
-     * had. A grower that this shape can't hold (more than two entries in a list, or lists with different chances, like
-     * the poplar's three trees) is left out, so the sapling doesn't grow. Temporary until the gameplay port (Phase 6 of
-     * {@code docs/porting-26.3-plan.md}) moves {@code TreeGrower} to weighted lists.
+     * (declared by {@code SaplingBlock}, which the mangrove propagule extends): its weighted lists ({@code trees},
+     * {@code megaTrees} and {@code flowerTrees}, each entry a configured feature by identifier and its weight, in the
+     * list's order, which decides what a draw picks) and the {@code shortestTreeType} whose trunk bone meal needs room
+     * for, when it has one. Which class owns each sapling's random tick is in {@code block_random_tick_classes.json}.
      */
     private void dumpSaplingGrowers() throws IOException {
         var sapling = Vanilla.type("net.minecraft.world.level.block.SaplingBlock");
@@ -1090,18 +1091,10 @@ public final class VanillaDumper {
         var unwrap = Vanilla.method("net.minecraft.util.random.WeightedList", "unwrap");
         var value = Vanilla.method("net.minecraft.util.random.Weighted", "value");
         var weight = Vanilla.method("net.minecraft.util.random.Weighted", "weight");
-        // Each weighted list and the fields its first and second entries become.
-        var lists = Map.of(
-            "trees",
-            new String[] {"tree", "secondaryTree"},
-            "megaTrees",
-            new String[] {"megaTree", "secondaryMegaTree"},
-            "flowerTrees",
-            new String[] {"flowers", "secondaryFlowers"});
+        var shortest = Vanilla.field(grower, "shortestTreeType");
 
         var blockRegistry = Vanilla.get(REGISTRIES, "BLOCK");
         var growers = new TreeMap<String, Map<String, Object>>();
-        var skipped = new ArrayList<String>();
 
         for (var block : (Iterable<?>) blockRegistry) {
             if (!sapling.isInstance(block)) {
@@ -1110,48 +1103,43 @@ public final class VanillaDumper {
 
             var holder = Vanilla.get(growerField, block);
             var row = new TreeMap<String, Object>();
-            Float chance = null;
-            var fits = true;
-            for (var list : lists.entrySet()) {
-                var entries = (List<?>) Vanilla.call(unwrap, Vanilla.get(Vanilla.field(grower, list.getKey()), holder));
-                if (entries.size() > 2) {
-                    fits = false;
-                    break;
+            for (var list : List.of("trees", "megaTrees", "flowerTrees")) {
+                var entries = (List<?>) Vanilla.call(unwrap, Vanilla.get(Vanilla.field(grower, list), holder));
+                var weighted = new ArrayList<Map<String, Object>>();
+                for (var entry : entries) {
+                    var feature = new LinkedHashMap<String, Object>();
+                    feature.put("feature", Vanilla.call(identifier, Vanilla.call(value, entry)).toString());
+                    feature.put("weight", Vanilla.call(weight, entry));
+                    weighted.add(feature);
                 }
-                for (var index = 0; index < entries.size(); index++) {
-                    row.put(
-                        list.getValue()[index],
-                        Vanilla.call(identifier, Vanilla.call(value, entries.get(index))).toString());
-                }
-                if (entries.size() == 2) {
-                    var first = (int) Vanilla.call(weight, entries.get(0));
-                    var second = (int) Vanilla.call(weight, entries.get(1));
-                    var listChance = (float) second / (first + second);
-                    fits &= chance == null || chance == listChance;
-                    chance = listChance;
-                }
+
+                row.put(list, weighted);
             }
 
-            if (!fits) {
-                skipped.add(key(blockRegistry, block));
-                continue;
+            var shortestTree = Vanilla.get(shortest, holder);
+            if (shortestTree != null) {
+                row.put("shortestTreeType", Vanilla.call(identifier, shortestTree).toString());
             }
-            row.put("secondaryChance", chance == null ? 0f : chance);
+
             growers.put(key(blockRegistry, block), row);
         }
 
-        if (!skipped.isEmpty()) {
-            System.out.println(
-                "These saplings' tree growers don't fit Obsidian's TreeGrower, so they don't grow: "
-                + String.join(", ", skipped));
-        }
         Json.write(output.resolve("sapling_growers.json"), growers, false);
     }
 
     private void dumpBlockOverrideClasses(String file, String name, String... parameterTypes) throws IOException {
-        // The base no-op is declared by BlockBehaviour.
+        // Most hooks' base no-op is declared by BlockBehaviour.
         var behaviour = "net.minecraft.world.level.block.state.BlockBehaviour";
-        var baseMethod = Vanilla.method(behaviour, name, parameterTypes);
+        dumpOverrideClassesOf(file, behaviour, name, parameterTypes);
+    }
+
+    /**
+     * The hook-owner file of a hook whose base is declared by {@code base}: each block's class that overrides it, or
+     * none for blocks inheriting the base.
+     */
+    private void dumpOverrideClassesOf(String file, String base, String name, String... parameterTypes)
+        throws IOException {
+        var baseMethod = Vanilla.method(base, name, parameterTypes);
         var parameters = new Class<?>[parameterTypes.length];
         for (var i = 0; i < parameters.length; i++) {
             parameters[i] = Vanilla.type(parameterTypes[i]);
@@ -1169,7 +1157,7 @@ public final class VanillaDumper {
                 }
             }
 
-            if (owner != null && owner != Vanilla.type(behaviour)) {
+            if (owner != null && owner != Vanilla.type(base)) {
                 classes.put(key(blockRegistry, block), owner.getName());
             }
         }
@@ -1341,6 +1329,26 @@ public final class VanillaDumper {
         }
 
         Json.write(output.resolve("item_placed_blocks.json"), placed, false);
+    }
+
+    /**
+     * {@code flower_pot_contents.json}: the block each {@code FlowerPotBlock} holds ({@code getPotted}), air for the
+     * empty pot. Planting an item's block in an empty pot gives the pot that holds it, and taking it out gives the
+     * held block's item.
+     */
+    private void dumpFlowerPotContents() throws IOException {
+        var flowerPot = Vanilla.type("net.minecraft.world.level.block.FlowerPotBlock");
+        var getPotted = Vanilla.method("net.minecraft.world.level.block.FlowerPotBlock", "getPotted");
+        var blockRegistry = Vanilla.get(REGISTRIES, "BLOCK");
+        var contents = new TreeMap<String, String>();
+
+        for (var block : (Iterable<?>) blockRegistry) {
+            if (flowerPot.isInstance(block)) {
+                contents.put(key(blockRegistry, block), key(blockRegistry, Vanilla.call(getPotted, block)));
+            }
+        }
+
+        Json.write(output.resolve("flower_pot_contents.json"), contents, false);
     }
 
     /**

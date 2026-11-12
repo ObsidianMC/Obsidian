@@ -119,29 +119,4 @@ public abstract partial class AbstractLevel
         }
     }
 
-    internal async ValueTask TrampleTurtleEggAsync(IEntity entity, bool landed = false)
-    {
-        if (entity.Type is EntityType.Turtle or EntityType.Bat || entity is not ILiving ||
-            entity is IPlayer { GameMode: GameMode.Spectator } || entity is not IPlayer && !LevelData.GetBooleanRule("mob_griefing"))
-        {
-            return;
-        }
-
-        if (Random.Shared.Next(landed ? 3 : 100) != 0)
-            return;
-        var origin = (Vector)entity.Position.Floor();
-        foreach (var point in new[] { origin, origin - new Vector(0, 1, 0) })
-        {
-            var block = GameEventBlock(point);
-            if (block?.RegistryId != BlockIds.TurtleEgg)
-                continue;
-            if (landed && entity.Type is EntityType.Zombie or EntityType.Husk or EntityType.Drowned or EntityType.ZombifiedPiglin)
-                return;
-            var eggs = int.TryParse(block.GetProperty("eggs"), out var count) ? count : 1;
-            await SetBlockAsync(point, eggs == 1 ? BlocksRegistry.Air : block.WithProperty("eggs", eggs - 1), true);
-            PacketBroadcaster.QueuePacketToLevelInRange(this, (VectorD)point, new LevelEventPacket(2001, point, block.GetHashCode()));
-            EmitGameEvent(MobGameEvent.BlockDestroy, (VectorD)point + new VectorD(0.5, 0.5, 0.5), entity);
-            return;
-        }
-    }
 }

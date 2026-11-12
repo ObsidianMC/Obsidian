@@ -2,12 +2,11 @@
 
 
 **Status:** open. Item access (see [plugin content](../plugin-content.md#item-access)) covers vanilla's containers,
-hoppers, droppers and dispensers; the rest of vanilla's item movers aren't modelled.
+hoppers, droppers and dispensers, chiseled bookshelves and decorated pots; the rest of vanilla's item movers aren't
+modelled.
 
-- **Dispensers** place boats and minecarts and drop every other item, like vanilla's default behaviour. Vanilla's
-  other item behaviours (shooting arrows and other projectiles, pouring and filling buckets, bone meal, placing
-  shulker boxes and other blocks, equipping armour, igniting TNT, shearing, ...) aren't modelled, and a dispenser
-  with nothing to fire doesn't emit vanilla's `block_activate` game event.
+- **Dispensers** fire most items with vanilla's behaviour for them; buckets, bottles, honeycomb and a few others
+  are still dropped (see [dispenser behaviours](dispenser-behaviours.md)).
 - **Composters** take items put in by hand and by a hopper above, and give bone meal out by hand and to a hopper
   below, adding the layers each item's `minecraft:compostable` gives. Items thrown into one (item entities) aren't
   taken yet, and the ready tick is checked by scheduling and running it directly, not over a 20-tick world run.
@@ -19,10 +18,13 @@ hoppers, droppers and dispensers; the rest of vanilla's item movers aren't model
 - **Inside block hooks**, which hold the level's tick lock, a container a player's click holds at that moment, or
   one still waiting for its loot table, takes and gives nothing for that call, where vanilla's single thread never
   meets either case.
+- **Jukeboxes** keep their disc as saved data, so hoppers can't put a disc in or take one out, where vanilla's
+  `JukeboxBlockEntity` (a `ContainerSingleItem`) takes a disc into an empty jukebox and gives it to a hopper with an
+  empty slot. Making it a typed block entity, like the chiseled bookshelf's, would bring that and keep the disc's
+  song in one place.
 - **Fluids** have no access API yet; one would follow `IItemAccess`'s shape (amounts instead of stacks, the same
   simulate flag and sides) when a mod needs it.
 
-**Where to start:** dispenser behaviours go in `RedstoneDispenser.Fire`, in
-`Obsidian/WorldData/Redstone/RedstoneDispenser.cs`, keyed by item like vanilla's `DispenserBlock.DISPENSER_REGISTRY`; a
+**Where to start:** dispenser behaviours go in `DispenseBehaviors` (`Obsidian/WorldData/Dispensing`); a
 composter's access is `ComposterItemAccess` (`Obsidian/WorldData/AbstractLevel.Composters.cs`), which
 `AbstractLevel.GetItemAccess` returns before it looks for a block entity.

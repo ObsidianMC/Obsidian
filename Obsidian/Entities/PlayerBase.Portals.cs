@@ -10,7 +10,8 @@ namespace Obsidian.Entities;
 public partial class PlayerBase
 {
     private const int PlayerPortalCooldown = 10;
-    private const int NetherPortalRelativeFlags = 0x1E0;
+    private const PositionFlags NetherPortalRelativeFlags = PositionFlags.DeltaX | PositionFlags.DeltaY
+        | PositionFlags.DeltaZ | PositionFlags.RotateDelta;
     private int portalTime;
     private int portalCooldown;
     private volatile int portalGeneration;
@@ -69,7 +70,12 @@ public partial class PlayerBase
                     && (this.returningFromEnd
                         || contact?.BlockId == this.lastPortal && contact?.Type == this.lastPortalType))
                 {
-                    await this.ChangePortalLevelAsync(destination);
+                    // An End gateway sends players within their level, keeping their rotation and motion.
+                    if (this.lastPortal == BlockIds.EndGateway && ReferenceEquals(destination.Level, this.Level))
+                        await this.TeleportAsync(destination.Position);
+                    else
+                        await this.ChangePortalLevelAsync(destination);
+
                     this.PlacePortalTicket(destination);
                     this.portalCooldown = PlayerPortalCooldown;
                     this.portalTime = 0;
@@ -115,6 +121,16 @@ public partial class PlayerBase
         if (this.portalTime++ < delay)
             return;
 
+        // Vanilla's EndGatewayBlock.entityInside: a gateway that's cooling down sends nothing, and one that isn't
+        // starts cooling down as it sends the player.
+        var gatewayEvent = EndGateways.EventPosition(this.CurrentBox);
+        if (portal.BlockId == BlockIds.EndGateway
+            && (this.Level is not AbstractLevel gatewayLevel
+                || !gatewayLevel.TryUseEndGateway(portal.Position, gatewayEvent)))
+        {
+            return;
+        }
+
         if (portal.BlockId == BlockIds.EndPortal && this.Level.DimensionName == "minecraft:the_end" &&
             this.GameMode != GameMode.Spectator)
         {
@@ -139,6 +155,10 @@ public partial class PlayerBase
         if (!this.AwaitingEndCredits)
             return false;
         this.AwaitingEndCredits = false;
+
+        // Vanilla's client asks to respawn once the credits are over, and PlayerList.respawn moves the player to the
+        // end of the player list.
+        this.MoveToEndOfPlayerList();
         var generation = ++this.portalGeneration;
         this.lastPortal = BlockIds.EndPortal;
         this.lastPortalType = null;
@@ -148,9 +168,10 @@ public partial class PlayerBase
         return true;
     }
 
-    // Like vanilla's canUsePortal, a passenger doesn't use portals: its root vehicle carries it through.
+    // Like vanilla's canUsePortal, a passenger doesn't use portals: its root vehicle carries it through. Spectators
+    // pass through End gateways, which only send what touches them.
     private ValueTask<PortalContact?> FindPortalContactAsync() => this.Vehicle is null
-        ? PortalTravel.FindContactAsync(this, includeEnd: true)
+        ? PortalTravel.FindContactAsync(this, includeEnd: true, includeGateways: this.GameMode != GameMode.Spectator)
         : ValueTask.FromResult<PortalContact?>(null);
 
     private async Task<PortalDestination?> PreparePortalDestinationAsync(Vector entrance, int portal, int generation)
@@ -163,6 +184,13 @@ public partial class PlayerBase
             this.portalGeneration == generation;
         try
         {
+            if (portal == BlockIds.EndGateway)
+            {
+                return source is AbstractLevel gatewayLevel
+                    ? await EndTravel.PrepareGatewayAsync(this, gatewayLevel, entrance, CanContinue)
+                    : null;
+            }
+
             if (portal != BlockIds.EndPortal)
             {
                 return this.lastPortalType is PortalType type

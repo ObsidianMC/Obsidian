@@ -489,3 +489,16 @@ mushroom survival against the light engine's emission, attenuation and face occl
 including nearby lava, and ticks marked source water into bubble columns with their scheduled block checks. The
 reconstructed threshold reads changing blocks rather than vanilla's stored pre-FULL light; see the
 [completion light timing gap](known-gaps/completion-reads-light-from-changing-blocks.md) for its precise limit.
+
+## Structure block editor and files
+
+`Obsidian.Tests/Assets/structure_blocks.json` is a gameplay capture of the real 26.3 structure editor, block entity
+saves, generated template files and redstone triggers. It uses the scenario probe route, independently of worldgen
+captures: `dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=structure_blocks`.
+`CaptureCases` accepts exact `+`-separated names. The 33 cases cover modes/actions, validation, corner detection,
+strict placement, rotation/mirror/integrity, entity and chest round trips, author and file reloads, and redstone.
+Review cases also check immediate fluid neighbor reactions, DETECT without file validation, and namespace rules
+captured directly from `TemplatePathFactory` without depending on native Windows file IO.
+`VanillaStructureBlocks` compares all 95 checkpoints from the start, with the exact generic entity-save and unsupported wire-drop
+exceptions described in [structure blocks](known-gaps/structure-blocks.md). See
+[scenario captures](scenario-captures.md) for the input/output schema and focused re-recording command.

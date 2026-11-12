@@ -1,0 +1,4435 @@
+{
+  "_notes": "Vanilla 26.3 special blocks, recorded by Obsidian.AssetGenerator/Java/SpecialBlockFixtures.java (CaptureFixtures=special_blocks) on BlockUseFixtures' dedicated server in a flat world of air. A case without 'ticks' is a use (or with 'attack' a survival player starting to hit the block) recorded as a block_use case with checkWrites and checkEffects, plus 'userEffects'. A case with 'ticks' steps that many whole level ticks with the game otherwise frozen; the user is one of the level's players standing at 'player', ticked after the level, and 'use' and 'close' open and close a menu. Each checkpoint that did something records the writes with their flags, what the bystander above the target heard, the game events, the effects the user was given, the user's position when it moved, the target's block entity client data when it changed (an entity's UUID as its type) and the entities within 16 of the target.",
+  "target": [0, 64, 0],
+  "player": [0.5, 64, -2.5, 0, 30],
+  "cases": [
+    {
+      "name": "ender_chest_opens",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:ender_chest"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.ender_chest.open 0,0,0 0.5"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.ender_chest.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:ender_chest 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:open_enderchest 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.ender_chest.open",
+        "block_event minecraft:ender_chest 1 1 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "menu": "minecraft:generic_9x3",
+      "closed": {
+        "changes": "",
+        "sounds": [
+          "minecraft:block.ender_chest.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [
+          "minecraft:ender_chest 1 0 0,0,0"
+        ],
+        "gameEvents": [
+          "minecraft:container_close 0,0,0 player"
+        ]
+      }
+    },
+    {
+      "name": "ender_chest_under_stone",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:ender_chest"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:stone"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "menu": null
+    },
+    {
+      "name": "ender_chest_under_glass",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:ender_chest"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:glass"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.ender_chest.open 0,0,0 0.5"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.ender_chest.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:ender_chest 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:open_enderchest 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.ender_chest.open",
+        "block_event minecraft:ender_chest 1 1 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "menu": "minecraft:generic_9x3",
+      "closed": {
+        "changes": "",
+        "sounds": [
+          "minecraft:block.ender_chest.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [
+          "minecraft:ender_chest 1 0 0,0,0"
+        ],
+        "gameEvents": [
+          "minecraft:container_close 0,0,0 player"
+        ]
+      }
+    },
+    {
+      "name": "ender_chest_under_bottom_slab",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:ender_chest"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:stone_slab"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.ender_chest.open 0,0,0 0.5"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.ender_chest.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:ender_chest 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:open_enderchest 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.ender_chest.open",
+        "block_event minecraft:ender_chest 1 1 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "menu": "minecraft:generic_9x3",
+      "closed": {
+        "changes": "",
+        "sounds": [
+          "minecraft:block.ender_chest.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [
+          "minecraft:ender_chest 1 0 0,0,0"
+        ],
+        "gameEvents": [
+          "minecraft:container_close 0,0,0 player"
+        ]
+      }
+    },
+    {
+      "name": "ender_chest_under_double_slab",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:ender_chest"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:stone_slab[type=double]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "menu": null
+    },
+    {
+      "name": "ender_chest_under_sitting_cat",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:ender_chest"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cats": [
+        {
+          "offset": [0, 1, 0],
+          "sitting": true
+        }
+      ],
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.ender_chest.open 0,0,0 0.5"
+      ],
+      "entities": [
+        "minecraft:cat"
+      ],
+      "sounds": [
+        "minecraft:block.ender_chest.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:ender_chest 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:open_enderchest 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.ender_chest.open",
+        "block_event minecraft:ender_chest 1 1 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "menu": "minecraft:generic_9x3",
+      "closed": {
+        "changes": "",
+        "sounds": [
+          "minecraft:block.ender_chest.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [
+          "minecraft:ender_chest 1 0 0,0,0"
+        ],
+        "gameEvents": [
+          "minecraft:container_close 0,0,0 player"
+        ]
+      }
+    },
+    {
+      "name": "ender_chest_waterlogged",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:ender_chest[waterlogged=true]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.ender_chest.open 0,0,0 0.5"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.ender_chest.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:ender_chest 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:open_enderchest 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.ender_chest.open",
+        "block_event minecraft:ender_chest 1 1 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "menu": "minecraft:generic_9x3",
+      "closed": {
+        "changes": "",
+        "sounds": [
+          "minecraft:block.ender_chest.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [
+          "minecraft:ender_chest 1 0 0,0,0"
+        ],
+        "gameEvents": [
+          "minecraft:container_close 0,0,0 player"
+        ]
+      }
+    },
+    {
+      "name": "ender_chest_sneaking_empty_handed",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:ender_chest"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "sneaking": true,
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.ender_chest.open 0,0,0 0.5"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.ender_chest.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:ender_chest 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:open_enderchest 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.ender_chest.open",
+        "block_event minecraft:ender_chest 1 1 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "menu": "minecraft:generic_9x3",
+      "closed": {
+        "changes": "",
+        "sounds": [
+          "minecraft:block.ender_chest.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [
+          "minecraft:ender_chest 1 0 0,0,0"
+        ],
+        "gameEvents": [
+          "minecraft:container_close 0,0,0 player"
+        ]
+      }
+    },
+    {
+      "name": "ender_chest_spectator",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:ender_chest"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "gameMode": "spectator",
+      "result": "pass",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "menu": null
+    },
+    {
+      "name": "shulker_box_up_opens",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:shulker_box[facing=up]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shulker_box.open 0,0,0 0.5"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shulker_box.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:shulker_box 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:open_shulker_box 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.shulker_box.open",
+        "block_event minecraft:shulker_box 1 1 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "menu": "minecraft:shulker_box",
+      "closed": {
+        "changes": "",
+        "sounds": [
+          "minecraft:block.shulker_box.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [
+          "minecraft:shulker_box 1 0 0,0,0"
+        ],
+        "gameEvents": [
+          "minecraft:container_close 0,0,0 player"
+        ]
+      }
+    },
+    {
+      "name": "shulker_box_up_under_stone",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:shulker_box[facing=up]"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:stone"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "menu": null
+    },
+    {
+      "name": "shulker_box_up_under_bottom_slab",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:shulker_box[facing=up]"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:stone_slab"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "menu": null
+    },
+    {
+      "name": "shulker_box_up_under_top_slab",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:shulker_box[facing=up]"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:stone_slab[type=top]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shulker_box.open 0,0,0 0.5"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shulker_box.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:shulker_box 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:open_shulker_box 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.shulker_box.open",
+        "block_event minecraft:shulker_box 1 1 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "menu": "minecraft:shulker_box",
+      "closed": {
+        "changes": "",
+        "sounds": [
+          "minecraft:block.shulker_box.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [
+          "minecraft:shulker_box 1 0 0,0,0"
+        ],
+        "gameEvents": [
+          "minecraft:container_close 0,0,0 player"
+        ]
+      }
+    },
+    {
+      "name": "shulker_box_up_under_glass",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:shulker_box[facing=up]"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:glass"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "menu": null
+    },
+    {
+      "name": "shulker_box_north_stone_north",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:shulker_box[facing=north]"
+        },
+        {
+          "offset": [0, 0, -1],
+          "state": "minecraft:stone"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "menu": null
+    },
+    {
+      "name": "shulker_box_north_stone_above",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:shulker_box[facing=north]"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:stone"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shulker_box.open 0,0,0 0.5"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shulker_box.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:shulker_box 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:open_shulker_box 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.shulker_box.open",
+        "block_event minecraft:shulker_box 1 1 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "menu": "minecraft:shulker_box",
+      "closed": {
+        "changes": "",
+        "sounds": [
+          "minecraft:block.shulker_box.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [
+          "minecraft:shulker_box 1 0 0,0,0"
+        ],
+        "gameEvents": [
+          "minecraft:container_close 0,0,0 player"
+        ]
+      }
+    },
+    {
+      "name": "shulker_box_south_stone_north",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:shulker_box[facing=south]"
+        },
+        {
+          "offset": [0, 0, -1],
+          "state": "minecraft:stone"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shulker_box.open 0,0,0 0.5"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shulker_box.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:shulker_box 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:open_shulker_box 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.shulker_box.open",
+        "block_event minecraft:shulker_box 1 1 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "menu": "minecraft:shulker_box",
+      "closed": {
+        "changes": "",
+        "sounds": [
+          "minecraft:block.shulker_box.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [
+          "minecraft:shulker_box 1 0 0,0,0"
+        ],
+        "gameEvents": [
+          "minecraft:container_close 0,0,0 player"
+        ]
+      }
+    },
+    {
+      "name": "shulker_box_east_bottom_slab_east",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:shulker_box[facing=east]"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:stone_slab"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "menu": null
+    },
+    {
+      "name": "shulker_box_west_torch_west",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:shulker_box[facing=west]"
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:torch"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shulker_box.open 0,0,0 0.5"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shulker_box.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:shulker_box 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:open_shulker_box 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.shulker_box.open",
+        "block_event minecraft:shulker_box 1 1 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "menu": "minecraft:shulker_box",
+      "closed": {
+        "changes": "",
+        "sounds": [
+          "minecraft:block.shulker_box.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [
+          "minecraft:shulker_box 1 0 0,0,0"
+        ],
+        "gameEvents": [
+          "minecraft:container_close 0,0,0 player"
+        ]
+      }
+    },
+    {
+      "name": "shulker_box_down_on_stone",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:shulker_box[facing=down]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "menu": null
+    },
+    {
+      "name": "shulker_box_down_over_air",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:shulker_box[facing=down]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shulker_box.open 0,0,0 0.5"
+      ],
+      "entities": [],
+      "sounds": [
+        "minecraft:block.shulker_box.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:shulker_box 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:open_shulker_box 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.shulker_box.open",
+        "block_event minecraft:shulker_box 1 1 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "menu": "minecraft:shulker_box",
+      "closed": {
+        "changes": "",
+        "sounds": [
+          "minecraft:block.shulker_box.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [
+          "minecraft:shulker_box 1 0 0,0,0"
+        ],
+        "gameEvents": [
+          "minecraft:container_close 0,0,0 player"
+        ]
+      }
+    },
+    {
+      "name": "red_shulker_box_up_under_stone",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:red_shulker_box[facing=up]"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:stone"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "menu": null
+    },
+    {
+      "name": "shulker_box_up_under_sitting_cat",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:shulker_box[facing=up]"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "cats": [
+        {
+          "offset": [0, 1, 0],
+          "sitting": true
+        }
+      ],
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [
+        "minecraft:block.shulker_box.open 0,0,0 0.5"
+      ],
+      "entities": [
+        "minecraft:cat"
+      ],
+      "sounds": [
+        "minecraft:block.shulker_box.open"
+      ],
+      "levelEvents": [],
+      "blockEvents": [
+        "minecraft:shulker_box 1 1 0,0,0"
+      ],
+      "gameEvents": [
+        "minecraft:container_open 0,0,0 player"
+      ],
+      "stats": [
+        "minecraft:custom minecraft:open_shulker_box 1"
+      ],
+      "userEffects": [
+        "sound minecraft:block.shulker_box.open",
+        "block_event minecraft:shulker_box 1 1 0,0,0"
+      ],
+      "writes": [],
+      "destroyed": [],
+      "menu": "minecraft:shulker_box",
+      "closed": {
+        "changes": "",
+        "sounds": [
+          "minecraft:block.shulker_box.close"
+        ],
+        "levelEvents": [],
+        "blockEvents": [
+          "minecraft:shulker_box 1 0 0,0,0"
+        ],
+        "gameEvents": [
+          "minecraft:container_close 0,0,0 player"
+        ]
+      }
+    },
+    {
+      "name": "dragon_egg_use",
+      "setup": [
+        {
+          "offset": [-2, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:dragon_egg"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "randomSeed": 1,
+      "result": "success",
+      "changes": "0,0,-1=minecraft:dragon_egg;0,0,0=minecraft:air",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [
+        "2015 0,0,0 1050639"
+      ],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [
+        "level_event 2015 0,0,0 1050639"
+      ],
+      "writes": [
+        {
+          "offset": [0, 0, -1],
+          "state": "minecraft:dragon_egg",
+          "flags": 2
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "menu": null
+    },
+    {
+      "name": "dragon_egg_use_other_seed",
+      "setup": [
+        {
+          "offset": [-2, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:dragon_egg"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "randomSeed": 42,
+      "result": "success",
+      "changes": "0,0,0=minecraft:air;2,0,2=minecraft:dragon_egg",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [
+        "2015 0,0,0 1181714"
+      ],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [
+        "level_event 2015 0,0,0 1181714"
+      ],
+      "writes": [
+        {
+          "offset": [2, 0, 2],
+          "state": "minecraft:dragon_egg",
+          "flags": 2
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "menu": null
+    },
+    {
+      "name": "dragon_egg_use_with_item",
+      "setup": [
+        {
+          "offset": [-2, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:dragon_egg"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "item": "minecraft:stick",
+      "randomSeed": 5,
+      "result": "success",
+      "changes": "0,0,0=minecraft:air;-1,0,1=minecraft:dragon_egg",
+      "hand": "minecraft:stick x2",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [
+        "2015 0,0,0 985105"
+      ],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [
+        "level_event 2015 0,0,0 985105"
+      ],
+      "writes": [
+        {
+          "offset": [-1, 0, 1],
+          "state": "minecraft:dragon_egg",
+          "flags": 2
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "menu": null
+    },
+    {
+      "name": "dragon_egg_use_on_pillar",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:dragon_egg"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "randomSeed": 3,
+      "result": "success",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "menu": null
+    },
+    {
+      "name": "dragon_egg_attack",
+      "setup": [
+        {
+          "offset": [-2, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:dragon_egg"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "attack": true,
+      "randomSeed": 7,
+      "changes": "0,0,0=minecraft:air;-2,0,2=minecraft:dragon_egg",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [
+        "2015 0,0,0 919570"
+      ],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [
+        "level_event 2015 0,0,0 919570"
+      ],
+      "writes": [
+        {
+          "offset": [-2, 0, 2],
+          "state": "minecraft:dragon_egg",
+          "flags": 2
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "menu": null
+    },
+    {
+      "name": "dragon_egg_attack_creative",
+      "setup": [
+        {
+          "offset": [-2, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:dragon_egg"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "attack": true,
+      "gameMode": "creative",
+      "randomSeed": 7,
+      "changes": "0,0,0=minecraft:air",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [
+        "2001 0,0,0 11212"
+      ],
+      "blockEvents": [],
+      "gameEvents": [
+        "minecraft:block_destroy 0,0,0 player"
+      ],
+      "stats": [],
+      "userEffects": [],
+      "writes": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:air",
+          "flags": 3
+        }
+      ],
+      "destroyed": [],
+      "menu": null
+    },
+    {
+      "name": "dragon_egg_attack_adventure",
+      "setup": [
+        {
+          "offset": [-2, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:dragon_egg"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "attack": true,
+      "gameMode": "adventure",
+      "randomSeed": 7,
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "menu": null
+    },
+    {
+      "name": "dragon_egg_spectator",
+      "setup": [
+        {
+          "offset": [-2, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-2, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [-1, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, -2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, -1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 1],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:dragon_egg"
+        }
+      ],
+      "clicked": [0, 0, 0],
+      "face": "north",
+      "gameMode": "spectator",
+      "randomSeed": 1,
+      "result": "pass",
+      "changes": "",
+      "hand": "empty",
+      "particles": [],
+      "soundDetails": [],
+      "entities": [],
+      "sounds": [],
+      "levelEvents": [],
+      "blockEvents": [],
+      "gameEvents": [],
+      "stats": [],
+      "userEffects": [],
+      "writes": [],
+      "destroyed": [],
+      "menu": null
+    },
+    {
+      "name": "shulker_box_up_pushes_armor_stand",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:shulker_box[facing=up]"
+        }
+      ],
+      "ticks": 24,
+      "use": {
+        "clicked": [0, 0, 0],
+        "face": "north"
+      },
+      "close": 14,
+      "entities": [
+        {
+          "type": "minecraft:armor_stand",
+          "offset": [0.5, 1.0, 0.5],
+          "noGravity": true
+        }
+      ],
+      "useResult": "success",
+      "checkpoints": [
+        {
+          "tick": 1,
+          "sounds": [
+            "minecraft:block.shulker_box.open 0,0,0"
+          ],
+          "blockEvents": [
+            "minecraft:shulker_box 1 1 0,0,0"
+          ],
+          "gameEvents": [
+            "minecraft:container_open 0,0,0 player"
+          ],
+          "entities": [
+            "minecraft:armor_stand 0.500 1.110 0.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 14,
+          "sounds": [
+            "minecraft:block.shulker_box.close 0,0,0"
+          ],
+          "blockEvents": [
+            "minecraft:shulker_box 1 0 0,0,0"
+          ],
+          "gameEvents": [
+            "minecraft:container_close 0,0,0 player"
+          ],
+          "entities": [
+            "minecraft:armor_stand 0.500 2.100 0.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 24,
+          "entities": [
+            "minecraft:armor_stand 0.500 2.100 0.500 health 20.0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shulker_box_north_pushes_armor_stand",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:shulker_box[facing=north]"
+        }
+      ],
+      "ticks": 14,
+      "use": {
+        "clicked": [0, 0, 0],
+        "face": "north"
+      },
+      "entities": [
+        {
+          "type": "minecraft:armor_stand",
+          "offset": [0.5, 0.0, -0.3],
+          "noGravity": true
+        }
+      ],
+      "useResult": "success",
+      "checkpoints": [
+        {
+          "tick": 1,
+          "sounds": [
+            "minecraft:block.shulker_box.open 0,0,0"
+          ],
+          "blockEvents": [
+            "minecraft:shulker_box 1 1 0,0,0"
+          ],
+          "gameEvents": [
+            "minecraft:container_open 0,0,0 player"
+          ],
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 -0.410 health 20.0"
+          ]
+        },
+        {
+          "tick": 14,
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 -1.290 health 20.0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shulker_box_up_lifts_falling_tnt",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:shulker_box[facing=up]"
+        }
+      ],
+      "ticks": 16,
+      "use": {
+        "clicked": [0, 0, 0],
+        "face": "north"
+      },
+      "entities": [
+        {
+          "type": "minecraft:tnt",
+          "offset": [0.5, 1.0, 0.5]
+        }
+      ],
+      "useResult": "success",
+      "checkpoints": [
+        {
+          "tick": 1,
+          "sounds": [
+            "minecraft:block.shulker_box.open 0,0,0"
+          ],
+          "blockEvents": [
+            "minecraft:shulker_box 1 1 0,0,0"
+          ],
+          "gameEvents": [
+            "minecraft:container_open 0,0,0 player"
+          ],
+          "entities": [
+            "minecraft:tnt 0.500 1.110 0.500"
+          ]
+        },
+        {
+          "tick": 4,
+          "gameEvents": [
+            "minecraft:hit_ground 0,1,0 minecraft:tnt"
+          ],
+          "entities": [
+            "minecraft:tnt 0.500 1.260 0.500"
+          ]
+        },
+        {
+          "tick": 7,
+          "gameEvents": [
+            "minecraft:hit_ground 0,1,0 minecraft:tnt"
+          ],
+          "entities": [
+            "minecraft:tnt 0.500 1.410 0.500"
+          ]
+        },
+        {
+          "tick": 10,
+          "gameEvents": [
+            "minecraft:hit_ground 0,1,0 minecraft:tnt"
+          ],
+          "entities": [
+            "minecraft:tnt 0.500 1.560 0.500"
+          ]
+        },
+        {
+          "tick": 12,
+          "gameEvents": [
+            "minecraft:hit_ground 0,1,0 minecraft:tnt"
+          ],
+          "entities": [
+            "minecraft:tnt 0.500 1.500 0.500"
+          ]
+        },
+        {
+          "tick": 16,
+          "entities": [
+            "minecraft:tnt 0.500 1.500 0.500"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "shulker_box_observer_sees_lid",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:shulker_box[facing=up]"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:observer[facing=west]"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:stone"
+        }
+      ],
+      "ticks": 26,
+      "use": {
+        "clicked": [0, 0, 0],
+        "face": "north"
+      },
+      "close": 13,
+      "useResult": "success",
+      "checkpoints": [
+        {
+          "tick": 1,
+          "sounds": [
+            "minecraft:block.shulker_box.open 0,0,0"
+          ],
+          "blockEvents": [
+            "minecraft:shulker_box 1 1 0,0,0"
+          ],
+          "gameEvents": [
+            "minecraft:container_open 0,0,0 player"
+          ],
+          "entities": []
+        },
+        {
+          "tick": 3,
+          "writes": [
+            "1,0,0=minecraft:observer[facing=west,powered=true] flags 2"
+          ],
+          "entities": []
+        },
+        {
+          "tick": 5,
+          "writes": [
+            "1,0,0=minecraft:observer[facing=west] flags 2"
+          ],
+          "entities": []
+        },
+        {
+          "tick": 12,
+          "writes": [
+            "1,0,0=minecraft:observer[facing=west,powered=true] flags 2"
+          ],
+          "entities": []
+        },
+        {
+          "tick": 13,
+          "sounds": [
+            "minecraft:block.shulker_box.close 0,0,0"
+          ],
+          "blockEvents": [
+            "minecraft:shulker_box 1 0 0,0,0"
+          ],
+          "gameEvents": [
+            "minecraft:container_close 0,0,0 player"
+          ],
+          "entities": []
+        },
+        {
+          "tick": 14,
+          "writes": [
+            "1,0,0=minecraft:observer[facing=west] flags 2"
+          ],
+          "entities": []
+        },
+        {
+          "tick": 24,
+          "writes": [
+            "1,0,0=minecraft:observer[facing=west,powered=true] flags 2"
+          ],
+          "entities": []
+        },
+        {
+          "tick": 26,
+          "writes": [
+            "1,0,0=minecraft:observer[facing=west] flags 2"
+          ],
+          "entities": []
+        }
+      ]
+    },
+    {
+      "name": "ender_chest_held_open",
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:ender_chest"
+        }
+      ],
+      "ticks": 14,
+      "use": {
+        "clicked": [0, 0, 0],
+        "face": "north"
+      },
+      "close": 12,
+      "useResult": "success",
+      "checkpoints": [
+        {
+          "tick": 1,
+          "sounds": [
+            "minecraft:block.ender_chest.open 0,0,0"
+          ],
+          "blockEvents": [
+            "minecraft:ender_chest 1 1 0,0,0"
+          ],
+          "gameEvents": [
+            "minecraft:container_open 0,0,0 player"
+          ],
+          "entities": []
+        },
+        {
+          "tick": 5,
+          "blockEvents": [
+            "minecraft:ender_chest 1 1 0,0,0"
+          ],
+          "entities": []
+        },
+        {
+          "tick": 10,
+          "blockEvents": [
+            "minecraft:ender_chest 1 1 0,0,0"
+          ],
+          "entities": []
+        },
+        {
+          "tick": 12,
+          "sounds": [
+            "minecraft:block.ender_chest.close 0,0,0"
+          ],
+          "blockEvents": [
+            "minecraft:ender_chest 1 0 0,0,0"
+          ],
+          "gameEvents": [
+            "minecraft:container_close 0,0,0 player"
+          ],
+          "entities": []
+        },
+        {
+          "tick": 14,
+          "entities": []
+        }
+      ]
+    },
+    {
+      "name": "conduit_ring_gives_power",
+      "setup": [
+        {
+          "offset": [-2, 0, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-1, 0, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 0, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [1, 0, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 0, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, 0, -1],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 0, -1],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, 0, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, 0, 1],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 0, 1],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, 0, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-1, 0, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 0, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [1, 0, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 0, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-1, -1, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, -1, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, -1, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, -1, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, -1, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, -1, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, -1, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, 0, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, 0, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, 0, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, 0, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, 0, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, 0, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, 1, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, 1, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, 1, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, 1, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, 1, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, 1, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, 1, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, 1, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:conduit[waterlogged=true]"
+        }
+      ],
+      "ticks": 45,
+      "gameTime": 38,
+      "player": [1.5, 63.0, 0.5, 0, 0],
+      "checkpoints": [
+        {
+          "tick": 2,
+          "sounds": [
+            "minecraft:block.conduit.activate 0,0,0",
+            "minecraft:block.conduit.ambient.short 0,0,0"
+          ],
+          "effects": [
+            "minecraft:conduit_power 0 260 ambient visible icon"
+          ],
+          "entities": []
+        },
+        {
+          "tick": 42,
+          "sounds": [
+            "minecraft:block.conduit.ambient 0,0,0"
+          ],
+          "effects": [
+            "minecraft:conduit_power 0 260 ambient visible icon"
+          ],
+          "entities": []
+        },
+        {
+          "tick": 45,
+          "entities": []
+        }
+      ]
+    },
+    {
+      "name": "conduit_ring_dry_player",
+      "setup": [
+        {
+          "offset": [-2, 0, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-1, 0, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 0, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [1, 0, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 0, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, 0, -1],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 0, -1],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, 0, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, 0, 1],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 0, 1],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, 0, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-1, 0, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 0, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [1, 0, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 0, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-1, -1, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, -1, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, -1, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, -1, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, -1, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, -1, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, -1, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, 0, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, 0, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, 0, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, 0, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, 0, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, 0, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, 1, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, 1, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, 1, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, 1, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, 1, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, 1, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, 1, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, 1, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:conduit[waterlogged=true]"
+        }
+      ],
+      "ticks": 4,
+      "gameTime": 38,
+      "checkpoints": [
+        {
+          "tick": 2,
+          "sounds": [
+            "minecraft:block.conduit.activate 0,0,0",
+            "minecraft:block.conduit.ambient.short 0,0,0"
+          ],
+          "entities": []
+        },
+        {
+          "tick": 4,
+          "entities": []
+        }
+      ]
+    },
+    {
+      "name": "conduit_full_frame_attacks_drowned",
+      "setup": [
+        {
+          "offset": [0, -2, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, -2, -1],
+          "state": "minecraft:prismarine_bricks"
+        },
+        {
+          "offset": [-2, -2, 0],
+          "state": "minecraft:dark_prismarine"
+        },
+        {
+          "offset": [-1, -2, 0],
+          "state": "minecraft:sea_lantern"
+        },
+        {
+          "offset": [0, -2, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [1, -2, 0],
+          "state": "minecraft:prismarine_bricks"
+        },
+        {
+          "offset": [2, -2, 0],
+          "state": "minecraft:dark_prismarine"
+        },
+        {
+          "offset": [0, -2, 1],
+          "state": "minecraft:sea_lantern"
+        },
+        {
+          "offset": [0, -2, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, -1, -2],
+          "state": "minecraft:prismarine_bricks"
+        },
+        {
+          "offset": [-2, -1, 0],
+          "state": "minecraft:dark_prismarine"
+        },
+        {
+          "offset": [2, -1, 0],
+          "state": "minecraft:sea_lantern"
+        },
+        {
+          "offset": [0, -1, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, 0, -2],
+          "state": "minecraft:prismarine_bricks"
+        },
+        {
+          "offset": [-1, 0, -2],
+          "state": "minecraft:dark_prismarine"
+        },
+        {
+          "offset": [0, 0, -2],
+          "state": "minecraft:sea_lantern"
+        },
+        {
+          "offset": [1, 0, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 0, -2],
+          "state": "minecraft:prismarine_bricks"
+        },
+        {
+          "offset": [-2, 0, -1],
+          "state": "minecraft:dark_prismarine"
+        },
+        {
+          "offset": [2, 0, -1],
+          "state": "minecraft:sea_lantern"
+        },
+        {
+          "offset": [-2, 0, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:prismarine_bricks"
+        },
+        {
+          "offset": [-2, 0, 1],
+          "state": "minecraft:dark_prismarine"
+        },
+        {
+          "offset": [2, 0, 1],
+          "state": "minecraft:sea_lantern"
+        },
+        {
+          "offset": [-2, 0, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-1, 0, 2],
+          "state": "minecraft:prismarine_bricks"
+        },
+        {
+          "offset": [0, 0, 2],
+          "state": "minecraft:dark_prismarine"
+        },
+        {
+          "offset": [1, 0, 2],
+          "state": "minecraft:sea_lantern"
+        },
+        {
+          "offset": [2, 0, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 1, -2],
+          "state": "minecraft:prismarine_bricks"
+        },
+        {
+          "offset": [-2, 1, 0],
+          "state": "minecraft:dark_prismarine"
+        },
+        {
+          "offset": [2, 1, 0],
+          "state": "minecraft:sea_lantern"
+        },
+        {
+          "offset": [0, 1, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 2, -2],
+          "state": "minecraft:prismarine_bricks"
+        },
+        {
+          "offset": [0, 2, -1],
+          "state": "minecraft:dark_prismarine"
+        },
+        {
+          "offset": [-2, 2, 0],
+          "state": "minecraft:sea_lantern"
+        },
+        {
+          "offset": [-1, 2, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 2, 0],
+          "state": "minecraft:prismarine_bricks"
+        },
+        {
+          "offset": [1, 2, 0],
+          "state": "minecraft:dark_prismarine"
+        },
+        {
+          "offset": [2, 2, 0],
+          "state": "minecraft:sea_lantern"
+        },
+        {
+          "offset": [0, 2, 1],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 2, 2],
+          "state": "minecraft:prismarine_bricks"
+        },
+        {
+          "offset": [-1, -1, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, -1, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, -1, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, -1, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, -1, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, -1, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, -1, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, 0, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, 0, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, 0, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, 0, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, 0, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, 0, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, 1, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, 1, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, 1, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, 1, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, 1, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, 1, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, 1, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, 1, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:conduit[waterlogged=true]"
+        }
+      ],
+      "ticks": 45,
+      "gameTime": 38,
+      "player": [1.5, 63.0, 0.5, 0, 0],
+      "entities": [
+        {
+          "type": "minecraft:drowned",
+          "offset": [-0.5, -1.0, 1.5],
+          "noGravity": true,
+          "silent": true
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 2,
+          "sounds": [
+            "minecraft:block.conduit.activate 0,0,0",
+            "minecraft:block.conduit.attack.target -1,-1,1",
+            "minecraft:block.conduit.ambient.short 0,0,0"
+          ],
+          "gameEvents": [
+            "minecraft:entity_damage -1,-1,1 minecraft:drowned"
+          ],
+          "effects": [
+            "minecraft:conduit_power 0 260 ambient visible icon"
+          ],
+          "blockEntity": "Target=minecraft:drowned",
+          "entities": [
+            "minecraft:drowned -0.500 -1.000 1.500 health 16.0"
+          ]
+        },
+        {
+          "tick": 42,
+          "sounds": [
+            "minecraft:block.conduit.attack.target -1,-1,1",
+            "minecraft:block.conduit.ambient 0,0,0"
+          ],
+          "gameEvents": [
+            "minecraft:entity_damage -1,-1,1 minecraft:drowned"
+          ],
+          "effects": [
+            "minecraft:conduit_power 0 260 ambient visible icon"
+          ],
+          "entities": [
+            "minecraft:drowned -0.500 -1.000 1.500 health 12.0"
+          ]
+        },
+        {
+          "tick": 45,
+          "entities": [
+            "minecraft:drowned -0.500 -1.000 1.500 health 12.0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "conduit_full_frame_ignores_dry_zombie",
+      "setup": [
+        {
+          "offset": [0, -2, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, -2, -1],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, -2, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-1, -2, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, -2, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [1, -2, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, -2, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, -2, 1],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, -2, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, -1, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, -1, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, -1, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, -1, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, 0, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-1, 0, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 0, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [1, 0, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 0, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, 0, -1],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 0, -1],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, 0, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, 0, 1],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 0, 1],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, 0, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-1, 0, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 0, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [1, 0, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 0, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 1, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, 1, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 1, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 1, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 2, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 2, -1],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, 2, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-1, 2, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 2, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [1, 2, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 2, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 2, 1],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 2, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-1, -1, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, -1, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, -1, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, -1, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, -1, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, -1, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, -1, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, -1, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, 0, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, 0, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, 0, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, 0, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, 0, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, 0, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, 0, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, 1, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, 1, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, 1, -1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, 1, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, 1, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, 1, 0],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [-1, 1, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, 1, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [1, 1, 1],
+          "state": "minecraft:water"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:conduit[waterlogged=true]"
+        }
+      ],
+      "ticks": 4,
+      "gameTime": 38,
+      "entities": [
+        {
+          "type": "minecraft:zombie",
+          "offset": [0.5, 3.0, -2.5],
+          "noGravity": true,
+          "silent": true
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 2,
+          "sounds": [
+            "minecraft:block.conduit.activate 0,0,0",
+            "minecraft:block.conduit.ambient.short 0,0,0"
+          ],
+          "entities": [
+            "minecraft:zombie 0.500 3.000 -2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "minecraft:zombie 0.500 3.000 -2.500 health 20.0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "conduit_without_water",
+      "setup": [
+        {
+          "offset": [0, -2, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, -2, -1],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, -2, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-1, -2, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, -2, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [1, -2, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, -2, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, -2, 1],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, -2, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, -1, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, -1, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, -1, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, -1, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, 0, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-1, 0, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 0, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [1, 0, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 0, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, 0, -1],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 0, -1],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, 0, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 0, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, 0, 1],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 0, 1],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, 0, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-1, 0, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 0, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [1, 0, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 0, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 1, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, 1, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 1, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 1, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 2, -2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 2, -1],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-2, 2, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [-1, 2, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 2, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [1, 2, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [2, 2, 0],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 2, 1],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 2, 2],
+          "state": "minecraft:prismarine"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:conduit[waterlogged=false]"
+        }
+      ],
+      "ticks": 4,
+      "gameTime": 38,
+      "player": [1.5, 63.0, 0.5, 0, 0],
+      "checkpoints": [
+        {
+          "tick": 4,
+          "entities": []
+        }
+      ]
+    },
+    {
+      "name": "end_gateway_beam_at_2400",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:end_gateway",
+          "nbt": "{Age:2398L}"
+        }
+      ],
+      "ticks": 4,
+      "checkpoints": [
+        {
+          "tick": 1,
+          "blockEntity": "Age=2399L",
+          "entities": []
+        },
+        {
+          "tick": 2,
+          "blockEntity": "Age=2400L",
+          "entities": []
+        },
+        {
+          "tick": 3,
+          "blockEvents": [
+            "minecraft:end_gateway 1 0 0,0,0"
+          ],
+          "blockEntity": "Age=2401L",
+          "entities": []
+        },
+        {
+          "tick": 4,
+          "blockEntity": "Age=2402L",
+          "entities": []
+        }
+      ]
+    },
+    {
+      "name": "end_gateway_sends_armor_stand_exactly",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:end_gateway",
+          "nbt": "{exit_portal:[I;2,64,2],ExactTeleport:1b}"
+        }
+      ],
+      "ticks": 5,
+      "entities": [
+        {
+          "type": "minecraft:armor_stand",
+          "offset": [0.5, 0.0, 0.5],
+          "noGravity": true
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "blockEntity": "Age=1L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 2,
+          "blockEntity": "Age=2L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 3,
+          "blockEntity": "Age=3L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 4,
+          "blockEntity": "Age=4L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 5,
+          "blockEntity": "Age=5L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "end_gateway_sends_armor_stand_to_safe_exit",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:end_gateway",
+          "nbt": "{exit_portal:[I;2,64,2]}"
+        },
+        {
+          "offset": [3, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, 1, 3],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, 2, 2],
+          "state": "minecraft:bedrock"
+        }
+      ],
+      "ticks": 5,
+      "entities": [
+        {
+          "type": "minecraft:armor_stand",
+          "offset": [0.5, 0.0, 0.5],
+          "noGravity": true
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "blockEntity": "Age=1L exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 2,
+          "blockEntity": "Age=2L exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 1.500 2.000 3.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 3,
+          "blockEntity": "Age=3L exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 1.500 2.000 3.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 4,
+          "blockEntity": "Age=4L exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 1.500 2.000 3.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 5,
+          "blockEntity": "Age=5L exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 1.500 2.000 3.500 health 20.0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "end_gateway_safe_exit_without_blocks",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:end_gateway",
+          "nbt": "{exit_portal:[I;2,64,2]}"
+        }
+      ],
+      "ticks": 5,
+      "entities": [
+        {
+          "type": "minecraft:armor_stand",
+          "offset": [0.5, 0.0, 0.5],
+          "noGravity": true
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "blockEntity": "Age=1L exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 2,
+          "blockEntity": "Age=2L exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 2.500 3.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 3,
+          "blockEntity": "Age=3L exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 2.500 3.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 4,
+          "blockEntity": "Age=4L exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 2.500 3.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 5,
+          "blockEntity": "Age=5L exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 2.500 3.000 2.500 health 20.0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "end_gateway_without_exit",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:end_gateway"
+        }
+      ],
+      "ticks": 5,
+      "entities": [
+        {
+          "type": "minecraft:armor_stand",
+          "offset": [0.5, 0.0, 0.5],
+          "noGravity": true
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "blockEntity": "Age=1L",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 2,
+          "blockEntity": "Age=2L",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 3,
+          "blockEntity": "Age=3L",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 4,
+          "blockEntity": "Age=4L",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 5,
+          "blockEntity": "Age=5L",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "end_gateway_cooldown_holds_second_stand",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:end_gateway",
+          "nbt": "{exit_portal:[I;2,64,2],ExactTeleport:1b}"
+        }
+      ],
+      "ticks": 45,
+      "entities": [
+        {
+          "type": "minecraft:armor_stand",
+          "offset": [0.5, 0.0, 0.5],
+          "noGravity": true
+        },
+        {
+          "type": "minecraft:armor_stand",
+          "offset": [0.5, 0.0, 0.5],
+          "noGravity": true
+        }
+      ],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "blockEntity": "Age=1L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 2,
+          "blockEntity": "Age=2L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 3,
+          "blockEntity": "Age=3L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 4,
+          "blockEntity": "Age=4L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 5,
+          "blockEntity": "Age=5L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 6,
+          "blockEntity": "Age=6L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 7,
+          "blockEntity": "Age=7L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 8,
+          "blockEntity": "Age=8L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 9,
+          "blockEntity": "Age=9L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 10,
+          "blockEntity": "Age=10L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 11,
+          "blockEntity": "Age=11L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 12,
+          "blockEntity": "Age=12L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 13,
+          "blockEntity": "Age=13L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 14,
+          "blockEntity": "Age=14L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 15,
+          "blockEntity": "Age=15L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 16,
+          "blockEntity": "Age=16L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 17,
+          "blockEntity": "Age=17L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 18,
+          "blockEntity": "Age=18L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 19,
+          "blockEntity": "Age=19L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 20,
+          "blockEntity": "Age=20L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 21,
+          "blockEntity": "Age=21L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 22,
+          "blockEntity": "Age=22L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 23,
+          "blockEntity": "Age=23L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 24,
+          "blockEntity": "Age=24L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 25,
+          "blockEntity": "Age=25L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 26,
+          "blockEntity": "Age=26L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 27,
+          "blockEntity": "Age=27L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 28,
+          "blockEntity": "Age=28L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 29,
+          "blockEntity": "Age=29L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 30,
+          "blockEntity": "Age=30L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 31,
+          "blockEntity": "Age=31L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 32,
+          "blockEntity": "Age=32L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 33,
+          "blockEntity": "Age=33L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 34,
+          "blockEntity": "Age=34L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 35,
+          "blockEntity": "Age=35L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 36,
+          "blockEntity": "Age=36L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 37,
+          "blockEntity": "Age=37L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 38,
+          "blockEntity": "Age=38L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 39,
+          "blockEntity": "Age=39L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 40,
+          "blockEntity": "Age=40L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 41,
+          "blockEntity": "Age=41L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 0.500 0.000 0.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 42,
+          "blockEntity": "Age=42L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 43,
+          "blockEntity": "Age=43L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 44,
+          "blockEntity": "Age=44L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        },
+        {
+          "tick": 45,
+          "blockEntity": "Age=45L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": [
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0",
+            "minecraft:armor_stand 2.500 0.000 2.500 health 20.0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "end_gateway_sends_player_exactly",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:end_gateway",
+          "nbt": "{exit_portal:[I;2,64,2],ExactTeleport:1b}"
+        }
+      ],
+      "ticks": 5,
+      "player": [0.5, 64.0, 0.5, 0, 0],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "blockEntity": "Age=1L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": []
+        },
+        {
+          "tick": 2,
+          "blockEntity": "Age=2L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "user": "2.500 0.000 2.500",
+          "entities": []
+        },
+        {
+          "tick": 3,
+          "blockEntity": "Age=3L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": []
+        },
+        {
+          "tick": 4,
+          "blockEntity": "Age=4L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": []
+        },
+        {
+          "tick": 5,
+          "blockEntity": "Age=5L ExactTeleport=1b exit_portal=[I;2,64,2]",
+          "entities": []
+        }
+      ]
+    },
+    {
+      "name": "end_gateway_sends_player_to_safe_exit",
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:end_gateway",
+          "nbt": "{exit_portal:[I;2,64,2]}"
+        },
+        {
+          "offset": [3, -1, 2],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [1, 1, 3],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [2, 2, 2],
+          "state": "minecraft:bedrock"
+        }
+      ],
+      "ticks": 5,
+      "player": [0.5, 64.0, 0.5, 0, 0],
+      "checkpoints": [
+        {
+          "tick": 1,
+          "blockEntity": "Age=1L exit_portal=[I;2,64,2]",
+          "entities": []
+        },
+        {
+          "tick": 2,
+          "blockEntity": "Age=2L exit_portal=[I;2,64,2]",
+          "user": "1.500 2.000 3.500",
+          "entities": []
+        },
+        {
+          "tick": 3,
+          "blockEntity": "Age=3L exit_portal=[I;2,64,2]",
+          "entities": []
+        },
+        {
+          "tick": 4,
+          "blockEntity": "Age=4L exit_portal=[I;2,64,2]",
+          "entities": []
+        },
+        {
+          "tick": 5,
+          "blockEntity": "Age=5L exit_portal=[I;2,64,2]",
+          "entities": []
+        }
+      ]
+    }
+  ],
+  "version": "26.3"
+}

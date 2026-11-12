@@ -172,7 +172,7 @@ public partial class PlayerBase
             // Like vanilla, a new player starts in the world's default game mode.
             this.UnmodeledData = new();
             Position = Level.LevelData.SpawnPosition;
-            GameMode = Level.LevelData.DefaultGamemode;
+            this.SetGameMode(Level.LevelData.DefaultGamemode, broadcast: false);
             return;
         }
 
@@ -405,8 +405,11 @@ public partial class PlayerBase
             {
                 // Found among the player's level's entities, the item is the player's to take only while it's still
                 // there: under its level's transfer lock it can't leave, be merged or be taken by anyone else.
-                if (level != this.Level || itemEntity.Removed || !itemEntity.CanPickup || itemEntity.Item.Count <= 0)
+                if (level != this.Level || itemEntity.Removed || !itemEntity.CanPickup || itemEntity.Item.Count <= 0
+                    || !itemEntity.MayBePickedUpBy(this.Uuid))
+                {
                     continue;
+                }
 
                 // A removed or unloaded item keeps its level and may not be marked removed.
                 if (!itemEntity.IsMemberOf(level))
@@ -639,7 +642,8 @@ public partial class PlayerBase
         T Read<T>(string name, T fallback) => tag.TryGetTagValue<T>(name, out var value) ? value : fallback;
 
         var gameMode = (GameMode)Read("playerGameType", (int)this.Level.LevelData.DefaultGamemode);
-        this.GameMode = Enum.IsDefined(gameMode) ? gameMode : this.Level.LevelData.DefaultGamemode;
+        var restoredGameMode = Enum.IsDefined(gameMode) ? gameMode : this.Level.LevelData.DefaultGamemode;
+        this.SetGameMode(restoredGameMode, broadcast: false);
 
         var dimensionName = Read<string?>("Dimension", null);
         var parentWorld = this.Level is IDimension dimension ? dimension.ParentWorld as World : this.Level as World;

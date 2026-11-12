@@ -76,7 +76,7 @@ public sealed partial class EnderDragon : BossMob
     protected override IEnumerable<IPlayer> BarPlayers => Level.GetPlayersInRange(new VectorD(0, 128, 0), 192)
         .Where(player => player.GameMode != GameMode.Spectator);
 
-    protected override bool CanTakeDamage(IEntity source) => source is IPlayer or EndCrystal;
+    protected override bool CanTakeDamage(IEntity? source) => source is IPlayer or EndCrystal;
     internal override bool Hostile => false;
     protected override bool CanDespawn => false;
     protected override bool TakesFallDamage => false;
@@ -117,7 +117,7 @@ public sealed partial class EnderDragon : BossMob
 
     private void UpdateParts()
     {
-        var angle = Yaw.Degrees * Math.PI / 180;
+        var angle = Yaw * Math.PI / 180;
         var forward = new VectorD(Math.Sin(angle), 0, -Math.Cos(angle));
         var side = new VectorD(Math.Cos(angle), 0, Math.Sin(angle));
         var pitch = (FlightSample(5).Height - FlightSample(10).Height) * 10 * Math.PI / 180;
@@ -500,8 +500,8 @@ public sealed partial class EnderDragon : BossMob
     private void Face(VectorD target)
     {
         var desired = 180 - Math.Atan2(target.X - Position.X, target.Z - Position.Z) * 180 / Math.PI;
-        var difference = WrapDegrees(desired - Yaw.Degrees);
-        Yaw = (float)(Yaw.Degrees + Math.Clamp(difference, -10, 10));
+        var difference = WrapDegrees(desired - Yaw);
+        Yaw = (float)(Yaw + Math.Clamp(difference, -10, 10));
     }
 
     private void SetPhase(DragonPhase next)
@@ -583,7 +583,11 @@ public sealed partial class EnderDragon : BossMob
             contactTicks.Remove(id);
     }
 
-    public override ValueTask DamageAsync(IEntity source, float amount = 1) => DamagePartAsync(source, amount, 2);
+    public override async ValueTask DamageAsync(IEntity source, float amount = 1)
+    {
+        using (EnterDispatched(HandOffTo.Damage))
+            await DamagePartAsync(source, amount, 2);
+    }
 
     internal async ValueTask DamagePartAsync(IEntity source, float amount, int part, bool projectile = false)
     {
@@ -721,7 +725,7 @@ public sealed partial class EnderDragon : BossMob
     private void RiseWhileDying()
     {
         Motion = new VectorD(0, 0.1f, 0);
-        Yaw = Yaw.Degrees + 20;
+        Yaw = Yaw + 20;
         var next = Position + Motion;
         if (Level is not AbstractLevel level || !level.TryMoveEntity(this, Position, next))
             return;

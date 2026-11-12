@@ -5,11 +5,30 @@ using Obsidian.Nbt.Interfaces;
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:tadpole")]
-public sealed partial class Tadpole : PathfinderMob
+public sealed partial class Tadpole : PathfinderMob, IAgeLockable
 {
     internal const int MaturationTicks = 24000;
     public Tadpole() => Type = EntityType.Tadpole;
     public int Age { get; internal set; }
+
+    /// <summary>
+    /// Whether a golden dandelion paused the tadpole's growing into a frog (vanilla's <c>AgeLocked</c>).
+    /// </summary>
+    public bool AgeLocked { get; internal set; }
+
+    bool IAgeLockable.CanLockAge => true;
+
+    int IAgeLockable.AgeLockTimer { get; set; }
+
+    // Vanilla's Tadpole.setAgeLockedData: the lock toggles and the tadpole starts growing from the start again.
+    void IAgeLockable.ToggleAgeLock()
+    {
+        AgeLocked = !AgeLocked;
+        Age = 0;
+        ((IAgeLockable)this).AgeLockTimer = AgeLocks.ParticleTicks;
+        SynchronizeMetadata();
+    }
+
     public bool FromBucket { get; internal set; }
     protected override bool UsesAi => true;
     internal override bool SwimmingNavigation => true;
@@ -29,9 +48,14 @@ public sealed partial class Tadpole : PathfinderMob
     {
         if (MobBitMask.HasFlag(MobBitmask.NoAi))
             return;
-        if (++Age >= MaturationTicks)
+
+        AgeLocks.Tick(this, this);
+
+        // An age-locked tadpole doesn't age or turn into a frog, but still hops on land.
+        if (!AgeLocked && ++Age >= MaturationTicks)
         {
-            var frog = (Frog)await ConvertToAsync(EntityType.Frog);
+            if (await ConvertToAsync(EntityType.Frog) is not Frog frog)
+                return;
             frog.Health = frog.GetAttributeValue("minecraft:generic.max_health");
             frog.SelectVariant();
             frog.SynchronizeMetadata();
@@ -62,7 +86,8 @@ public sealed partial class Tadpole : PathfinderMob
         if (!Alive || player.Level != Level || player.GameMode == GameMode.Spectator || !IsInRange(player, 4))
             return false;
         var item = hand == InteractionHand.OffHand ? player.GetOffHandItem() : player.GetHeldItem();
-        if (item is { Count: > 0, Holder.Id: ItemIds.SlimeBall })
+        // Vanilla's Tadpole.mobInteract: a locked tadpole doesn't eat.
+        if (item is { Count: > 0, Holder.Id: ItemIds.SlimeBall } && !AgeLocked)
         {
             Age += Math.Max(1, (MaturationTicks - Age) / 10);
             await ConsumeInteractionItemAsync(player, hand);
@@ -78,18 +103,23 @@ public sealed partial class Tadpole : PathfinderMob
         base.Write(writer);
         writer.WriteEntityMetadataType(16, EntityMetadataType.Boolean);
         writer.WriteBoolean(FromBucket);
+
+        writer.WriteEntityMetadataType(17, EntityMetadataType.Boolean);
+        writer.WriteBoolean(AgeLocked);
     }
 
     protected override void WriteAdditionalSave(INbtWriter writer)
     {
         writer.WriteInt("Age", Age);
         writer.WriteBool("FromBucket", FromBucket);
+        writer.WriteBool("AgeLocked", AgeLocked);
     }
 
     protected override void ReadAdditionalSave(NbtCompound tag)
     {
         Age = Math.Clamp((tag.TryGetNumber<int>("Age", out var savedAge) ? savedAge : 0), 0, MaturationTicks);
         FromBucket = tag.TryGetBool("FromBucket", out var bucket) && bucket;
+        AgeLocked = tag.TryGetBool("AgeLocked", out var locked) && locked;
         PersistenceRequired |= FromBucket;
     }
 }

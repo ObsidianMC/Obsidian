@@ -101,7 +101,7 @@ internal sealed class SlimeMoveControl(Slime slime) : MoveControl(slime)
         Stop();
         if (slime.AttackTarget is { } target)
         {
-            slime.Yaw = LookControl.RotateTowards(slime.Yaw.Degrees,
+            slime.Yaw = LookControl.RotateTowards(slime.Yaw,
                 (float)(Math.Atan2(target.Position.Z - slime.Position.Z, target.Position.X - slime.Position.X) * 180 / Math.PI - 90), 10);
         }
         else if (--turnDelay <= 0)

@@ -36,16 +36,24 @@ public abstract partial class AbstractLevel
     private IItemAccess? VehicleItemAccess(Vector position)
     {
         var cube = new BoundingBox((VectorD)position, (VectorD)position + new VectorD(1, 1, 1));
-        var vehicles = this.GetEntitiesInRange((VectorD)position + new VectorD(0.5, 0.5, 0.5), 3)
-            .OfType<VehicleEntity>()
-            .Where(vehicle => vehicle is IVehicleContainer
-                && !vehicle.IsRemoved
-                && MobTerrain.Overlaps(cube, vehicle.Dimension.CreateBBFromPosition(vehicle.Position)))
-            .ToArray();
 
-        return vehicles.Length == 0
-            ? null
-            : ((IVehicleContainer)vehicles[vehicles.Length == 1 ? 0 : Random.Shared.Next(vehicles.Length)]).ItemAccess;
+        // Collected only when there are any: most blocks a hopper searches have none.
+        List<IVehicleContainer>? vehicles = null;
+        foreach (var entity in this.GetEntitiesInRange((VectorD)position + new VectorD(0.5, 0.5, 0.5), 3))
+        {
+            if (entity is VehicleEntity { IsRemoved: false } vehicle
+                && vehicle is IVehicleContainer container
+                && MobTerrain.Overlaps(cube, vehicle.Dimension.CreateBBFromPosition(vehicle.Position)))
+            {
+                (vehicles ??= []).Add(container);
+            }
+        }
+
+        if (vehicles is null)
+            return null;
+
+        var chosen = vehicles.Count == 1 ? 0 : Random.Shared.Next(vehicles.Count);
+        return vehicles[chosen].ItemAccess;
     }
 
     private IItemAccess? BlockItemAccess(Vector position, BlockFace? side)
@@ -228,7 +236,10 @@ public abstract partial class AbstractLevel
     /// <summary>
     /// What the level does for its block entities' item access (see <see cref="IContainerItemsHost"/>).
     /// </summary>
-    private bool HoldsTickLock => this.Fluids.TickLock.IsHeldByCurrentThread;
+    // Both locks come after inventory admission. Item access may only try the inventory while either is held;
+    // chunk/entity-grid locks are nested inside the transfer lock on the contact and item-transfer paths.
+    private bool HoldsTickLock => this.Fluids.TickLock.IsHeldByCurrentThread
+        || EntityTransferLock.IsAnyHeldByCurrentThread;
 
     private void OnContainerItemsChanged(ContainerBlockEntity container)
     {
@@ -250,12 +261,41 @@ public abstract partial class AbstractLevel
 /// </summary>
 internal sealed class CombinedItemAccess(params IItemAccess[] parts) : IItemAccess
 {
-    public int SlotCount => parts.Sum(part => part.SlotCount);
+    public int SlotCount
+    {
+        get
+        {
+            var count = 0;
+            foreach (var part in parts)
+                count += part.SlotCount;
+
+            return count;
+        }
+    }
 
     public ItemStack? GetItem(int slot) => this.Part(ref slot).GetItem(slot);
 
     public ItemStack? Insert(int slot, ItemStack stack, bool simulate = false) =>
         this.Part(ref slot).Insert(slot, stack, simulate);
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Each part fills its own slots in turn, which is the combined slots' order: a part's own
+    /// <see cref="IItemAccess.Insert(ItemStack, bool)"/> can take its lock once for all of them.
+    /// </remarks>
+    public ItemStack? Insert(ItemStack stack, bool simulate = false)
+    {
+        ItemStack? left = stack;
+        foreach (var part in parts)
+        {
+            if (left is null)
+                break;
+
+            left = part.Insert(left, simulate);
+        }
+
+        return left;
+    }
 
     public ItemStack? Extract(int slot, int count, bool simulate = false) =>
         this.Part(ref slot).Extract(slot, count, simulate);

@@ -51,7 +51,7 @@ internal sealed class NetherPortalRandomTick : IRandomTickBehavior
     private static void Spawn(AbstractLevel level, Vector position, IRandomSource random)
     {
         var piglin = (ZombifiedPiglin)EntitySpawner.CreateMob(level, EntityType.ZombifiedPiglin)!;
-        Angle yaw = WrapDegrees(random.NextFloat() * 360f);
+        var yaw = WrapDegrees(random.NextFloat() * 360f);
         piglin.EntityId = Server.GetNextEntityId();
         piglin.Position = new VectorD(position.X + 0.5, position.Y, position.Z + 0.5);
         piglin.Yaw = yaw;

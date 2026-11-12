@@ -25,7 +25,7 @@ public partial class Camel : AbstractHorse, IRideableJumping
     protected override int MaximumPassengers => 2;
     protected override VectorD PassengerOffset(int index)
     {
-        var yaw = Yaw.Degrees * MathF.PI / 180;
+        var yaw = Yaw * MathF.PI / 180;
         var offset = (index == 0 ? 0.5f : -0.7f) * this.AttributeScale;
         return new VectorD(
             -MathF.Sin(yaw) * offset,
@@ -76,9 +76,9 @@ public partial class Camel : AbstractHorse, IRideableJumping
             if (Health >= GetAttributeValue("minecraft:generic.max_health") && !IsBaby && (Age != 0 || LoveTicks > 0))
                 return false;
             Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + 2);
-            if (IsBaby)
+            if (CanAgeUp)
             {
-                Age = Math.Min(0, Age + 200);
+                Grow(200);
             }
             else if (Age == 0 && LoveTicks == 0)
             {
@@ -169,7 +169,7 @@ public partial class Camel : AbstractHorse, IRideableJumping
             return;
         SetSitting(false);
         Yaw = Rider.Yaw;
-        Pitch = Rider.Pitch.Degrees * 0.5f;
+        Pitch = Rider.Pitch * 0.5f;
         var input = Rider.Input;
         var forward = (input.HasFlag(PlayerInput.Forward) ? 1f : 0) - (input.HasFlag(PlayerInput.Backward) ? 1f : 0);
         var sideways = (input.HasFlag(PlayerInput.Left) ? 0.5f : 0) - (input.HasFlag(PlayerInput.Right) ? 0.5f : 0);
@@ -178,7 +178,7 @@ public partial class Camel : AbstractHorse, IRideableJumping
         if (charge < 0 || DashCooldown > 0 || !MovementFlags.HasFlag(MovementFlags.OnGround) || InWater || InLava)
             return;
         var strength = charge >= 90 ? 1 : 0.4f + 0.4f * charge / 90;
-        var yaw = Yaw.Degrees * MathF.PI / 180;
+        var yaw = Yaw * MathF.PI / 180;
         Motion += new VectorD(-MathF.Sin(yaw) * DashSpeed * MovementSpeed * strength,
             1.4285f * JumpPower * strength, MathF.Cos(yaw) * DashSpeed * MovementSpeed * strength);
         DashCooldown = DashCooldownTicks;

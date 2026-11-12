@@ -442,8 +442,8 @@ adds.
 | Hoppers | Works | |
 | Dispensers, droppers | Works | Captured |
 | Furnaces, blast furnaces, smokers, brewing stands | Works | |
-| Chiseled bookshelves | Missing | No use handler; saved books only drop on break |
-| Decorated pots | Partial | Break and save work; no insertion, wobble, hopper access or comparator |
+| Chiseled bookshelves | Works | Captured (`block_use.json`, hoppers and a dropper in `redstone_scenarios.json`) |
+| Decorated pots | Partial | Captured; projectiles don't crack and break them (phase 3) |
 
 ### 3. Workstations and utility blocks
 
@@ -457,10 +457,10 @@ adds.
 | Cartography tables | Works | Capacity check stricter than vanilla |
 | Lecterns: books and pages | Works | |
 | Beacons | Works | No `construct_beacon`; pyramid measured at once |
-| Jukeboxes | Works | Comparator reads 0 |
+| Jukeboxes | Works | Comparator output captured; no hopper access ([item access](known-gaps/item-access-beyond-containers.md)) and no power while playing ([redstone](known-gaps/redstone.md)) |
 | End portal frames | Works | Portal-opening sound sent locally, not globally |
 | Respawn anchors: charge, set respawn | Works | Explodes next to water, unlike vanilla; no set-spawn sound |
-| Lodestones | Missing | The tracker component exists; nothing binds a compass |
+| Lodestones | Partial | Binding captured; a bound compass keeps its target once the lodestone goes ([item components](known-gaps/item-components-the-server-doesnt-apply-yet.md)) |
 | Vaults, trial spawners | Missing | Untyped saved data only |
 
 ### 4. Physical and direct interactions
@@ -474,14 +474,14 @@ adds.
 | Campfires, soul campfires: light and extinguish | Partial | Hand ignition, shovel dousing and waterlogging captured; projectile ignition waits for phase 3 |
 | Composters: insert, collect | Works | Feedback; thrown items aren't taken |
 | Cauldrons: buckets, bottles, washing | Missing | Only the comparator output exists |
-| Flower pots | Missing | Planting and taking plants; potted eyeblossoms turn with the time of day (`eyeblossom_ghast_portal_ticks.json`) |
+| Flower pots | Works | Captured; potted eyeblossoms turn with the time of day (`eyeblossom_ghast_portal_ticks.json`) |
 | Item frames, glow item frames | Works | |
-| Armor stands | Missing | Poses only |
+| Armor stands | Works | Equipment use captured (`armor_stand_use.json`); hitting and breaking stands; other entities' interaction trigger and swing ([gaps](known-gaps/brushing-and-armor-stands.md)) |
 | Signs, hanging signs: edit | Works | The edit reservation stores no side or expiry, and another player can take it |
 | Signs: ink, glow ink, dye | Works | Dyes found by item name, not the dye component |
 | Signs: wax | Works | Vanilla has no way to remove sign wax (confirm) |
 | Beehives, bee nests: honey, honeycomb | Missing | Honey accumulates; nothing harvests it |
-| Suspicious sand, suspicious gravel | Missing | Loot data is there; no brushing |
+| Suspicious sand, suspicious gravel | Works | Brushing captured (`brushing.json`); entities in the brush's way; landing `hit_ground` ([gaps](known-gaps/brushing-and-armor-stands.md)) |
 
 ### 5. Tool and item dependent interactions
 
@@ -506,7 +506,7 @@ adds.
 
 | Line | Status | What's left |
 |---|---|---|
-| Pressure plates, weighted plates | Works | Fire after entities tick, not as they move; armor stands don't press stone plates; contact box |
+| Pressure plates, weighted plates | Works | An entity passing over a plate within one tick doesn't press it |
 | Tripwire, tripwire hooks | Works | No hook sounds; shears don't disarm |
 | Farmland: trample | Missing | |
 | Turtle eggs: trample | Partial | Rolled per step event, not per tick; sneaking doesn't protect |
@@ -545,7 +545,7 @@ adds.
 | Rails: shape, powered, activator, detector | Works | No capture |
 | Daylight detectors | Works | Captured |
 | Lecterns: page signal | Works | |
-| Chiseled bookshelves: signal | Missing | |
+| Chiseled bookshelves: signal | Works | Captured |
 | Sculk sensors: signal | Partial | Comparator reads 0; timers not saved |
 | Calibrated sculk sensors | Missing | Accept every vibration |
 
@@ -628,8 +628,8 @@ To confirm by capture or by running a server before the work that depends on it:
 
 - Whether powder snow's recorded collision shape lets mobs fall through.
 - Whether a bubble column's motion packet also reaches the pushed player, doubling the push on their client.
-- Vanilla values quoted from memory: the pressure plate touch box, the calibrated sensor's active time, the
-  shrieker's darkness and cooldown rules.
+- Vanilla values quoted from memory: the calibrated sensor's active time, the shrieker's darkness and cooldown rules.
+  (The pressure plate touch box is settled: `block_contact_scenarios.json`.)
 - Whether survival players may change a spawner with a spawn egg in 26.3, and whether creative mode consumes eyes of
   ender.
 - What the issue means by "vines trim" (stopping a growing vine head, or shearing wall vines). Honeycomb waxing is

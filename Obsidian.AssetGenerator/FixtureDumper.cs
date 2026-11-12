@@ -5,6 +5,15 @@ internal static class FixtureDumper
 {
     private static string Source(string name) => Path.Combine(AppContext.BaseDirectory, "Java", name);
 
+    internal static Task DumpInvisibilityAsync(VanillaServer server, string fixture)
+    {
+        var world = Path.Combine(server.ScratchDirectory, $"invisibility-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(world);
+        return VanillaServer.RunJavaAsync(world, TimeSpan.FromMinutes(5),
+            "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+            "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("InvisibilityFixtures.java"), fixture);
+    }
+
     internal static Task DumpCopperWeatheringAsync(VanillaServer server, string fixture) =>
         VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
             Source("CopperWeatheringFixtures.java"), fixture);
@@ -131,9 +140,18 @@ internal static class FixtureDumper
     }
 
     // An on-request gameplay probe: vanilla's randomTick against each case's block view, with a seeded random.
-    internal static Task DumpGrowingPlantTicksAsync(VanillaServer server, string fixture) =>
-        VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
-            Source("GrowingPlantTickFixtures.java"), fixture);
+    internal static Task DumpGrowingPlantTicksAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null)
+    {
+        var arguments = new List<string>
+        {
+            "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("GrowingPlantTickFixtures.java"), fixture
+        };
+        if (cases is not null)
+            arguments.Add(string.Join('+', cases));
+
+        return VanillaServer.RunJavaAsync(server.ScratchDirectory, arguments.ToArray());
+    }
 
     // An on-request gameplay probe: what cooking machines give a player taking their result, or drop when broken.
     internal static Task DumpFurnaceResultsAsync(VanillaServer server, string fixture) =>
@@ -182,10 +200,46 @@ internal static class FixtureDumper
     }
 
     // An on-request probe: a dedicated server of its own, in a new flat world under the scratch directory.
-    internal static async Task DumpBlockUseAsync(VanillaServer server, string fixture,
-        IReadOnlyCollection<string>? cases = null)
+    internal static Task DumpBlockUseAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunObservedProbeAsync(server, fixture, "block-use", "BlockUseFixtures.java", cases);
+
+    // An on-request probe: a dedicated server of its own, in a new flat world under the scratch directory. It reuses
+    // BlockUseFixtures.java from the same directory (the source launcher compiles it on demand).
+    internal static Task DumpWaxingBellsOreAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunObservedProbeAsync(server, fixture, "waxing-bells-ore", "WaxingBellsOreFixtures.java", cases);
+
+    internal static Task DumpFoodHarvestAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunObservedProbeAsync(server, fixture, "food-harvest", "FoodHarvestFixtures.java", cases);
+
+    // An on-request probe like DumpWaxingBellsOreAsync's: cauldrons filled, emptied and washing items.
+    internal static Task DumpCauldronsAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunObservedProbeAsync(server, fixture, "cauldrons", "CauldronFixtures.java", cases);
+
+    // On-request probes of 26.3's shelves, straw beds and golden dandelions, each a dedicated server of its own in a
+    // new flat world under the scratch directory. They reuse BlockUseFixtures.java from the same directory (the source
+    // launcher compiles it on demand) and its observed copy of the vanilla jar for the ordered block writes.
+    internal static Task DumpShelvesAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunObservedProbeAsync(server, fixture, "shelves", "ShelfFixtures.java", cases);
+
+    internal static Task DumpStrawBedsAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunObservedProbeAsync(server, fixture, "straw-beds", "StrawBedFixtures.java", cases);
+
+    internal static Task DumpGoldenDandelionsAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunObservedProbeAsync(server, fixture, "golden-dandelions", "GoldenDandelionFixtures.java", cases);
+
+    // Runs a probe on an observed copy of the vanilla jar, which records ordered block writes, in a new world folder
+    // named worldName under the scratch directory.
+    private static async Task RunObservedProbeAsync(VanillaServer server, string fixture, string worldName,
+        string probe, IReadOnlyCollection<string>? cases)
     {
-        var world = Path.Combine(server.ScratchDirectory, "block-use");
+        var world = Path.Combine(server.ScratchDirectory, worldName);
         if (Directory.Exists(world))
             Directory.Delete(world, recursive: true);
 
@@ -196,13 +250,124 @@ internal static class FixtureDumper
             "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("BlockUseInstrumentation.java"),
             server.ClassPath[0], observed);
         var observedJar = Path.Combine(observed, "vanilla-observed.jar");
+        if (Path.GetFileName(fixture) == "ominous_trials.json")
+        {
+            var seeded = Path.Combine(world, "seeded-shots");
+            await VanillaServer.RunJavaAsync(world,
+                "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("OminousTrialInstrumentation.java"),
+                observedJar, seeded);
+            observedJar = Path.Combine(seeded, "vanilla-observed.jar");
+        }
+
         var classPath = string.Join(Path.PathSeparator, new[] { observedJar }.Concat(server.ClassPath.Skip(1)));
 
         // The probe finds the server in the shutdown hook vanilla's Main registers.
         await VanillaServer.RunJavaAsync(world,
             "--add-opens", "java.base/java.lang=ALL-UNNAMED",
-            "-cp", classPath, Source("BlockUseFixtures.java"), fixture,
+            "-cp", classPath, Source(probe), fixture,
             cases is null ? "" : string.Join('+', cases));
+    }
+
+    // An on-request probe: a dedicated server of its own, in a new flat world under the scratch directory, stepped
+    // one tick at a time. With cases, only those are recorded.
+    internal static Task DumpDispenserAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null)
+    {
+        var world = Path.Combine(server.ScratchDirectory, "dispenser");
+        if (Directory.Exists(world))
+            Directory.Delete(world, recursive: true);
+
+        Directory.CreateDirectory(world);
+
+        // The probe finds the server in the shutdown hook vanilla's Main registers.
+        return VanillaServer.RunJavaAsync(world,
+            "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+            "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("DispenserFixtures.java"), fixture,
+            cases is null ? "" : string.Join('+', cases));
+    }
+
+    internal static Task DumpStructureBlocksAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunInTemporaryWorldAsync(server, "StructureBlockFixtures.java", fixture, cases);
+
+    internal static Task DumpJigsawBlocksAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunInTemporaryWorldAsync(server, "JigsawBlockFixtures.java", fixture, cases,
+            "JigsawBlockInstrumentation.java");
+
+    // An on-request probe: command blocks on a dedicated server of its own, in a flat world in a temporary folder that
+    // is deleted afterwards.
+    internal static Task DumpCommandBlocksAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunInTemporaryWorldAsync(server, "CommandBlockFixtures.java", fixture, cases);
+
+    // An on-request probe: lightning bolts on a dedicated server of its own, in a new flat world under the scratch
+    // directory. It shares block_use's observed copy of the vanilla jar for the ordered block writes.
+    internal static Task DumpLightningAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunObservedProbeAsync(server, fixture, "lightning", "LightningFixtures.java", cases);
+
+    // An on-request probe: trial spawners stepped tick by tick, and a placed trial chamber's spawners and vaults, on a
+    // dedicated server of its own. It shares block_use's observed copy of the vanilla jar for the ordered block writes.
+    internal static Task DumpTrialSpawnersAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunObservedProbeAsync(server, fixture, "trial-spawners", "TrialSpawnerFixtures.java", cases);
+
+    // An on-request probe like DumpWaxingBellsOreAsync's: ender chests, shulker boxes, dragon eggs, conduits and End
+    // gateways, used and ticked.
+    internal static Task DumpSpecialBlocksAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunObservedProbeAsync(server, fixture, "special-blocks", "SpecialBlockFixtures.java", cases);
+
+    // An on-request probe of controlled entity contacts, on block_use's observed copy of the vanilla jar.
+    internal static Task DumpBlockContactsAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string> cases) =>
+        RunObservedProbeAsync(server, fixture, "block-contacts", "BlockContactFixtures.java", cases);
+
+    // An on-request probe: a dedicated server of its own, in a new flat world under the scratch directory. It shares
+    // block_use's observed copy of the vanilla jar for the ordered block writes.
+    internal static Task DumpProjectileHitsAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunObservedProbeAsync(server, fixture, "projectile-hits", "ProjectileHitFixtures.java", cases);
+
+    // On-request probes: a dedicated server of its own each, in a flat world in a temporary folder that is deleted
+    // afterwards, so no capture world is left in the checkout.
+    internal static Task DumpBrushingAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunInTemporaryWorldAsync(server, "BrushingFixtures.java", fixture, cases);
+
+    internal static Task DumpArmorStandUseAsync(VanillaServer server, string fixture,
+        IReadOnlyCollection<string>? cases = null) =>
+        RunInTemporaryWorldAsync(server, "ArmorStandFixtures.java", fixture, cases);
+
+    private static async Task RunInTemporaryWorldAsync(VanillaServer server, string probe, string fixture,
+        IReadOnlyCollection<string>? cases, string? instrumentation = null)
+    {
+        var world = Path.Combine(Path.GetTempPath(), $"obsidian-capture-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(world);
+
+        try
+        {
+            var classPath = server.ClassPath.ToArray();
+            if (instrumentation is not null)
+            {
+                var observed = Path.Combine(world, "observed-classes");
+                await VanillaServer.RunJavaAsync(world, "-cp", string.Join(Path.PathSeparator, classPath),
+                    Source(instrumentation), classPath[0], observed);
+                classPath[0] = Path.Combine(observed, "vanilla-observed.jar");
+            }
+
+            // The probe finds the server in the shutdown hook vanilla's Main registers.
+            await VanillaServer.RunJavaAsync(world,
+                "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+                "-cp", string.Join(Path.PathSeparator, classPath), Source(probe), Path.GetFullPath(fixture),
+                cases is null ? "" : string.Join('+', cases));
+        }
+        finally
+        {
+            Directory.Delete(world, recursive: true);
+        }
+
     }
 
     // An on-request probe: a dedicated server of its own, in a new normal world under the scratch directory.

@@ -1,4 +1,5 @@
 using Obsidian.API.Blocks;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.BlockTicks;
 using Obsidian.WorldData.Features;
@@ -10,7 +11,7 @@ namespace Obsidian.WorldData;
 /// The level as the block notification pipeline and the redstone engine see it. Reads and writes never load chunks: a
 /// position in an unloaded chunk reads as unpowered, and a write there is dropped, like vanilla's <c>setBlock</c>.
 /// </summary>
-public abstract partial class AbstractLevel : IBlockChangeWorld, IPressurePlateWorld, IRedstoneLevel, IBlockTickLevel
+public abstract partial class AbstractLevel : IBlockChangeWorld, IRedstoneLevel, IBlockTickLevel, IContactLevel
 {
     // Vanilla's flag 2 (clients only), as the redstone writes use it: no neighbor updates, but shape updates still run
     // (vanilla setBlock only skips them with flag 16), so an observer watching the block sees the change.
@@ -28,8 +29,40 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IPressurePlateW
     /// <summary>The installed redstone engine, with its tripwires and targets.</summary>
     internal RedstoneInstall RedstoneInstall { get; }
 
-    /// <summary>The pressure plates, detected once per level tick.</summary>
-    internal PressurePlates Plates { get; }
+    /// <summary>The pressure plates, which the entity contact pass presses.</summary>
+    internal PressurePlates Plates => this.RedstoneInstall.Contacts.Plates;
+
+    /// <summary>
+    /// The hooks of the blocks entities touch, run for each entity straight after its tick (see
+    /// <see cref="EntityContactPass"/>).
+    /// </summary>
+    internal EntityContactPass EntityContacts { get; }
+
+    IBlockLevel IContactLevel.Blocks => this.BlockUpdates;
+
+    ILevel IContactLevel.Level => this;
+
+    RedstoneContacts IContactLevel.Redstone => this.RedstoneInstall.Contacts;
+
+    Microsoft.Extensions.Logging.ILogger IContactLevel.Logger => this.Logger;
+
+    int IContactLevel.MinY => this.MinY;
+
+    int IContactLevel.Height => this.Height;
+
+    // Straight from the regions, not through GetRegionForChunk's per-thread cache, which allocates whenever the region
+    // changes: the pass goes from entity to entity, and those in different regions would make it allocate each time.
+    Chunk? IContactLevel.GetContactChunk(int chunkX, int chunkZ)
+    {
+        var shift = Region.CubicRegionSizeShift;
+        var key = NumericsHelper.IntsToLong(chunkX >> shift, chunkZ >> shift);
+        if (!this.Regions.TryGetValue(key, out var found) || found is not Region region)
+            return null;
+
+        var x = NumericsHelper.Modulo(chunkX, 32);
+        var z = NumericsHelper.Modulo(chunkZ, 32);
+        return region.GetLoadedChunk(x, z) as Chunk;
+    }
 
     /// <summary>The level's redstone engine (signal reads).</summary>
     internal RedstoneEngine RedstoneEngine => this.RedstoneInstall.Engine;
@@ -73,10 +106,11 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IPressurePlateW
 
     void IBlockChangeWorld.ScheduleFluidTick(Vector position) => this.Fluids.ScheduleShapeFluidTick(position);
 
-    async ValueTask IBlockChangeWorld.NotifyNeighborsAsync(Vector position)
+    // Queue and drain, passing the drain's task straight back: no state machine for a drain that finishes inline.
+    ValueTask IBlockChangeWorld.NotifyNeighborsAsync(Vector position)
     {
         this.BlockNotifications.EnqueueNeighbors(position);
-        await this.BlockNotifications.DrainAsync();
+        return this.BlockNotifications.DrainAsync();
     }
 
     void IRedstoneLevel.BroadcastLevelEvent(int type, Vector position, int data) => this.BroadcastLevelEvent(type, position, data);
@@ -108,15 +142,31 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IPressurePlateW
     void IBlockChangeWorld.PlaySound(Vector position, string sound, float volume, float pitch, IPlayer? except) =>
         this.BlockUpdates.PlaySound(position, sound, volume, pitch, except);
 
-    void IPressurePlateWorld.SchedulePlateTick(Vector position, IBlock block, int delay) => this.ScheduleBlockTick(position, block, delay);
 
     long IRedstoneLevel.GameTime => this.Fluids.Clock.GameTime;
+
+    IRandomSource IRedstoneLevel.Random => this.GrowthRandom;
+
+    // Vanilla Level.soundSeedGenerator is independent of gameplay randomness, including piston pitch.
+    internal IRandomSource SoundSeedRandom { get; set; } = new LegacyRandomSource(Random.Shared.NextInt64());
+
+    /// <summary>Draws a packet seed independently of gameplay, including callers outside the level tick.</summary>
+    internal long NextSoundSeed()
+    {
+        var random = this.SoundSeedRandom;
+        lock (random)
+        {
+            return random.NextLong();
+        }
+    }
 
     long IRedstoneLevel.DayTime => this.LevelData.DayTime;
 
     int IRedstoneLevel.GetSkyLight(Vector position) =>
         this.IsOutsideBuildHeight(position.Y) ? 0 :
         this.GetLoadedChunk(position.X.ToChunkCoord(), position.Z.ToChunkCoord())?.GetLightLevel(position.X, position.Y, position.Z, LightType.Sky) ?? 0;
+
+    int IRedstoneLevel.TrappedChestViewers(Vector position) => this.TrappedChestViewers(position);
 
     bool IRedstoneLevel.HasAnalogOutput(IBlock block)
     {
@@ -152,10 +202,10 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IPressurePlateW
         }
     }
 
-    async ValueTask IRedstoneLevel.NotifyNeighborAsync(Vector target, Vector source)
+    ValueTask IRedstoneLevel.NotifyNeighborAsync(Vector target, Vector source)
     {
         this.BlockNotifications.EnqueueNeighbor(target, source);
-        await this.BlockNotifications.DrainAsync();
+        return this.BlockNotifications.DrainAsync();
     }
 
     async ValueTask IRedstoneLevel.NotifyComparatorsAroundAsync(Vector position)
@@ -174,7 +224,7 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IPressurePlateW
         var center = (min + max) / 2;
         foreach (var entity in this.GetEntitiesInRange(center, 4))
         {
-            var box = entity.BoundingBox;
+            var box = entity is Entities.Entity concrete ? concrete.CurrentBox : entity.BoundingBox;
             if (box.Min.X < max.X && box.Max.X > min.X
                 && box.Min.Y < max.Y && box.Max.Y > min.Y
                 && box.Min.Z < max.Z && box.Max.Z > min.Z)
@@ -185,7 +235,7 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IPressurePlateW
     }
 
     void IRedstoneLevel.FireDispenser(Vector position, IBlock state, bool dropper) =>
-        this.EnqueueEntityAction(() => RedstoneDispenser.Fire(this, position, state, dropper));
+        this.EnqueueEntityAction(() => RedstoneDispenser.FireAsync(this, position, state, dropper));
 
     void IRedstoneLevel.CraftCrafter(Vector position) =>
         this.EnqueueEntityAction(() => RedstoneCrafter.CraftAsync(this, position));
@@ -199,6 +249,20 @@ public abstract partial class AbstractLevel : IBlockChangeWorld, IPressurePlateW
 
     ValueTask IRedstoneLevel.WriteAsync(Vector position, IBlock block, bool notifyNeighbors) =>
         this.WriteAsync(position, block, notifyNeighbors ? BlockUpdateFlags.All : ClientsOnly);
+
+    ValueTask IRedstoneLevel.WriteAsync(Vector position, IBlock block, BlockUpdateFlags flags) =>
+        this.WriteAsync(position, block, flags);
+
+    async ValueTask IRedstoneLevel.UpdateNeighborShapesAsync(Vector position)
+    {
+        // Vanilla's direct shape order, independent of the signal-query direction order.
+        BlockFace[] faces =
+            [BlockFace.West, BlockFace.East, BlockFace.North, BlockFace.South, BlockFace.Down, BlockFace.Up];
+        foreach (var face in faces)
+            this.BlockUpdates.ShapeUpdateAt(position.Offset(face), face.Opposite(), BlockUpdateFlags.Clients, 512);
+
+        await this.BlockNotifications.DrainAsync();
+    }
 
     ValueTask IRedstoneLevel.RestoreBlockSilentlyAsync(Vector position, IBlock block) =>
         this.WriteAsync(position, block, BlockUpdateFlags.KnownShape | BlockUpdateFlags.SkipOnPlace);

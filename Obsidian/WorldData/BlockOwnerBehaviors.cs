@@ -1,6 +1,7 @@
 using Obsidian.API.Blocks;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Entities;
+using Obsidian.WorldData.Redstone;
 
 namespace Obsidian.WorldData;
 
@@ -46,6 +47,10 @@ internal static class OnPlaceBehaviors
     internal static IOnPlaceBehavior FrogspawnBlock { get; } = new FrogspawnBlockBehavior();
 
     internal static IOnPlaceBehavior FrostedIceBlock { get; } = new FrostedIceBlockBehavior();
+
+    internal static IOnPlaceBehavior ShelfBlock { get; } = new ShelfConnections.Placement();
+
+    internal static IOnPlaceBehavior LightningRodBlock => LightningRodBehavior.Instance;
 }
 
 /// <summary>
@@ -93,6 +98,8 @@ internal static class TickBehaviors
 {
     internal static IScheduledTickBehavior SpeleothemBlock { get; } = new SulfurSpikeBehavior();
 
+    internal static IScheduledTickBehavior BrushableBlock { get; } = new Brushing.BlockBehavior();
+
     internal static IScheduledTickBehavior FarmlandBlock { get; } = new FarmlandBlockBehavior();
 
     internal static IScheduledTickBehavior LeavesBlock { get; } = new LeavesBlockBehavior();
@@ -108,6 +115,10 @@ internal static class TickBehaviors
     internal static IScheduledTickBehavior SugarCaneBlock { get; } = new SugarCaneBlockBehavior();
 
     internal static IScheduledTickBehavior CactusBlock { get; } = new CactusBlockBehavior();
+
+    internal static IScheduledTickBehavior BigDripleafBlock { get; } = BigDripleafContactBehavior.Instance;
+
+    internal static IScheduledTickBehavior SculkShriekerBlock { get; } = new ShriekerContactBehavior();
 
     internal static IScheduledTickBehavior BambooStalkBlock { get; } = new BambooStalkBlockBehavior();
 
@@ -136,6 +147,10 @@ internal static class TickBehaviors
     internal static IScheduledTickBehavior DriedGhastBlock { get; } = new DriedGhastBehavior();
 
     internal static IScheduledTickBehavior FrostedIceBlock { get; } = new FrostedIceBlockBehavior();
+
+    internal static IScheduledTickBehavior SculkCatalystBlock { get; } = new SculkCatalystBlockBehavior();
+
+    internal static IScheduledTickBehavior LightningRodBlock => LightningRodBehavior.Instance;
 }
 
 /// <summary>
@@ -263,12 +278,42 @@ internal static class ShapeUpdateBehaviors
 }
 
 /// <summary>
-/// A vanilla class's <c>entityInside</c> override, run for an entity whose box overlaps a block it owns.
+/// A vanilla class's <c>entityInside</c> override, run by the entity contact pass (<see cref="EntityContactPass"/>)
+/// for an entity whose box is inside a block it owns, each tick.
 /// </summary>
 internal interface IEntityInsideBehavior
 {
     /// <summary>Runs the contact of <paramref name="entity"/> with <paramref name="block"/> at <paramref name="position"/>.</summary>
-    void EntityInside(IBlockLevel level, Vector position, IBlock block, Entities.Entity entity);
+    ValueTask EntityInsideAsync(IContactLevel level, Vector position, IBlock block, Entities.Entity entity);
+}
+
+/// <summary>
+/// A vanilla class's <c>stepOn</c> override, run by the entity contact pass for an entity on the ground standing on a
+/// block it owns, each tick, before the blocks it's inside.
+/// </summary>
+internal interface IStepOnBehavior
+{
+    /// <summary>Runs <paramref name="entity"/> standing on <paramref name="block"/> at <paramref name="position"/>.</summary>
+    ValueTask SteppedOnAsync(IContactLevel level, Vector position, IBlock block, Entities.Entity entity);
+}
+
+/// <summary>
+/// A vanilla class's <c>fallOn</c> override, run by the entity contact pass for an entity that landed on a block it owns
+/// after falling, before the block it stands on and those it's inside.
+/// </summary>
+/// <remarks>
+/// Vanilla's base <c>Block.fallOn</c> is the fall damage, which entities still take where they land; a block that
+/// changes it takes it over when it gets a member here.
+/// </remarks>
+internal interface IFallOnBehavior
+{
+    /// <summary>
+    /// Runs <paramref name="entity"/> landing on <paramref name="block"/> at <paramref name="position"/> after falling
+    /// <paramref name="fallDistance"/> blocks.
+    /// </summary>
+    ValueTask FallenOnAsync(
+        IContactLevel level, Vector position, IBlock block, Entities.Entity entity,
+        double fallDistance, VectorD impactPosition);
 }
 
 /// <summary>
@@ -278,4 +323,90 @@ internal interface IEntityInsideBehavior
 internal static class EntityInsideBehaviors
 {
     internal static IEntityInsideBehavior BubbleColumnBlock { get; } = new BubbleColumnBlockBehavior();
+
+    internal static IEntityInsideBehavior BasePressurePlateBlock { get; } = new PressurePlateContact();
+
+    internal static IEntityInsideBehavior TripWireBlock { get; } = new TripWireContact();
+
+    internal static IEntityInsideBehavior DetectorRailBlock { get; } = new DetectorRailContact();
+
+    internal static IEntityInsideBehavior ButtonBlock { get; } = new ButtonContact();
+
+    internal static IEntityInsideBehavior WebBlock { get; } = new CobwebContactBehavior();
+
+    internal static IEntityInsideBehavior SweetBerryBushBlock { get; } = new SweetBerryBushContactBehavior();
+
+    internal static IEntityInsideBehavior PowderSnowBlock { get; } = PowderSnowContactBehavior.Instance;
+
+    internal static IEntityInsideBehavior CactusBlock { get; } = new CactusContactBehavior();
+
+    internal static IEntityInsideBehavior CampfireBlock { get; } = new CampfireContactBehavior();
+
+    internal static IEntityInsideBehavior HoneyBlock { get; } = new HoneySlideBehavior();
+
+    internal static IEntityInsideBehavior HopperBlock { get; } = new HopperContactBehavior();
+
+    internal static IEntityInsideBehavior BigDripleafBlock { get; } = BigDripleafContactBehavior.Instance;
+
+    // The redstone blocks run their level's own instance, which holds what they need from the level.
+    private sealed class PressurePlateContact : IEntityInsideBehavior
+    {
+        public ValueTask EntityInsideAsync(IContactLevel level, Vector position, IBlock block, Entities.Entity entity) =>
+            level.Redstone.Plates.EntityInsideAsync(position, block, entity);
+    }
+
+    private sealed class TripWireContact : IEntityInsideBehavior
+    {
+        public ValueTask EntityInsideAsync(IContactLevel level, Vector position, IBlock block, Entities.Entity entity) =>
+            level.Redstone.Tripwires.EntityInsideAsync(position, block, entity);
+    }
+
+    private sealed class DetectorRailContact : IEntityInsideBehavior
+    {
+        public ValueTask EntityInsideAsync(IContactLevel level, Vector position, IBlock block, Entities.Entity entity) =>
+            level.Redstone.DetectorRails.EntityInsideAsync(position, block);
+    }
+
+    private sealed class ButtonContact : IEntityInsideBehavior
+    {
+        public ValueTask EntityInsideAsync(IContactLevel level, Vector position, IBlock block, Entities.Entity entity) =>
+            BasicRedstoneComponents.PressedByArrowInsideAsync(level.Redstone.Level, position, block);
+    }
+}
+
+/// <summary>
+/// Obsidian implementations of vanilla classes that override <c>stepOn</c>, bound from
+/// <c>block_step_on_classes.json</c> (<c>BlocksRegistry.GetStepOnBehavior</c>).
+/// </summary>
+internal static class StepOnBehaviors
+{
+    internal static IStepOnBehavior MagmaBlock { get; } = new MagmaContactBehavior();
+
+    internal static IStepOnBehavior TurtleEggBlock { get; } = new TurtleEggContactBehavior();
+
+    internal static IStepOnBehavior SlimeBlock { get; } = new SlimeStepBehavior();
+
+    internal static IStepOnBehavior SculkShriekerBlock { get; } = new ShriekerContactBehavior();
+}
+
+/// <summary>
+/// Obsidian implementations of vanilla classes that override <c>fallOn</c>, bound from
+/// <c>block_fall_on_classes.json</c> (<c>BlocksRegistry.GetFallOnBehavior</c>).
+/// </summary>
+internal static class FallOnBehaviors
+{
+    internal static IFallOnBehavior FarmlandBlock { get; } = new FarmlandContactBehavior();
+
+    internal static IFallOnBehavior TurtleEggBlock { get; } = new TurtleEggContactBehavior();
+
+    internal static IFallOnBehavior SlimeBlock { get; } = new SoftLandingBehavior(0);
+
+    internal static IFallOnBehavior HayBlock { get; } = new SoftLandingBehavior(0.2f);
+
+    internal static IFallOnBehavior HoneyBlock { get; } = new SoftLandingBehavior(0.2f, honey: true);
+
+    // Beds inherit Block.fallOn in 26.3; their property halves distance before the safe distance is subtracted.
+    internal static IFallOnBehavior BedBlock { get; } = new SoftLandingBehavior(1, distanceScale: 0.5f);
+
+    internal static IFallOnBehavior PowderSnowBlock { get; } = PowderSnowContactBehavior.Instance;
 }

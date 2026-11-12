@@ -84,9 +84,7 @@ public partial class BlocksGenerator
             // association (the hooks below).
             if (block.TreeGrower is { } grower)
             {
-                var initializer = string.Join(", ", grower.Select(entry => entry.Key == "secondaryChance"
-                    ? $"SecondaryChance = {entry.Value}"
-                    : $"{entry.Key.ToPascalCase()} = \"{entry.Value}\""));
+                var initializer = string.Join(", ", grower.Select(entry => $"{entry.Key} = {entry.Value}"));
                 treeGrowers.Indent().Append($"[{block.RegistryId}] = new Obsidian.API.Blocks.TreeGrower {{ {initializer} }},").Line();
             }
 
@@ -217,6 +215,8 @@ public partial class BlocksGenerator
         new("tick", "TickBehaviors", "IScheduledTickBehavior", "GetTickBehavior"),
         new("updateShape", "ShapeUpdateBehaviors", "IShapeUpdateBehavior", "GetShapeUpdateBehavior"),
         new("entityInside", "EntityInsideBehaviors", "IEntityInsideBehavior", "GetEntityInsideBehavior"),
+        new("stepOn", "StepOnBehaviors", "IStepOnBehavior", "GetStepOnBehavior"),
+        new("fallOn", "FallOnBehaviors", "IFallOnBehavior", "GetFallOnBehavior"),
         new("onPlace", "OnPlaceBehaviors", "IOnPlaceBehavior", "GetOnPlaceBehavior"),
         new("useItemOn", "UseBehaviors", "IBlockUseBehavior", "GetUseItemOnBehavior"),
         new("useWithoutItem", "UseBehaviors", "IBlockUseBehavior", "GetUseWithoutItemBehavior"),

@@ -11,6 +11,16 @@ internal sealed class BreezeWindCharge : Entity
     private Guid ownerUuid;
     private int age;
 
+    internal static BreezeWindCharge FromOminous(OminousItemSpawner spawner, VectorD motion) => new(spawner.Level)
+    {
+        EntityId = Server.GetNextEntityId(),
+        Type = EntityType.WindCharge,
+        Position = spawner.Position,
+        Motion = motion,
+        owner = spawner,
+        ownerUuid = spawner.Uuid
+    };
+
     [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
     internal BreezeWindCharge(ILevel level)
     {
@@ -46,15 +56,9 @@ internal sealed class BreezeWindCharge : Entity
         if (owner == null && ownerUuid != Guid.Empty && (age == 1 || age % 20 == 0))
             owner = Level.FindEntity(ownerUuid);
         var terrain = new MobTerrain(Level);
-        var end = Position + Motion;
-        var swept = new BoundingBox(VectorD.Min(Position, end) - new VectorD(0.15f), VectorD.Max(Position, end) + new VectorD(0.15f));
-        var fraction = 1d;
+        var blockHit = ProjectileBlockHits.Find(terrain, Position, Motion);
+        var fraction = blockHit?.Fraction ?? 1;
         IEntity? target = null;
-        foreach (var shape in terrain.GetCollisions(swept))
-        {
-            if (MobTerrain.RayIntersection(shape, Position, Motion) is double hit)
-                fraction = Math.Min(fraction, hit);
-        }
 
         foreach (var entity in Level.GetEntitiesInRange(Position, (float)Motion.Magnitude + 3))
         {
@@ -76,27 +80,49 @@ internal sealed class BreezeWindCharge : Entity
             return;
         Position = next;
         BoundingBox = Dimension.CreateBBFromPosition(next);
-        if (fraction < 1 || target != null)
+        this.EmitShotOnce(owner);
+        if (target != null)
         {
             if (target is Living victim && target is not Wither { Armored: true })
                 await victim.DamageCombatAsync(owner ?? this, 1, CombatDamageKind.Projectile, directSource: this);
-            await BurstAsync(terrain);
+            await BurstAsync(terrain, Position);
             await RemoveAsync();
+            return;
+        }
+
+        if (blockHit is { } blockCollision)
+        {
+            // Vanilla's AbstractWindCharge.onHitBlock: the burst, a quarter of a block out from the face it hit.
+            var burst = blockCollision.Location + (VectorD)blockCollision.Face.ToVector() * 0.25;
+            if (await ProjectileBlockHits.HitAsync(level, this, owner, blockCollision, () => BurstAsync(terrain, burst)))
+                await RemoveAsync();
+
             return;
         }
         PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new TeleportEntityPacket
         { EntityId = EntityId, Position = Position, Delta = Motion, Yaw = Yaw, Pitch = Pitch, OnGround = false });
     }
 
-    private async ValueTask BurstAsync(MobTerrain terrain)
+    private async ValueTask BurstAsync(MobTerrain terrain, VectorD burst)
     {
-        foreach (var entity in Level.GetEntitiesInRange(Position, 3).OfType<Living>())
+        if (this.Type == EntityType.WindCharge && this.Level is AbstractLevel windLevel)
+        {
+            await windLevel.BurstWindChargeAsync(this, burst);
+            return;
+        }
+
+        // What the burst reaches is measured from it. The charge itself stays where it is: moving it would leave its
+        // region membership behind, and its removal would look in the wrong region.
+        if (Level is AbstractLevel level)
+            level.EmitGameEvent(MobGameEvent.Explode, burst, this);
+
+        foreach (var entity in Level.GetEntitiesInRange(burst, 3).OfType<Living>())
         {
             if (!entity.Alive || entity is IPlayer { GameMode: GameMode.Spectator } || entity is Creaking { CanMove: false })
                 continue;
-            var delta = entity.Position + new VectorD(0, entity.Dimension.Height * 0.5f, 0) - Position;
+            var delta = entity.Position + new VectorD(0, entity.Dimension.Height * 0.5f, 0) - burst;
             var distance = delta.Magnitude;
-            if (distance >= 3 || !terrain.HasLineOfSight(Position, entity.Position + new VectorD(0, 0.1f, 0)))
+            if (distance >= 3 || !terrain.HasLineOfSight(burst, entity.Position + new VectorD(0, 0.1f, 0)))
                 continue;
             if (distance < 0.001f)
                 delta = new VectorD(0, 1, 0);
@@ -107,7 +133,7 @@ internal sealed class BreezeWindCharge : Entity
         }
         if (Level.LevelData.GetBooleanRule("minecraft:mob_griefing", true))
         {
-            var center = (Vector)Position.Floor();
+            var center = (Vector)burst.Floor();
             for (var x = -2; x <= 2; x++)
             {
                 for (var y = -2; y <= 2; y++)
@@ -115,7 +141,7 @@ internal sealed class BreezeWindCharge : Entity
                     for (var z = -2; z <= 2; z++)
                     {
                         var point = center + new Vector(x, y, z);
-                        if (((VectorD)point - Position).MagnitudeSquared() > 9)
+                        if (((VectorD)point - burst).MagnitudeSquared() > 9)
                             continue;
                         var block = terrain.GetBlock(point);
                         if (block == null)

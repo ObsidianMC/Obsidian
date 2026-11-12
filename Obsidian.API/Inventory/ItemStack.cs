@@ -28,6 +28,15 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
     // A marker component: the item is unbreakable when it has one.
     public bool Unbreakable => this.ContainsKey(DataComponentType.Unbreakable);
     public int MaxStackSize => this.GetComponent<SimpleDataComponent<int>>(DataComponentType.MaxStackSize)?.Value ?? this.Holder.MaxStackSize;
+
+    /// <summary>
+    /// <see cref="MaxStackSize"/> read without its component's copy, which may be a plugin's delegate: for code holding
+    /// an inventory's lock, where plugin code reading the same inventory would wait on that lock.
+    /// </summary>
+    internal int StoredMaxStackSize =>
+        this.GetComponent<SimpleDataComponent<int>>(DataComponentType.MaxStackSize)?.StoredValue
+        ?? this.Holder.MaxStackSize;
+
     public ChatMessage? CustomName => this.GetComponent<SimpleDataComponent<ChatMessage>>(DataComponentType.CustomName)?.Value;
     public ChatMessage? ItemName => this.GetComponent<SimpleDataComponent<ChatMessage>>(DataComponentType.ItemName)?.Value;
 
@@ -123,6 +132,9 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
         else if (this.UnmodeledComponents?.TryGetTag(type.Identifier, out var unmodeled) == true)
             saved = new PluginDataComponent(type.Type, type.Identifier, unmodeled).ToNbt();
 
+        if (saved is not null)
+            ComponentExecutionGuard.Check($"persistent decoder ({type.Identifier})");
+
         value = saved is not null ? type.Codec.Decode(saved) : default;
         return saved is not null;
     }
@@ -141,6 +153,7 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
         using var call = type.TryEnter()
             ?? throw new InvalidOperationException($"{type.Identifier}'s plugin is unloading.");
 
+        ComponentExecutionGuard.Check($"persistent encoder ({type.Identifier})");
         this[type.Type] = new PluginDataComponent(type.Type, type.Identifier, type.Codec.Encode(value));
         this.UnmodeledComponents?.Remove(type.Identifier);
     }

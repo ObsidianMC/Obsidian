@@ -8,6 +8,9 @@ namespace Obsidian.API.Containers;
 /// </summary>
 public sealed class BrewingStand : ResultContainer
 {
+    // Its slots are its own, behind its own lock (see LocksOnlyItself).
+    internal override bool LocksOnlyItself => true;
+
     /// <summary>
     /// The first of the three bottle slots.
     /// </summary>

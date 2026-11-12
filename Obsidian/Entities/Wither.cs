@@ -126,7 +126,7 @@ public sealed partial class Wither : BossMob
 
     private void Shoot(int head, VectorD target, bool dangerous)
     {
-        var angle = (Yaw.Degrees + (head == 1 ? 0 : 180)) * Math.PI / 180;
+        var angle = (Yaw + (head == 1 ? 0 : 180)) * Math.PI / 180;
         var origin = head == 0 ? Position + new VectorD(0, 3, 0) :
             Position + new VectorD(Math.Cos(angle) * 1.3, 2.2, Math.Sin(angle) * 1.3);
         Level.SpawnEntity(new WitherSkull(this, origin, target - origin, dangerous));
@@ -159,9 +159,13 @@ public sealed partial class Wither : BossMob
             PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new LevelEventPacket(1022, position, 0));
     }
 
-    protected override bool CanTakeDamage(IEntity source) => invulnerableTicks == 0 && source.Type != EntityType.Wither &&
-        !IsIn(source, TagsRegistry.EntityType.WitherFriends) &&
-        (!Armored || (IncomingDirectSource ?? source).Type is not (EntityType.Arrow or EntityType.SpectralArrow or EntityType.Trident or EntityType.WindCharge or EntityType.BreezeWindCharge));
+    protected override bool CanTakeDamage(IEntity? source) =>
+        invulnerableTicks == 0
+        && source?.Type != EntityType.Wither
+        && (source is null || !IsIn(source, TagsRegistry.EntityType.WitherFriends))
+        && (!Armored || (IncomingDirectSource ?? source)?.Type is not
+            (EntityType.Arrow or EntityType.SpectralArrow or EntityType.Trident
+                or EntityType.WindCharge or EntityType.BreezeWindCharge));
 
     protected override ValueTask OnHurtAsync(IEntity source)
     {

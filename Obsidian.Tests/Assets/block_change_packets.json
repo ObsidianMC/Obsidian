@@ -1,0 +1,1193 @@
+{
+ "player": [
+  8.5,
+  70,
+  8.5
+ ],
+ "chunks": [
+  [
+   0,
+   0
+  ],
+  [
+   1,
+   -1
+  ],
+  [
+   0,
+   1
+  ]
+ ],
+ "cases": [
+  {
+   "name": "dust_line_toggle",
+   "fills": [
+    {
+     "from": [
+      16,
+      63,
+      -8
+     ],
+     "to": [
+      31,
+      63,
+      -8
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "from": [
+      17,
+      64,
+      -8
+     ],
+     "to": [
+      31,
+      64,
+      -8
+     ],
+     "state": "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 0,
+     "setblock": {
+      "pos": [
+       16,
+       64,
+       -8
+      ],
+      "state": "minecraft:redstone_block"
+     }
+    },
+    {
+     "tick": 2,
+     "setblock": {
+      "pos": [
+       16,
+       64,
+       -8
+      ],
+      "state": "minecraft:air"
+     }
+    }
+   ],
+   "ticks": 3,
+   "segments": [
+    {
+     "tick": 0,
+     "after": "actions",
+     "packets": [
+      {
+       "type": "section_blocks_update",
+       "section": [
+        1,
+        4,
+        -1
+       ],
+       "blocks": [
+        {
+         "pos": [
+          31,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=1,south=none,west=side]"
+        },
+        {
+         "pos": [
+          26,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=6,south=none,west=side]"
+        },
+        {
+         "pos": [
+          21,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=11,south=none,west=side]"
+        },
+        {
+         "pos": [
+          16,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_block"
+        },
+        {
+         "pos": [
+          27,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=5,south=none,west=side]"
+        },
+        {
+         "pos": [
+          22,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=10,south=none,west=side]"
+        },
+        {
+         "pos": [
+          17,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=15,south=none,west=side]"
+        },
+        {
+         "pos": [
+          28,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=4,south=none,west=side]"
+        },
+        {
+         "pos": [
+          23,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=9,south=none,west=side]"
+        },
+        {
+         "pos": [
+          18,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=14,south=none,west=side]"
+        },
+        {
+         "pos": [
+          29,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=3,south=none,west=side]"
+        },
+        {
+         "pos": [
+          24,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=8,south=none,west=side]"
+        },
+        {
+         "pos": [
+          19,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=13,south=none,west=side]"
+        },
+        {
+         "pos": [
+          30,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=2,south=none,west=side]"
+        },
+        {
+         "pos": [
+          25,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=7,south=none,west=side]"
+        },
+        {
+         "pos": [
+          20,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=12,south=none,west=side]"
+        }
+       ],
+       "bytes": "000007fffff000041080ffa70c8095b30c80abbe0c80c1c51980f7b00c808dbc0c80a3c70c80d9ae0c80efb90c8085c50c80bbac0c80d1b70c80e7c20c809daa0c80b3b50c80c9c00c"
+      }
+     ]
+    },
+    {
+     "tick": 1,
+     "after": "tick",
+     "packets": []
+    },
+    {
+     "tick": 2,
+     "after": "tick",
+     "packets": []
+    },
+    {
+     "tick": 2,
+     "after": "actions",
+     "packets": [
+      {
+       "type": "section_blocks_update",
+       "section": [
+        1,
+        4,
+        -1
+       ],
+       "blocks": [
+        {
+         "pos": [
+          31,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+        },
+        {
+         "pos": [
+          26,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+        },
+        {
+         "pos": [
+          21,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+        },
+        {
+         "pos": [
+          16,
+          64,
+          -8
+         ],
+         "state": "minecraft:air"
+        },
+        {
+         "pos": [
+          27,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+        },
+        {
+         "pos": [
+          22,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+        },
+        {
+         "pos": [
+          17,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+        },
+        {
+         "pos": [
+          28,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+        },
+        {
+         "pos": [
+          23,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+        },
+        {
+         "pos": [
+          18,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+        },
+        {
+         "pos": [
+          29,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+        },
+        {
+         "pos": [
+          24,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+        },
+        {
+         "pos": [
+          19,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+        },
+        {
+         "pos": [
+          30,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+        },
+        {
+         "pos": [
+          25,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+        },
+        {
+         "pos": [
+          20,
+          64,
+          -8
+         ],
+         "state": "minecraft:redstone_wire[east=side,north=none,power=0,south=none,west=side]"
+        }
+       ],
+       "bytes": "000007fffff000041080dfa50c80d5a50c80cba50c800180d7a50c80cda50c80c3a50c80d9a50c80cfa50c80c5a50c80dba50c80d1a50c80c7a50c80dda50c80d3a50c80c9a50c"
+      }
+     ]
+    },
+    {
+     "tick": 3,
+     "after": "tick",
+     "packets": []
+    }
+   ]
+  },
+  {
+   "name": "piston_push",
+   "fills": [
+    {
+     "from": [
+      2,
+      64,
+      2
+     ],
+     "to": [
+      2,
+      64,
+      2
+     ],
+     "state": "minecraft:piston[extended=false,facing=east]"
+    },
+    {
+     "from": [
+      3,
+      64,
+      2
+     ],
+     "to": [
+      3,
+      64,
+      2
+     ],
+     "state": "minecraft:stone"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 0,
+     "setblock": {
+      "pos": [
+       1,
+       64,
+       2
+      ],
+      "state": "minecraft:redstone_block"
+     }
+    }
+   ],
+   "ticks": 4,
+   "segments": [
+    {
+     "tick": 0,
+     "after": "actions",
+     "packets": [
+      {
+       "type": "block_update",
+       "pos": [
+        1,
+        64,
+        2
+       ],
+       "state": "minecraft:redstone_block"
+      }
+     ]
+    },
+    {
+     "tick": 1,
+     "after": "tick",
+     "packets": [
+      {
+       "type": "block_event",
+       "pos": [
+        2,
+        64,
+        2
+       ],
+       "block": "minecraft:piston",
+       "action": 0,
+       "parameter": 5
+      },
+      {
+       "type": "block_update",
+       "pos": [
+        2,
+        64,
+        2
+       ],
+       "state": "minecraft:piston[extended=true,facing=east]"
+      }
+     ]
+    },
+    {
+     "tick": 2,
+     "after": "tick",
+     "packets": []
+    },
+    {
+     "tick": 3,
+     "after": "tick",
+     "packets": [
+      {
+       "type": "section_blocks_update",
+       "section": [
+        0,
+        4,
+        0
+       ],
+       "blocks": [
+        {
+         "pos": [
+          3,
+          64,
+          2
+         ],
+         "state": "minecraft:piston_head[facing=east,short=false,type=normal]"
+        },
+        {
+         "pos": [
+          4,
+          64,
+          2
+         ],
+         "state": "minecraft:stone"
+        }
+       ],
+       "bytes": "000000000000000402a0e6d504a028"
+      }
+     ]
+    },
+    {
+     "tick": 4,
+     "after": "tick",
+     "packets": []
+    }
+   ]
+  },
+  {
+   "name": "note_block",
+   "fills": [
+    {
+     "from": [
+      2,
+      64,
+      6
+     ],
+     "to": [
+      2,
+      64,
+      6
+     ],
+     "state": "minecraft:note_block[instrument=harp,note=0,powered=false]"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 0,
+     "setblock": {
+      "pos": [
+       1,
+       64,
+       6
+      ],
+      "state": "minecraft:redstone_block"
+     }
+    }
+   ],
+   "ticks": 2,
+   "segments": [
+    {
+     "tick": 0,
+     "after": "actions",
+     "packets": [
+      {
+       "type": "section_blocks_update",
+       "section": [
+        0,
+        4,
+        0
+       ],
+       "blocks": [
+        {
+         "pos": [
+          1,
+          64,
+          6
+         ],
+         "state": "minecraft:redstone_block"
+        },
+        {
+         "pos": [
+          2,
+          64,
+          6
+         ],
+         "state": "minecraft:note_block[instrument=harp,note=0,powered=true]"
+        }
+       ],
+       "bytes": "000000000000000402e0c2c519e084aa01"
+      }
+     ]
+    },
+    {
+     "tick": 1,
+     "after": "tick",
+     "packets": [
+      {
+       "type": "block_event",
+       "pos": [
+        2,
+        64,
+        6
+       ],
+       "block": "minecraft:note_block",
+       "action": 0,
+       "parameter": 0
+      }
+     ]
+    },
+    {
+     "tick": 2,
+     "after": "tick",
+     "packets": []
+    }
+   ]
+  },
+  {
+   "name": "place_and_break",
+   "fills": [
+    {
+     "from": [
+      8,
+      68,
+      10
+     ],
+     "to": [
+      8,
+      68,
+      10
+     ],
+     "state": "minecraft:stone"
+    }
+   ],
+   "hand": "minecraft:stone",
+   "actions": [
+    {
+     "tick": 0,
+     "use": {
+      "pos": [
+       8,
+       68,
+       10
+      ],
+      "face": "up",
+      "sequence": 1
+     }
+    },
+    {
+     "tick": 1,
+     "break": {
+      "pos": [
+       8,
+       69,
+       10
+      ],
+      "face": "up",
+      "sequence": 2
+     }
+    }
+   ],
+   "ticks": 1,
+   "segments": [
+    {
+     "tick": 0,
+     "after": "actions",
+     "packets": [
+      {
+       "type": "block_update",
+       "pos": [
+        8,
+        68,
+        10
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "type": "block_update",
+       "pos": [
+        8,
+        69,
+        10
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "type": "block_update",
+       "pos": [
+        8,
+        69,
+        10
+       ],
+       "state": "minecraft:stone"
+      },
+      {
+       "type": "block_changed_ack",
+       "sequence": 1
+      }
+     ]
+    },
+    {
+     "tick": 1,
+     "after": "tick",
+     "packets": []
+    },
+    {
+     "tick": 1,
+     "after": "actions",
+     "packets": [
+      {
+       "type": "block_update",
+       "pos": [
+        8,
+        69,
+        10
+       ],
+       "state": "minecraft:air"
+      },
+      {
+       "type": "block_changed_ack",
+       "sequence": 2
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "fluid_spreads_in_two_sections",
+   "fills": [
+    {
+     "from": [
+      2,
+      15,
+      18
+     ],
+     "to": [
+      8,
+      16,
+      22
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "from": [
+      3,
+      16,
+      19
+     ],
+     "to": [
+      7,
+      16,
+      21
+     ],
+     "state": "minecraft:air"
+    },
+    {
+     "from": [
+      2,
+      14,
+      24
+     ],
+     "to": [
+      8,
+      15,
+      28
+     ],
+     "state": "minecraft:stone"
+    },
+    {
+     "from": [
+      3,
+      15,
+      25
+     ],
+     "to": [
+      7,
+      15,
+      27
+     ],
+     "state": "minecraft:air"
+    }
+   ],
+   "actions": [
+    {
+     "tick": 0,
+     "setblock": {
+      "pos": [
+       5,
+       16,
+       20
+      ],
+      "state": "minecraft:water[level=0]"
+     }
+    },
+    {
+     "tick": 0,
+     "setblock": {
+      "pos": [
+       5,
+       15,
+       26
+      ],
+      "state": "minecraft:water[level=0]"
+     }
+    }
+   ],
+   "ticks": 15,
+   "segments": [
+    {
+     "tick": 0,
+     "after": "actions",
+     "packets": [
+      {
+       "type": "block_update",
+       "pos": [
+        5,
+        16,
+        20
+       ],
+       "state": "minecraft:water[level=0]"
+      },
+      {
+       "type": "block_update",
+       "pos": [
+        5,
+        15,
+        26
+       ],
+       "state": "minecraft:water[level=0]"
+      }
+     ]
+    },
+    {
+     "tick": 1,
+     "after": "tick",
+     "packets": []
+    },
+    {
+     "tick": 2,
+     "after": "tick",
+     "packets": []
+    },
+    {
+     "tick": 3,
+     "after": "tick",
+     "packets": []
+    },
+    {
+     "tick": 4,
+     "after": "tick",
+     "packets": []
+    },
+    {
+     "tick": 5,
+     "after": "tick",
+     "packets": [
+      {
+       "type": "section_blocks_update",
+       "section": [
+        0,
+        0,
+        1
+       ],
+       "blocks": [
+        {
+         "pos": [
+          5,
+          15,
+          25
+         ],
+         "state": "minecraft:water[level=1]"
+        },
+        {
+         "pos": [
+          6,
+          15,
+          26
+         ],
+         "state": "minecraft:water[level=1]"
+        },
+        {
+         "pos": [
+          4,
+          15,
+          26
+         ],
+         "state": "minecraft:water[level=1]"
+        },
+        {
+         "pos": [
+          5,
+          15,
+          27
+         ],
+         "state": "minecraft:water[level=1]"
+        }
+       ],
+       "bytes": "0000000000100000049fcb16afcd16afc916bfcb16"
+      },
+      {
+       "type": "section_blocks_update",
+       "section": [
+        0,
+        1,
+        1
+       ],
+       "blocks": [
+        {
+         "pos": [
+          6,
+          16,
+          20
+         ],
+         "state": "minecraft:water[level=1]"
+        },
+        {
+         "pos": [
+          5,
+          16,
+          19
+         ],
+         "state": "minecraft:water[level=1]"
+        },
+        {
+         "pos": [
+          5,
+          16,
+          21
+         ],
+         "state": "minecraft:water[level=1]"
+        },
+        {
+         "pos": [
+          4,
+          16,
+          20
+         ],
+         "state": "minecraft:water[level=1]"
+        }
+       ],
+       "bytes": "000000000010000104c0cc16b0ca16d0ca16c0c816"
+      }
+     ]
+    },
+    {
+     "tick": 6,
+     "after": "tick",
+     "packets": []
+    },
+    {
+     "tick": 7,
+     "after": "tick",
+     "packets": []
+    },
+    {
+     "tick": 8,
+     "after": "tick",
+     "packets": []
+    },
+    {
+     "tick": 9,
+     "after": "tick",
+     "packets": []
+    },
+    {
+     "tick": 10,
+     "after": "tick",
+     "packets": [
+      {
+       "type": "section_blocks_update",
+       "section": [
+        0,
+        0,
+        1
+       ],
+       "blocks": [
+        {
+         "pos": [
+          4,
+          15,
+          25
+         ],
+         "state": "minecraft:water[level=2]"
+        },
+        {
+         "pos": [
+          6,
+          15,
+          27
+         ],
+         "state": "minecraft:water[level=2]"
+        },
+        {
+         "pos": [
+          7,
+          15,
+          26
+         ],
+         "state": "minecraft:water[level=2]"
+        },
+        {
+         "pos": [
+          3,
+          15,
+          26
+         ],
+         "state": "minecraft:water[level=2]"
+        },
+        {
+         "pos": [
+          4,
+          15,
+          27
+         ],
+         "state": "minecraft:water[level=2]"
+        },
+        {
+         "pos": [
+          6,
+          15,
+          25
+         ],
+         "state": "minecraft:water[level=2]"
+        }
+       ],
+       "bytes": "0000000000100000069fe916bfed16afef16afe716bfe9169fed16"
+      },
+      {
+       "type": "section_blocks_update",
+       "section": [
+        0,
+        1,
+        1
+       ],
+       "blocks": [
+        {
+         "pos": [
+          4,
+          16,
+          19
+         ],
+         "state": "minecraft:water[level=2]"
+        },
+        {
+         "pos": [
+          7,
+          16,
+          20
+         ],
+         "state": "minecraft:water[level=2]"
+        },
+        {
+         "pos": [
+          6,
+          16,
+          19
+         ],
+         "state": "minecraft:water[level=2]"
+        },
+        {
+         "pos": [
+          4,
+          16,
+          21
+         ],
+         "state": "minecraft:water[level=2]"
+        },
+        {
+         "pos": [
+          3,
+          16,
+          20
+         ],
+         "state": "minecraft:water[level=2]"
+        },
+        {
+         "pos": [
+          6,
+          16,
+          21
+         ],
+         "state": "minecraft:water[level=2]"
+        }
+       ],
+       "bytes": "000000000010000106b0e816c0ee16b0ec16d0e816c0e616d0ec16"
+      }
+     ]
+    },
+    {
+     "tick": 11,
+     "after": "tick",
+     "packets": []
+    },
+    {
+     "tick": 12,
+     "after": "tick",
+     "packets": []
+    },
+    {
+     "tick": 13,
+     "after": "tick",
+     "packets": []
+    },
+    {
+     "tick": 14,
+     "after": "tick",
+     "packets": []
+    },
+    {
+     "tick": 15,
+     "after": "tick",
+     "packets": [
+      {
+       "type": "section_blocks_update",
+       "section": [
+        0,
+        0,
+        1
+       ],
+       "blocks": [
+        {
+         "pos": [
+          3,
+          15,
+          27
+         ],
+         "state": "minecraft:water[level=3]"
+        },
+        {
+         "pos": [
+          7,
+          15,
+          27
+         ],
+         "state": "minecraft:water[level=3]"
+        },
+        {
+         "pos": [
+          7,
+          15,
+          25
+         ],
+         "state": "minecraft:water[level=3]"
+        },
+        {
+         "pos": [
+          3,
+          15,
+          25
+         ],
+         "state": "minecraft:water[level=3]"
+        }
+       ],
+       "bytes": "000000000010000004bf8717bf8f179f8f179f8717"
+      },
+      {
+       "type": "section_blocks_update",
+       "section": [
+        0,
+        1,
+        1
+       ],
+       "blocks": [
+        {
+         "pos": [
+          7,
+          16,
+          21
+         ],
+         "state": "minecraft:water[level=3]"
+        },
+        {
+         "pos": [
+          3,
+          16,
+          21
+         ],
+         "state": "minecraft:water[level=3]"
+        },
+        {
+         "pos": [
+          7,
+          16,
+          19
+         ],
+         "state": "minecraft:water[level=3]"
+        },
+        {
+         "pos": [
+          3,
+          16,
+          19
+         ],
+         "state": "minecraft:water[level=3]"
+        }
+       ],
+       "bytes": "000000000010000104d08e17d08617b08e17b08617"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "_notes": "The block change packets a vanilla player receives, in the order received, recorded by the asset generator's capture-scenarios (ScenarioPacketCaptures.cs, ScenarioClient.cs): a headless client logged in to a headless vanilla server in a void world, standing at `player` in creative mode, with random ticks, mob spawning and weather off and `chunks` force-loaded and sent to it. The game is frozen and stepped one tick at a time; a frozen server still ticks, and each of its ticks sends the block changes made since the last (vanilla's chunk broadcast) and then the prediction acknowledgements. Setup fills place blocks without updates (/fill strict), and `hand` is put in the player's main hand. Each tick t from 0 to `ticks`: for t > 0, the game steps one tick; then the tick's actions run: a live /setblock (with updates), or the client using its main hand's item on a block's face (clicking the face's centre) or starting to break a block, each with the prediction sequence it names; the client's own sequences for waiting on ticks start at 1000000 and aren't recorded. Segments hold what the client received after each step (`after: tick`) and after each tick's actions (`after: actions`), up to the first server tick after it: block updates, section updates (with their body's bytes), block events, and acknowledgements. States are full states with every property, sorted by name; coordinates are absolute.",
+ "version": "26.3"
+}

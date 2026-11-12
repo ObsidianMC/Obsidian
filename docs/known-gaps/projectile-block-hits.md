@@ -1,0 +1,39 @@
+# Projectile block hits
+
+**Status:** partial. Every projectile that hits a block goes through one path (`ProjectileBlockHits`), at the point
+of its tick where vanilla's `onHitBlock` runs: the block reacts, then the projectile's own block reaction, then
+`projectile_land`, then what the projectile does on any hit. Target blocks (power, the `target_hit` statistic and
+criterion), campfires, candles and candle cakes lit by burning projectiles, TNT primed by them, chorus flowers and
+pointed dripstone or sulfur spikes broken by projectiles, Channeling's lightning on a lightning rod (the rod powered
+and sparking, the strike, the bolt's whole life; see [lightning](lightning.md)), wooden buttons pressed by arrows,
+and big dripleaves tilted fully by arrows and snowballs (including powered leaves and the scheduled reset)
+are checked against vanilla by `projectile_block_hits.json` (see [scenario captures](../scenario-captures.md)). `VanillaProjectileHits` pins each difference below by case and field,
+and fails once one goes.
+
+## Differences the replay pins
+
+- **Arrows press wooden buttons after they hit.** Vanilla's arrow presses a button it moves through during its move,
+  before its own hit, so the click and `block_activate` come before the arrow's sound and `projectile_land`. Obsidian's
+  contact pass (#723) runs straight after the arrow's tick, so the press follows the hit. Touching the blocks along a
+  projectile's move, before it hits, is where that changes (`arrow_oak_button`, `spectral_arrow_oak_button`,
+  `trident_oak_button`).
+- **Water doesn't put out a burning arrow,** so vanilla's extinguish sound as a flaming arrow enters a waterlogged
+  campfire is missing (`flaming_arrow_waterlogged_campfire`).
+- **Experience orbs don't emit `hit_ground`** as they land (`experience_bottle_target`).
+- **Shulker bullets fly as arrows.** Obsidian's bullet stops at the block it hits; vanilla's moves on into it before
+  it's destroyed, so its `entity_damage` comes from a block lower (`shulker_bullet_target`).
+- **A grounded bobber rests.** Vanilla's bobber, lying on the block it hit, hits it again on its second and fourth
+  ticks (a zero-length hit test on its surface), counting `target_hit` each time; Obsidian's rests
+  (`fishing_bobber_target`).
+
+## Not captured
+
+- **Other projectile coverage.** This fixture omits player wind charges and lingering potions. The ominous trial
+  release probes cover their flight, bursts and potion break events; lingering area-effect clouds remain a gap.
+- **Firework rockets** don't take the path: their flight ends on any collision.
+- **Projectile flight.** The cases start each projectile just above the block, falling straight at it, so that the hit
+  lands on the same tick on both sides. Obsidian moves thrown and hurting projectiles with gravity and drag after the
+  move, where vanilla applies them before; longer flights can land elsewhere or later.
+- **Explosion fire.** With `mob_griefing` on, a ghast's fireball sets one fire where it lands instead of vanilla's
+  explosion fires. The cases run with it off, as explosions' random drops would otherwise differ.
+- **Projectiles hitting entities** keep their own paths, which this change didn't touch.

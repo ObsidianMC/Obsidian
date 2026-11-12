@@ -1,4 +1,6 @@
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Entities.AI;
+using Obsidian.WorldData;
 using Obsidian.WorldData.Structures;
 
 namespace Obsidian.Entities;
@@ -6,6 +8,13 @@ namespace Obsidian.Entities;
 [MinecraftEntity("minecraft:silverfish")]
 public sealed partial class Silverfish : PathfinderMob
 {
+    // Vanilla's silverfish sets itself up only as every mob does: Mob.finalizeSpawn, from the level's random.
+    internal override SpawnCompanions FinalizeBareSpawn(AbstractLevel level, IRandomSource random)
+    {
+        FinalizeMobSpawnFromLevel(random);
+        return default;
+    }
+
     private int wakeTicks;
     private static readonly Vector[] directions = [new(1, 0, 0), new(-1, 0, 0), new(0, 1, 0), new(0, -1, 0), new(0, 0, 1), new(0, 0, -1)];
     public Silverfish() => Type = EntityType.Silverfish;

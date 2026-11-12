@@ -80,7 +80,7 @@ public abstract partial class AbstractLevel
         if (!mayBuild && (state.Is(RedstoneRepeater.BlockId) || RedstoneComparator.IsComparator(state)))
             return false;
 
-        return await BasicRedstoneComponents.TryUseAsync(this, position, state, player);
+        return await BasicRedstoneComponents.TryUseAsync(this, this.RedstoneEngine, position, state, player);
     }
 
     /// <summary>
@@ -95,12 +95,6 @@ public abstract partial class AbstractLevel
 
         return state is not null && await BasicRedstoneComponents.TriggerAsync(this, position, state);
     }
-
-    /// <summary>
-    /// The block an arrow hit reacts with: a target block takes power for a while (see <see cref="TargetBlock"/>).
-    /// </summary>
-    internal ValueTask OnProjectileHitBlockAsync(Vector block, VectorD location, BlockFace face) =>
-        this.RedstoneInstall.Targets.HitAsync(block, location, face, TargetBlock.ArrowPulseTicks);
 
     /// <summary>
     /// Vanilla's <c>updateNeighbourForOutputSignal</c> for a container whose items changed: the comparators beside

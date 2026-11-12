@@ -1,4 +1,6 @@
+using System.Collections.Immutable;
 using Obsidian.API.Inventory;
+using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Loot;
 using Obsidian.Entities.AI;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -7,6 +9,38 @@ namespace Obsidian.Entities;
 
 internal static class CombatEffects
 {
+    // The campfire enchantment effect reads feet only, including an armor stand's equipment. Avoid the armor
+    // iterator and enchantment applicability/LINQ scans on this per-contact path.
+    internal static bool HasFrostWalker(Living entity)
+    {
+        var boots = entity switch
+        {
+            IPlayer player => player.Inventory.GetItem(8),
+            Mob mob => mob.GetEquipment(EquipmentSlot.Boots),
+            ArmorStand stand => stand.GetEquipment(EquipmentSlot.Boots),
+            _ => null
+        };
+        return HasEnchantment(boots, EnchantmentsRegistry.FrostWalker.Id);
+    }
+
+    internal static bool HasEnchantment(ItemStack? item, int id)
+    {
+        if (item is not { Count: > 0, IsAir: false })
+            return false;
+
+        var component = item.GetComponent<SimpleDataComponent<ImmutableArray<Enchantment>>>(DataComponentType.Enchantments);
+        if (component is null)
+            return false;
+
+        foreach (var enchantment in component.Value)
+        {
+            if (enchantment.Id == id && enchantment.Level > 0)
+                return true;
+        }
+
+        return false;
+    }
+
     internal static IEnumerable<(ItemStack Item, string Slot)> Armor(Living entity)
     {
         if (entity is IPlayer player)
@@ -31,7 +65,12 @@ internal static class CombatEffects
     internal static float Protect(Living entity, float amount, CombatDamageKind kind)
     {
         if (kind is CombatDamageKind.Void or CombatDamageKind.Starvation) return amount;
-        if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact && entity.HasPotionEffect((int)PotionEffect.FireResistance - 1)) return 0;
+        if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact
+            or CombatDamageKind.Campfire or CombatDamageKind.HotFloor
+            && entity.HasPotionEffect((int)PotionEffect.FireResistance - 1))
+        {
+            return 0;
+        }
         if (entity.ActivePotionEffects.TryGetValue((int)PotionEffect.Resistance - 1, out var resistance))
             amount *= Math.Max(0, 1 - 0.2f * (resistance.EffectData.Amplifier + 1));
         if (kind == CombatDamageKind.SonicBoom) return amount;
@@ -42,7 +81,9 @@ internal static class CombatEffects
             protection += kind switch
             {
                 CombatDamageKind.Fall => 3 * CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.FeatherFalling),
-                CombatDamageKind.Fire or CombatDamageKind.FireContact => 2 * CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.FireProtection),
+                CombatDamageKind.Fire or CombatDamageKind.FireContact
+                    or CombatDamageKind.Campfire or CombatDamageKind.HotFloor =>
+                    2 * CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.FireProtection),
                 CombatDamageKind.Explosion => 2 * CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.BlastProtection),
                 CombatDamageKind.Projectile => 2 * CombatItems.EnchantmentLevel(item, EnchantmentsRegistry.ProjectileProtection), _ => 0
             };

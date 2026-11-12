@@ -96,9 +96,10 @@ public class AbstractHorse : Animal, IRideable
 
             Health = Math.Min(GetAttributeValue("minecraft:generic.max_health"), Health + heal);
             Temper = Math.Min(MaximumTemper, Temper + (breedingFood ? 5 : 3));
-            if (IsBaby)
+            // Vanilla's AbstractHorse.handleEating: a locked baby eats without growing.
+            if (IsBaby && !AgeLocked)
             {
-                Age = Math.Min(0, Age + (food == ItemsRegistry.HayBlock ? 3600 : 1200));
+                Grow(food == ItemsRegistry.HayBlock ? 3600 : 1200);
             }
             else if (tamed && breedingFood && Age == 0)
             {
@@ -186,7 +187,7 @@ public class AbstractHorse : Animal, IRideable
         if (!SupportsSaddle || !HasSaddle)
             return;
         Yaw = Rider.Yaw;
-        Pitch = Rider.Pitch.Degrees * 0.5f;
+        Pitch = Rider.Pitch * 0.5f;
         var input = Rider.Input;
         var forward = (input.HasFlag(PlayerInput.Forward) ? 1f : 0) - (input.HasFlag(PlayerInput.Backward) ? 1f : 0);
         var sideways = (input.HasFlag(PlayerInput.Left) ? 0.5f : 0) - (input.HasFlag(PlayerInput.Right) ? 0.5f : 0);

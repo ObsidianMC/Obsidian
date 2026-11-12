@@ -1,3 +1,4 @@
+using Obsidian.API.Blocks;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Entities.AI;
@@ -21,7 +22,7 @@ internal sealed class MobProjectile : Entity
     /// <summary>The potion item a player threw, shown to clients; a mob's splash shows its own potion.</summary>
     internal ItemStack? SplashItem { get; set; }
 
-    internal IEntity? Owner { get; private set; }
+    internal IEntity? Owner { get; set; }
 
     private Guid ownerUuid;
     private VectorD acceleration;
@@ -35,7 +36,8 @@ internal sealed class MobProjectile : Entity
         Type = type;
         var size = type == EntityType.Fireball ? 1 : 0.3125f;
         Dimension = new EntityDimension { Width = size, Height = size };
-        NoGravity = type is not (EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion);
+        NoGravity = type is not (EntityType.Snowball or EntityType.LlamaSpit
+            or EntityType.SplashPotion or EntityType.LingeringPotion);
     }
 
     [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
@@ -59,17 +61,33 @@ internal sealed class MobProjectile : Entity
         };
 
         Motion = direction * (speed ?? defaultSpeed);
-        var thrown = type is EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion;
+        var thrown = type is EntityType.Snowball or EntityType.LlamaSpit
+            or EntityType.SplashPotion or EntityType.LingeringPotion;
         acceleration = thrown ? VectorD.Zero : direction * 0.1f;
-        NoGravity = type is not (EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion);
+        NoGravity = type is not (EntityType.Snowball or EntityType.LlamaSpit
+            or EntityType.SplashPotion or EntityType.LingeringPotion);
     }
 
-    public override void SpawnEntity(Velocity? velocity = null, int additionalData = 0)
+    /// <summary>
+    /// A projectile nothing shot, like a dispenser's: it moves by <paramref name="motion"/> from
+    /// <paramref name="position"/>, and a fireball keeps speeding up along it.
+    /// </summary>
+    [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
+    internal MobProjectile(ILevel level, EntityType type, VectorD position, VectorD motion)
+        : this(level, type)
     {
-        base.SpawnEntity(velocity ?? new Velocity(Motion.X, Motion.Y, Motion.Z), Owner?.EntityId ?? 0);
-        if (Level is AbstractLevel level)
-            level.EmitGameEvent(MobGameEvent.ProjectileShoot, Position, Owner ?? this);
+        EntityId = Server.GetNextEntityId();
+        Position = position;
+        BoundingBox = Dimension.CreateBBFromPosition(Position);
+        Motion = motion;
+
+        var thrown = type is EntityType.Snowball or EntityType.LlamaSpit
+            or EntityType.SplashPotion or EntityType.LingeringPotion;
+        acceleration = thrown || motion.Magnitude < 0.0001f ? VectorD.Zero : motion / motion.Magnitude * 0.1f;
     }
+
+    public override void SpawnEntity(Velocity? velocity = null, int additionalData = 0) =>
+        base.SpawnEntity(velocity ?? new Velocity(Motion.X, Motion.Y, Motion.Z), Owner?.EntityId ?? 0);
 
     public override ValueTask DamageAsync(IEntity source, float amount = 1)
     {
@@ -108,25 +126,39 @@ internal sealed class MobProjectile : Entity
             Owner = level.FindEntity(ownerUuid);
 
         resolveOwner = false;
+
+        // Vanilla's LlamaSpit runs the base tick, and is shot, before it moves; the others once they have moved.
+        if (Type == EntityType.LlamaSpit)
+            this.EmitShotOnce(Owner);
+
         var terrain = new MobTerrain(Level);
-        var blockFraction = FindBlockHitFraction(terrain);
-        var (target, fraction) = FindEntityHit(blockFraction);
+        var blockHit = ProjectileBlockHits.Find(terrain, Position, Motion);
+        var (target, fraction) = FindEntityHit(blockHit?.Fraction ?? 1);
         var next = Position + Motion * fraction;
         if (!level.TryMoveEntity(this, Position, next))
             return;
 
         Position = next;
         BoundingBox = Dimension.CreateBBFromPosition(Position);
-        if (fraction < 1 || target != null)
+        this.EmitShotOnce(Owner);
+        if (target != null)
         {
             await ImpactAsync(level, terrain, target);
             return;
         }
 
-        if (Type is EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion)
+        if (blockHit is { } hit)
         {
-            var gravity = Type == EntityType.SplashPotion ? 0.05f : 0.03f;
-            Motion = Motion * 0.99f - new VectorD(0, gravity, 0);
+            await HitBlockAsync(level, terrain, hit);
+            return;
+        }
+
+        if (Type is EntityType.Snowball or EntityType.LlamaSpit
+            or EntityType.SplashPotion or EntityType.LingeringPotion)
+        {
+            // Vanilla throwable flight applies gravity before air drag; arrows use the opposite order.
+            var gravity = Type is EntityType.SplashPotion or EntityType.LingeringPotion ? 0.05 : 0.03;
+            Motion = (Motion - new VectorD(0, gravity, 0)) * 0.99;
         }
         else
         {
@@ -134,25 +166,6 @@ internal sealed class MobProjectile : Entity
         }
 
         BroadcastFlight();
-    }
-
-    /// <summary>
-    /// The fraction of this tick's motion the projectile travels before it meets a block (1 when it meets none).
-    /// </summary>
-    private double FindBlockHitFraction(MobTerrain terrain)
-    {
-        var end = Position + Motion;
-        var min = VectorD.Min(Position, end) - new VectorD(0.3f);
-        var max = VectorD.Max(Position, end) + new VectorD(0.3f);
-        var swept = new BoundingBox(min, max);
-        var fraction = 1d;
-        foreach (var shape in terrain.GetCollisions(swept))
-        {
-            if (MobTerrain.RayIntersection(shape, Position, Motion) is double hit)
-                fraction = Math.Min(fraction, hit);
-        }
-
-        return fraction;
     }
 
     /// <summary>
@@ -192,8 +205,62 @@ internal sealed class MobProjectile : Entity
         || ReferenceEquals(candidate, Owner) && age < 25
         || candidate is IPlayer player && player.GameMode is GameMode.Creative or GameMode.Spectator;
 
-    /// <summary>Splashes, damages, explodes or sets fire where the projectile landed, then removes it.</summary>
-    private async ValueTask ImpactAsync(AbstractLevel level, MobTerrain terrain, IEntity? target)
+    // Vanilla's onHitBlock through the shared hit path, then what the projectile does on any hit (its onHit).
+    private async ValueTask HitBlockAsync(AbstractLevel level, MobTerrain terrain, ProjectileBlockHit hit)
+    {
+        if (!await ProjectileBlockHits.HitAsync(level, this, Owner, hit, () => this.OnBlockHitAsync(level, hit)))
+            return;
+
+        switch (Type)
+        {
+            case EntityType.SplashPotion:
+                await SplashAsync(null);
+                break;
+            case EntityType.LingeringPotion:
+                this.SendPotionBreak();
+                break;
+            case EntityType.Fireball:
+                await level.ExplodeAsync(this, 1, Owner);
+
+                // Vanilla's explosion sets fires while mob_griefing is on; Obsidian sets one where it landed.
+                if (level.LevelData.GetBooleanRule("mob_griefing"))
+                    await TrySetFireAsync(level, terrain);
+
+                break;
+            case EntityType.Snowball:
+                BroadcastCrack();
+                break;
+        }
+
+        await RemoveAsync();
+    }
+
+    // The block reactions of vanilla's onHitBlock overrides, once the block reacted: a small fireball sets fire in
+    // the empty cell in front of the face it hit, unless it's a mob's while mob_griefing is off; llama spit is gone.
+    private async ValueTask OnBlockHitAsync(AbstractLevel level, ProjectileBlockHit hit)
+    {
+        if (Type == EntityType.LlamaSpit)
+        {
+            await RemoveAsync();
+            return;
+        }
+
+        if (Type != EntityType.SmallFireball)
+            return;
+
+        if (Owner is Mob && !level.LevelData.GetBooleanRule("mob_griefing"))
+            return;
+
+        var fire = hit.Block + hit.Face.ToVector();
+        if (!level.BlockUpdates.GetBlock(fire).IsAir)
+            return;
+
+        var state = FireBlockBehavior.StateFor(level.BlockUpdates, fire);
+        level.BlockUpdates.SetBlock(fire, state, BlockUpdateFlags.All);
+    }
+
+    /// <summary>Splashes, damages, explodes or sets fire where the projectile hit an entity, then removes it.</summary>
+    private async ValueTask ImpactAsync(AbstractLevel level, MobTerrain terrain, IEntity target)
     {
         level.EmitGameEvent(MobGameEvent.ProjectileLand, Position, this, Owner);
         if (Type == EntityType.SplashPotion)
@@ -203,8 +270,16 @@ internal sealed class MobProjectile : Entity
             return;
         }
 
-        if (target != null)
-            await DamageTargetAsync(target);
+        if (Type == EntityType.LingeringPotion)
+        {
+            // Cloud application is still a documented gap. A lingering potion must nevertheless shatter without
+            // entering the fireball damage/fire path or applying its effects as a splash.
+            this.SendPotionBreak();
+            await this.RemoveAsync();
+            return;
+        }
+
+        await DamageTargetAsync(target);
 
         if (Type == EntityType.Fireball)
             await level.ExplodeAsync(this, 1, Owner);
@@ -212,14 +287,17 @@ internal sealed class MobProjectile : Entity
         if (Type is not EntityType.Snowball and not EntityType.LlamaSpit)
             await TrySetFireAsync(level, terrain);
 
-        // Vanilla's Snowball.onHit: entity event 3, the client's snowball crack particles.
         if (Type == EntityType.Snowball)
-        {
-            var crack = new EntityEventPacket { EntityId = EntityId, Event = 3 };
-            PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, crack);
-        }
+            BroadcastCrack();
 
         await RemoveAsync();
+    }
+
+    // Vanilla's Snowball.onHit: entity event 3, the client's snowball crack particles.
+    private void BroadcastCrack()
+    {
+        var crack = new EntityEventPacket { EntityId = EntityId, Event = 3 };
+        PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, crack);
     }
 
     private async ValueTask DamageTargetAsync(IEntity target)
@@ -290,8 +368,12 @@ internal sealed class MobProjectile : Entity
         tag.Set(new NbtTag<int>("ObsidianSplashEffect", SplashEffect));
         tag.Set(new NbtTag<int>("ObsidianSplashDuration", SplashDuration));
         tag.Set(new NbtTag<int>("ObsidianSplashAmplifier", SplashAmplifier));
-        if (ownerUuid != Guid.Empty)
-            tag.Set(new NbtArray<int>("Owner", EntityNbt.UuidToInts(ownerUuid)));
+        if (this.Type is EntityType.SplashPotion or EntityType.LingeringPotion && this.SplashItem is ItemStack item)
+            tag.Set(item.ToNbt("Item"));
+
+        var owner = this.Owner?.Uuid ?? this.ownerUuid;
+        if (owner != Guid.Empty)
+            tag.Set(new NbtArray<int>("Owner", EntityNbt.UuidToInts(owner)));
     }
 
     internal override void ReadNbt(NbtCompound tag)
@@ -302,11 +384,19 @@ internal sealed class MobProjectile : Entity
         SplashDuration = Math.Max(0, duration);
         var amplifier = tag.TryGetNumber<int>("ObsidianSplashAmplifier", out var savedAmplifier) ? savedAmplifier : 0;
         SplashAmplifier = Math.Clamp(amplifier, 0, 10);
+        if (this.Type is EntityType.SplashPotion or EntityType.LingeringPotion
+            && tag.TryGetTag<NbtCompound>("Item", out var item))
+        {
+            this.SplashItem = item.ItemFromNbt();
+            var contents = this.SplashItem?.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents);
+            this.SplashEffects = [.. ArrowPotionEffects.Get(contents)];
+        }
         if (tag.TryGetNumber<int>("ObsidianLife", out var life))
             age = Math.Clamp(life, 0, 600);
 
         var hasAcceleration = EntityNbt.TryReadVector(tag, "ObsidianAcceleration", out acceleration);
-        var accelerates = Type is not (EntityType.Snowball or EntityType.LlamaSpit or EntityType.SplashPotion);
+        var accelerates = Type is not (EntityType.Snowball or EntityType.LlamaSpit
+            or EntityType.SplashPotion or EntityType.LingeringPotion);
         if (!hasAcceleration && accelerates && Motion.Magnitude > 0.001f)
             acceleration = Motion / Motion.Magnitude * 0.1f;
 
@@ -319,7 +409,7 @@ internal sealed class MobProjectile : Entity
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
-        if (Type != EntityType.SplashPotion)
+        if (Type is not (EntityType.SplashPotion or EntityType.LingeringPotion))
             return;
 
         writer.WriteEntityMetadataType(8, EntityMetadataType.Slot);
@@ -347,9 +437,30 @@ internal sealed class MobProjectile : Entity
                 await ApplySplashEffectAsync(living, effect, strength, undead);
         }
 
-        var particles = new LevelEventPacket(2002, (Vector)Position.Floor(), 0x385dc6);
-        PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, particles);
+        this.SendPotionBreak();
     }
+
+    private void SendPotionBreak()
+    {
+        var effects = this.GetSplashEffects();
+        var contents = this.SplashItem?.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents);
+        var color = contents?.CustomColor ?? PotionColors.Mix(effects);
+        // Vanilla's AbstractThrownPotion.onHit: the potion's particles (instant ones for an instant potion), then its
+        // sound, which is a level event of its own.
+        var block = (Vector)Position.Floor();
+        // Custom instant effects still use the normal break events. Only the base potion selects the instant pair.
+        var instant = contents?.Potion is Potion.Healing or Potion.StrongHealing or Potion.Harming or Potion.StrongHarming;
+        var particles = new LevelEventPacket(instant ? 2007 : 2002, block, color);
+        PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, particles);
+        if (!Silent)
+        {
+            var sound = new LevelEventPacket(instant ? 1054 : 1053, block, 0);
+            PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, sound);
+        }
+    }
+
+    private static bool IsInstant(int effect) =>
+        effect == (int)PotionEffect.InstantDamage - 1 || effect == (int)PotionEffect.InstantHealth - 1;
 
     private IReadOnlyList<PotionEffectData> GetSplashEffects()
     {
@@ -373,7 +484,8 @@ internal sealed class MobProjectile : Entity
 
     private bool IsOutOfSplash(Living living) =>
         !living.Alive
-        || Math.Abs(living.Position.Y - Position.Y) > 2
+        || living.Position.Y + living.Dimension.Height <= this.Position.Y - 2
+        || living.Position.Y >= this.Position.Y + this.Dimension.Height + 2
         || living is IPlayer { GameMode: GameMode.Creative or GameMode.Spectator };
 
     private static bool IsSplashUndead(EntityType? type) =>

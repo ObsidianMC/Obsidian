@@ -1,4 +1,5 @@
 using Obsidian.API.Inventory;
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Entities.AI;
 using Obsidian.WorldData;
 
@@ -33,6 +34,31 @@ public partial class Skeleton : PathfinderMob
         targets.AddGoal(3, new NearestAttackableTargetGoal(this, entity => entity.Type == EntityType.IronGolem));
         targets.AddGoal(3, new NearestAttackableTargetGoal(this, entity => entity.Type == EntityType.Turtle &&
             entity is IAgeable { IsBaby: true } && entity.MovementFlags.HasFlag(MovementFlags.OnGround)));
+    }
+
+    /// <summary>
+    /// Vanilla's <c>AbstractSkeleton.finalizeSpawn</c> with the level's random, in vanilla's order: the base spawn
+    /// setup, the type's default equipment, its enchantments, picking up loot and, on Halloween, a pumpkin.
+    /// </summary>
+    internal override SpawnCompanions FinalizeBareSpawn(AbstractLevel level, IRandomSource random)
+    {
+        var special = SpecialDifficulty;
+        FinalizeMobSpawnFromLevel(random);
+        PopulateBareEquipment(random, special);
+        CanPickUpLoot = random.NextFloat() < 0.55f * special;
+        PutOnHalloweenHeadFromLevel(level, random);
+        return default;
+    }
+
+    /// <summary>
+    /// Vanilla's <c>AbstractSkeleton</c> default equipment and its enchantments, from the level's random: armour, a
+    /// bow, then the enchantments of what it holds and wears.
+    /// </summary>
+    private protected virtual void PopulateBareEquipment(IRandomSource random, float special)
+    {
+        PopulateDefaultArmor(random.NextFloat, random.NextInt, special);
+        SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(ItemsRegistry.Bow));
+        PopulateEquipmentEnchantmentsFromLevel(random, special);
     }
 
     protected override void FinalizeSpawn()
@@ -191,7 +217,7 @@ internal sealed class BowAttackGoal(Skeleton skeleton) : NavigationGoal(skeleton
         {
             if (distance > 225 * 0.75f) backwards = false;
             else if (distance < 225 * 0.25f) backwards = true;
-            skeleton.Yaw = LookControl.RotateTowards(skeleton.Yaw.Degrees,
+            skeleton.Yaw = LookControl.RotateTowards(skeleton.Yaw,
                 (float)(Math.Atan2(target.Position.Z - skeleton.Position.Z, target.Position.X - skeleton.Position.X) * 180 / Math.PI - 90), 30);
             skeleton.MoveControl.Strafe(backwards ? -0.5f : 0.5f, clockwise ? 0.5f : -0.5f);
         }
@@ -242,7 +268,7 @@ public sealed partial class Stray : Skeleton
     internal override int ArrowEffectDuration => 600;
 }
 
-public sealed class Bogged : Skeleton
+public sealed class Bogged : Skeleton, IShearable
 {
     public Bogged()
     {
@@ -251,6 +277,25 @@ public sealed class Bogged : Skeleton
     }
     public bool Sheared { get; set; }
     protected override string? SoundName => "bogged";
+
+    /// <inheritdoc/>
+    public bool ReadyForShearing => Alive && !Sheared;
+
+    /// <summary>Vanilla's <c>Bogged.shear</c>: its shearing sound, then two mushrooms, each red or brown.</summary>
+    public ValueTask ShearAsync(SoundCategory category)
+    {
+        Shearing.PlaySound(this, "minecraft:entity.bogged.shear", category);
+        DropMushrooms();
+        Sheared = true;
+        SynchronizeMetadata();
+        return default;
+    }
+
+    private void DropMushrooms()
+    {
+        for (var index = 0; index < 2; index++)
+            DropItem(Random.Next(2) == 0 ? ItemsRegistry.RedMushroom : ItemsRegistry.BrownMushroom);
+    }
     public override string? TranslationKey { get; protected set; } = "entity.minecraft.bogged";
     internal override int ArrowEffect => 18;
     internal override int ArrowEffectDuration => 100;
@@ -267,8 +312,7 @@ public sealed class Bogged : Skeleton
         if (held is not { Count: > 0, Holder.Id: ItemIds.Shears })
             return false;
         Sheared = true;
-        for (var index = 0; index < 2; index++)
-            DropItem(Random.Next(2) == 0 ? ItemsRegistry.RedMushroom : ItemsRegistry.BrownMushroom);
+        DropMushrooms();
         await DamageInteractionToolAsync(player, hand);
         SynchronizeMetadata();
         return true;

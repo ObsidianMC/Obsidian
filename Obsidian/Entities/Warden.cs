@@ -100,7 +100,7 @@ public sealed partial class Warden : PathfinderMob
         idleTicks = 0;
     }
 
-    protected override bool CanTakeDamage(IEntity source) => Pose is not (Pose.Digging or Pose.Emerging);
+    protected override bool CanTakeDamage(IEntity? source) => Pose is not (Pose.Digging or Pose.Emerging);
 
     protected override ValueTask OnHurtAsync(IEntity source)
     {

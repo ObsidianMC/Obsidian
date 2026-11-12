@@ -129,19 +129,16 @@ internal static class BucketItems
         var fluid = FluidState.Of(block);
         var powder = block.Is(BlockIds.PowderSnow);
         var waterlogged = block.GetProperty("waterlogged") == "true";
-        if (!powder && !waterlogged && !(block.IsLiquidBlock() && fluid.IsSource))
+        if (PickupItem(block) is not Item filled)
             return UseResult.Fail;
 
-        var filled = ItemsRegistry.WaterBucket;
         var sound = "minecraft:item.bucket.fill";
         if (powder)
         {
-            filled = ItemsRegistry.PowderSnowBucket;
             sound = "minecraft:item.bucket.fill_powder_snow";
         }
         else if (fluid.IsLava)
         {
-            filled = ItemsRegistry.LavaBucket;
             sound = "minecraft:item.bucket.fill_lava";
         }
 
@@ -162,9 +159,10 @@ internal static class BucketItems
             if (unsupported)
                 use.Level.BlockUpdates.SetBlock(use.Position, BlocksRegistry.Air);
 
+            // Vanilla's createFilledResult, in the same commit as the source it empties.
+            use.ExchangeRemainder = BlockUseReturn.Exchange(use, new ItemStack(filled, 1));
             return true;
-        },
-            exchangeResult: new ItemStack(filled, 1)))
+        }))
         {
             return UseResult.Fail;
         }
@@ -249,7 +247,8 @@ internal static class BucketItems
         if (placing.IsCancelled)
             return UseResult.Fail;
 
-        var committed = use.TryCommit(() =>
+        // The pour itself, inside the commit.
+        bool Pour()
         {
             if (!level.BlockUpdates.GetBlock(destination).IsSameState(previous)
                 || !ReferenceEquals(level.GetResidentBlockEntity(destination), entity))
@@ -294,8 +293,20 @@ internal static class BucketItems
             // Pouring into an existing source succeeds even if setting that identical state makes no change.
             return level.BlockUpdates.SetBlock(destination, final, BlockUpdateFlags.AllImmediate)
                 || previous.IsSameState(final);
-        }, exchangeResult: use.Player.GameMode == GameMode.Creative
-            ? null : new ItemStack(ItemsRegistry.Bucket, 1));
+        }
+
+        var committed = use.TryCommit(() =>
+        {
+            if (!Pour())
+                return false;
+
+            // Vanilla's getEmptySuccessItem: outside creative mode the poured bucket becomes an empty one, in the same
+            // commit.
+            if (use.Player.GameMode != GameMode.Creative)
+                BlockUseReturn.Exchange(use, new ItemStack(ItemsRegistry.Bucket, 1));
+
+            return true;
+        });
         if (!committed)
             return UseResult.Fail;
 
@@ -313,10 +324,23 @@ internal static class BucketItems
     }
 
     // Bucket replacement uses BlockState.canBeReplaced(Fluid), broader than item placement's replaceable flag.
-    private static bool Accepts(IBlock block, FluidKind fluid, bool sneaking) => block.IsAir
+    internal static bool Accepts(IBlock block, FluidKind fluid, bool sneaking) => block.IsAir
         || !sneaking && (block.CanBeReplaced() || !block.IsSolid()
             || block.IsLiquidBlockContainer() && (block.CanHoldSpecificFluid(fluid)
                 || fluid == FluidKind.Water && block.GetProperty("waterlogged") == "true"));
+
+    /// <summary>The bucket a source or waterlogged block gives, shared by players and dispensers.</summary>
+    internal static Item? PickupItem(IBlock block)
+    {
+        if (block.Is(BlockIds.PowderSnow))
+            return ItemsRegistry.PowderSnowBucket;
+
+        var fluid = FluidState.Of(block);
+        if (block.GetProperty("waterlogged") != "true" && !(block.IsLiquidBlock() && fluid.IsSource))
+            return null;
+
+        return fluid.IsLava ? ItemsRegistry.LavaBucket : ItemsRegistry.WaterBucket;
+    }
 
     private static BlockShapeHit? Trace(AbstractLevel level, PlayerBase player, bool sources)
     {

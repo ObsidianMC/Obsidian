@@ -9,18 +9,19 @@ namespace Obsidian.WorldData;
 internal static class BlockEntityLifecycle
 {
     /// <summary>
-    /// Marks the live block entities of an unloading <paramref name="chunk"/> removed, retiring their containers'
+    /// Marks the live block entities of an unloading chunk removed, retiring their containers'
     /// inventories, under the save's locks.
     /// </summary>
-    /// <param name="chunk">The chunk being unloaded.</param>
+    /// <param name="members">The block entities admitted for the snapshot.</param>
     /// <param name="inventories">Receives the retired inventories, whose windows the caller closes.</param>
     /// <param name="unloaded">
     /// Receives the retired block entities, which stay in their level until the caller tells them their chunk unloaded
     /// and then calls <see cref="Detach"/>.
     /// </param>
-    internal static void Retire(Chunk chunk, List<BaseContainer> inventories, List<BlockEntity> unloaded)
+    internal static void Retire(
+        IEnumerable<IBlockEntity> members, List<BaseContainer> inventories, List<BlockEntity> unloaded)
     {
-        foreach (var entity in chunk.BlockEntities.Values.OfType<BlockEntity>())
+        foreach (var entity in members.OfType<BlockEntity>())
         {
             // A close handler may flush an already retired region; it must not close the same window recursively.
             if (entity.IsRemoved)
@@ -28,13 +29,13 @@ internal static class BlockEntityLifecycle
 
             if (entity is ContainerBlockEntity container)
             {
-                using (container.Inventory.Lock())
+                using (InventorySnapshot.Lock(container.Inventory))
                 {
-                    container.Inventory.TryRetire();
+                    if (container.Inventory.TryRetire())
+                        inventories.Add(container.Inventory);
+
                     entity.IsRemoved = true;
                 }
-
-                inventories.Add(container.Inventory);
             }
 
             entity.IsRemoved = true;

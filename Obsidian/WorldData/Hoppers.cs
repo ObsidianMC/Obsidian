@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Obsidian.API.BlockEntities;
 using Obsidian.API.Inventory;
 using Obsidian.Entities;
 using Obsidian.WorldData.Features;
@@ -20,8 +21,8 @@ namespace Obsidian.WorldData;
 /// whichever ticks first).
 /// </para>
 /// <para>
-/// Runs on the level's tick, without its tick lock: each step takes one container's lock at a time, and an item
-/// entity's transfer lock before the hopper's.
+/// Runs from the block-entity tick and inside contact. Inventory admission finishes outside an item's short
+/// transfer section; inherited tick or transfer locks allow only a nonblocking inventory attempt.
 /// </para>
 /// </remarks>
 internal static class Hoppers
@@ -43,17 +44,46 @@ internal static class Hoppers
 
         hopper.Cooldown = 0;
 
-        // Vanilla's tryMoveItems.
+        await MoveItemsAsync(level, hopper);
+    }
+
+    /// <summary>Inside contact tries the same push/pull transaction, without advancing the tick cooldown.</summary>
+    internal static ValueTask TouchItemAsync(AbstractLevel level, HopperBlockEntity hopper, ItemEntity item)
+    {
+        var position = hopper.BlockPosition;
+        var min = new VectorD(position.X, position.Y + SuckBottom, position.Z);
+        var max = new VectorD(position.X + 1, position.Y + SuckTop, position.Z + 1);
+        return item.Removed || !Overlaps(item.BoundingBox, min, max)
+            ? default : MoveItemsAsync(level, hopper, item);
+    }
+
+    private static async ValueTask MoveItemsAsync(AbstractLevel level, HopperBlockEntity hopper, ItemEntity? item = null)
+    {
+        if (hopper.Cooldown > 0 || hopper.IsRemoved)
+            return;
+
         var state = level.BlockUpdates.GetBlock(hopper.BlockPosition);
-        if (state.GetProperty("enabled") != "true" || hopper.GetItemAccess(side: null) is not IItemAccess own)
+        if (!PropertyHandles.Enabled.IsTrue(state) || hopper.GetItemAccess(side: null) is not IItemAccess own)
             return;
 
         var changed = false;
         if (!IsEmpty(own))
-            changed = Eject(level, hopper, own, FeatureHelpers.ParseFace(state.GetProperty("facing")));
+            changed = Eject(level, hopper, own, PropertyHandles.Facing.Get(state));
 
         if (!IsFull(own))
-            changed |= await SuckInAsync(level, hopper, own);
+        {
+            if (item is null)
+            {
+                changed |= await SuckInAsync(level, hopper, own);
+            }
+            else
+            {
+                var position = hopper.BlockPosition;
+                var min = new VectorD(position.X, position.Y + SuckBottom, position.Z);
+                var max = new VectorD(position.X + 1, position.Y + SuckTop, position.Z + 1);
+                changed |= await TakeInAsync(own, item, level, min, max, position);
+            }
+        }
 
         if (changed)
         {
@@ -202,11 +232,20 @@ internal static class Hoppers
         var position = hopper.BlockPosition;
         var min = new VectorD(position.X, position.Y + SuckBottom, position.Z);
         var max = new VectorD(position.X + 1, position.Y + SuckTop, position.Z + 1);
-        var items = level.BlockUpdates
-            .EntitiesIn(min, max)
-            .OfType<ItemEntity>()
-            .OrderBy(item => item.EntityId)
-            .ToList();
+
+        // Collected only when there are any: most hoppers find none on most ticks.
+        List<ItemEntity>? items = null;
+        foreach (var entity in level.BlockUpdates.EntitiesIn(min, max))
+        {
+            if (entity is ItemEntity found)
+                (items ??= []).Add(found);
+        }
+
+        if (items is null)
+            return false;
+
+        // Entity ids are unique, so this is the order a stable sort by id gives.
+        items.Sort(static (first, second) => first.EntityId.CompareTo(second.EntityId));
 
         foreach (var item in items)
         {
@@ -287,6 +326,10 @@ internal static class Hoppers
 
     internal static bool IsEmpty(IItemAccess access)
     {
+        // A container's slots are read without copying their stacks, under one hold of its lock.
+        if (access is ContainerItemAccess container)
+            return container.AllSlots(static stack => stack is null);
+
         for (var slot = 0; slot < access.SlotCount; slot++)
         {
             if (access.GetItem(slot) is not null)
@@ -302,6 +345,9 @@ internal static class Hoppers
     // Vanilla's inventoryFull: every slot holds a full stack.
     internal static bool IsFull(IItemAccess access)
     {
+        if (access is ContainerItemAccess container)
+            return container.AllSlots(static stack => stack is not null && stack.Count == stack.StoredMaxStackSize);
+
         for (var slot = 0; slot < access.SlotCount; slot++)
         {
             if (access.GetItem(slot) is not ItemStack stack || stack.Count != stack.MaxStackSize)

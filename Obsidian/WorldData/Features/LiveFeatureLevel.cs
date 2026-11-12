@@ -171,7 +171,7 @@ internal sealed class LiveFeatureLevel(AbstractLevel level) : IWorldGenLevel
             if (block.Equals(original.Block))
                 continue;
 
-            level.BroadcastBlockChange(block, position);
+            level.BlockChanged(position);
             level.TrackMobEgg(position, block);
         }
 

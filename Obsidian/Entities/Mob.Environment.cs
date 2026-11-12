@@ -1,3 +1,5 @@
+using Obsidian.WorldData;
+
 namespace Obsidian.Entities;
 
 public partial class Mob
@@ -5,6 +7,9 @@ public partial class Mob
     private int ambientSoundTime;
     protected virtual string? SoundName => null;
     protected virtual SoundCategory MobSoundCategory => SoundCategory.Neutral;
+
+    /// <summary>Vanilla's <c>getSoundSource</c>: the category of the sounds the mob makes.</summary>
+    internal SoundCategory SoundSource => MobSoundCategory;
     protected internal float EffectiveDifficulty
     {
         get
@@ -30,7 +35,7 @@ public partial class Mob
             local *= 0.5f;
         return (int)difficulty * (0.75f + elapsed + local);
     }
-    private float fallDistance;
+    private double fallDistance;
     private int jumpDelay;
 
     internal bool TryJump()
@@ -66,42 +71,12 @@ public partial class Mob
         {
             fallDistance = 0;
         }
-        else
-        {
-            // Count the drop that ended in landing too, as vanilla adds it before checking the ground.
-            if (LastPosition.Y > Position.Y)
-                fallDistance += (float)(LastPosition.Y - Position.Y);
-            if (MovementFlags.HasFlag(MovementFlags.OnGround))
-            {
-                var damage = MathF.Ceiling(fallDistance - SafeFallDistance);
-                // Like vanilla's Creeper.causeFallDamage, only an actual fall swells it, and only up to 5 ticks short of its fuse.
-                if (this is Creeper creeper && fallDistance > 0)
-                    creeper.FuseTicks = Math.Max(0, Math.Min(creeper.Fuse - 5, creeper.FuseTicks + (int)(fallDistance * 1.5f)));
-                fallDistance = 0;
-                if (damage > 0 && TakesFallDamage)
-                    await DamageCombatAsync(this, damage, CombatDamageKind.Fall);
-            }
-        }
 
         var feet = Terrain.GetBlock((Vector)Position.Floor());
-        var floor = Terrain.GetBlock((Vector)(Position - new VectorD(0, 0.01f, 0)).Floor());
         if (feet?.RegistryId is BlockIds.Fire or BlockIds.SoulFire && !IsFireImmune)
         {
             Ignite(8);
             await DamageCombatAsync(this, 1, CombatDamageKind.FireContact);
-        }
-        if (floor?.RegistryId == BlockIds.MagmaBlock
-            && !IsFireImmune
-            && !Sneaking
-            && !HasPotionEffect((int)PotionEffect.FireResistance - 1))
-        {
-            await DamageCombatAsync(this, 1, CombatDamageKind.FireContact);
-        }
-
-        if (this is not Fox && feet?.RegistryId == BlockIds.SweetBerryBush && !IsRemoved &&
-            (LastPosition - Position).MagnitudeSquared() > 0.000025f)
-        {
-            await ApplyDamageAsync(this, 1, true);
         }
 
         await TickBlockHazardsAsync(feet);
@@ -132,6 +107,17 @@ public partial class Mob
         if (Silent || SoundName == null || kind == "ambient" && this is Creeper or Slime)
             return;
         var baby = this is IAgeable { IsBaby: true };
+        // Only a hurt sound reads the hit: the others are played far more often.
+        var blockDamage = kind == "hurt"
+            && IncomingDamageKind is CombatDamageKind.Fall or CombatDamageKind.HotFloor
+                or CombatDamageKind.SweetBerryBush or CombatDamageKind.Cactus or CombatDamageKind.Campfire;
+        if (blockDamage && Level is AbstractLevel world)
+        {
+            var pitch = (Random.NextSingle() - Random.NextSingle()) * 0.2f + (baby ? 1.5f : 1);
+            LevelSounds.Play(world, Position, $"minecraft:entity.{SoundName}.hurt", MobSoundCategory, 1, pitch);
+            return;
+        }
+
         PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, new Obsidian.Net.Packets.Play.Clientbound.SoundEntityPacket
         {
             EntityId = EntityId, SoundLocation = $"minecraft:entity.{(this is Wolf && kind == "shake" ? "wolf" : SoundName)}.{kind}{(this is Slime { Size: 1 } && (this is not MagmaCube || kind != "jump") ? "_small" : "")}", Category = MobSoundCategory,

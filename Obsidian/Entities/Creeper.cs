@@ -34,6 +34,14 @@ public sealed partial class Creeper : PathfinderMob
 
     protected internal override ValueTask PerformMeleeAttackAsync(IEntity target) => default;
 
+    // Vanilla's Creeper.thunderHit: struck like anything living, then charged.
+    internal override async ValueTask ThunderHitAsync(LightningBolt bolt)
+    {
+        await base.ThunderHitAsync(bolt);
+        Powered = true;
+        SynchronizeMetadata();
+    }
+
     internal override async ValueTask<bool> InteractAsync(IPlayer player, InteractionHand hand)
     {
         if (!Alive || IsRemoved || player.Level != Level || player.Health <= 0 || player.GameMode == GameMode.Spectator ||

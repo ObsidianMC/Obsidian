@@ -152,11 +152,11 @@ internal sealed class BubbleColumnBlockBehavior : IScheduledTickBehavior, IShape
     /// Vanilla's <c>BubbleColumnBlock.entityInside</c>: over open water (nothing solid, no fluid, above) the entity gets
     /// the above push, and inside a column the inside push.
     /// </summary>
-    public void EntityInside(IBlockLevel level, Vector position, IBlock block, Entities.Entity entity)
+    public ValueTask EntityInsideAsync(IContactLevel level, Vector position, IBlock block, Entities.Entity entity)
     {
         var downwards = block.GetProperty("drag") == "true";
         var above = position + Vector.Up;
-        var open = level.GetBlock(above) is { } aboveBlock
+        var open = level.Blocks.GetBlock(above) is { } aboveBlock
             && !BlockCollisionShapes.Get(level.Level, above, aboveBlock).Any()
             && FluidState.Of(aboveBlock).IsEmpty;
 
@@ -164,6 +164,8 @@ internal sealed class BubbleColumnBlockBehavior : IScheduledTickBehavior, IShape
             entity.OnAboveBubbleColumn(downwards, position);
         else
             entity.OnInsideBubbleColumn(downwards);
+
+        return ValueTask.CompletedTask;
     }
 }
 

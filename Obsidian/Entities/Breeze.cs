@@ -1,17 +1,26 @@
+using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Entities.AI;
+using Obsidian.WorldData;
 
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:breeze")]
 public sealed partial class Breeze : PathfinderMob
 {
+    // Vanilla's breeze sets itself up only as every mob does: Mob.finalizeSpawn, from the level's random.
+    internal override SpawnCompanions FinalizeBareSpawn(AbstractLevel level, IRandomSource random)
+    {
+        FinalizeMobSpawnFromLevel(random);
+        return default;
+    }
+
     public Breeze() => Type = EntityType.Breeze;
     protected override bool UsesAi => true;
     internal override bool Hostile => true;
     internal override bool PanicsWhenHurt => false;
     protected override string? SoundName => "breeze";
     protected override SoundCategory MobSoundCategory => SoundCategory.Hostile;
-    protected override bool CanTakeDamage(IEntity source) => source is not Breeze;
+    protected override bool CanTakeDamage(IEntity? source) => source is not Breeze;
     protected override int GetExperienceReward() => 10;
 
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)

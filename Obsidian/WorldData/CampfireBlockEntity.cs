@@ -41,7 +41,14 @@ internal sealed class CampfireBlockEntity()
     {
         var tag = new NbtCompound();
         var items = new NbtList(NbtTagType.Compound, "Items");
-        using (this.Inventory.Lock())
+        if (!this.Inventory.TryLock(out var held))
+        {
+            // Keep the last complete projection and publish again on a later tick, outside any inventory lock.
+            this.SendUpdate();
+            return this.ClientData;
+        }
+
+        using (held)
         {
             for (var slot = 0; slot < 4; slot++)
             {

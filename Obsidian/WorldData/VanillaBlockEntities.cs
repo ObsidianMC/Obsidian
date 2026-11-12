@@ -7,7 +7,8 @@ using System.Threading;
 namespace Obsidian.WorldData;
 
 /// <summary>
-/// The classes of vanilla's block entity types the server models: containers players open, and brewing stands.
+/// The classes of vanilla's block entity types the server models: containers players open, brewing stands, sculk
+/// catalysts, trial spawners, vaults and the like.
 /// Vanilla's other types are <see cref="DataBlockEntity"/>s.
 /// </summary>
 internal static class VanillaBlockEntities
@@ -43,8 +44,20 @@ internal static class VanillaBlockEntities
         "minecraft:comparator" => new Redstone.ComparatorBlockEntity(),
         "minecraft:potent_sulfur" => new PotentSulfurBlockEntity(),
         "minecraft:beacon" => new BeaconBlockEntity(),
+        "minecraft:conduit" => new ConduitBlockEntity(),
+        "minecraft:end_gateway" => new EndGatewayBlockEntity(),
         "minecraft:lectern" => new LecternBlockEntity(position),
         "minecraft:crafter" => new CrafterBlockEntity(position),
+        "minecraft:brushable_block" => new BrushableBlockEntity(),
+        "minecraft:chiseled_bookshelf" => new ChiseledBookshelfBlockEntity(position),
+        "minecraft:decorated_pot" => new DecoratedPotBlockEntity(position),
+        "minecraft:sculk_catalyst" => new SculkCatalystBlockEntity(),
+        "minecraft:shelf" => new ShelfBlockEntity(position),
+        "minecraft:trial_spawner" => new TrialSpawners.TrialSpawnerBlockEntity(),
+        "minecraft:vault" => new TrialSpawners.VaultBlockEntity(),
+        CommandBlockEntity.TypeId => new CommandBlockEntity(),
+        StructureBlockEntity.TypeId => new StructureBlockEntity(),
+        JigsawBlockEntity.TypeId => new JigsawBlockEntity(),
         _ => null
     };
 

@@ -4,7 +4,7 @@ using Obsidian.Entities.AI;
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:sheep")]
-public sealed partial class Sheep : FarmAnimal
+public sealed partial class Sheep : FarmAnimal, IShearable
 {
     // Indexed by the sheep's color id, in vanilla's dye color order.
     private static readonly Item[] wools =
@@ -25,6 +25,19 @@ public sealed partial class Sheep : FarmAnimal
     public byte Color { get; set; }
     public bool Sheared { get; set; }
     protected override string? SoundName => "sheep";
+
+    /// <inheritdoc/>
+    public bool ReadyForShearing => Alive && !Sheared && !IsBaby;
+
+    /// <summary>Vanilla's <c>Sheep.shear</c>: its shearing sound, then one to three of its wool.</summary>
+    public ValueTask ShearAsync(SoundCategory category)
+    {
+        Shearing.PlaySound(this, "minecraft:entity.sheep.shear", category);
+        Sheared = true;
+        DropItem(wools[Color], Random.Next(1, 4));
+        SynchronizeMetadata();
+        return default;
+    }
     protected override float TemptSpeed => 1.1f;
     protected override void RegisterGoals(GoalSelector actions, GoalSelector targets)
     {
@@ -105,8 +118,7 @@ public sealed partial class Sheep : FarmAnimal
     internal void EatGrass()
     {
         Sheared = false;
-        if (IsBaby)
-            Age = Math.Min(0, Age + 1200);
+        Grow(1200);
         SynchronizeMetadata();
     }
 

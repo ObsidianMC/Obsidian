@@ -29,8 +29,31 @@ internal static class ArrowPotionEffects
             if (duration > 0)
             {
                 if (extended) duration = kind switch { "Poison" or "Regeneration" => 1800, "Slowness" or "Weakness" or "SlowFalling" => 4800, "TurtleMaster" => 800, _ => 9600 };
-                yield return new() { Id = (int)effect - 1, Duration = duration, Amplifier = kind == "TurtleMaster" ? strong ? 5 : 3 : kind == "Slowness" && strong ? 3 : strong ? 1 : 0 };
-                if (kind == "TurtleMaster") yield return new() { Id = (int)PotionEffect.Resistance - 1, Duration = duration, Amplifier = strong ? 3 : 2 };
+                var amplifier = strong ? 1 : 0;
+                if (kind == "TurtleMaster")
+                    amplifier = strong ? 5 : 3;
+                else if (kind == "Slowness" && strong)
+                    amplifier = 3;
+
+                yield return new()
+                {
+                    Id = (int)effect - 1,
+                    Duration = duration,
+                    Amplifier = amplifier,
+                    ShowParticles = true,
+                    ShowIcon = true
+                };
+                if (kind == "TurtleMaster")
+                {
+                    yield return new()
+                    {
+                        Id = (int)PotionEffect.Resistance - 1,
+                        Duration = duration,
+                        Amplifier = strong ? 3 : 2,
+                        ShowParticles = true,
+                        ShowIcon = true
+                    };
+                }
             }
         }
         foreach (var effect in contents.CustomEffects) yield return effect;

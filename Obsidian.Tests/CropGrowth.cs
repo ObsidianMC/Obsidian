@@ -58,11 +58,12 @@ public sealed class CropGrowth
         // The level may have replaced the chunk object while ticking, so read the chunk the level holds now.
         chunk = world.GetLoadedChunk(0, 0)!;
 
-        // Each growth went out through the block-change path as the block the chunk holds afterwards.
-        var updates = client.SentPackets.OfType<BlockUpdatePacket>().ToList();
+        // Each growth went out through the block-change path, at the level's flush, as the block the chunk holds then.
+        world.FlushBlockChanges();
+        var updates = BlockUpdates.SentBlocks(client).ToList();
         Assert.NotEmpty(updates);
         Assert.All(updates, update => Assert.True(chunk.GetBlock(update.Position).Is(BlockIds.Wheat)));
-        Assert.Contains(updates, update => update.BlockId == chunk.GetBlock(update.Position).GetHashCode());
+        Assert.All(updates, update => Assert.Equal(chunk.GetBlock(update.Position).GetHashCode(), update.StateId));
     }
 
     // The ways a neighbour leaves the level's loaded chunks after random ticks remembered the chunk as complete.

@@ -182,22 +182,29 @@ public abstract partial class PlayerBase : Avatar, IPlayer
         Events.MainEventHandler.RefreshWindowAsync(this, this.OpenedContainer ?? this.Inventory, stateId: 0);
 
 
+    private GameMode gameMode;
+
     public GameMode GameMode
     {
-        get => field;
-        set
+        get => this.gameMode;
+        set => this.SetGameMode(value, broadcast: true);
+    }
+
+    // Loading sets the same abilities and flag without notifying observers before the player's spawn.
+    private void SetGameMode(GameMode value, bool broadcast)
+    {
+        // Validated before it's stored, so an unknown mode throws without changing the player.
+        Abilities = value switch
         {
-            // Validated before it's stored, so an unknown mode throws without changing the player.
-            Abilities = value switch
-            {
-                GameMode.Creative => PlayerAbility.CreativeMode | PlayerAbility.AllowFlying | PlayerAbility.Invulnerable,
-                GameMode.Spectator => PlayerAbility.AllowFlying | PlayerAbility.Invulnerable,
-                GameMode.Survival or GameMode.Adventure => PlayerAbility.None,
-                _ => throw new ArgumentOutOfRangeException(nameof(value), value, "Unknown gamemode.")
-            };
-            Abilities |= this.GrantedFlight;
-            field = value;
-        }
+            GameMode.Creative => PlayerAbility.CreativeMode | PlayerAbility.AllowFlying | PlayerAbility.Invulnerable,
+            GameMode.Spectator => PlayerAbility.AllowFlying | PlayerAbility.Invulnerable,
+            GameMode.Survival or GameMode.Adventure => PlayerAbility.None,
+            _ => throw new ArgumentOutOfRangeException(nameof(value), value, "Unknown gamemode.")
+        };
+        Abilities |= this.GrantedFlight;
+        this.gameMode = value;
+        // Vanilla's setGameMode runs onUpdateAbilities, which makes a spectator invisible and shows others again.
+        UpdateInvisibilityStatus(broadcast);
     }
 
     public PlayerAbility Abilities { get; set; }
@@ -256,8 +263,8 @@ public abstract partial class PlayerBase : Avatar, IPlayer
     public float XpP { get; set; }
 
     // Worked out from the position, so that it's right from the moment the player is placed (a player who has just
-    // logged in hasn't sent a movement yet). Standing eye height; poses and scale use EyePosition.
-    public double HeadY => this.Position.Y + 1.62;
+    // logged in hasn't sent a movement yet). All eye readers share the pose and scale calculation.
+    public double HeadY => EyePosition(this).Y;
 
     public float Absorption { get; set; }
     public float FallDistance { get; set; }
@@ -558,7 +565,7 @@ public abstract partial class PlayerBase : Avatar, IPlayer
 
     public override ValueTask TeleportAsync(VectorD pos) => this.TeleportAsync(this.Level, pos);
 
-    private async ValueTask TeleportWithinLevelAsync(ILevel level, VectorD pos, Angle? yaw, Angle? pitch)
+    private async ValueTask TeleportWithinLevelAsync(ILevel level, VectorD pos, float? yaw, float? pitch)
     {
         FallDistance = 0;
         combatPosition = null;
@@ -569,8 +576,8 @@ public abstract partial class PlayerBase : Avatar, IPlayer
         // unrelated Entity position writers, which are recorded in the movement known gaps.
         await this.chunkUpdates.WaitAsync();
         VectorD from;
-        Angle fromYaw;
-        Angle fromPitch;
+        float fromYaw;
+        float fromPitch;
         Entity[] riders;
         try
         {
@@ -608,7 +615,7 @@ public abstract partial class PlayerBase : Avatar, IPlayer
 
     // Moves the player within their level, with chunkUpdates held, after the travel that may have come first.
     // Returns the passengers it took off, to carry along.
-    private Entity[] MoveWithinLevel(ILevel level, VectorD pos, Angle? yaw, Angle? pitch)
+    private Entity[] MoveWithinLevel(ILevel level, VectorD pos, float? yaw, float? pitch)
     {
         if (this.Level != level || !this.Alive)
             throw new InvalidOperationException("The player died or changed level before the teleport.");
@@ -644,11 +651,11 @@ public abstract partial class PlayerBase : Avatar, IPlayer
         this.TeleportAsync(world, world.LevelData.SpawnPosition);
 
     public override ValueTask TeleportAsync(
-        ILevel level, VectorD position, Angle? yaw = null, Angle? pitch = null) =>
+        ILevel level, VectorD position, float? yaw = null, float? pitch = null) =>
         DeferredInventoryWork.RunOrDeferAsync(() => this.TeleportAfterCallbacksAsync(level, position, yaw, pitch));
 
     private async ValueTask TeleportAfterCallbacksAsync(
-        ILevel level, VectorD position, Angle? yaw = null, Angle? pitch = null)
+        ILevel level, VectorD position, float? yaw = null, float? pitch = null)
     {
         ValidateTravel(level, position, yaw, pitch);
 
@@ -737,13 +744,13 @@ public abstract partial class PlayerBase : Avatar, IPlayer
     }
 
     internal Task TransferDimensionAsync(
-        ILevel destination, VectorD? position = null, Angle? yaw = null, Angle? pitch = null,
+        ILevel destination, VectorD? position = null, float? yaw = null, float? pitch = null,
         VectorD? motion = null, bool portal = false, bool relativeMotion = false)
         => DeferredInventoryWork.RunOrDeferAsync(() => new ValueTask(this.TransferDimensionAfterCallbacksAsync(
             destination, position, yaw, pitch, motion, portal, relativeMotion))).AsTask();
 
     private async Task TransferDimensionAfterCallbacksAsync(
-        ILevel destination, VectorD? position, Angle? yaw, Angle? pitch,
+        ILevel destination, VectorD? position, float? yaw, float? pitch,
         VectorD? motion, bool portal, bool relativeMotion)
     {
         await this.CancelPortalTravelAsync();
@@ -895,6 +902,16 @@ public abstract partial class PlayerBase : Avatar, IPlayer
     public Task RespawnAsync(DataKept dataKept = DataKept.Metadata) =>
         DeferredInventoryWork.RunOrDeferAsync(() => new ValueTask(this.RespawnAfterDeathAsync(dataKept))).AsTask();
 
+    /// <summary>
+    /// Moves the player to the end of the server's player list, as vanilla's <c>PlayerList.respawn</c> does to a player
+    /// respawning after death or leaving the End; selectors such as <c>@a</c> go by that order.
+    /// </summary>
+    internal void MoveToEndOfPlayerList()
+    {
+        if (this.Server is Server server)
+            server.MoveToEndOfPlayerList(this);
+    }
+
     private async Task RespawnAfterDeathAsync(DataKept dataKept)
     {
         while (true)
@@ -954,6 +971,7 @@ public abstract partial class PlayerBase : Avatar, IPlayer
             {
                 // Death respawns must create fresh client state rather than retain the dead player's metadata.
                 dataKept = DataKept.None;
+                this.MoveToEndOfPlayerList();
                 // Death completed before taking chunkUpdates; never drain items again during respawn.
                 API.Data.AttachmentStorage.For(this).Respawn(this);
                 await this.StopSleepingAsync();
@@ -1017,12 +1035,17 @@ public abstract partial class PlayerBase : Avatar, IPlayer
             await this.QueuePacketAsync(new GameEventPacket(ChangeGameStateReason.StartWaitingForLevelChunks));
             await this.SendPositionAsync(
                 this.preservePortalMotion ? VectorD.Zero : this.Motion,
-                this.preservePortalMotion ? NetherPortalRelativeFlags : 0);
+                this.preservePortalMotion ? NetherPortalRelativeFlags : PositionFlags.None);
 
             pendingRespawnChunks = !await this.UpdateChunksUnderLockAsync(true);
             respawnChunkRetryTicks = 20;
             await this.QueuePacketAsync(new SetHealthPacket(Health, FoodLevel, FoodSaturationLevel));
             await SendPlayerInfoAsync();
+
+            // Like vanilla's respawn and teleport to another level: the client's new player has no permission level
+            // until it's told again, without which it won't open command blocks' editors.
+            if (this.Server.Operators is OperatorList operators)
+                await operators.SendPermissionLevelAsync(this);
 
             // Vanilla's respawn sends the experience the new player starts with.
             if (died)

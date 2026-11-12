@@ -34,6 +34,8 @@ internal sealed class Assets
                 ["tick"] = files.GetJsonFromArray("block_tick_classes"),
                 ["updateShape"] = files.GetJsonFromArray("block_update_shape_classes"),
                 ["entityInside"] = files.GetJsonFromArray("block_entity_inside_classes"),
+                ["stepOn"] = files.GetJsonFromArray("block_step_on_classes"),
+                ["fallOn"] = files.GetJsonFromArray("block_fall_on_classes"),
                 ["onPlace"] = files.GetJsonFromArray("block_on_place_classes"),
                 ["useItemOn"] = files.GetJsonFromArray("block_use_item_on_classes"),
                 ["useWithoutItem"] = files.GetJsonFromArray("block_use_without_item_classes"),
@@ -280,16 +282,27 @@ internal sealed class Assets
         return blocks.ToArray();
     }
 
-    // A sapling's dumped TreeGrower: its configured features by identifier, and its secondary chance as a float literal.
+    // A sapling's dumped TreeGrower as TreeGrower member initializers: each weighted list as WeightedFeatures in the
+    // dump's order, which decides what a draw picks, and the shortest tree as an identifier when it has one.
     private static Dictionary<string, string> GetTreeGrower(JsonElement element)
     {
         var grower = new Dictionary<string, string>();
-        foreach (var property in element.EnumerateObject())
+        var lists = new[] { ("trees", "Trees"), ("megaTrees", "MegaTrees"), ("flowerTrees", "FlowerTrees") };
+        foreach (var (name, member) in lists)
         {
-            grower[property.Name] = property.Name == "secondaryChance"
-                ? property.Value.GetSingle().ToString("R", System.Globalization.CultureInfo.InvariantCulture) + "f"
-                : property.Value.GetString()!;
+            var entries = new List<string>();
+            foreach (var entry in element.GetProperty(name).EnumerateArray())
+            {
+                var feature = entry.GetProperty("feature").GetString();
+                var weight = entry.GetProperty("weight").GetInt32();
+                entries.Add($"new global::Obsidian.API.Blocks.WeightedFeature(\"{feature}\", {weight})");
+            }
+
+            grower[member] = $"[{string.Join(", ", entries)}]";
         }
+
+        if (element.TryGetProperty("shortestTreeType", out var shortest))
+            grower["ShortestTree"] = $"\"{shortest.GetString()}\"";
 
         return grower;
     }

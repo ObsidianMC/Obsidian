@@ -60,71 +60,121 @@ public partial class PlayerBase
         });
     }
 
+    private protected override bool IsDamageImmune =>
+        Respawning
+        || GameMode is GameMode.Creative or GameMode.Spectator
+        || Abilities.HasFlag(PlayerAbility.Invulnerable);
+
     public override ValueTask DamageAsync(IEntity source, float amount = 1)
         => DamageCombatAsync(source, amount, ReferenceEquals(source, this) ? CombatDamageKind.Magic : CombatDamageKind.Melee);
 
     internal override async ValueTask DamageCombatAsync(
-        IEntity source,
+        IEntity? source,
         float amount,
         CombatDamageKind kind,
         ItemStack? weapon = null,
         IEntity? directSource = null,
         VectorD? sourcePosition = null)
     {
-        if (!float.IsFinite(amount) || amount <= 0 || !Alive || Respawning || source.Level != Level ||
-            GameMode is GameMode.Creative or GameMode.Spectator || Abilities.HasFlag(PlayerAbility.Invulnerable))
-        {
-            return;
-        }
+        source ??= this;
 
-        if (kind is CombatDamageKind.Fire or CombatDamageKind.FireContact && HasPotionEffect((int)PotionEffect.FireResistance - 1))
+        // The level the hit is dealt in: it lands there or nowhere, as the player may travel while the hit awaits.
+        var level = Level;
+        if (!float.IsFinite(amount) || amount <= 0 || !Alive || source.Level != level || IsDamageImmune)
+            return;
+
+        var fire = kind is CombatDamageKind.Fire or CombatDamageKind.FireContact
+            or CombatDamageKind.Campfire or CombatDamageKind.HotFloor;
+        if (fire && HasPotionEffect((int)PotionEffect.FireResistance - 1))
             return;
 
         var incomingFrom = sourcePosition ?? (directSource ?? source).Position;
         if (await TryBlockDamageAsync(source, amount, kind, weapon, incomingFrom))
             return;
 
+        // A hit the player travelled away from while it was being blocked changes nothing.
+        if (!IsStillHitIn(level, source))
+            return;
+
         var incoming = amount;
-        if (damageCooldown > 0)
+        if (PastHurtCooldown(incoming) is null)
+            return;
+
+        var armored = kind is CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion
+            or CombatDamageKind.FireContact or CombatDamageKind.Campfire or CombatDamageKind.HotFloor
+            or CombatDamageKind.Cactus or CombatDamageKind.SweetBerryBush
+            or CombatDamageKind.Lightning or CombatDamageKind.Thorns or CombatDamageKind.FallingStalactite;
+        var armor = 0f;
+        var toughness = 0f;
+        if (armored)
         {
-            if (incoming <= lastIncomingDamage)
-                return;
-            amount -= lastIncomingDamage;
-        }
-        else
-        {
-            damageCooldown = 10;
-            HurtTime = 10;
-        }
-        lastIncomingDamage = incoming;
-        AcceptedDamageCount++;
-        if (kind is CombatDamageKind.Melee or CombatDamageKind.Projectile or CombatDamageKind.Explosion
-            or CombatDamageKind.FireContact or CombatDamageKind.Thorns or CombatDamageKind.FallingStalactite)
-        {
-            // Worn items' armour is in the attributes' modifiers.
+            // Worn items' armour is in the attributes' modifiers. Like vanilla, the armour wears before protection
+            // reduces the hit, so the wear comes before the commit; the rest of the hit follows it.
             UpdateEquipmentAttributes();
-            var armor = GetAttributeValue("minecraft:armor");
-            var toughness = GetAttributeValue("minecraft:armor_toughness");
-            amount = CombatItems.ReduceArmor(amount, armor, toughness,
-                1 - 0.15f * CombatItems.EnchantmentLevel(weapon, EnchantmentsRegistry.Breach));
+            armor = GetAttributeValue("minecraft:armor");
+            toughness = GetAttributeValue("minecraft:armor_toughness");
             for (var slot = 5; slot <= 8; slot++)
                 await DamageInventoryItemAsync(slot, Math.Max(1, (int)(incoming / 4)), true);
         }
-        amount = CombatEffects.Protect(this, amount, kind);
-        var absorbed = Math.Min(Absorption, amount);
-        Absorption -= absorbed;
-        amount -= absorbed;
+
+        // The hit as it commits: another hit may have landed while the armour wore, or beside it on another thread,
+        // which the cooldown then counts first, and the player may have taken Fire Resistance meanwhile.
+        var freshHit = false;
+        var absorbed = 0f;
+        float? Settle()
+        {
+            if (fire && HasPotionEffect((int)PotionEffect.FireResistance - 1))
+                return null;
+
+            freshHit = damageCooldown <= 0;
+            if (PastHurtCooldown(incoming) is not float cooled)
+                return null;
+
+            var taken = cooled;
+            if (armored)
+            {
+                taken = CombatItems.ReduceArmor(taken, armor, toughness,
+                    1 - 0.15f * CombatItems.EnchantmentLevel(weapon, EnchantmentsRegistry.Breach));
+            }
+            taken = CombatEffects.Protect(this, taken, kind);
+            absorbed = Math.Min(Absorption, taken);
+            if (freshHit)
+            {
+                damageCooldown = 10;
+                HurtTime = 10;
+            }
+            lastIncomingDamage = incoming;
+            Absorption -= absorbed;
+            amount = taken - absorbed;
+            return amount;
+        }
+
+        var previousHealth = Health;
+        if (!TryCommitDamage(level, source, Settle, out var healthTaken))
+            return;
+
+        AcceptedDamageCount++;
+        LastDamageKind = kind;
         if (absorbed > 0)
             SyncFoodMetadata();
         if (kind is CombatDamageKind.Melee or CombatDamageKind.Projectile && !ReferenceEquals(source, this))
             CombatEffects.Knockback(this, Position - source.Position, 0.4f);
-        this.RecordProgressDamage(source, amount);
-        var previousHealth = Health;
+        this.RecordProgressDamage(source, amount, previousHealth);
         var previousAbsorption = Absorption;
-        await base.DamageAsync(source, amount);
+        if (healthTaken)
+            await ShowDamageAsync(level, source);
         // Vanilla broadcasts the damage event for an accepted hit even when absorption takes all of it.
         if (Health < previousHealth || Absorption < previousAbsorption)
             this.QueueDamageEvent(source, directSource, kind, sourcePosition);
+    }
+
+    // What's left of a hit of incoming damage after the hurt cooldown, or null when the cooldown takes all of it.
+    private float? PastHurtCooldown(float incoming)
+    {
+        if (damageCooldown <= 0)
+            return incoming;
+
+        return incoming > lastIncomingDamage ? incoming - lastIncomingDamage : null;
     }
 
     // Vanilla's damage types for each kind, so clients play the hurt sound of the damage the player took.
@@ -135,6 +185,9 @@ public partial class PlayerBase
         [CombatDamageKind.Fall] = "minecraft:fall",
         [CombatDamageKind.Fire] = "minecraft:on_fire",
         [CombatDamageKind.FireContact] = "minecraft:in_fire",
+        [CombatDamageKind.HotFloor] = "minecraft:hot_floor",
+        [CombatDamageKind.Campfire] = "minecraft:campfire",
+        [CombatDamageKind.Cactus] = "minecraft:cactus",
         [CombatDamageKind.Explosion] = "minecraft:explosion",
         [CombatDamageKind.Magic] = "minecraft:magic",
         [CombatDamageKind.Starvation] = "minecraft:starve",
@@ -145,6 +198,8 @@ public partial class PlayerBase
         [CombatDamageKind.Thorns] = "minecraft:thorns",
         [CombatDamageKind.Drowning] = "minecraft:drown",
         [CombatDamageKind.FallingStalactite] = "minecraft:falling_stalactite",
+        [CombatDamageKind.SweetBerryBush] = "minecraft:sweet_berry_bush",
+        [CombatDamageKind.Lightning] = "minecraft:lightning_bolt",
     };
 
     private void QueueDamageEvent(IEntity source, IEntity? directSource, CombatDamageKind kind, VectorD? sourcePosition)
@@ -233,7 +288,7 @@ public partial class PlayerBase
     {
         if (!Alive || Respawning || GameMode == GameMode.Spectator || target.Level != Level || ReferenceEquals(target, this))
             return false;
-        var eye = Position + new VectorD(0, 1.62, 0);
+        var eye = EyePosition(this);
         var range = CombatItems.Component(item ?? GetHeldItem(), "attack_range");
         var reach = range.ValueKind == System.Text.Json.JsonValueKind.Object
             ? CombatItems.Number(range, GameMode == GameMode.Creative ? "max_creative_reach" : "max_reach", 4.5f)
@@ -291,7 +346,9 @@ public partial class PlayerBase
     {
         if (!Alive || Respawning || target.Level != Level || !target.IsInRange(this, GameMode == GameMode.Creative ? 8 : 6))
             return false;
-        if (Level is AbstractLevel events)
+        // Vanilla's ArmorStand.interact emits only its equip and unequip events (armor_stand_use.json), and a mob's
+        // interaction emits its event once it used the click (see MainEventHandler.InteractWithEntityAsync).
+        if (Level is AbstractLevel events && target is not ArmorStand and not Mob { HasAi: true })
             events.EmitGameEvent(MobGameEvent.EntityInteract, target.Position, this);
         var interaction = location is { } at
             ? new EntityInteractEventArgs(this, target, Server, hand, at, sneaking)
@@ -421,22 +478,12 @@ public partial class PlayerBase
         if (gliding && Position.Y - previous.Y > -0.5 && FallDistance > 1) FallDistance = 1;
         if (previous.Y > Position.Y) FallDistance += (float)(previous.Y - Position.Y);
         if (!supported) return;
-        var floor = terrain.GetBlock((Vector)(Position - new VectorD(0, 0.2, 0)).Floor());
         var distance = FallDistance;
+        this.RecordLanding(distance);
         if (distance >= 2)
             this.Statistics.Increment("minecraft:fall_one_cm", Centimetres(distance));
 
         FallDistance = 0;
-        if (floor?.RegistryId == BlockIds.SlimeBlock && !Sneaking)
-            return;
-        var jump = ActivePotionEffects.TryGetValue((int)PotionEffect.JumpBoost - 1, out var effect) ? effect.EffectData.Amplifier + 1 : 0;
-        // Vanilla's LivingEntity.calculateFallDamage: the landed-on block's multiplier (hay and honey 0.2, beds 0.5)
-        // scales the distance before it's rounded up; the jump boost is part of the safe fall distance.
-        var blockMultiplier = floor?.RegistryId is BlockIds.HayBlock or BlockIds.HoneyBlock ? 0.2
-            : floor != null && TagsRegistry.Block.Beds.Entries.Contains(floor.RegistryId) ? 0.5 : 1.0;
-        var damage = Math.Max(0, Math.Ceiling((distance - GetAttributeValue("minecraft:safe_fall_distance") - jump)
-            * blockMultiplier * GetAttributeValue("minecraft:fall_damage_multiplier")));
-        await DamageCombatAsync(this, (float)damage, CombatDamageKind.Fall);
     }
 
     private async ValueTask TickCombatAsync()

@@ -213,14 +213,7 @@ public partial class PlayerBase
     private async ValueTask TickAirSupplyAsync()
     {
         var previous = Air;
-        var eyeHeight = (Swimming, Sneaking) switch
-        {
-            (true, _) => 0.4,
-            (_, true) => 1.27,
-            _ => 1.62,
-        };
-
-        var eye = Position + new VectorD(0, eyeHeight, 0);
+        var eye = EyePosition(this);
         var terrain = new Obsidian.Entities.AI.MobTerrain(Level);
         // Vanilla's LivingEntity.baseTick: a bubble column at the eye refills air like open air, though it is water.
         if (GameMode is GameMode.Survival or GameMode.Adventure
@@ -320,46 +313,17 @@ public partial class PlayerBase
                 return;
         }
 
-        // Contact with cactus and wither rose
-        // Player Dimension is zero by default: fall back to the standing size, or the swimming body while the head is in liquid.
-        var scanWidth = Dimension.Width > 0 ? Dimension.Width : 0.6;
-        var headBlock = terrain.GetBlock((Vector)new VectorD(Position.X, HeadY, Position.Z).Floor());
-        var scanHeight = Dimension.Height > 0 ? Dimension.Height
-            : Swimming && headBlock?.IsLiquid == true ? 0.6 : 1.8;
-        var scanBounds = new BoundingBox(
-            new VectorD(Position.X - scanWidth / 2, Position.Y, Position.Z - scanWidth / 2),
-            new VectorD(Position.X + scanWidth / 2, Position.Y + scanHeight, Position.Z + scanWidth / 2));
-
-        for (var x = (int)Math.Floor(scanBounds.Min.X + 0.001); x <= (int)Math.Floor(scanBounds.Max.X - 0.001); x++)
-            for (var y = (int)Math.Floor(scanBounds.Min.Y + 0.001); y <= (int)Math.Floor(scanBounds.Max.Y - 0.001); y++)
-                for (var z = (int)Math.Floor(scanBounds.Min.Z + 0.001); z <= (int)Math.Floor(scanBounds.Max.Z - 0.001); z++)
+        // Wither rose, over the cells the player's box (their pose's) is in. Cactus uses the shared contact pass.
+        for (var x = (int)Math.Floor(bounds.Min.X + 0.001); x <= (int)Math.Floor(bounds.Max.X - 0.001); x++)
+            for (var y = (int)Math.Floor(bounds.Min.Y + 0.001); y <= (int)Math.Floor(bounds.Max.Y - 0.001); y++)
+                for (var z = (int)Math.Floor(bounds.Min.Z + 0.001); z <= (int)Math.Floor(bounds.Max.Z - 0.001); z++)
                 {
                     var block = terrain.GetBlock(new Vector(x, y, z));
 
-                    if (block?.RegistryId == BlockIds.Cactus)
-                    {
-                        await DamageCombatAsync(this, 1, CombatDamageKind.Melee); // TODO CombatDamageKind currently don't have cactus damage type
-
-                        if (!Alive || Respawning)
-                            return;
-                    }
                     if (Level.LevelData.Difficulty != Difficulty.Peaceful
                         && block?.RegistryId == BlockIds.WitherRose)
                             AddPotionEffect((int)PotionEffect.Wither - 1, 40);
                 }
-
-        // Contact with magma block
-        var floorBlock = terrain.GetBlock((Vector)(Position - new VectorD(0, 0.01f, 0)).Floor());
-        if (floorBlock?.RegistryId == BlockIds.MagmaBlock
-            && !IsFireImmune
-            && !Sneaking
-            && !HasPotionEffect((int)PotionEffect.FireResistance - 1))
-        {
-            await DamageCombatAsync(this, 1, CombatDamageKind.FireContact);
-
-            if (!Alive || Respawning)
-                return;
-        }
 
         // Void handling
         var minimumY = Level is WorldData.AbstractLevel level ? level.MinY : -64;
@@ -381,18 +345,8 @@ public partial class PlayerBase
                 return;
         }
 
-        // Contact with sweet berry
-        if (feet?.RegistryId == BlockIds.SweetBerryBush &&
-            (LastPosition - Position).MagnitudeSquared() > 0.000025f)
-        {
-            await DamageCombatAsync(this, 1, CombatDamageKind.Melee);
-
-            if (!Alive || Respawning)
-                return;
-        }
-
         // Suffocation handling
-        var width = scanWidth * 0.8 / 2;
+        var width = Dimension.Width * 0.8 / 2;
         var eye = new BoundingBox(EyePosition(this) - new VectorD(width, 0.0000005, width),
             EyePosition(this) + new VectorD(width, 0.0000005, width));
         if (terrain.ContainsSuffocatingBlock(eye))
@@ -425,6 +379,7 @@ public partial class PlayerBase
             respawnChunkRetryTicks = 20;
         }
 
+        this.UpdatePose();
         await base.TickAsync();
         await this.TickProgressAsync();
         if (!Alive || Respawning)

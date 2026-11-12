@@ -85,7 +85,7 @@ public abstract partial class AbstractLevel
                     }
 
                     for (var slot = 0; slot < inventory.Size; slot++)
-                        inventory.SetItem(slot, staged[slot]);
+                        inventory[slot] = staged[slot];
 
                     container.LootTable = null;
                     container.LootTableSeed = 0;
@@ -150,7 +150,7 @@ public abstract partial class AbstractLevel
                 return;
 
             for (var slot = 0; slot < inventory.Size; slot++)
-                inventory.SetItem(slot, staged[slot]);
+                inventory[slot] = staged[slot];
 
             vehicle.LootTable = null;
             vehicle.LootTableSeed = 0;
@@ -158,11 +158,15 @@ public abstract partial class AbstractLevel
         }
     }
 
-    private string? LootOriginBiome(VectorD origin)
+    /// <summary>The biome at a loot origin, without loading chunks while a caller holds the tick lock.</summary>
+    internal string? LootOriginBiome(VectorD origin)
     {
         var x = (int)Math.Floor(origin.X);
         var y = (int)Math.Floor(origin.Y);
         var z = (int)Math.Floor(origin.Z);
+        if (this.IsOutsideBuildHeight(y))
+            return null;
+
         var chunk = this.GetLoadedChunk(x >> 4, z >> 4);
         return chunk?.GetBiome(x, y, z).Name;
     }

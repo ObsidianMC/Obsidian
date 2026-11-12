@@ -33,6 +33,12 @@ public partial class Extensions
     /// </remarks>
     public static NbtCompound ToNbt(this ItemStack item, string name = "")
     {
+        // World snapshots prepare component delegates before transfer/inventory admission. The final host
+        // serializer may only copy that NBT, including for stacks outside inventories.
+        if (InventorySnapshot.TryGetItemData(item, name, out var prepared))
+            return prepared!;
+
+        var version = item.Version;
         var compound = new NbtCompound(name)
         {
             new NbtTag<string>("id", item.Holder.UnlocalizedName),
@@ -61,6 +67,7 @@ public partial class Extensions
         if (components.Count > 0)
             compound.Add(components);
 
+        InventorySnapshot.RecordItemData(item, version, compound);
         return compound;
     }
 
@@ -183,6 +190,21 @@ public partial class Extensions
     /// Reads a text component saved by vanilla's <c>ComponentSerialization.CODEC</c>: a plain string, a compound, or
     /// a list whose first component has the rest as extras.
     /// </summary>
+    /// <summary>
+    /// Writes a text component as vanilla's <c>ComponentSerialization.CODEC</c> saves it: a plain, unstyled text as a
+    /// bare string, anything else as a compound. <see cref="TextFromNbt"/> reads it back.
+    /// </summary>
+    internal static INbtTag TextToNbt(this ChatMessage text, string name) =>
+        IsPlainText(text) ? new NbtTag<string>(name, text.Text!) : text.ToNbt(name);
+
+    // A text with nothing but its literal: no style, events, translation or children.
+    private static bool IsPlainText(ChatMessage? text) =>
+        text is { Text: not null, Translate: null, Keybind: null, Color: null, Bold: null, Italic: null,
+            Underlined: null, Strikethrough: null, Obfuscated: null, ShadowColor: null, Insertion: null,
+            ClickEvent: null, HoverEvent: null }
+        && text.Extra is not { Count: > 0 }
+        && text.With is not { Count: > 0 };
+
     internal static ChatMessage? TextFromNbt(this INbtTag tag) => tag switch
     {
         // An element of a list that mixes strings, compounds and lists, wrapped under an empty key, as vanilla saves
@@ -238,6 +260,9 @@ public partial class Extensions
                 or DataComponentType.OminousBottleAmplifier => new NbtTag<int>(name, number.Value),
             // Vanilla's Unit codec: an empty compound.
             SimpleDataComponent<bool> when component.Type == DataComponentType.Unbreakable => new NbtCompound(name),
+            // Vanilla's ComponentSerialization codec writes a plain, unstyled text as a bare string.
+            SimpleDataComponent<ChatMessage> text when IsPlainText(text.Value) =>
+                new NbtTag<string>(name, text.Value!.Text!),
             SimpleDataComponent<ChatMessage> text when text.Value is not null => text.Value.ToNbt(name),
             SimpleDataComponent<ImmutableArray<Enchantment>> enchantments =>
                 EnchantmentsToNbt(name, enchantments.Value),
@@ -309,13 +334,20 @@ public partial class Extensions
     // Vanilla's PotDecorations codec: the back, left, right and front faces' items.
     private static readonly string[] PotFaces = ["back", "left", "right", "front"];
 
+    // Each face is vanilla's ItemStackTemplate, whose count is written only when it isn't 1.
     private static NbtCompound PotDecorationsToNbt(string name, ImmutableArray<ItemStack> decorations)
     {
         var result = new NbtCompound(name);
         for (var i = 0; i < 4; i++)
         {
-            if (decorations[i] is ItemStack stack)
-                result.Add(stack.ToNbt(PotFaces[i]));
+            if (decorations[i] is not ItemStack stack)
+                continue;
+
+            var face = stack.ToNbt(PotFaces[i]);
+            if (stack.Count == 1)
+                face.Remove("count");
+
+            result.Add(face);
         }
 
         return result;
@@ -445,7 +477,13 @@ public partial class Extensions
             }
         }
 
-        return new() { FlightDuration = tag.TryGetTagValue<int>("flight_duration", out var duration) ? Math.Clamp(duration, 0, 255) : 0, Explosions = explosions.ToImmutable() };
+        return new()
+        {
+            FlightDuration = tag.TryGetNumber<int>("flight_duration", out var duration)
+                ? Math.Clamp(duration, 0, 255)
+                : 0,
+            Explosions = explosions.ToImmutable()
+        };
     }
 
     // Vanilla's ItemEnchantments.CODEC: a map of enchantment id to level.

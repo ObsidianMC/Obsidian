@@ -1,3 +1,4 @@
+using Obsidian.API.Blocks;
 using Obsidian.API.Inventory;
 using Obsidian.API.Loot;
 using Obsidian.Entities.AI;
@@ -117,6 +118,9 @@ public sealed partial class FishingHook : Entity
         if (this.Level is not AbstractLevel level || !level.IsMobTicking(this.Position))
             return;
 
+        // Vanilla runs the projectile's base tick, and so is shot, before it checks its owner.
+        this.EmitShotOnce(this.owner);
+
         if (this.owner is not { } player || !OwnerIsFishing(player))
         {
             await this.RemoveAsync();
@@ -151,6 +155,7 @@ public sealed partial class FishingHook : Entity
             return;
         }
 
+        BlockFace? hitFace = null;
         if (this.state == State.Flying)
         {
             if (inWater)
@@ -163,7 +168,7 @@ public sealed partial class FishingHook : Entity
                 return;
             }
 
-            this.CheckCollision(level, terrain);
+            hitFace = await this.CheckCollisionAsync(level, terrain);
         }
         else
         {
@@ -177,7 +182,11 @@ public sealed partial class FishingHook : Entity
             }
         }
 
-        if (this.state == State.Flying && !inWater)
+        // Vanilla's gravity, only off the ground. Obsidian moves the bobber without collisions, so a block hit this
+        // tick ends the move at the block, and a bobber resting on a block stays there, as vanilla's collision
+        // leaves them.
+        var resting = this.state == State.Flying && !inWater && hitFace is null && IsResting(terrain);
+        if (this.state == State.Flying && !inWater && hitFace is null && !resting)
             this.Motion -= new VectorD(0, Gravity, 0);
 
         // A downward move blocked by terrain leaves the bobber on the ground, as vanilla's move() does.
@@ -187,7 +196,10 @@ public sealed partial class FishingHook : Entity
         {
             this.Position = next;
             this.BoundingBox = this.Dimension.CreateBBFromPosition(this.Position);
-            this.MovementFlags = MovementFlags.None;
+            var onGround = hitFace == BlockFace.Up || resting;
+            this.MovementFlags = onGround ? MovementFlags.OnGround : MovementFlags.None;
+            if (hitFace is not null || resting)
+                this.Motion = VectorD.Zero;
         }
         else
         {
@@ -198,6 +210,10 @@ public sealed partial class FishingHook : Entity
         this.Motion *= Drag;
         this.Broadcast(level);
     }
+
+    // Whether the bobber sits on a block's collision shape, which a move down would run into at once.
+    private bool IsResting(MobTerrain terrain) =>
+        ProjectileBlockHits.Find(terrain, this.Position, new VectorD(0, -1.0E-3, 0)) is not null;
 
     /// <summary>
     /// Vanilla's <c>shouldStopFishing</c>: the owner is still alive, holds a rod in either hand, and is near enough.
@@ -218,22 +234,14 @@ public sealed partial class FishingHook : Entity
     /// Vanilla's flight collision: the nearest block or hookable entity along the motion. A block shortens the motion
     /// to the hit point, and an entity hooks the bobber, which then follows it.
     /// </summary>
-    private void CheckCollision(AbstractLevel level, MobTerrain terrain)
+    /// <returns>The face of the block the bobber hit, if it hit one.</returns>
+    private async ValueTask<BlockFace?> CheckCollisionAsync(AbstractLevel level, MobTerrain terrain)
     {
         if (this.Motion.Magnitude == 0)
-            return;
+            return null;
 
-        var end = this.Position + this.Motion;
-        var swept = new BoundingBox(
-            VectorD.Min(this.Position, end) - new VectorD(0.3f),
-            VectorD.Max(this.Position, end) + new VectorD(0.3f));
-
-        var fraction = 1d;
-        foreach (var shape in terrain.GetCollisions(swept))
-        {
-            if (MobTerrain.RayIntersection(shape, this.Position, this.Motion) is double hit)
-                fraction = Math.Min(fraction, hit);
-        }
+        var blockHit = ProjectileBlockHits.Find(terrain, this.Position, this.Motion);
+        var fraction = blockHit?.Fraction ?? 1;
 
         IEntity? target = null;
         foreach (var candidate in level.GetEntitiesInRange(this.Position, (float)this.Motion.Magnitude + 3))
@@ -255,12 +263,22 @@ public sealed partial class FishingHook : Entity
             // Vanilla's onHitEntity: the entity is hooked, and the bobber stops where it reached it.
             this.Motion = VectorD.Zero;
             this.SetHookedIn(target);
-            return;
+            return null;
         }
 
-        // Vanilla's onHitBlock: the motion keeps its direction and shrinks to the distance to the hit.
-        if (fraction < 1)
-            this.Motion *= fraction;
+        // Vanilla's onHitBlock: once the block reacted, the motion keeps its direction and shrinks to the distance
+        // to the hit.
+        if (blockHit is { } blockCollision)
+        {
+            await ProjectileBlockHits.HitAsync(level, this, this.owner, blockCollision, () =>
+            {
+                this.Motion *= blockCollision.Fraction;
+                return ValueTask.CompletedTask;
+            });
+            return blockCollision.Face;
+        }
+
+        return null;
     }
 
     // Vanilla's canHitEntity: anything alive that can be picked, plus items, but never the owner until the bobber has left it.

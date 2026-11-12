@@ -202,6 +202,11 @@ public partial class PlayerBase
         if (usingWeapon == null)
             return;
 
+        // Vanilla's stopUsingItem: the end of a use is heard, for items whose use_effects allow it. Only the brush
+        // emits it here so far (see known-gaps/brushing-and-armor-stands.md); a broken one is empty and has none.
+        if (usingWeapon.Is(ItemsRegistry.Brush) && usingWeapon.Count > 0 && Level is WorldData.AbstractLevel level)
+            level.EmitGameEvent(WorldData.MobGameEvent.ItemInteractFinish, Position, this);
+
         usingWeapon = null;
         weaponTicks = 0;
         spearContacts.Clear();
@@ -365,7 +370,7 @@ public partial class PlayerBase
         var holdingArm = offHandHolds && !mainHandHolds
             ? (ClientInformation.MainHand == HumanoidArm.Right ? HumanoidArm.Left : HumanoidArm.Right)
             : ClientInformation.MainHand;
-        var yaw = (Yaw.Degrees + (holdingArm == HumanoidArm.Right ? 80 : -80)) * Math.PI / 180;
+        var yaw = (Yaw + (holdingArm == HumanoidArm.Right ? 80 : -80)) * Math.PI / 180;
         return new VectorD(-Math.Sin(yaw), 0, Math.Cos(yaw)) * 0.5;
     }
 
@@ -494,6 +499,12 @@ public partial class PlayerBase
         if (usingWeapon is not { } item)
             return;
 
+        if (IsSpentBrush(item))
+        {
+            await TickSpentBrushAsync();
+            return;
+        }
+
         var lostWeapon = !Alive
             || Respawning
             || GameMode == GameMode.Spectator
@@ -509,6 +520,12 @@ public partial class PlayerBase
         if (ItemOwners.IsBundle(item))
         {
             await TickBundleUseAsync(item);
+            return;
+        }
+
+        if (item.Is(ItemsRegistry.Brush))
+        {
+            await TickBrushingAsync(item);
             return;
         }
 
@@ -638,7 +655,7 @@ public partial class PlayerBase
         var creative = GameMode == GameMode.Creative;
         var reach = CombatItems.Number(range, creative ? "max_creative_reach" : "max_reach", 4.5f);
         var minimum = CombatItems.Number(range, creative ? "min_creative_reach" : "min_reach", 2);
-        var eye = Position + new VectorD(0, 1.62, 0);
+        var eye = EyePosition(this);
         var direction = GetLookDirection();
         var start = eye + direction * minimum;
         var ray = direction * (reach - minimum);

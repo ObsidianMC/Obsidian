@@ -1,4 +1,3 @@
-using Obsidian.Nbt;
 using Obsidian.WorldData.Features;
 using System.Text.Json;
 
@@ -38,15 +37,8 @@ internal sealed partial class FeatureRegistry
                 level.SetBlock(position, state);
             }
 
-            if (exit is Vector target && level.GetBlockEntity(origin) is DataBlockEntity gateway)
-            {
-                gateway.Set(new NbtArray<int>("exit_portal", [target.X, target.Y, target.Z]));
-
-                if (exact)
-                {
-                    gateway.Set("ExactTeleport", true);
-                }
-            }
+            if (exit is Vector target && level.GetBlockEntity(origin) is EndGatewayBlockEntity gateway)
+                gateway.SetExit(target, exact);
 
             return true;
         };

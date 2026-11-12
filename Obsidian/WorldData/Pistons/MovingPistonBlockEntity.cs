@@ -1,5 +1,6 @@
 using Obsidian.API;
 using Obsidian.API.BlockEntities;
+using Obsidian.Entities;
 using Obsidian.Nbt;
 using Obsidian.Registries;
 using Obsidian.WorldData.BlockNotifications;
@@ -26,6 +27,11 @@ internal sealed class MovingPistonBlockEntity : BlockEntity
     private long lastTicked;
     private bool finished;
     private IRedstoneLevel? world;
+
+    /// <summary>
+    /// Test hook: runs on the ticking thread just before a push re-checks the entity it moves and commits the move.
+    /// </summary>
+    internal Action<Obsidian.Entities.Entity>? BeforePushCommit { get; set; }
 
     public MovingPistonBlockEntity()
     {
@@ -161,16 +167,20 @@ internal sealed class MovingPistonBlockEntity : BlockEntity
         // Vanilla moveByPositionAndProgress: the cell is the destination, so the box lags it by the remaining progress.
         var moving = Shift(cell, direction, this.progress - 1);
 
+        var launches = this.movedState.Is(BlockIds.SlimeBlock);
         foreach (var entity in level.EntitiesIn(moving.Min, moving.Max).ToList())
         {
             if (entity is not Obsidian.Entities.Entity concrete)
                 continue;
 
+            if (launches)
+                Launch(level, concrete, direction);
+
             var needed = Distance(moving, direction, entity.BoundingBox);
             if (needed <= 0)
                 continue;
 
-            await Move(concrete, direction, Math.Min(needed, delta) + 0.01);
+            await this.MoveAsync(level, concrete, direction, Math.Min(needed, delta) + 0.01);
         }
 
         // Vanilla moveStuckEntities: a honey block moving sideways carries the entities on it, whether extending or not.
@@ -185,9 +195,43 @@ internal sealed class MovingPistonBlockEntity : BlockEntity
             foreach (var entity in level.EntitiesIn(top.Min, top.Max).ToList())
             {
                 if (entity is Obsidian.Entities.Entity concrete && entity.BoundingBox.Min.Y >= top.Min.Y - 0.01)
-                    await Move(concrete, direction, delta);
+                    await this.MoveAsync(level, concrete, direction, delta);
             }
         }
+    }
+
+    // Vanilla moveCollidedEntities: a moving slime block sets the velocity of the entities it meets to one block a
+    // tick along its axis, keeping the other components. Players' clients move themselves (vanilla's
+    // canSimulateMovement), so only the server's own entities are launched here, and only while they're still in the
+    // piston's level: an earlier push's await may have let one travel.
+    private static void Launch(IRedstoneLevel level, Obsidian.Entities.Entity entity, BlockFace face)
+    {
+        if (entity is PlayerBase)
+            return;
+
+        if (level is not AbstractLevel owner)
+        {
+            SetLaunchMotion(entity, face);
+            return;
+        }
+
+        using (owner.TransferLock.Enter())
+        {
+            if (entity.Level == owner && entity.IsTravelResident(owner))
+                SetLaunchMotion(entity, face);
+        }
+    }
+
+    private static void SetLaunchMotion(Obsidian.Entities.Entity entity, BlockFace face)
+    {
+        var step = face.ToVector();
+        var motion = entity.Motion;
+        entity.Motion = face switch
+        {
+            BlockFace.East or BlockFace.West => new VectorD(step.X, motion.Y, motion.Z),
+            BlockFace.Up or BlockFace.Down => new VectorD(motion.X, step.Y, motion.Z),
+            _ => new VectorD(motion.X, motion.Y, step.Z)
+        };
     }
 
     private static BoundingBox Shift(BoundingBox box, BlockFace face, float amount)
@@ -208,10 +252,46 @@ internal sealed class MovingPistonBlockEntity : BlockEntity
         _ => entity.Max.Z - moving.Min.Z,
     };
 
-    private static async ValueTask Move(Obsidian.Entities.Entity entity, BlockFace face, double amount)
+    // Moves the entity along the face. The pushes before it await, so it may have travelled to another level or moved
+    // since it was found: it's moved only while it's still where this push saw it in the piston's level, re-checked
+    // under that level's transfer lock, which travel commits under too.
+    private async ValueTask MoveAsync(
+        IRedstoneLevel level,
+        Obsidian.Entities.Entity entity,
+        BlockFace face,
+        double amount)
     {
         var delta = face.ToVector();
-        var position = entity.Position + new VectorD(delta.X * amount, delta.Y * amount, delta.Z * amount);
-        await entity.UpdatePositionAsync(position, MovementFlags.OnGround);
+        var observedPosition = entity.Position;
+        var position = observedPosition + new VectorD(delta.X * amount, delta.Y * amount, delta.Z * amount);
+        if (level is not AbstractLevel owner)
+        {
+            await entity.UpdatePositionAsync(position, MovementFlags.OnGround);
+            return;
+        }
+
+        var (chunkX, chunkZ) = Region.ChunkOf(position);
+        await owner.GetChunkAsync(chunkX, chunkZ, scheduleGeneration: false);
+
+        this.BeforePushCommit?.Invoke(entity);
+
+        Task movement;
+        lock (owner.Fluids.TickLock)
+        {
+            using (owner.TransferLock.Enter())
+            {
+                if (entity.Level != owner || entity.Position != observedPosition || !entity.IsTravelResident(owner))
+                    return;
+
+                if (owner.GetLoadedChunk(chunkX, chunkZ) is null)
+                    return;
+
+                // The tick lock keeps the chunk loaded, so UpdatePositionAsync's chunk lookup completes synchronously:
+                // the position, grid membership and box change before the transfer lock is released. Await outside it.
+                movement = entity.UpdatePositionAsync(position, MovementFlags.OnGround);
+            }
+        }
+
+        await movement;
     }
 }

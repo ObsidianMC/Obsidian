@@ -82,8 +82,8 @@ public partial class Mob
         WriteVector(writer, "Motion", Motion);
 
         writer.WriteListStart("Rotation", NbtTagType.Float, 2);
-        writer.WriteFloat(Yaw.Degrees);
-        writer.WriteFloat(Pitch.Degrees);
+        writer.WriteFloat(Yaw);
+        writer.WriteFloat(Pitch);
         writer.EndList();
 
         writer.WriteFloat("Health", Health);
@@ -92,7 +92,7 @@ public partial class Mob
         writer.WriteShort("Fire", (short)Math.Clamp(FireTicks, 0, short.MaxValue));
         writer.WriteBool("OnGround", MovementFlags.HasFlag(MovementFlags.OnGround));
         writer.WriteInt("TicksFrozen", PowderedSnowTicks);
-        writer.WriteFloat("FallDistance", fallDistance);
+        writer.WriteFloat("FallDistance", (float)fallDistance);
     }
 
     private void WriteMobFlagsSave(INbtWriter writer)
@@ -124,9 +124,13 @@ public partial class Mob
             writer.WriteString("id", item.Holder.UnlocalizedName);
             writer.WriteInt("count", item.Count);
 
-            var buffer = new NetworkBuffer();
-            buffer.WriteItemStack(item);
-            writer.WriteArray("data", buffer.AsSpan(0, buffer.Size));
+            var data = InventorySnapshot.NetworkItemData(item, static stack =>
+            {
+                using var buffer = new NetworkBuffer();
+                buffer.WriteItemStack(stack);
+                return buffer.AsSpan(0, buffer.Size).ToArray();
+            });
+            writer.WriteArray("data", data.Span);
             writer.EndCompound();
         }
 

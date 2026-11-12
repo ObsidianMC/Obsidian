@@ -108,13 +108,6 @@ public partial class Arrow : Entity
         }
     }
 
-    public override void SpawnEntity(Velocity? velocity = null, int additionalData = 0)
-    {
-        base.SpawnEntity(velocity, additionalData);
-        if (Level is AbstractLevel level)
-            level.EmitGameEvent(MobGameEvent.ProjectileShoot, Position, Owner ?? this);
-    }
-
     internal override IClientboundPacket CreateSpawnPacket(Velocity? velocity = null, int additionalData = 0)
     {
         var initialVelocity = velocity ?? new Velocity(Motion.X, Motion.Y, Motion.Z);
@@ -184,7 +177,7 @@ public partial class Arrow : Entity
         }
 
         var terrain = new MobTerrain(Level);
-        var blockHit = this.FindBlockHit(terrain);
+        var blockHit = ProjectileBlockHits.Find(terrain, this.Position, this.Motion);
         var blockFraction = blockHit?.Fraction ?? 1;
         var (target, fraction) = FindEntityHit(blockFraction);
         var next = Position + Motion * fraction;
@@ -192,18 +185,26 @@ public partial class Arrow : Entity
             return;
 
         Position = next;
+        BoundingBox = Dimension.CreateBBFromPosition(Position);
         UpdateShotRotation(Motion);
         BroadcastFlight();
+
+        // Shulker bullets and wither skulls, not AbstractArrows to vanilla, are shot before they hit; arrows after.
+        var shotBeforeHit = Type is EntityType.ShulkerBullet or EntityType.WitherSkull;
+        if (shotBeforeHit)
+            this.EmitShotOnce(Owner);
 
         if (target != null)
         {
             await HitEntityAsync(level, target);
+            this.EmitShotOnce(Owner);
             return;
         }
 
         if (blockHit is { } collision)
         {
-            await this.HitBlockAsync(level, collision.Hit);
+            await this.HitBlockAsync(level, collision);
+            this.EmitShotOnce(Owner);
             return;
         }
 
@@ -212,29 +213,8 @@ public partial class Arrow : Entity
         Motion *= GetDrag(water);
         if (!NoGravity)
             Motion -= new VectorD(0, 0.05, 0);
-    }
 
-    /// <summary>
-    /// The nearest collision, retaining the block and face even when a shape ends inside its block's cell.
-    /// </summary>
-    private (double Fraction, BlockShapeHit Hit)? FindBlockHit(MobTerrain terrain)
-    {
-        var end = Position + Motion;
-        var min = VectorD.Min(Position, end) - new VectorD(0.3f);
-        var max = VectorD.Max(Position, end) + new VectorD(0.3f);
-        var bounds = new BoundingBox(min, max);
-        (double Fraction, BlockShapeHit Hit)? nearest = null;
-        foreach (var (shape, block) in terrain.GetBlockCollisions(bounds))
-        {
-            var local = shape.OffsetBy(-(VectorD)block);
-            var hit = BlockShapeRaycast.Clip([local], block, VectorD.Zero, this.Position, this.Motion);
-            if (hit is { } collision && (nearest is null || collision.Distance < nearest.Value.Fraction))
-            {
-                nearest = (collision.Distance, collision.Hit);
-            }
-        }
-
-        return nearest;
+        this.EmitShotOnce(Owner);
     }
 
     /// <summary>
@@ -331,6 +311,7 @@ public partial class Arrow : Entity
             if (piercedEntities.Count <= PiercingLevel)
             {
                 Position += Motion * 0.001;
+                BoundingBox = Dimension.CreateBBFromPosition(Position);
                 return;
             }
         }
@@ -417,8 +398,8 @@ public partial class Arrow : Entity
         if (KnockbackLevel > 0)
             CombatEffects.Knockback(living, Motion, KnockbackLevel * 0.6f);
 
-        if (PickupItem?.Is(ItemsRegistry.TippedArrow) == true)
-            await ApplyTippedEffectsAsync(living);
+        if (PickupItem?.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents) is not null)
+            this.ApplyPotionHitEffects(living);
 
         if (Owner is Living attacker)
             await CombatEffects.PostAttackAsync(attacker, living, Type == EntityType.Trident ? Weapon : null);
@@ -443,35 +424,35 @@ public partial class Arrow : Entity
         }
     }
 
-    private async ValueTask HitBlockAsync(AbstractLevel level, BlockShapeHit collision)
+    // Vanilla's AbstractArrow.onHitBlock through the shared hit path. Shulker bullets and wither skulls aren't
+    // AbstractArrows to vanilla: they react in their own way (OnBlockHitAsync) and end as on any hit.
+    private async ValueTask HitBlockAsync(AbstractLevel level, ProjectileBlockHit hit)
     {
-        level.EmitGameEvent(MobGameEvent.ProjectileLand, Position, this, Owner);
         if (Type is EntityType.ShulkerBullet or EntityType.WitherSkull)
         {
-            await OnImpactAsync(null, false);
+            if (await ProjectileBlockHits.HitAsync(level, this, Owner, hit, () => this.OnBlockHitAsync(level)))
+                await OnImpactAsync(null, false);
+
             return;
         }
 
-        this.embeddedBlockState = level.BlockUpdates.GetBlock(collision.Position);
+        // The state the arrow hit, kept before the block reacts, so that the arrow notices it change.
+        this.embeddedBlockState = level.BlockUpdates.GetBlock(hit.Block);
+        await ProjectileBlockHits.HitAsync(level, this, Owner, hit, () => this.EmbedAsync(level, hit));
+    }
 
-        // Like vanilla's onHitBlock, a block the arrow hits reacts before the arrow embeds.
-        if (Level is AbstractLevel hitLevel)
-        {
-            var hitBlock = collision.Position;
-            var hitFace = collision.Face;
-            await hitLevel.OnProjectileHitBlockAsync(hitBlock, Position, hitFace);
-            if (this.Type == EntityType.Trident
-                && hitLevel.BlockUpdates.GetBlock(hitBlock).Is(BlockIds.SulfurSpike))
-            {
-                var allowed = hitLevel.LevelData.GetBooleanRule("projectiles_can_break_blocks")
-                    && this.Owner is not IPlayer { GameMode: GameMode.Adventure or GameMode.Spectator }
-                    && (this.Owner is null or IPlayer || hitLevel.LevelData.GetBooleanRule("mob_griefing"));
-                if (WorldData.SulfurSpikeBehavior.BreaksFromTrident(this.Motion.Magnitude, allowed))
-                {
-                    hitLevel.DestroyBlock(hitBlock, dropItems: true, this.Owner);
-                }
-            }
-        }
+    /// <summary>
+    /// The block reaction of a projectile Obsidian runs as an arrow but vanilla doesn't (shulker bullets), after the
+    /// block's own and before <c>projectile_land</c>.
+    /// </summary>
+    protected virtual ValueTask OnBlockHitAsync(AbstractLevel level) => ValueTask.CompletedTask;
+
+    // The rest of vanilla's AbstractArrow.onHitBlock once the block reacted: the weapon's hit_block enchantment
+    // effects (a trident's Channeling), then the arrow sticks where it hit, with its sound.
+    private async ValueTask EmbedAsync(AbstractLevel level, ProjectileBlockHit hit)
+    {
+        if (Type == EntityType.Trident)
+            await this.ChannelAsync(level, hit);
 
         embedded = true;
         // Vanilla retreats by 0.05 along each moving axis before applying its nearby collision release check.
@@ -482,10 +463,67 @@ public partial class Arrow : Entity
             this.Position = embeddedPosition;
         }
 
-        Crit = false;
+        // Kept with the position: a wooden button looks for the arrows whose boxes are in it.
+        this.BoundingBox = this.Dimension.CreateBBFromPosition(this.Position);
+
         Motion = VectorD.Zero;
+        var sound = Type == EntityType.Trident ? "minecraft:item.trident.hit_ground" : "minecraft:entity.arrow.hit";
+        // Vanilla's playSound draws the pitch either way and sends nothing for a silent arrow.
+        var pitch = 1.2f / (Globals.Random.NextSingle() * 0.2f + 0.9f);
+        if (!this.Silent)
+            ProjectileBlockHits.PlaySound(level, Position, sound, 1, pitch);
+
+        Crit = false;
         var packet = new SetEntityDataPacket { EntityId = EntityId, Entity = this };
         PacketBroadcaster.QueuePacketToLevelInRange(Level, Position, packet);
+    }
+
+    // Channeling's hit_block effect: in a thunderstorm, a trident hitting a lightning rod under open sky calls
+    // lightning down where it hit, with the thunder of the enchantment's sound.
+    private ValueTask ChannelAsync(AbstractLevel level, ProjectileBlockHit hit)
+    {
+        if (CombatItems.EnchantmentLevel(Weapon, EnchantmentsRegistry.Channeling) <= 0 || !level.IsThundering())
+            return ValueTask.CompletedTask;
+
+        var block = level.BlockUpdates.GetBlock(hit.Block);
+        if (!TagsRegistry.Block.LightningRods.Entries.Contains(block.RegistryId))
+            return ValueTask.CompletedTask;
+
+        if (new MobTerrain(level).GetSkyLight(hit.Block) != 15)
+            return ValueTask.CompletedTask;
+
+        // Vanilla clamps the hit inside the block it struck (BlockPos.clampLocationWithin).
+        this.CallLightning(level, Clamp(hit.Location, hit.Block));
+        return ValueTask.CompletedTask;
+    }
+
+    /// <summary>
+    /// Channeling's effects, as vanilla's <c>summon_entity</c> and <c>play_sound</c> run them: a lightning bolt at
+    /// <paramref name="position"/>, whose cause is the thrower when that's a player, then the trident's thunder there.
+    /// </summary>
+    /// <remarks>
+    /// Vanilla spawns the bolt at the bottom centre of the position's block and moves it to the position itself before
+    /// it first ticks, so it strikes from the position.
+    /// </remarks>
+    protected void CallLightning(AbstractLevel level, VectorD position)
+    {
+        var bolt = new LightningBolt
+        {
+            Level = level,
+            EntityId = Server.GetNextEntityId(),
+            Position = position,
+            Cause = this.Owner as PlayerBase
+        };
+        level.SpawnEntity(bolt);
+        ProjectileBlockHits.PlaySound(level, position, "minecraft:item.trident.thunder", 5, 1);
+    }
+
+    private static VectorD Clamp(VectorD location, Vector block)
+    {
+        const double Inside = 1.0E-5;
+        var min = (VectorD)block;
+        var max = min + new VectorD(1 - Inside);
+        return VectorD.Min(VectorD.Max(location, min), max);
     }
 
     protected virtual ValueTask OnImpactAsync(IEntity? target, bool damaged) => RemoveAsync();
@@ -532,30 +570,23 @@ public partial class Arrow : Entity
         }
     }
 
-    private async ValueTask ApplyTippedEffectsAsync(Living target)
+    private void ApplyPotionHitEffects(Living target)
     {
         var contents = PickupItem?.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents);
+        var scale = 1f;
+        if (this.PickupItem is ItemStack stack
+            && !stack.RemoveComponents.Contains(DataComponentType.PotionDurationScale))
+        {
+            var defaults = CombatItems.Component(stack, "potion_duration_scale");
+            scale = stack.GetComponent<SimpleDataComponent<float>>(DataComponentType.PotionDurationScale)?.Value
+                ?? (defaults.ValueKind == System.Text.Json.JsonValueKind.Number ? defaults.GetSingle() : 1f);
+        }
+
         foreach (var effect in ArrowPotionEffects.Get(contents))
         {
-            if (effect.Id == (int)PotionEffect.InstantHealth - 1 || effect.Id == (int)PotionEffect.InstantDamage - 1)
-                await ApplyInstantEffectAsync(target, effect);
-            else
-                target.AddPotionEffect(effect.Id, Math.Max(1, effect.Duration / 8), effect.Amplifier);
-        }
-    }
-
-    private async ValueTask ApplyInstantEffectAsync(Living target, PotionEffectData effect)
-    {
-        var harms = (effect.Id == (int)PotionEffect.InstantDamage - 1) != CombatEffects.IsUndead(target.Type);
-        if (harms)
-        {
-            var damage = (float)Math.Floor(0.125 * (6 << effect.Amplifier) + 0.5);
-            await target.DamageCombatAsync(Owner ?? this, damage, CombatDamageKind.Magic);
-        }
-        else
-        {
-            var healing = (float)Math.Floor(0.125 * (4 << effect.Amplifier) + 0.5);
-            target.Health = Math.Min(target.GetAttributeValue("minecraft:max_health"), target.Health + healing);
+            var duration = effect.Duration == -1 ? -1 : Math.Max(1, (int)(effect.Duration * scale));
+            target.AddPotionEffect(effect.Id, duration, effect.Amplifier,
+                EntityEffectFlags.ShowParticles | EntityEffectFlags.ShowIcon);
         }
     }
 

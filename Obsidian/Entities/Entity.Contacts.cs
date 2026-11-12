@@ -1,0 +1,203 @@
+using System.Threading;
+
+namespace Obsidian.Entities;
+
+public partial class Entity
+{
+    // The fall and its impact support, retained until the entity contact pass dispatches it.
+    private BlockLanding? landedFall;
+
+    internal virtual double ContactFallDistance { get; set; }
+
+    internal bool ContactBounced { get; set; }
+
+    internal virtual int ContactFireTicks { get; set; }
+
+    // A stand's shared Burning flag follows baseTick; extinguishing during contacts only changes its counter.
+    internal bool IsContactBurning => (this.ContactFireTicks > 0 || this is not ArmorStand && this.Burning)
+        && this is not Living { IsFireImmune: true };
+
+    internal bool NeedsRainContact => this is ArmorStand { ContactFireTicks: > 0 } && this.Level.LevelData.Raining;
+
+    /// <summary>The entity random used for contact effects; mobs share their ordinary AI random.</summary>
+    internal Random ContactEffectRandom { get; set; } = Random.Shared;
+
+    internal virtual Random ContactRandom => this.ContactEffectRandom;
+
+    private bool contactExtinguishPending;
+    private bool contactWasBurning;
+    private bool contactWasFrozen;
+    private List<(WorldData.IContactLevel Level, Vector Position, IBlock State)>? snowContacts;
+
+    internal void BeginInsideContact()
+    {
+        this.contactWasBurning = this.IsContactBurning;
+        this.contactWasFrozen = this.PowderedSnowTicks > 0;
+    }
+
+    internal void RecordPowderSnow(WorldData.IContactLevel level, Vector position, IBlock state)
+    {
+        this.snowContacts ??= [];
+        this.snowContacts.Add((level, position, state));
+    }
+
+    internal void RequestContactExtinguish() => this.contactExtinguishPending = true;
+
+    // Vanilla's isInRain: rain falling on the entity's feet, or on the cell at the top of its box above them.
+    internal bool IsInRain()
+    {
+        var terrain = new AI.MobTerrain(this.Level);
+        var feet = (Vector)this.Position.Floor();
+        var head = new Vector(feet.X, (int)Math.Floor(this.CurrentBox.Max.Y), feet.Z);
+        return terrain.IsRainingAt(feet) || terrain.IsRainingAt(head);
+    }
+
+    internal void FinishInsideContact()
+    {
+        if (this.contactExtinguishPending)
+        {
+            this.contactExtinguishPending = false;
+            // Stands have no mob/player environment tick. Vanilla applies FREEZE once before deferred melts.
+            if (this is ArmorStand stand)
+                stand.FreezeFromPowderSnow();
+
+            if (this.snowContacts is not null)
+            {
+                foreach (var (level, position, state) in this.snowContacts)
+                    WorldData.PowderSnowContactBehavior.Melt(level, position, state, this);
+
+                this.snowContacts.Clear();
+            }
+            this.ContactFireTicks = 0;
+            if (this.Burning)
+            {
+                this.Burning = false;
+                this.PacketBroadcaster.QueuePacketToLevelInRange(this.Level, this.Position,
+                    new Net.Packets.Play.Clientbound.SetEntityDataPacket { EntityId = this.EntityId, Entity = this });
+            }
+        }
+
+        if (this.NeedsRainContact && this.IsInRain())
+            this.ContactFireTicks = 0;
+
+        // Vanilla snapshots fire/freeze before visiting cells, but evaluates melting after all their hooks. An
+        // ignition later in the pass can therefore melt earlier snow without an extinguish sound that pass.
+        if (this.contactWasBurning && !this.IsContactBurning || this.contactWasFrozen && this.PowderedSnowTicks == 0)
+        {
+            // Vanilla draws two entity floats for the pitch, even when the entity is silent.
+            var pitch = 1.6f + (this.ContactRandom.NextSingle() - this.ContactRandom.NextSingle()) * 0.4f;
+            if (this.Level is WorldData.AbstractLevel world)
+            {
+                var category = this switch
+                {
+                    Mob mob => mob.ContactSoundCategory,
+                    IPlayer => SoundCategory.Players,
+                    ArmorStand => SoundCategory.Neutral,
+                    _ => SoundCategory.Ambient
+                };
+                WorldData.LevelSounds.Play(world, this.Position, "minecraft:entity.generic.extinguish_fire",
+                    category, 0.7f, pitch);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Where the entity was when its last tick's movement began, like vanilla's <c>oldPosition</c>: set by its level
+    /// before the tick of an entity the server moves, and after the contacts of a player, whose client moves them
+    /// between ticks. Null until it's first set.
+    /// </summary>
+    internal VectorD? TickStartPosition { get; set; }
+
+    /// <summary>
+    /// How far the entity moved since <see cref="TickStartPosition"/>, which blocks such as sweet berry bushes read.
+    /// </summary>
+    internal VectorD TickMovement => this.Position - (this.TickStartPosition ?? this.Position);
+
+    // What the entity's next move is scaled by, set by the blocks it's stuck in (see MakeStuckInBlock).
+    private VectorD stuckMultiplier;
+
+    /// <summary>
+    /// Slows the entity's next move by <paramref name="multiplier"/> on each axis, as being inside a cobweb, a sweet
+    /// berry bush or powder snow does, and ends its fall, like vanilla's <c>makeStuckInBlock</c>. The block sets it
+    /// again each tick the entity is still inside.
+    /// </summary>
+    internal void MakeStuckInBlock(VectorD multiplier)
+    {
+        this.ResetFallDistance();
+        this.stuckMultiplier = multiplier;
+    }
+
+    /// <summary>
+    /// The multiplier <see cref="MakeStuckInBlock"/> set since the last move, cleared as vanilla's <c>Entity.move</c>
+    /// clears it, or null when there's none.
+    /// </summary>
+    internal VectorD? TakeStuckMultiplier()
+    {
+        var multiplier = this.stuckMultiplier;
+        if (multiplier.MagnitudeSquared() <= 1.0E-7)
+            return null;
+
+        this.stuckMultiplier = VectorD.Zero;
+        return multiplier;
+    }
+
+    internal void TrackContactFall(
+        double descent, bool grounded, VectorD impactPosition, (Vector, IBlock)? support)
+    {
+        // Bat.checkFallDamage intentionally does nothing, even when externally moved.
+        if (this is Bat)
+            return;
+
+        // Vanilla's checkFallDamage: an entity in water builds no fall.
+        if (descent < 0 && !this.TouchesWaterForFalls)
+            this.ContactFallDistance -= (float)descent;
+
+        if (!grounded)
+            return;
+
+        this.RecordLanding(this.ContactFallDistance, impactPosition, support);
+        this.ContactFallDistance = 0;
+    }
+
+    /// <summary>
+    /// Whether the entity touched water when it last checked, like vanilla's <c>isInWater</c>, which stops a fall
+    /// building up. Only item entities track it so far; living entities forget their fall in water as they move.
+    /// </summary>
+    internal virtual bool TouchesWaterForFalls => false;
+
+    internal virtual ValueTask CauseContactFallAsync(
+        double distance, float multiplier = 1, VectorD? impact = null) => default;
+
+    /// <summary>
+    /// Records that the entity landed after falling <paramref name="fallDistance"/> blocks, which the entity contact
+    /// pass (<see cref="WorldData.EntityContactPass"/>) reports to the block it landed on after the entity's tick, as
+    /// vanilla's <c>checkFallDamage</c> calls <c>fallOn</c>. A landing without a fall isn't one.
+    /// </summary>
+    internal void RecordLanding(
+        double fallDistance, VectorD? impact = null, (Vector, IBlock)? support = null)
+    {
+        if (fallDistance <= 0)
+            return;
+
+        var at = impact ?? this.Position;
+        if (support is null && this.Level is WorldData.IContactLevel level)
+            support = WorldData.EntityContactPass.SupportAt(level, this, at);
+
+        var cell = support?.Item1 ?? (Vector)(at - new VectorD(0, 0.2, 0)).Floor();
+        Volatile.Write(ref this.landedFall, new BlockLanding(fallDistance, at, cell, support?.Item2));
+    }
+
+    /// <summary>
+    /// The entity's box where it is now: its dimensions around its position. <see cref="BoundingBox"/> follows the
+    /// position only where a mover updates it, so an entity placed or teleported by setting its position keeps an old
+    /// one; what looks for entities by where they are (pressure plates, tripwires) reads this instead.
+    /// </summary>
+    internal virtual BoundingBox CurrentBox =>
+        this.Dimension == EntityDimension.Zero ? this.BoundingBox : this.Dimension.CreateBBFromPosition(this.Position);
+
+    /// <summary>The landing recorded by <see cref="RecordLanding"/> since the last call, or null.</summary>
+    internal BlockLanding? TakeLanding() => Interlocked.Exchange(ref this.landedFall, null);
+}
+
+/// <summary>The support and entity position at impact, retained across later movement before dispatch.</summary>
+internal sealed record BlockLanding(double Distance, VectorD Impact, Vector BlockPosition, IBlock? State);

@@ -111,6 +111,14 @@ public abstract partial class AbstractLevel
         if (type is not null)
         {
             var created = prepared ?? BlockEntityNbt.Create(type, position, logger: this.Logger);
+
+            // Vanilla's CommandBlock.newBlockEntity: a new chain command block is always active.
+            if (prepared is null && created is CommandBlockEntity commandBlock)
+                commandBlock.Automatic = CommandBlocks.StartsAutomatic(block);
+
+            if (prepared is null && created is StructureBlockEntity structureBlock)
+                structureBlock.Settings = structureBlock.Settings with { Mode = StructureBlocks.ModeOf(block) };
+
             this.AttachBlockEntity(created);
             chunk.SetBlockEntity(position.X, position.Y, position.Z, created);
             if (prepared is null)
@@ -177,8 +185,24 @@ public abstract partial class AbstractLevel
     /// next tick, for a caller that can't let go of its locks first, like a fluid tick or a feature placed in the
     /// running level.
     /// </summary>
-    internal void QueueBlockEntityRemoval(BlockEntity removed) =>
-        this.EnqueueEntityAction(() => this.RunBlockEntityRemovalAsync(removed, onLevelTick: true));
+    internal void QueueBlockEntityRemoval(BlockEntity removed, bool skipSideEffects = false) =>
+        this.EnqueueEntityAction(() => skipSideEffects
+            ? this.RetireBlockEntityWithoutEffectsAsync(removed)
+            : this.RunBlockEntityRemovalAsync(removed, onLevelTick: true));
+
+    // Structure placement's strict writes and temporary barriers suppress removal effects, while still closing
+    // removed inventories. This runs on the entity action path, outside the tick and chunk locks.
+    private async ValueTask RetireBlockEntityWithoutEffectsAsync(BlockEntity removed)
+    {
+        await removed.WaitForLiveCallAsync();
+        if (removed is not ContainerBlockEntity container)
+            return;
+
+        using (await container.Inventory.LockAsync())
+            container.Inventory.TryRetire();
+
+        await CloseWindowsAsync(container.Inventory);
+    }
 
     // The level's generated chunks, listed once in a tick: its eggs and its block entities each go over them all.
     private (long Tick, List<Chunk> Chunks)? generatedChunks;
@@ -457,9 +481,10 @@ public abstract partial class AbstractLevel
     /// <summary>
     /// Sends the updates block entities asked for since the last tick (see <see cref="BlockEntity.SendUpdate"/>), like
     /// vanilla's <c>ClientboundBlockEntityDataPacket</c>, to the players who have the chunk: what
-    /// <see cref="BlockEntity.GetUpdateData"/> returns now, copied, which chunk packets send from then on too.
+    /// <see cref="BlockEntity.GetUpdateData"/> returns now, copied, which chunk packets send from then on too. The end of
+    /// the block entity pass calls it; replays call it to send what their setup placed before anyone listens.
     /// </summary>
-    private void SendBlockEntityUpdates()
+    internal void SendBlockEntityUpdates()
     {
         if (this.blockEntityHost is not LevelBlockEntityHost host)
             return;
@@ -473,6 +498,11 @@ public abstract partial class AbstractLevel
                 continue;
 
             if (!this.RefreshBlockEntitySnapshot(blockEntity))
+                continue;
+
+            // Like vanilla's, a moving piston has no update packet: its block isn't sent either, and the client moves
+            // the blocks from the piston's block event. Chunk packets still carry its data.
+            if (blockEntity is Pistons.MovingPistonBlockEntity)
                 continue;
 
             var data = blockEntity.ClientData;
@@ -593,6 +623,32 @@ public abstract partial class AbstractLevel
         }
     }
 
+    /// <summary>Stores a prebuilt dispenser box during a state-only commit, without loading or running factories.</summary>
+    internal bool PlaceDispensedBlock(Vector position, IBlock block, BlockPlacement.Prepared prepared)
+    {
+        if (this.IsOutsideBuildHeight(position.Y)
+            || !this.Fluids.TryGetChunk(position, out var chunk)
+            || chunk is Chunk { EntitiesUnloaded: true })
+        {
+            return false;
+        }
+
+        var old = chunk.GetBlock(position.X, position.Y, position.Z);
+        if (!old.IsAir && !old.CanBeReplaced())
+            return false;
+
+        var removed = this.UpdateBlockEntity(chunk, position, block, prepared.Entity);
+        chunk.SetBlock(position.X, position.Y, position.Z, block);
+        var effects = this.ActiveBlockUse
+            ?? throw new InvalidOperationException("Dispenser placement requires a state commit.");
+        effects.After(() => this.CompleteBlockEntityPlacement(chunk, prepared.Entity));
+        if (removed is not null)
+            effects.After(() => this.QueueBlockEntityRemoval(removed));
+
+        this.AfterBlockSet(position, old, block, API.Blocks.BlockUpdateFlags.AllImmediate);
+        return true;
+    }
+
     /// <summary>Finishes a placement that raced the plugin's unloading sweep, after transferring its items.</summary>
     internal void CompleteBlockEntityPlacement(IChunk chunk, BlockEntity? entity)
     {
@@ -651,24 +707,11 @@ public abstract partial class AbstractLevel
             case DataBlockEntity data when data.KeptContainer() is ContainerBlockEntity kept:
                 await this.RemoveContentsAsync(kept);
                 break;
-            case DataBlockEntity { Id: "minecraft:decorated_pot" } pot:
-                // Vanilla's pot spills its item separately; its block loot copies only pot_decorations.
-                NbtCompound potData;
-                lock (pot.Data)
-                {
-                    potData = pot.SnapshotData();
-                    pot.Remove("item");
-                }
-
-                if (potData.TryGetTag<NbtCompound>("item", out var itemTag)
-                    && itemTag.ItemFromNbt() is ItemStack potItem && !potItem.IsAir && potItem.Count > 0)
-                {
-                    this.DropItemStack(pot.BlockPosition, potItem);
-                }
-
-                break;
             case DataBlockEntity { DropsItems: true } data:
                 this.DropSavedItems(data);
+                break;
+            case DataBlockEntity { Id: "minecraft:jukebox" } jukebox:
+                this.RemoveJukebox(jukebox);
                 break;
         }
     }
@@ -698,7 +741,7 @@ public abstract partial class AbstractLevel
             if (item is null || item.IsAir || item.Count <= 0)
                 continue;
 
-            inventory.SetItem(slot, null);
+            inventory[slot] = null;
             contents.Add(item);
         }
     }
@@ -726,7 +769,8 @@ public abstract partial class AbstractLevel
     /// <summary>
     /// Vanilla's <c>Containers.dropItemStack</c>: the stack drops at a random point of the block's lower part, in
     /// item entities of 10 to 30 items, each tossed up with a little random motion. Draws from the level's random in
-    /// vanilla's order, the motion the item entity's constructor draws included.
+    /// vanilla's order; the motion the item entity's constructor gives it, which this replaces, comes from its own
+    /// random in 26.3.
     /// </summary>
     internal void DropItemStack(Vector position, ItemStack stack)
     {
@@ -741,10 +785,6 @@ public abstract partial class AbstractLevel
         {
             var count = Math.Min(remaining, random.NextInt(21) + 10);
             remaining -= count;
-
-            // The item entity's own motion, which the drop replaces.
-            random.NextDouble();
-            random.NextDouble();
 
             var motion = new VectorD(
                 random.Triangle(0.0, DropMotionSpread),

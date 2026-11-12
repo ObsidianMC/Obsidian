@@ -29,8 +29,23 @@ public record class SimpleDataComponent<TValue> : DataComponent
 
     public TValue? Value
     {
-        get => this.copy is null ? this.value : this.copy(this.value);
-        init => this.value = this.copy is null ? value : this.copy(value);
+        get => this.Copy(this.value);
+        init => this.value = this.Copy(value);
+    }
+
+    /// <summary>
+    /// The stored value, without the defensive copy <see cref="Value"/> makes, which may run a plugin's delegate. For
+    /// code holding an inventory's lock, which must not run plugin code; only for values it reads and never keeps.
+    /// </summary>
+    internal TValue? StoredValue => this.value;
+
+    private TValue? Copy(TValue? value)
+    {
+        if (this.copy is null)
+            return value;
+
+        ComponentExecutionGuard.CheckDelegate(this.copy, "copy");
+        return this.copy(value);
     }
 
     public override string Identifier { get; }
@@ -58,15 +73,20 @@ public record class SimpleDataComponent<TValue> : DataComponent
 
     protected override void ReadCore(INetStreamReader reader)
     {
+        ComponentExecutionGuard.CheckDelegate(this.reader, "network reader");
         var decoded = this.reader(reader);
-        this.value = this.copy is null ? decoded : this.copy(decoded);
+        this.value = this.Copy(decoded);
     }
 
     /// <summary>Writes the stored value without allocating another defensive copy.</summary>
     /// <remarks>
     /// The writer delegate and stream writer must neither mutate nor retain mutable payload arguments.
     /// </remarks>
-    public override void Write(INetStreamWriter writer) => this.writer(writer, this.value);
+    public override void Write(INetStreamWriter writer)
+    {
+        ComponentExecutionGuard.CheckDelegate(this.writer, "network writer");
+        this.writer(writer, this.value);
+    }
 }
 
 

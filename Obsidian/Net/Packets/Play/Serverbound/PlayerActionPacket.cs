@@ -32,6 +32,13 @@ public partial class PlayerActionPacket
 
     public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
+        // The acknowledgement follows the block changes the action makes, with the next flush of the player's level.
+        using var acknowledgement = (player as PlayerBase)?.BeginBlockAcknowledgementScope();
+        await this.ActAsync(server, player);
+    }
+
+    private async ValueTask ActAsync(IServer server, IClientPlayer player)
+    {
         if (Status == PlayerActionStatus.ReleaseUseItem)
         {
             await player.ReleaseUsingItemAsync();

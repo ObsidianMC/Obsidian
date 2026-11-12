@@ -98,10 +98,11 @@ internal sealed class BlockUse
     internal HashSet<int> ChangedInventorySlots { get; } = [];
 
     /// <summary>
-    /// Vanilla's temporary filled-result stack after inventory routing. Insertion empties it; replacing the hand
-    /// or dropping it leaves it intact. Criterion predicates read this detached value, never a stored stack.
+    /// Vanilla's temporary filled-result stack after inventory routing (see <see cref="BlockUseReturn.Exchange"/>).
+    /// Insertion empties it; replacing the hand or dropping it leaves it intact. Criterion predicates read this
+    /// detached value, never a stored stack.
     /// </summary>
-    internal ItemStack? ExchangeRemainder { get; private set; }
+    internal ItemStack? ExchangeRemainder { get; set; }
 
     /// <summary>
     /// Whether the item's successful use awards its <c>minecraft:used</c> statistic. Plugins' items keep their own
@@ -149,11 +150,11 @@ internal sealed class BlockUse
     /// The callback validates before writing and never awaits.
     /// </summary>
     /// <remarks>
-    /// A replacement is only for a single input. An exchange result instead consumes one of a stack and routes
-    /// the result to the hand, the player's storage or a deferred drop, matching vanilla's filled-result exchange.
+    /// A replacement is only for a single input. An item the use gives the player, or a filled result that takes one
+    /// of a stack, goes through <see cref="BlockUseReturn"/> inside the change, so that it's part of the same commit.
     /// </remarks>
     public bool TryCommit(Func<bool> change, bool consumeItem = false, BaseContainer? destination = null,
-        ItemStack? replacement = null, ItemStack? exchangeResult = null)
+        ItemStack? replacement = null)
     {
         lock (this.Level.Fluids.TickLock)
         {
@@ -180,7 +181,6 @@ internal sealed class BlockUse
                         || held is not null && (held.Count <= 0 || held.Count != this.UsedItem?.Count
                             || !held.Equals(this.UsedItem))
                         || consumeItem && held is null
-                        || exchangeResult is not null && (held is null || replacement is not null)
                         || replacement is not null && (!consumeItem || held?.Count != 1))
                     {
                         this.ResyncHand = true;
@@ -216,9 +216,6 @@ internal sealed class BlockUse
                                 this.ChangedInventorySlots.Add(this.HandSlot);
                             }
 
-                            if (exchangeResult is not null)
-                                this.ExchangeRemainder = this.ExchangeResult(exchangeResult, effects);
-
                             committed = true;
                         }
                     }
@@ -242,50 +239,6 @@ internal sealed class BlockUse
             failure?.Throw();
             return committed;
         }
-    }
-
-    // Called only with the player's inventory held and external effects suppressed. Filled buckets do not stack.
-    private ItemStack ExchangeResult(ItemStack result, BlockUseEffects effects)
-    {
-        var remainder = new ItemStack(result, result.Count);
-        var inventory = this.Player.Inventory;
-        var creative = this.Player.GameMode == GameMode.Creative;
-        if (!creative)
-        {
-            inventory.RemoveItem(this.HandSlot, 1);
-            this.ChangedInventorySlots.Add(this.HandSlot);
-            if (inventory.GetItem(this.HandSlot) is null)
-            {
-                inventory.SetItem(this.HandSlot, result);
-                this.ResyncHand = true;
-                return remainder;
-            }
-        }
-
-        var slots = Enumerable.Range(36, 9).Concat(Enumerable.Range(9, 27)).ToArray();
-        if (creative && slots.Append(45).Any(slot => inventory.GetItem(slot) is ItemStack item && item.Equals(result)))
-            return remainder;
-
-        var available = slots.FirstOrDefault(slot => inventory.GetItem(slot) is not { Count: > 0 }, -1);
-        if (available >= 0)
-        {
-            inventory.SetItem(available, result);
-            this.ChangedInventorySlots.Add(available);
-            remainder.Count = 0;
-        }
-        else if (!creative)
-        {
-            var dropped = new ItemStack(result, result.Count);
-            effects.After(() => this.Level.SpawnItem(this.Player.Position + new VectorD(0, 1.3, 0), dropped));
-        }
-        else
-        {
-            // Vanilla creative insertion also consumes the temporary result when storage is full.
-            remainder.Count = 0;
-        }
-
-        this.ResyncHand = true;
-        return remainder;
     }
 
     /// <summary>Awards one of a <c>minecraft:custom</c> statistic, such as <c>minecraft:open_chest</c>.</summary>
@@ -363,13 +316,17 @@ internal static partial class UseBehaviors
 
     internal static IBlockUseBehavior LecternBlock { get; } = new LecternUse();
 
+    internal static IBlockUseBehavior CommandBlock { get; } = new CommandBlockUse();
+
     internal static IBlockUseBehavior ChestBlock { get; } = new ChestMenuUse();
 
     internal static IBlockUseBehavior EnderChestBlock { get; } = new EnderChestMenuUse();
 
     internal static IBlockUseBehavior BarrelBlock { get; } = new MenuUse("minecraft:open_barrel");
 
-    internal static IBlockUseBehavior ShulkerBoxBlock { get; } = new MenuUse("minecraft:open_shulker_box");
+    internal static IBlockUseBehavior ShulkerBoxBlock { get; } = new ShulkerBoxMenuUse();
+
+    internal static IBlockUseBehavior DragonEggBlock { get; } = new DragonEggUse();
 
     internal static IBlockUseBehavior DispenserBlock { get; } = new DispenserMenuUse();
 
@@ -432,4 +389,6 @@ internal static partial class UseBehaviors
 internal static class AttackBehaviors
 {
     internal static IBlockAttackBehavior NoteBlock { get; } = new UseBehaviors.NoteBlockUse();
+
+    internal static IBlockAttackBehavior DragonEggBlock { get; } = new UseBehaviors.DragonEggUse();
 }

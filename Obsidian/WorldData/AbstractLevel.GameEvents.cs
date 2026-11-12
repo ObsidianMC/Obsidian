@@ -1,16 +1,18 @@
 using Obsidian.Entities;
 using Obsidian.Entities.AI;
 using Obsidian.Net.Packets.Play.Clientbound;
+using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Redstone;
 
 namespace Obsidian.WorldData;
 
 internal enum MobGameEvent
 {
-    Step, Land, Swim, ProjectileShoot, ProjectileLand, BlockPlace, BlockDestroy, BlockChange,
+    Step, Land, Bounce, Swim, ProjectileShoot, ProjectileLand, BlockPlace, BlockDestroy, BlockChange,
     EntityDamage, EntityDie, EntityInteract, NoteBlockPlay, JukeboxPlay, JukeboxStop, SculkSensorClick,
     BlockActivate, BlockDeactivate, BlockOpen, BlockClose, ContainerOpen, ContainerClose, Eat, FluidPickup,
-    FluidPlace, PrimeFuse, EntityPlace, ItemInteractFinish
+    FluidPlace, PrimeFuse, EntityPlace, ItemInteractFinish, ItemInteractStart, Shear, Equip, Unequip, Explode,
+    LightningStrike, Splash, Shriek
 }
 
 internal static class MobGameEvents
@@ -37,39 +39,34 @@ internal readonly record struct MobVibration(
 
 public abstract partial class AbstractLevel
 {
-    private readonly ConcurrentQueue<MobVibration> mobGameEvents = new();
+    // Each event with the game time it was emitted at, which times its arrival at sculk.
+    private readonly ConcurrentQueue<(MobVibration Vibration, long EmittedAt)> mobGameEvents = new();
     private readonly Dictionary<int, PendingMobVibration> mobVibrations = [];
     private readonly Dictionary<Vector, PendingMobVibration> blockVibrations = [];
     private readonly Dictionary<Vector, int> activeSculk = [];
     private readonly Dictionary<Guid, WardenWarning> wardenWarnings = [];
     private long gameEventTick;
 
-    internal async ValueTask EmitMovementGameEventsAsync(Entity entity, VectorD oldPosition, MovementFlags oldFlags)
+    internal ValueTask EmitMovementGameEventsAsync(Entity entity, VectorD oldPosition, MovementFlags oldFlags)
     {
         var grounded = entity.MovementFlags.HasFlag(MovementFlags.OnGround);
-        if (grounded && !oldFlags.HasFlag(MovementFlags.OnGround))
-        {
-            EmitGameEvent(MobGameEvent.Land, entity.Position, entity);
-            await TrampleTurtleEggAsync(entity, true);
-        }
 
         var delta = entity.Position - oldPosition;
         var distance = Math.Sqrt(delta.X * delta.X + delta.Z * delta.Z);
         if (distance <= 0.00001 || distance > 8 || entity is Warden or Allay)
-            return;
+            return default;
 
         var water = GameEventBlock((Vector)entity.Position.Floor())?.RegistryId == BlockIds.Water;
         if (!grounded && !water)
-            return;
+            return default;
 
         var total = entity.GameEventStepDistance + distance;
         entity.GameEventStepDistance = total < 0.6 ? total : total % 0.6;
         if (total < 0.6)
-            return;
+            return default;
 
         EmitGameEvent(water ? MobGameEvent.Swim : MobGameEvent.Step, entity.Position, entity);
-        if (!water)
-            await TrampleTurtleEggAsync(entity);
+        return default;
     }
 
     private sealed record PendingMobVibration(MobVibration Event, long SelectedAt, long ArrivalAt, double Distance);
@@ -79,9 +76,6 @@ public abstract partial class AbstractLevel
     void IRedstoneLevel.EmitGameEvent(MobGameEvent kind, Vector position, IEntity? source) =>
         this.EmitGameEvent(kind, (VectorD)position + new VectorD(0.5, 0.5, 0.5), source);
 
-    void IPressurePlateWorld.EmitGameEvent(MobGameEvent kind, Vector position) =>
-        this.EmitGameEvent(kind, (VectorD)position + new VectorD(0.5, 0.5, 0.5));
-
     /// <summary>
     /// Takes the game events emitted since the level last dispatched them, in order, without dispatching them. Parity
     /// replays compare these with vanilla's.
@@ -89,11 +83,17 @@ public abstract partial class AbstractLevel
     internal List<MobVibration> TakeGameEvents()
     {
         var taken = new List<MobVibration>();
-        while (this.mobGameEvents.TryDequeue(out var vibration))
-            taken.Add(vibration);
+        while (this.mobGameEvents.TryDequeue(out var queued))
+            taken.Add(queued.Vibration);
 
         return taken;
     }
+
+    /// <summary>
+    /// Observes each game event as it's queued for dispatch, before the tick delivers it: for parity replays that tick
+    /// the level, which leaves nothing for <see cref="TakeGameEvents"/>.
+    /// </summary>
+    internal Action<MobVibration>? GameEventQueued { get; set; }
 
     internal void EmitGameEvent(
         MobGameEvent kind,
@@ -103,9 +103,14 @@ public abstract partial class AbstractLevel
         IBlock? affectedBlock = null)
     {
         if (this.ActiveBlockUse is BlockUseEffects effects)
+        {
             effects.After(() => this.EmitGameEvent(kind, position, source, owner, affectedBlock));
-        else
-            mobGameEvents.Enqueue(new(kind, position, source, owner, affectedBlock));
+            return;
+        }
+
+        var vibration = new MobVibration(kind, position, source, owner, affectedBlock);
+        this.GameEventQueued?.Invoke(vibration);
+        mobGameEvents.Enqueue((vibration, this.Fluids.Clock.GameTime));
     }
 
     internal async ValueTask TickMobGameEventsAsync()
@@ -113,10 +118,16 @@ public abstract partial class AbstractLevel
         gameEventTick++;
         TickJukeboxes();
         DeliverMobVibrations();
-        await DeliverBlockVibrationsAsync();
+
+        // Like vanilla's, active sculk settles (a scheduled block tick) before sculk hears vibrations (its block
+        // entity's tick), so a sensor activated this tick isn't counted down until the next.
         await TickActiveSculkAsync();
-        while (mobGameEvents.TryDequeue(out var vibration))
-            await DispatchGameEventAsync(vibration);
+        await DeliverBlockVibrationsAsync();
+        while (mobGameEvents.TryDequeue(out var queued))
+            DispatchGameEvent(queued.Vibration, queued.EmittedAt);
+
+        // A vibration from before this tick that travels a single tick reaches sculk now, as vanilla's does.
+        await DeliverBlockVibrationsAsync();
     }
 
     /// <summary>Hands each warden and allay the vibration that has reached it this tick.</summary>
@@ -159,16 +170,21 @@ public abstract partial class AbstractLevel
         if (block.GetProperty("sculk_sensor_phase") != "inactive")
             return;
 
-        var sensorRange = block.Is(BlockIds.CalibratedSculkSensor) ? 16 : 8;
+        var calibrated = block.Is(BlockIds.CalibratedSculkSensor);
+        var sensorRange = calibrated ? 16 : 8;
         var sensorPower = Math.Max(1, 15 - (int)(pending.Distance / sensorRange * 15));
         var activeSensor = block.WithProperty("sculk_sensor_phase", "active")
             .WithProperty("power", sensorPower);
-        await SetBlockAsync(point, activeSensor, true);
+
+        // Vanilla stores the frequency before activating, so comparators the activation updates read it.
         var chunk = GetLoadedChunk(point.X >> 4, point.Z >> 4);
         if (chunk?.GetBlockEntity(point.X, point.Y, point.Z) is DataBlockEntity sensor)
             sensor.Set("last_vibration_frequency", GameEventFrequency(pending.Event.Kind));
 
-        activeSculk[point] = 30;
+        await SetBlockAsync(point, activeSensor, true);
+
+        // Vanilla's getActiveTicks: a calibrated sensor stays active for 10 ticks, a plain one for 30.
+        activeSculk[point] = calibrated ? 10 : 30;
         var center = (VectorD)point + new VectorD(0.5, 0.5, 0.5);
         EmitGameEvent(MobGameEvent.SculkSensorClick, center, pending.Event.Source, pending.Event.Owner);
     }
@@ -216,7 +232,7 @@ public abstract partial class AbstractLevel
         }
     }
 
-    private async ValueTask DispatchGameEventAsync(MobVibration vibration)
+    private void DispatchGameEvent(MobVibration vibration, long emittedAt)
     {
         if (vibration.Kind is MobGameEvent.JukeboxPlay or MobGameEvent.JukeboxStop)
         {
@@ -224,14 +240,11 @@ public abstract partial class AbstractLevel
             return;
         }
 
-        if (vibration.Kind is MobGameEvent.Step or MobGameEvent.Land && vibration.Source is IPlayer)
-            await ShriekUnderfootAsync(vibration);
-
         if (!ValidVibration(vibration))
             return;
 
         OfferToMobListeners(vibration);
-        OfferToSculk(vibration);
+        OfferToSculk(vibration, emittedAt);
     }
 
     private void NotifyJukeboxListeners(MobVibration vibration)
@@ -242,17 +255,6 @@ public abstract partial class AbstractLevel
         var jukebox = (Vector)vibration.Position.Floor();
         foreach (var allay in allays)
             allay.ReceiveJukeboxEvent(jukebox, vibration.Kind == MobGameEvent.JukeboxPlay);
-    }
-
-    /// <summary>A player stepping or landing on a shrieker, or on the block above one, sets it off.</summary>
-    private async ValueTask ShriekUnderfootAsync(MobVibration vibration)
-    {
-        var feet = (Vector)vibration.Position.Floor();
-        if (GameEventBlock(feet)?.RegistryId == BlockIds.SculkShrieker)
-            await ShriekAsync(feet, vibration.Source);
-
-        if (GameEventBlock(feet - new Vector(0, 1, 0))?.RegistryId == BlockIds.SculkShrieker)
-            await ShriekAsync(feet - new Vector(0, 1, 0), vibration.Source);
     }
 
     private void OfferToMobListeners(MobVibration vibration)
@@ -284,7 +286,7 @@ public abstract partial class AbstractLevel
     /// Offers the vibration to the idle sculk sensors around it, or for a sensor's click caused by a player, to the
     /// idle shriekers.
     /// </summary>
-    private void OfferToSculk(MobVibration vibration)
+    private void OfferToSculk(MobVibration vibration, long emittedAt)
     {
         var origin = (Vector)vibration.Position.Floor();
         foreach (var point in NearbySculk(origin, 16))
@@ -302,13 +304,30 @@ public abstract partial class AbstractLevel
             if (activeSculk.ContainsKey(point) || IsBusySculk(block, shrieker))
                 continue;
 
+            if (!shrieker && !CalibrationAccepts(point, block, vibration.Kind))
+                continue;
+
             var receiver = (VectorD)point + new VectorD(0.5, 0.5, 0.5);
             var distance = (receiver - vibration.Position).Magnitude;
             if (distance > radius || WoolOccludes(vibration.Position, receiver))
                 continue;
 
-            SelectVibration(blockVibrations, point, vibration, distance);
+            SelectVibration(blockVibrations, point, vibration, distance, this.TicksSince(emittedAt));
         }
+    }
+
+    /// <summary>
+    /// Vanilla <c>CalibratedSculkSensorBlockEntity</c>'s <c>canReceiveVibration</c>: the signal behind a calibrated
+    /// sensor, when there is one, is the only frequency it hears. Plain sensors hear every frequency.
+    /// </summary>
+    internal bool CalibrationAccepts(Vector point, IBlock sensor, MobGameEvent kind)
+    {
+        if (!sensor.Is(BlockIds.CalibratedSculkSensor))
+            return true;
+
+        var back = FeatureHelpers.ParseFace(sensor.GetProperty("facing")).Opposite();
+        var signal = this.GetSignal(point.Offset(back), back);
+        return signal == 0 || signal == GameEventFrequency(kind);
     }
 
     private static bool IsBusySculk(IBlock block, bool shrieker)
@@ -319,11 +338,17 @@ public abstract partial class AbstractLevel
         return block.GetProperty("sculk_sensor_phase") != "inactive";
     }
 
+    /// <summary>
+    /// Makes the vibration the one <paramref name="key"/> hears, unless an earlier or nearer one this tick won. It
+    /// arrives a tick per whole block of <paramref name="distance"/> later, less the <paramref name="lag"/> since it
+    /// was emitted: vanilla's sculk choose a vibration from before the tick and count its travel from then.
+    /// </summary>
     private void SelectVibration<TKey>(
         Dictionary<TKey, PendingMobVibration> pending,
         TKey key,
         MobVibration vibration,
-        double distance)
+        double distance,
+        int lag = 0)
         where TKey : notnull
     {
         if (pending.TryGetValue(key, out var previous)
@@ -336,8 +361,13 @@ public abstract partial class AbstractLevel
         }
 
         var travelTicks = Math.Max(1, (int)Math.Floor(distance));
-        pending[key] = new(vibration, gameEventTick, gameEventTick + travelTicks, distance);
+        var arrival = gameEventTick + Math.Max(0, travelTicks - lag);
+        pending[key] = new(vibration, gameEventTick, arrival, distance);
     }
+
+    // Whole ticks since the game time an event was emitted at: 1 for one from between ticks, 0 for one this tick.
+    private int TicksSince(long emittedAt) =>
+        (int)Math.Clamp(this.Fluids.Clock.GameTime - emittedAt, 0, 1);
 
     internal IBlock? GameEventBlock(Vector point) =>
         IsOutsideBuildHeight(point.Y) ? null : GetLoadedChunk(point.X >> 4, point.Z >> 4)?.GetBlock(point);
@@ -470,11 +500,10 @@ public abstract partial class AbstractLevel
         return false;
     }
 
-    private static int GameEventFrequency(MobGameEvent kind) => kind switch
+    internal static int GameEventFrequency(MobGameEvent kind) => kind switch
     {
         MobGameEvent.Step or MobGameEvent.Swim => 1,
-        MobGameEvent.ProjectileLand => 2,
-        MobGameEvent.Land => 3,
+        MobGameEvent.ProjectileLand or MobGameEvent.Land or MobGameEvent.Bounce or MobGameEvent.Splash => 2,
         MobGameEvent.ItemInteractFinish => 3,
         MobGameEvent.Eat => 8,
         MobGameEvent.BlockClose or MobGameEvent.ContainerClose => 9,
@@ -483,44 +512,64 @@ public abstract partial class AbstractLevel
         MobGameEvent.BlockChange => 11,
         MobGameEvent.BlockActivate => 10,
         MobGameEvent.BlockDeactivate => 9,
-        MobGameEvent.BlockDestroy or MobGameEvent.EntityDie => 12,
+        MobGameEvent.BlockDestroy => 12,
         MobGameEvent.FluidPickup => 12,
         MobGameEvent.BlockPlace or MobGameEvent.FluidPlace => 13,
-        MobGameEvent.EntityPlace => 14,
-        MobGameEvent.EntityInteract => 6,
+        MobGameEvent.EntityPlace or MobGameEvent.LightningStrike => 14,
+        MobGameEvent.EntityInteract or MobGameEvent.Shear => 6,
+        MobGameEvent.Equip => 5,
+        MobGameEvent.Unequip => 4,
         MobGameEvent.EntityDamage => 7,
         MobGameEvent.ProjectileShoot => 3,
-        MobGameEvent.SculkSensorClick => 4,
+        MobGameEvent.EntityDie or MobGameEvent.Explode => 15,
         _ => 0
     };
 
     private readonly HashSet<Vector> shriekerSummons = [];
 
-    private async ValueTask ShriekAsync(Vector point, IEntity? source)
+    internal ValueTask ShriekAsync(Vector point, IEntity? source)
     {
         if (source is not IPlayer player || player.GameMode == GameMode.Spectator || activeSculk.ContainsKey(point))
-            return;
+            return default;
 
-        var block = GameEventBlock(point);
-        if (block?.RegistryId != BlockIds.SculkShrieker || block.GetProperty("shrieking") == "true")
-            return;
-
-        await SetBlockAsync(point, block.WithProperty("shrieking", true), true);
-        activeSculk[point] = 90;
-        PacketBroadcaster.QueuePacketToLevelInRange(this, (VectorD)point, new LevelEventPacket(3007, point, 0));
-        var darkened = GetPlayersInRange((VectorD)point, 40).Where(nearby => nearby.GameMode != GameMode.Spectator);
-        foreach (var nearby in darkened)
-            nearby.AddPotionEffect((int)PotionEffect.Darkness - 1, 260);
-
-        if (block.GetProperty("can_summon") != "true"
-            || LevelData.Difficulty == Difficulty.Peaceful
-            || !LevelData.GetBooleanRule("spawn_wardens")
-            || GetNonPlayerEntitiesInRange((VectorD)point, 48).Any(entity => entity is Warden))
+        lock (this.Fluids.TickLock)
         {
-            return;
+            var block = GameEventBlock(point);
+            if (block?.RegistryId != BlockIds.SculkShrieker || block.GetProperty("shrieking") == "true")
+                return default;
+
+            this.BlockUpdates.SetBlock(point, block.WithProperty("shrieking", true), API.Blocks.BlockUpdateFlags.Clients);
+            this.BlockUpdates.ScheduleTick(point, block, 90);
+            this.BroadcastLevelEvent(3007, point, 0);
+            this.EmitGameEvent(MobGameEvent.Shriek, (VectorD)point + 0.5, source);
+
+            if (block.GetProperty("can_summon") == "true"
+                && this.LevelData.Difficulty != Difficulty.Peaceful
+                && this.LevelData.GetBooleanRule("spawn_wardens")
+                && !this.GetNonPlayerEntitiesInRange((VectorD)point, 48).Any(entity => entity is Warden))
+            {
+                this.RaiseWardenWarning(point, player);
+            }
         }
 
-        RaiseWardenWarning(point, player);
+        return default;
+    }
+
+    /// <summary>Ends a shriek through its saved block tick; placed shriekers have no warden or darkness response.</summary>
+    internal void FinishShriek(Vector point, IBlock block)
+    {
+        this.BlockUpdates.SetBlock(point, block.WithProperty("shrieking", false));
+        if (block.GetProperty("can_summon") != "true")
+            return;
+
+        if (this.shriekerSummons.Remove(point))
+            this.TrySummonWarden(point);
+
+        foreach (var nearby in this.GetPlayersInRange((VectorD)point + 0.5, 40))
+        {
+            if (nearby.GameMode != GameMode.Spectator)
+                nearby.AddPotionEffect((int)PotionEffect.Darkness - 1, 260);
+        }
     }
 
     /// <summary>

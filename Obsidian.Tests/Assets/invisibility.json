@@ -1,0 +1,118 @@
+{
+  "version": "26.3",
+  "notes": "Native updateInvisibilityStatus after each effect mutation; setGameMode for spectator transitions; metadata index 0 shared flag byte.",
+  "cases": [
+    {
+      "name": "effect_add_replace_remove_expire",
+      "entity": "pig",
+      "invisible": false,
+      "steps": [
+        {
+          "action": "initial",
+          "flags": 0
+        },
+        {
+          "action": "add",
+          "flags": 32
+        },
+        {
+          "action": "replace",
+          "flags": 32
+        },
+        {
+          "action": "remove",
+          "flags": 0
+        },
+        {
+          "action": "add_short",
+          "flags": 32
+        },
+        {
+          "action": "expire",
+          "flags": 0
+        }
+      ]
+    },
+    {
+      "name": "spectator_and_effect",
+      "entity": "player",
+      "invisible": false,
+      "steps": [
+        {
+          "action": "initial",
+          "flags": 0
+        },
+        {
+          "action": "spectator",
+          "flags": 32
+        },
+        {
+          "action": "survival",
+          "flags": 0
+        },
+        {
+          "action": "spectator",
+          "flags": 32
+        },
+        {
+          "action": "add",
+          "flags": 32
+        },
+        {
+          "action": "remove",
+          "flags": 32
+        },
+        {
+          "action": "add",
+          "flags": 32
+        },
+        {
+          "action": "survival",
+          "flags": 32
+        },
+        {
+          "action": "remove",
+          "flags": 0
+        }
+      ]
+    },
+    {
+      "name": "armor_stand_false",
+      "entity": "armor_stand",
+      "invisible": false,
+      "steps": [
+        {
+          "action": "initial",
+          "flags": 0
+        },
+        {
+          "action": "add",
+          "flags": 0
+        },
+        {
+          "action": "remove",
+          "flags": 0
+        }
+      ]
+    },
+    {
+      "name": "armor_stand_true",
+      "entity": "armor_stand",
+      "invisible": true,
+      "steps": [
+        {
+          "action": "initial",
+          "flags": 32
+        },
+        {
+          "action": "add",
+          "flags": 32
+        },
+        {
+          "action": "remove",
+          "flags": 32
+        }
+      ]
+    }
+  ]
+}

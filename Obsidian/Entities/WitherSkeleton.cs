@@ -1,4 +1,6 @@
 using Obsidian.API.Inventory;
+using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.WorldData;
 using Obsidian.Entities.AI;
 
 namespace Obsidian.Entities;
@@ -16,6 +18,18 @@ public sealed partial class WitherSkeleton : Skeleton
     {
         base.RegisterGoals(actions, targets);
         targets.AddGoal(3, new NearestAttackableTargetGoal(this, target => target.Type is EntityType.Piglin or EntityType.PiglinBrute));
+    }
+
+    // Vanilla's wither skeleton gets a stone sword, no armour and no enchantments, drawing nothing.
+    private protected override void PopulateBareEquipment(IRandomSource random, float special) =>
+        SetEquipment(EquipmentSlot.MainHand, ItemsRegistry.GetSingleItem(ItemsRegistry.StoneSword));
+
+    // Vanilla's WitherSkeleton.finalizeSpawn: the skeleton's setup, then an attack damage of 4.
+    internal override SpawnCompanions FinalizeBareSpawn(AbstractLevel level, IRandomSource random)
+    {
+        var companions = base.FinalizeBareSpawn(level, random);
+        TryUpdateAttribute("minecraft:generic.attack_damage", 4);
+        return companions;
     }
 
     protected override void FinalizeSpawn()

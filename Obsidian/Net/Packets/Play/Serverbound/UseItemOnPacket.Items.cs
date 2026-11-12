@@ -23,7 +23,11 @@ public partial class UseItemOnPacket
         ["FlintAndSteelItem"] = (packet, use) => packet.UseIgniterAsync(use),
         ["FireChargeItem"] = (packet, use) => packet.UseIgniterAsync(use),
         ["BoneMealItem"] = (_, use) => UseBoneMealAsync(use),
-        ["HangingEntityItem"] = (packet, use) => packet.HangAsync(use)
+        ["HoneycombItem"] = (_, use) => CopperWaxing.UseHoneycombAsync(use),
+        ["HangingEntityItem"] = (packet, use) => packet.HangAsync(use),
+        ["BrushItem"] = (_, use) => UseBrush(use),
+        ["ShearsItem"] = (_, use) => FoodHarvest.TrimAsync(use),
+        ["CompassItem"] = (_, use) => UseCompassAsync(use)
     };
 
     // Each item's own useOn, by item id, looked up once per click. Fish buckets aren't vanilla useOn items (vanilla
@@ -97,6 +101,13 @@ public partial class UseItemOnPacket
         return await this.PlaceAsync(use);
     }
 
+    // Vanilla's BrushItem.useOn: brushing starts if the player looks at a block, and the click is consumed either way.
+    private static ValueTask<UseResult> UseBrush(BlockUse use)
+    {
+        use.Player.StartBrushing(use.Hand);
+        return ValueTask.FromResult(UseResult.Consume);
+    }
+
     private ValueTask<bool> UsePluginItemAsync(BlockUse use) =>
         Plugins.ItemBehaviors.UseOnBlockAsync(new ItemUseOnBlockContext
         {
@@ -135,8 +146,10 @@ public partial class UseItemOnPacket
                 lock (use.Level.Fluids.TickLock)
                 {
                     execution = use.ForQueuedAction();
+                    // The check that decides the use draws from the level's random, as vanilla's does.
                     committed = execution.TryCommit(() =>
-                        Growth.IsValidBonemealTarget(execution.Level, execution.Position, execution.Block),
+                        Growth.IsValidBonemealTarget(execution.Level, execution.Position, execution.Block,
+                            execution.Level.GrowthRandom),
                         consumeItem: true);
                     if (committed)
                     {

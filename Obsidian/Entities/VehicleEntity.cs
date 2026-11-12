@@ -118,6 +118,8 @@ public abstract class VehicleEntity : Entity, IPlayerInteractable
     /// </summary>
     internal double FallDistance { get; set; }
 
+    internal override double ContactFallDistance { get => this.FallDistance; set => this.FallDistance = value; }
+
     internal override void ResetFallDistance() => this.FallDistance = 0;
 
     /// <summary>
@@ -168,7 +170,7 @@ public abstract class VehicleEntity : Entity, IPlayerInteractable
     // Vanilla's Vec3.yRot(-yaw in radians) of an attachment along the vehicle's length.
     private protected VectorD Rotated(double up, double forward)
     {
-        var yaw = this.Yaw.Degrees * Math.PI / 180;
+        var yaw = this.Yaw * Math.PI / 180;
         return new VectorD(-Math.Sin(yaw) * forward, up, Math.Cos(yaw) * forward);
     }
 
@@ -365,7 +367,7 @@ public abstract class VehicleEntity : Entity, IPlayerInteractable
     {
         var bounds = this.Dimension.CreateBBFromPosition(this.Position);
         var onGround = this.MovementFlags.HasFlag(MovementFlags.OnGround);
-        var displacement = EntityMovement.Collide(this.Terrain, bounds, delta, 0, onGround);
+        var displacement = EntityMovement.Collide(this.Terrain, bounds, delta, 0, onGround, this);
 
         var collidedX = Math.Abs(displacement.X - delta.X) > 1.0E-5;
         var collidedY = Math.Abs(displacement.Y - delta.Y) > 1.0E-5;
@@ -384,6 +386,7 @@ public abstract class VehicleEntity : Entity, IPlayerInteractable
         if (landed)
         {
             this.LandedFrom = this.FallDistance;
+            this.RecordLanding(this.FallDistance, this.Position + displacement);
             this.FallDistance = 0;
         }
         else if (displacement.Y < 0)
@@ -454,7 +457,8 @@ public abstract class VehicleEntity : Entity, IPlayerInteractable
         var onGround = this.MovementFlags.HasFlag(MovementFlags.OnGround);
         var delta = MoveDelta(this.lastSentPosition, this.Position);
         var moved = delta != Vector.Zero;
-        var rotated = this.Yaw != this.lastSentYaw || this.Pitch != this.lastSentPitch;
+        // Like vanilla's ServerEntity, compared as sent: in 256ths of a turn.
+        var rotated = (Angle)this.Yaw != this.lastSentYaw || (Angle)this.Pitch != this.lastSentPitch;
 
         if (moved && !IsRelativeMove(delta))
         {

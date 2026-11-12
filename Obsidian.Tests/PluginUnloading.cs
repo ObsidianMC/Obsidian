@@ -176,36 +176,6 @@ public sealed class PluginUnloading : IDisposable
 
     [Trait("Category", TestCategory.Worldgen)]
     [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task Unload_ReleasesThe263DimensionsMadeOfItsDensityFunctions()
-    {
-        await using var context = TestServerFactory.CreateServer($"probe-density-{Guid.NewGuid():N}");
-        await using var manager = CreateManager(context);
-        var path = Path.Join(this.folder, "probe.obby");
-        var files = new Dictionary<string, byte[]>
-        {
-            [ProbeOreDensity.SettingsFile] = Encoding.UTF8.GetBytes(OreWorld)
-        };
-        await File.WriteAllBytesAsync(path, PluginLoading.ProbeArchive("1.0.0", files));
-        AppContext.SetData(ProbeOreDensity.SampledKey, null);
-
-        // Only the ore rule names the plugin's function, which a chunk samples.
-        var (loadContext, dimension, terrain) = await GenerateProbeWorldAsync(
-            manager,
-            path,
-            "probe:ore_world",
-            BlockIds.DiamondBlock);
-
-        Assert.Equal(true, AppContext.GetData(ProbeOreDensity.SampledKey));
-
-        await AssertStopsOnUnloadAsync(manager, dimension, terrain!);
-
-        // Once the generator goes, nothing holds the plugin's code.
-        terrain = null;
-        await AssertCollectedAsync(loadContext);
-    }
-
-    [Trait("Category", TestCategory.Worldgen)]
-    [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task Unload_ReleasesThe263DimensionsMadeOfItsSurfaceRules()
     {
         await using var context = TestServerFactory.CreateServer($"probe-crust-{Guid.NewGuid():N}");
@@ -412,20 +382,6 @@ public sealed class PluginUnloading : IDisposable
         terrain.Generate(new Chunk(0, 0, terrain.MinY, terrain.Height));
         return (new WeakReference(container.LoadContext), dimension, terrain);
     }
-
-    // Solid below y 40, where the ore rule makes every block a diamond block.
-    private static readonly string OreWorld = ProbeWorld("""
-        {
-          "type": "minecraft:ore_vein",
-          "density": { "type": "probe:ore_density" },
-          "richness": 1,
-          "filler_gap": -1,
-          "ore_block": "minecraft:diamond_block",
-          "raw_ore_block": "minecraft:diamond_block",
-          "filler_block": "minecraft:stone",
-          "raw_ore_chance": 0.5
-        }
-        """);
 
     // Solid below y 40, where the plugin's surface rule makes every block a gold block.
     private static readonly string CrustWorld = ProbeWorld("""

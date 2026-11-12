@@ -13,7 +13,7 @@ namespace Obsidian.WorldData.Structures;
 /// A structure template (<c>data/minecraft/structure/*.nbt</c>) and vanilla's <c>StructureTemplate</c> placement logic.
 /// </summary>
 /// <remarks>Templates are immutable after loading and safe to share between threads.</remarks>
-public sealed class StructureTemplate
+public sealed partial class StructureTemplate
 {
     private static readonly IBlock barrier = BlocksRegistry.Barrier;
 
@@ -289,7 +289,12 @@ public sealed class StructureTemplate
 
             // Vanilla clears the position first so the block entity is created fresh.
             if (info.Nbt is not null)
-                level.SetBlock(target, barrier);
+            {
+                if (level is StructureBlockLevel live)
+                    live.PrepareBlockEntity(target);
+                else
+                    level.SetBlock(target, barrier);
+            }
 
             if (!level.SetBlock(target, state))
                 continue;
@@ -341,6 +346,9 @@ public sealed class StructureTemplate
                     var updated = ShapeUpdater.UpdateFromNeighbourShapes(level, current, target);
                     if (!updated.IsSameState(current))
                         level.SetBlock(target, updated);
+
+                    if (level is StructureBlockLevel live)
+                        live.NotifyNeighbors(target);
                 }
             }
         }

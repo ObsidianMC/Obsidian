@@ -74,8 +74,14 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         if (e.IsCancelled)
             return;
 
+        // An armor stand's use is taken against the hand as the click found it (see ArmorStandUse).
+        var hand = e.Hand ?? InteractionHand.MainHand;
+        var standUse = e.Entity is ArmorStand && e.Player is PlayerBase user
+            ? await ArmorStandUse.CaptureAsync(user, hand, e.TargetPosition)
+            : null;
+
         // The entity's interaction and the item's use run on the entity's level tick, like the entity's own tick.
-        ValueTask Interact() => InteractWithEntityAsync(e.Player, e.Entity, e.Hand ?? InteractionHand.MainHand);
+        ValueTask Interact() => InteractWithEntityAsync(e.Player, e.Entity, hand, standUse);
         if (e.Entity.Level is Obsidian.WorldData.AbstractLevel level)
             level.EnqueueEntityAction(Interact);
         else
@@ -85,7 +91,8 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
     /// <summary>
     /// A player's use of an entity (right-clicking it) with the item in <paramref name="hand"/>.
     /// </summary>
-    internal static async ValueTask InteractWithEntityAsync(IPlayer player, IEntity entity, InteractionHand hand)
+    internal static async ValueTask InteractWithEntityAsync(IPlayer player, IEntity entity, InteractionHand hand,
+        ArmorStandUse? standUse = null)
     {
         // Like vanilla's Player.interactOn, the entity's own interaction goes first, and the held item is used on a
         // living entity only when the entity didn't use the interaction. A plugin's projectile or object does what
@@ -93,12 +100,18 @@ public sealed partial class MainEventHandler : MinecraftEventHandler
         var used = entity switch
         {
             PluginEntity pluginEntity => await pluginEntity.InteractAsync(player, hand),
+            ArmorStand stand when standUse is not null => await stand.UseAsync(standUse),
             IPlayerInteractable interactable when player is PlayerBase user => await interactable.InteractAsync(user, hand),
             // Like vanilla's Mob.interact, leads come before the mob's own interaction.
             Mob { HasAi: true } mob => player is PlayerBase leader && await mob.UseLeashAsync(leader, hand)
-                || await mob.InteractAsync(player, hand),
+                || await mob.InteractAsync(player, hand)
+                || await AgeLocks.TryToggleAsync(mob, player, hand),
             _ => false
         };
+
+        // Like vanilla's Mob.interact, a mob that used the click is heard being interacted with, after what it did.
+        if (used && entity is Mob { HasAi: true } && entity.Level is Obsidian.WorldData.AbstractLevel events)
+            events.EmitGameEvent(Obsidian.WorldData.MobGameEvent.EntityInteract, entity.Position, player);
 
         if (!used && entity is ILiving living)
             await Plugins.ItemBehaviors.UseOnEntityAsync(player, hand, living);

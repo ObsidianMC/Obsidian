@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net10.0</TargetFramework>
+		<TargetFramework>net11.0</TargetFramework>
 		<EnablePreviewFeatures>true</EnablePreviewFeatures>
 		<IsPackable>false</IsPackable>
 		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
@@ -30,14 +30,36 @@
 		<EmbeddedResource Include="Assets\copper_weathering.json" />
 		<EmbeddedResource Include="Assets\mining_progress.json" />
 		<EmbeddedResource Include="Assets\block_placement.json" />
+		<EmbeddedResource Include="Assets\block_change_packets.json" />
 		<EmbeddedResource Include="Assets\ticking_blocks.json" />
 		<EmbeddedResource Include="Assets\block_use.json" />
+		<EmbeddedResource Include="Assets\brushing.json" />
+		<EmbeddedResource Include="Assets\armor_stand_use.json" />
+		<EmbeddedResource Include="Assets\invisibility.json" />
+		<EmbeddedResource Include="Assets\projectile_block_hits.json" />
+		<EmbeddedResource Include="Assets\waxing_bells_redstone_ore.json" />
+		<EmbeddedResource Include="Assets\food_and_harvest.json" />
+
+		<EmbeddedResource Include="Assets\cauldrons.json" />
+		<EmbeddedResource Include="Assets\shelves.json" />
+		<EmbeddedResource Include="Assets\straw_bed_sleep.json" />
+		<EmbeddedResource Include="Assets\golden_dandelions.json" />
 		<EmbeddedResource Include="Assets\turtle_eggs.json" />
 		<EmbeddedResource Include="Assets\frogspawn.json" />
 		<EmbeddedResource Include="Assets\eyeblossom_ghast_portal_ticks.json" />
+		<EmbeddedResource Include="Assets\lightning_bolts.json" />
+		<EmbeddedResource Include="Assets\trial_spawners.json" />
+		<EmbeddedResource Include="Assets\vaults.json" />
+		<EmbeddedResource Include="Assets\ominous_trials.json" />
 		<EmbeddedResource Include="Assets\growing_plant_ticks.json" />
 		<EmbeddedResource Include="Assets\melting_weather.json" />
+		<EmbeddedResource Include="Assets\block_contact_scenarios.json" />
 		<EmbeddedResource Include="Assets\furnace_results.json" />
+		<EmbeddedResource Include="Assets\dispenser.json" />
+		<EmbeddedResource Include="Assets\command_blocks.json" />
+		<EmbeddedResource Include="Assets\structure_blocks.json" />
+		<EmbeddedResource Include="Assets\jigsaw_blocks.json" />
+		<EmbeddedResource Include="Assets\special_blocks.json" />
 
 		<EmbeddedResource Include="Assets\heightmaps.json" />
 		<EmbeddedResource Include="Assets\saved_heightmaps.json" />
@@ -64,7 +86,7 @@
     <PackageReference Include="MartinCostello.Logging.XUnit" Version="0.7.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
     <PackageReference Include="SharpNoise.Utilities" Version="0.12.1.1" />
-    <PackageReference Include="System.Drawing.Common" Version="10.0.0" />
+    <PackageReference Include="System.Drawing.Common" Version="11.0.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
       <PrivateAssets>all</PrivateAssets>

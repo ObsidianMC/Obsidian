@@ -8,6 +8,8 @@
 - Mobs' equipment modifiers don't go into their attributes: mobs add their armour items' armour, toughness and
   knockback resistance where they're hit, and their held item's attack damage where they attack. Players apply
   every modifier of what they hold and wear. Enchantments' attribute effects aren't applied to anyone.
+- A lodestone compass keeps tracking its lodestone after the lodestone is gone: vanilla's `CompassItem.inventoryTick`
+  clears the target once no lodestone point of interest is there, in the compass holder's dimension.
 - Equipping by use ignores `equippable`'s `swappable` and plays no equip sound, and a `consumable` without `food`
   isn't consumed.
 

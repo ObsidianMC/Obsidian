@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
-		<TargetFramework>net10.0</TargetFramework>
+		<TargetFramework>net11.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<IsPackable>false</IsPackable>
@@ -36,13 +36,34 @@
 		                             Java\MeltingWeatherFixtures.java" />
 		<VanillaDumperInput Remove="Java\TickingBlockFixtures.java" />
 		<VanillaDumperInput Remove="Java\BlockUseInstrumentation.java" />
+		<VanillaDumperInput Remove="Java\BlockContactFixtures.java" />
+		<VanillaDumperInput Remove="Java\ProjectileHitFixtures.java" />
+		<VanillaDumperInput Remove="Java\LightningFixtures.java" />
+		<VanillaDumperInput Remove="Java\TrialSpawnerFixtures.java" />
+		<VanillaDumperInput Remove="Java\OminousTrialInstrumentation.java" />
+		<VanillaDumperInput Remove="Java\WaxingBellsOreFixtures.java" />
+		<VanillaDumperInput Remove="Java\FoodHarvestFixtures.java" />
+
+		<VanillaDumperInput Remove="Java\CauldronFixtures.java" />
 		<VanillaDumperInput Remove="Java\HatchingFixtures.java" />
 		<VanillaDumperInput Remove="Java\EyeblossomGhastPortalFixtures.java" />
 		<VanillaDumperInput Remove="Java\GrowingPlantTickFixtures.java" />
 		<VanillaDumperInput Remove="Java\FurnaceFixtures.java" />
+		<VanillaDumperInput Remove="Java\DispenserFixtures.java" />
+		<VanillaDumperInput Remove="Java\BrushingFixtures.java" />
+		<VanillaDumperInput Remove="Java\ArmorStandFixtures.java" />
+		<VanillaDumperInput Remove="Java\ShelfFixtures.java" />
+		<VanillaDumperInput Remove="Java\StrawBedFixtures.java" />
+		<VanillaDumperInput Remove="Java\GoldenDandelionFixtures.java" />
+		<VanillaDumperInput Remove="Java\CommandBlockFixtures.java" />
+		<VanillaDumperInput Remove="Java\StructureBlockFixtures.java" />
+		<VanillaDumperInput Remove="Java\JigsawBlockFixtures.java" />
+		<VanillaDumperInput Remove="Java\JigsawBlockInstrumentation.java" />
 
 		<None Update="@(VanillaDumperInput)" CopyToOutputDirectory="PreserveNewest" />
 		<!-- Gameplay probes run only through their requested CaptureFixtures entry. -->
+		<None Update="Java\JigsawBlockFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\JigsawBlockInstrumentation.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\MoreBlockFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\SulfurFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\HeightmapFixtures.java" CopyToOutputDirectory="PreserveNewest" />
@@ -52,11 +73,28 @@
 		<None Update="Java\TickingBlockFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\BlockUseFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\BlockUseInstrumentation.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\BlockContactFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\ProjectileHitFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\LightningFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\TrialSpawnerFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\OminousTrialInstrumentation.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\WaxingBellsOreFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\FoodHarvestFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+
+		<None Update="Java\CauldronFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\HatchingFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\EyeblossomGhastPortalFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\GrowingPlantTickFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\MeltingWeatherFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\FurnaceFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\DispenserFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\BrushingFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\ArmorStandFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\ShelfFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\StrawBedFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\GoldenDandelionFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\CommandBlockFixtures.java" CopyToOutputDirectory="PreserveNewest" />
+		<None Update="Java\StructureBlockFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 
 		<!-- On-request captures (CaptureVanillaWorldgen); not asset inputs, so editing them doesn't regenerate the assets. -->
 		<None Update="Captures\**\*.java" CopyToOutputDirectory="PreserveNewest" />
@@ -94,13 +132,18 @@
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)collision_shapes.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)block_sounds.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)note_block_instruments.json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)flower_pot_contents.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)block_loot_tables.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\blocks.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\entities.json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\equipment.json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\harvest.json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)loot_table\carve.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)predicate.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)context_int_provider.json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)commands-$(MinecraftVersion).json" />
 			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)context_float_provider.json" />
+			<VanillaAssetsOutput Include="$(VanillaAssetsDirectory)trial_spawner.json" />
 		</ItemGroup>
 	</Target>
 

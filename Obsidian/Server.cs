@@ -28,7 +28,7 @@ using System.Threading;
 
 namespace Obsidian;
 
-public sealed partial class Server : IServer, IPluginScopedServer
+public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOrder
 {
     private static int EntityCounter;
 
@@ -84,6 +84,12 @@ public sealed partial class Server : IServer, IPluginScopedServer
     public IWorldManager WorldManager { get; }
 
     public ConcurrentDictionary<Guid, IPlayer> OnlinePlayers { get; } = [];
+
+    // The online players in the order of vanilla's PlayerList.players, which selectors such as @a go through: a player
+    // is appended on joining and moved to the end on respawning. Its lock is also the registrations' lock: registering
+    // and unregistering a player change OnlinePlayers, the name mappings and this list together under it, so neither
+    // sees the other half done. Nothing under it awaits or takes another lock.
+    private readonly List<IPlayer> playerList = [];
     private ConcurrentDictionary<string, Guid> UsernameToUuidMappings { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     public HashSet<string> RegisteredChannels { get; } = [];
@@ -610,8 +616,10 @@ public sealed partial class Server : IServer, IPluginScopedServer
     /// The shutdown waits for the server's loop, and so for the ticks, and for the plugins' changes as it disposes
     /// them. Asked for from a flow one of those waits for, it goes on in the background and this returns at once,
     /// whether it started the shutdown or one had started already: from inside a level's tick, or a player's tick,
-    /// grant or save (<c>/stop</c> run by a command block minecart, say), or from a change to the plugins (a plugin's
-    /// load, ready or unloading callback, or a plugin's dimension being created, its generator finding a spawn).
+    /// grant or save (<c>/stop</c> run by a command block minecart, say), from a change to the plugins (a plugin's
+    /// load, ready or unloading callback, or a plugin's dimension being created, its generator finding a spawn), or
+    /// from a join still admitting its player (a join handler), whose leave the shutdown waits for and which waits for
+    /// the join's end.
     /// </remarks>
     public Task StopAsync()
     {
@@ -628,7 +636,9 @@ public sealed partial class Server : IServer, IPluginScopedServer
             shutdown = this.shutdownTask;
         }
 
-        var waitedFor = WorldData.AbstractLevel.MustNotWaitForGates || Plugins.PluginManager.InsideChange;
+        var waitedFor = WorldData.AbstractLevel.MustNotWaitForGates
+            || Plugins.PluginManager.InsideChange
+            || Client.InsideAdmission;
         return waitedFor ? Task.CompletedTask : shutdown;
     }
 
@@ -835,17 +845,112 @@ public sealed partial class Server : IServer, IPluginScopedServer
         }
     }
 
-    public bool AddPlayer(IPlayer player)
+    public bool AddPlayer(IPlayer player) => this.TryRegister(player, unlessLeaving: false, out _);
+
+    /// <summary>
+    /// Registers a joining player like <see cref="AddPlayer"/>, unless a player with the name started leaving since
+    /// the join last waited for such leaves: then nothing is registered, and <paramref name="leaving"/> is that leave.
+    /// Server-side joins wait, reload and retry; network joins disconnect instead of retrying after configuration.
+    /// </summary>
+    /// <returns>Whether the player was registered.</returns>
+    internal bool AddPlayerUnlessLeaving(IPlayer player, out Task? leaving) =>
+        this.TryRegister(player, unlessLeaving: true, out leaving);
+
+    // Registers the player in the online players, the name mappings and the player list together. With unlessLeaving,
+    // a leave under the player's name still under way keeps it out, and is handed back to wait for: it's checked under
+    // the registrations' lock, under which a removal frees the name and tracks its leave (see RemoveServerPlayerAsync).
+    private bool TryRegister(IPlayer player, bool unlessLeaving, out Task? leaving)
     {
-        if (!this.OnlinePlayers.TryAdd(player.Uuid, player))
-            return false;
+        leaving = null;
+        lock (this.playerList)
+        {
+            if (unlessLeaving)
+            {
+                var pending = this.WaitForLeavesAsync(player.Username);
+                if (!pending.IsCompleted)
+                {
+                    leaving = pending;
+                    return false;
+                }
+            }
 
-        // The name must map to this player alone; undo the registration rather than leave lookups disagreeing.
-        if (this.UsernameToUuidMappings.TryAdd(player.Username, player.Uuid))
-            return true;
+            if (!this.OnlinePlayers.TryAdd(player.Uuid, player))
+                return false;
 
-        this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player));
-        return false;
+            // The name must map to this player alone; undo this registration rather than leave lookups disagreeing.
+            if (!this.UsernameToUuidMappings.TryAdd(player.Username, player.Uuid))
+            {
+                this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player));
+                return false;
+            }
+
+            // Like vanilla's placeNewPlayer, joining puts the player at the end of the player list.
+            this.playerList.Add(player);
+        }
+
+        this.PlayerRegistered?.Invoke(player);
+        return true;
+    }
+
+    /// <summary>
+    /// Runs in <see cref="AddPlayer"/> once the player is registered, outside the registrations' lock; tests hold it to
+    /// disconnect the player and join them again there.
+    /// </summary>
+    internal Action<IPlayer>? PlayerRegistered { get; set; }
+
+    /// <summary>
+    /// Runs in a join (a network player's, or <see cref="AddServerPlayerAsync(Guid, string, IWorld?, PluginContainer?)"/>)
+    /// each time the player is loaded, before it's registered; tests use it to remove a player with the name in that
+    /// window.
+    /// </summary>
+    internal Action<IPlayer>? PlayerLoadedForJoin { get; set; }
+
+    /// <summary>
+    /// The online players in vanilla's player list order: the order they joined in, but a player who respawned (after
+    /// dying or leaving the End) comes after those who didn't since. Players a plugin put in
+    /// <see cref="OnlinePlayers"/> itself come last, by entity id.
+    /// </summary>
+    internal IReadOnlyList<IPlayer> PlayersInListOrder
+    {
+        get
+        {
+            IPlayer[] listed;
+            lock (this.playerList)
+                listed = [.. this.playerList];
+
+            var online = listed.Where(this.IsOnline).ToList();
+            var unlisted = this.OnlinePlayers.Values
+                .Where(player => !listed.Contains(player, ReferenceEqualityComparer.Instance))
+                .OrderBy(player => player.EntityId);
+            online.AddRange(unlisted);
+            return online;
+        }
+    }
+
+    IReadOnlyList<IPlayer> IPlayerListOrder.PlayersInListOrder => this.PlayersInListOrder;
+
+    /// <summary>
+    /// Moves an online player to the end of the player list, as vanilla's <c>PlayerList.respawn</c> does: it takes the
+    /// player out of the list and adds the respawned one at its end.
+    /// </summary>
+    internal void MoveToEndOfPlayerList(IPlayer player)
+    {
+        lock (this.playerList)
+        {
+            if (this.playerList.Remove(player))
+                this.playerList.Add(player);
+        }
+    }
+
+    private bool IsOnline(IPlayer player) =>
+        this.OnlinePlayers.TryGetValue(player.Uuid, out var online) && ReferenceEquals(online, player);
+
+    // Drops a registration's name mapping and its place in the player list, under the registrations' lock. While the
+    // registration's name is mapped no other player can map it, so the mapping removed is this player's.
+    private void ReleaseNameAndListing(IPlayer player)
+    {
+        this.UsernameToUuidMappings.TryRemove(new KeyValuePair<string, Guid>(player.Username, player.Uuid));
+        this.playerList.Remove(player);
     }
 
     public Task<IPlayer> AddServerPlayerAsync(Guid uuid, string username, IWorld? world = null) =>
@@ -865,29 +970,27 @@ public sealed partial class Server : IServer, IPluginScopedServer
     {
         plugin?.ThrowIfClosing();
 
-        // A player with the name may still be leaving: one removed from a tick leaves once the ticks end (see
-        // RemoveServerPlayerAsync). The join waits for that, like a network player's, unless a tick is asking: the
-        // leave may wait for that tick (it's the player's own, or a leave handler saves its level).
-        var leaving = this.WaitForLeavesAsync(username);
-        if (!leaving.IsCompleted)
+        ServerPlayer player;
+        while (true)
         {
-            if (WorldData.AbstractLevel.MustNotWaitForGates)
+            await this.WaitForLeavesBeforeJoiningAsync(username);
+
+            player = new ServerPlayer(uuid, username, this, world ?? this.DefaultWorld)
             {
-                throw new InvalidOperationException(
-                    $"Player '{username}' is still leaving; add them once the ticks end.");
-            }
+                SpawnedBy = plugin
+            };
+            await player.LoadAsync();
+            this.PlayerLoadedForJoin?.Invoke(player);
 
-            await leaving;
+            if (this.AddPlayerUnlessLeaving(player, out var leaving))
+                break;
+
+            if (leaving is null)
+                throw new InvalidOperationException($"Player '{username}' ({uuid}) is already online.");
+
+            // A player with the name was removed while this one loaded. The join waits for that leave too and loads
+            // again, so that it loads what the leave saved.
         }
-
-        var player = new ServerPlayer(uuid, username, this, world ?? this.DefaultWorld)
-        {
-            SpawnedBy = plugin
-        };
-        await player.LoadAsync();
-
-        if (!this.AddPlayer(player))
-            throw new InvalidOperationException($"Player '{username}' ({uuid}) is already online.");
 
         try
         {
@@ -917,6 +1020,52 @@ public sealed partial class Server : IServer, IPluginScopedServer
 
         return player;
     }
+
+    /// <summary>
+    /// Waits for the leaves under way of players named <paramref name="username"/>, before a join under the name: a
+    /// server-side player's (see <see cref="RemoveServerPlayerAsync"/>), which from a tick only starts once the ticks
+    /// end, or a network player's. A join waits for them, like a network player's join, unless that would never end.
+    /// </summary>
+    /// <remarks>
+    /// It fails at once instead when a tick is asking (the leave may wait for that tick: it's the player's own, or a
+    /// leave handler saves its level), when the leave of a player with the name is being raised on this flow (that
+    /// leave ends only once its handlers return), or when this flow is a join still admitting a player with the name
+    /// whose leave waits for the join to end (a join handler that kicked them). Those flows are marked with an
+    /// <see cref="AsyncLocal{T}"/>, so a task such a handler starts and doesn't await carries the mark too, and fails
+    /// at once while the leave is still pending rather than waiting for it. That's intended: telling the two apart
+    /// isn't worth it, and the task can add the player again once the leave ends.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">Waiting would never end, as described above.</exception>
+    private Task WaitForLeavesBeforeJoiningAsync(string username)
+    {
+        var leaving = this.WaitForLeavesAsync(username);
+        if (leaving.IsCompleted)
+            return leaving;
+
+        if (WorldData.AbstractLevel.MustNotWaitForGates)
+            throw new InvalidOperationException($"Player '{username}' is still leaving; add them once the ticks end.");
+
+        if (this.WaitsForItself(username))
+            throw new InvalidOperationException($"Player '{username}' is still leaving; add them once they left.");
+
+        return leaving;
+    }
+
+    // Whether a pending leave of a player named username can only end after this flow does: this flow raises that
+    // very leave (a server-side player's or a network player's), or is the join it waits for. A flow marked by a leave
+    // that has ended since (a task its handler started) waits like any other.
+    private bool WaitsForItself(string username) =>
+        this.IsPendingLeaveOf(raisingServerPlayerLeave.Value, username)
+        || this.IsPendingLeaveOf(Client.RaisingLeave, username)
+        || Client.IsAdmittingWithDeferredLeaveOf(username);
+
+    private bool IsPendingLeaveOf(Task? leave, string username) =>
+        leave is { IsCompleted: false }
+        && this.pendingLeaves.TryGetValue(leave, out var leaving)
+        && string.Equals(leaving, username, StringComparison.OrdinalIgnoreCase);
+
+    // The leave of a server-side player whose event is being raised on this flow (see LeaveServerPlayerAsync).
+    private static readonly AsyncLocal<Task?> raisingServerPlayerLeave = new();
 
     /// <summary>
     /// The server as the code running now sees it: a plugin's own instance during the plugin's calls (see
@@ -969,31 +1118,44 @@ public sealed partial class Server : IServer, IPluginScopedServer
     {
         // Only the registered instance can unregister, so a stale reference can't remove a newer player who reused
         // the UUID or name.
-        if (!this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
-            return false;
+        lock (this.playerList)
+        {
+            if (!this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
+                return false;
 
-        this.ReleaseRegistrations(player);
+            this.ReleaseNameAndListing(player);
+        }
+
+        LeaveOwningLevel(player);
         return true;
     }
 
-    // Drops the lookups that hang off an online registration; the caller must have just removed that registration.
-    private void ReleaseRegistrations(IPlayer player)
+    private static void LeaveOwningLevel(IPlayer player)
     {
-        this.UsernameToUuidMappings.TryRemove(new KeyValuePair<string, Guid>(player.Username, player.Uuid));
-
-        // Under the transfer lock of the level that owns the player, so a level change can't move it on meanwhile. Only
-        // the registration goes: a player still connected (one a plugin unregistered, say) may be registered again and
-        // keeps travelling and respawning. Leaving for good is the leave's (see Entity.LeaveServer).
+        // Outside the registrations' lock, and under the transfer lock of the level that owns the player, so a level
+        // change can't move it on meanwhile. Only the registration goes: a player still connected (one a plugin
+        // unregistered, say) may be registered again and keeps travelling and respawning. Leaving for good is the
+        // leave's (see Entity.LeaveServer).
         Entity.RemoveFromOwningLevel(player);
     }
 
     public async Task<bool> RemoveServerPlayerAsync(IPlayer player)
     {
         // Claiming the registration first means concurrent removals run the leave lifecycle only once.
-        if (player is not ServerPlayer serverPlayer
-            || !this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
-        {
+        if (player is not ServerPlayer serverPlayer)
             return false;
+
+        var left = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        lock (this.playerList)
+        {
+            if (!this.OnlinePlayers.TryRemove(new KeyValuePair<Guid, IPlayer>(player.Uuid, player)))
+                return false;
+
+            // The name and the place in the list go with the registration, so no lookup finds a player who took the
+            // UUID meanwhile under this one's name. A join under the name waits for the leave instead: it's tracked
+            // before the name is free (see WaitForLeavesAsync).
+            this.ReleaseNameAndListing(player);
+            this.TrackLeave(left.Task, serverPlayer.Username);
         }
 
         serverPlayer.CancelJoin();
@@ -1002,34 +1164,45 @@ public sealed partial class Server : IServer, IPluginScopedServer
         // plugin removing the player as they die, say) runs apart from it, once it's done, and isn't waited for.
         if (!serverPlayer.IsInOwnTick && !WorldData.AbstractLevel.MustNotWaitForGates)
         {
-            await this.LeaveServerPlayerAsync(serverPlayer);
+            try
+            {
+                await this.LeaveServerPlayerAsync(serverPlayer, left.Task);
+            }
+            finally
+            {
+                left.SetResult();
+            }
+
             return true;
         }
 
-        Task leave;
         using (ExecutionContext.SuppressFlow())
         {
-            leave = Task.Run(async () =>
+            _ = Task.Run(async () =>
             {
                 // Nobody awaits it, so it logs its own failure, like a network player's leave.
                 try
                 {
-                    await this.LeaveServerPlayerAsync(serverPlayer);
+                    await this.LeaveServerPlayerAsync(serverPlayer, left.Task);
                 }
                 catch (Exception ex)
                 {
                     Log.ServerPlayerLeaveFailed(this.logger, ex, serverPlayer.Username);
                 }
+                finally
+                {
+                    left.SetResult();
+                }
             });
         }
 
-        this.TrackLeave(leave, serverPlayer.Username);
         return true;
     }
 
-    // The leave of a server-side player whose registration was claimed.
-    private async Task LeaveServerPlayerAsync(ServerPlayer player)
+    // The leave of a server-side player whose registration was claimed; leave is the task tracking it.
+    private async Task LeaveServerPlayerAsync(ServerPlayer player, Task leave)
     {
+        raisingServerPlayerLeave.Value = leave;
         var result = EventResult.Failed;
         try
         {
@@ -1053,7 +1226,7 @@ public sealed partial class Server : IServer, IPluginScopedServer
                 // No longer a viewer of what they had open, so other viewers' clicks don't update them.
                 player.OpenedContainer = null;
                 player.RunMenusClosed();
-                this.ReleaseRegistrations(player);
+                LeaveOwningLevel(player);
             }
         }
     }
@@ -1139,18 +1312,15 @@ public sealed partial class Server : IServer, IPluginScopedServer
     }
 
     /// <summary>
-    /// One pass of the independent 50 ms connection loop. Play-state prediction acknowledgements must not depend
-    /// on world ticks succeeding, simulation being unpaused, or a travelling player belonging to a level.
+    /// One pass of the independent 50 ms connection loop. Block changes and the prediction acknowledgements that follow
+    /// them don't go out here: the tick loop sends them, ticking or paused (see <see cref="RunTickTurnAsync"/>).
     /// </summary>
-    internal Task TickConnectionsAsync(bool sendKeepAlive)
+    internal async Task TickConnectionsAsync(bool sendKeepAlive)
     {
-        return this.ForEachConnectionAsync(client =>
+        await this.ForEachConnectionAsync(client =>
         {
             if (client.Connected && client.State == ClientState.Play && client.Player is Player player)
-            {
                 player.TickTeleportClock();
-                player.FlushBlockAcknowledgement();
-            }
 
             return sendKeepAlive ? SendKeepAliveAsync(client) : ValueTask.CompletedTask;
         }, this.keepAliveFailures);
@@ -1258,9 +1428,7 @@ public sealed partial class Server : IServer, IPluginScopedServer
     /// </summary>
     private void ReportTickStats()
     {
-        var levels = this.WorldManager.GetAvailableWorlds()
-            .OfType<World>()
-            .SelectMany(world => world.dimensions.Values.OfType<AbstractLevel>().Prepend(world))
+        var levels = this.Levels()
             .Select(level => (Level: level, Times: level.TickTimes.Take()))
             .ToArray();
         var worldTicks = this.worldTickTimes.Take();
@@ -1296,10 +1464,8 @@ public sealed partial class Server : IServer, IPluginScopedServer
     }
 
     // Each level's tick stage, e.g. "overworld: ticking entities, the_nether: waiting for simulation gate".
-    private string DescribeLevelTicks() => string.Join(", ", this.WorldManager.GetAvailableWorlds()
-        .OfType<World>()
-        .SelectMany(world => world.dimensions.Values.OfType<AbstractLevel>().Prepend(world))
-        .Select(level => $"{level.Name}: {level.TickStage}"));
+    private string DescribeLevelTicks() =>
+        string.Join(", ", this.Levels().Select(level => $"{level.Name}: {level.TickStage}"));
 
     /// <summary>
     /// The mean time the last 100 world ticks took to run, in milliseconds, like vanilla's smoothed tick time (the busy
@@ -1329,10 +1495,59 @@ public sealed partial class Server : IServer, IPluginScopedServer
     }
 
     /// <summary>
-    /// Ticks the worlds once and records how long it took. A failing tick is reported rather than thrown, so the loop
-    /// goes on.
+    /// One turn of the tick loop, under the tick gate, so a pause lands between two turns (see
+    /// <see cref="PauseAsync"/>): a world tick, or while the server is paused, a flush of every level's block changes
+    /// and then the prediction acknowledgements that follow them (see <see cref="AbstractLevel.FlushBlockChanges"/>),
+    /// like vanilla's frozen server, whose ticks still broadcast. A paused server runs no block events, so there are
+    /// none for the acknowledgements to wait for.
     /// </summary>
-    private async Task TickWorldsOnceAsync()
+    /// <remarks>
+    /// Under the gate, the paused flush never runs beside a world tick, and finds the server paused or not as the
+    /// tick would: a resumed tick's acknowledgements can't overtake its block events. It's the loop's own turn, so
+    /// nothing else that takes the gate starves it. Internal for tests, which drive the turns without the timer.
+    /// </remarks>
+    /// <returns>Whether the worlds ticked.</returns>
+    internal async Task<bool> RunTickTurnAsync()
+    {
+        await this.tickGate.WaitAsync();
+        try
+        {
+            if (this.Paused)
+            {
+                foreach (var level in this.Levels())
+                    this.FlushPausedLevel(level);
+
+                return false;
+            }
+
+            await this.TickWorldsOnceAsync();
+            return true;
+        }
+        finally
+        {
+            this.tickGate.Release();
+        }
+    }
+
+    // A failing flush is reported like a failing tick, so the loop goes on and the other levels still flush. What it
+    // didn't send waits for the next turn.
+    private void FlushPausedLevel(AbstractLevel level)
+    {
+        try
+        {
+            level.FlushBlockChanges();
+        }
+        catch (Exception ex)
+        {
+            this.ReportTickFailure(ex);
+        }
+    }
+
+    /// <summary>
+    /// Ticks the worlds once and records how long it took. A failing tick is reported rather than thrown, so the loop
+    /// goes on. Internal for tests, which drive the tick loop's ticks without its timer.
+    /// </summary>
+    internal async Task TickWorldsOnceAsync()
     {
         TickStage = "ticking worlds";
         this.EndIdleSession();
@@ -1359,6 +1574,11 @@ public sealed partial class Server : IServer, IPluginScopedServer
         }
     }
 
+    // Every level of every world: each world's own and its dimensions.
+    private IEnumerable<AbstractLevel> Levels() => this.WorldManager.GetAvailableWorlds()
+        .OfType<World>()
+        .SelectMany(world => world.dimensions.Values.OfType<AbstractLevel>().Prepend(world));
+
     private async Task LoopAsync()
     {
         var worldTicks = 0;
@@ -1374,26 +1594,13 @@ public sealed partial class Server : IServer, IPluginScopedServer
             while (await timer.WaitForNextTickAsync())
             {
                 // Like vanilla, worlds tick once they're loaded: ticking chunks while the rest generate (fluids in complete
-                // chunks) would change them before the world is ready.
-                if (this.WorldManager.ReadyToJoin)
+                // chunks) would change them before the world is ready. No player is in play before then, so there are
+                // no block changes to send either.
+                if (this.WorldManager.ReadyToJoin && await this.RunTickTurnAsync())
                 {
-                    // Under the gate, so a pause lands between two ticks (see PauseAsync).
-                    await this.tickGate.WaitAsync();
-                    try
-                    {
-                        if (!this.Paused)
-                        {
-                            await this.TickWorldsOnceAsync();
-
-                            // The autosave runs beside the ticks, and is skipped while the previous one still runs.
-                            if (++worldTicks % AutosaveInterval == 0 && autosave.IsCompleted)
-                                autosave = this.SaveEverythingAsync(autosave: true);
-                        }
-                    }
-                    finally
-                    {
-                        this.tickGate.Release();
-                    }
+                    // The autosave runs beside the ticks, and is skipped while the previous one still runs.
+                    if (++worldTicks % AutosaveInterval == 0 && autosave.IsCompleted)
+                        autosave = this.SaveEverythingAsync(autosave: true);
                 }
 
                 long elapsedTicks = stopwatch.ElapsedTicks;

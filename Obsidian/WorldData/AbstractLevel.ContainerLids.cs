@@ -10,12 +10,18 @@ public abstract partial class AbstractLevel
     // Vanilla ContainerOpenersCounter schedules an opener recheck every five ticks while a container is open.
     internal const int ContainerLidRecheckDelay = 5;
 
-    private readonly record struct ContainerLidChange(IPlayer? ClosingPlayer);
+    // A window opening or closing at a container, and the game time it happened at: vanilla schedules a container's
+    // first opener recheck from the moment it opens.
+    private readonly record struct ContainerLidChange(IPlayer? ClosingPlayer, long ChangedAt);
 
     private readonly ConcurrentDictionary<Vector, ContainerLidChange> changedContainerLids = [];
     private readonly Dictionary<Vector, (int Block, int Count, long RecheckAt)> openContainerLids = [];
     private readonly PriorityQueue<Vector, long> containerLidDeadlines = new();
     private readonly HashSet<Vector> inactiveContainerLids = [];
+
+    // Each trapped chest half's viewer count, as its redstone signal reads it. Only used under the tick lock, where
+    // signals are read: the lid bookkeeping above runs on the simulation path outside it.
+    private readonly Dictionary<Vector, int> trappedChestViewers = [];
 
     private long nextInactiveContainerLidCheck = long.MaxValue;
 
@@ -46,12 +52,13 @@ public abstract partial class AbstractLevel
 
     internal void ContainerWindowChanged(BaseContainer? container, IPlayer? closingPlayer = null)
     {
+        var now = this.LevelData?.GameTime ?? 0;
         foreach (var position in ContainerLidPositions(container))
         {
             if (closingPlayer is null)
-                this.changedContainerLids.TryAdd(position, default);
+                this.changedContainerLids.TryAdd(position, new(null, now));
             else
-                this.changedContainerLids[position] = new(closingPlayer);
+                this.changedContainerLids[position] = new(closingPlayer, now);
         }
     }
 
@@ -120,12 +127,14 @@ public abstract partial class AbstractLevel
 
         var changed = new HashSet<Vector>();
         var closingPlayers = new Dictionary<Vector, IPlayer?>();
+        var changedAt = new Dictionary<Vector, long>();
         foreach (var (position, _) in this.changedContainerLids)
         {
             if (this.changedContainerLids.TryRemove(position, out var change))
             {
                 changed.Add(position);
                 closingPlayers[position] = change.ClosingPlayer;
+                changedAt[position] = change.ChangedAt;
             }
         }
 
@@ -186,6 +195,7 @@ public abstract partial class AbstractLevel
             if (block is null || !HasContainerOpeners(block))
             {
                 this.openContainerLids.Remove(position);
+                this.ForgetTrappedChestViewers(position);
                 continue;
             }
 
@@ -199,19 +209,33 @@ public abstract partial class AbstractLevel
                 this.ContainerOpenedOrClosed(position, block, count > 0, source);
             }
 
+            var shulker = IsShulkerBox(block);
             if (block.RegistryId != BlockIds.Barrel)
             {
                 // A later lifecycle change can coalesce a pending count key. Read the payload at dispatch too,
                 // so an older queued request can never close a lid that has acquired a new viewer meanwhile.
+                // A shulker box's lid moves on the server too, from the count the event carries.
                 this.QueueBlockEvent(position, block.RegistryId, 1, count,
-                    parameterAtDispatch: () => this.ViewedContainerPositions()
-                        .Count(viewed => viewed.Position == position));
+                    trigger: shulker ? () => this.MoveShulkerLid(position) : null,
+                    parameterAtDispatch: () => this.ViewerCount(position));
             }
 
-            if (count > 0)
+            if (block.RegistryId == BlockIds.TrappedChest)
+                this.SignalTrappedChestViewers(position, block, count);
+            else
+                this.ForgetTrappedChestViewers(position);
+
+            // Vanilla's shulker boxes count their viewers themselves and never recheck them.
+            if (count > 0 && shulker)
             {
+                this.openContainerLids[position] = (block.RegistryId, count, long.MaxValue);
+            }
+            else if (count > 0)
+            {
+                // The first recheck is due five ticks after the container opened, as vanilla schedules it then.
+                var openedAt = changedAt.TryGetValue(position, out var at) ? at : now;
                 var next = wasOpen && previous.RecheckAt > now
-                    ? previous.RecheckAt : now + ContainerLidRecheckDelay;
+                    ? previous.RecheckAt : (wasOpen ? now : openedAt) + ContainerLidRecheckDelay;
                 this.openContainerLids[position] = (block.RegistryId, count, next);
                 if (!wasOpen || previous.RecheckAt != next)
                 {
@@ -246,6 +270,57 @@ public abstract partial class AbstractLevel
         }
 
         this.EmitGameEvent(MobGameEvent.ContainerClose, center, viewer);
+    }
+
+    private int ViewerCount(Vector position) =>
+        this.ViewedContainerPositions().Count(viewed => viewed.Position == position);
+
+    // The block event's server side for a shulker box: its lid starts opening or closing.
+    private ValueTask<bool> MoveShulkerLid(Vector position)
+    {
+        if (this.GetResidentBlockEntity(position) is ShulkerBoxBlockEntity box)
+            box.ViewersChanged(this.ViewerCount(position));
+
+        return ValueTask.FromResult(true);
+    }
+
+    private static bool IsShulkerBox(IBlock block) =>
+        TagsRegistry.Block.ShulkerBoxes.Entries.Contains(block.RegistryId);
+
+    /// <summary>
+    /// How many viewers the trapped chest half at <paramref name="position"/> has, as its redstone signal reads it.
+    /// </summary>
+    internal int TrappedChestViewers(Vector position)
+    {
+        lock (this.Fluids.TickLock)
+            return this.trappedChestViewers.GetValueOrDefault(position);
+    }
+
+    // Vanilla TrappedChestBlockEntity.signalOpenCount: when a half's viewer count changes, after the lid's block
+    // event, the blocks around it and around the block below it, which it strongly powers, hear of it.
+    private void SignalTrappedChestViewers(Vector position, IBlock block, int count)
+    {
+        lock (this.Fluids.TickLock)
+        {
+            var previous = this.trappedChestViewers.GetValueOrDefault(position);
+            if (previous == count)
+                return;
+
+            if (count > 0)
+                this.trappedChestViewers[position] = count;
+            else
+                this.trappedChestViewers.Remove(position);
+
+            this.UpdateNeighbors(position, block);
+            this.UpdateNeighbors(position + Vector.Down, block);
+        }
+    }
+
+    // A position that no longer holds a trapped chest gives no viewers' power.
+    private void ForgetTrappedChestViewers(Vector position)
+    {
+        lock (this.Fluids.TickLock)
+            this.trappedChestViewers.Remove(position);
     }
 
     private static bool HasContainerOpeners(IBlock block) =>

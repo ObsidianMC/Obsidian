@@ -207,10 +207,33 @@ public sealed class PluginMobs
         drake.ClientControl.Enqueue(player, new VehicleMove(moved, 90, 0, false));
         await drake.TickAsync();
         Assert.Equal(moved, drake.Position);
-        Assert.Equal(90, drake.Yaw.Degrees, 1);
+        Assert.Equal(90, drake.Yaw, 1);
 
         await drake.TickAsync();
         Assert.Equal(moved, drake.Position);
+
+        // The plugin vehicle commit takes the same normalized client rotation as boats and player movement.
+        foreach (var row in ClientRotationCases.Finite)
+        {
+            drake.ClientControl.Enqueue(player, new VehicleMove(moved, row.Yaw, row.Pitch, false));
+            await drake.TickAsync();
+            ClientRotationCases.AssertRotation(drake, row.ExpectedYaw, row.ExpectedPitch);
+        }
+
+        var rotation = (drake.Yaw, drake.Pitch);
+        var rotationTerrain = new MobTerrain(world);
+        foreach (var invalid in new[] { float.NaN, float.PositiveInfinity, float.NegativeInfinity })
+        {
+            (float Yaw, float Pitch)[] rotations = [(invalid, 0), (0, invalid)];
+            foreach (var row in rotations)
+            {
+                drake.ClientControl.Enqueue(player, new VehicleMove(moved, row.Yaw, row.Pitch, false));
+                drake.ClientControl.Tick(drake, rotationTerrain, player, flying: true);
+
+                Assert.Null(drake.ClientControl.AcceptedMove);
+                Assert.Equal(rotation, (drake.Yaw, drake.Pitch));
+            }
+        }
 
         // It refuses one far beyond the mob's motion, as vanilla does, and puts the client's mob back.
         client.ClearPackets();
@@ -306,6 +329,449 @@ public sealed class PluginMobs
         var drop = Assert.Single(world.GetEntitiesInRange(drake.Position, 3).OfType<ItemEntity>());
         Assert.Equal(ItemsRegistry.Diamond, drop.Item.Holder);
         Assert.Equal(3, drop.Item.Count);
+    }
+
+    [Fact]
+    public async Task DamageHooksPreserveAttackersAndAttackerlessLightning()
+    {
+        await using var context = TestServerFactory.CreateServer($"damage-sources-{Guid.NewGuid():N}");
+        await BlockUpdates.AddChunksAsync(context.World);
+        var owner = new PluginContainer
+        {
+            Info = new PluginInfo("damagesources"),
+            Archive = PluginArchive.Open("damagesources.obby", PluginArchives.Zip(new Dictionary<string, byte[]>
+            {
+                [PluginMetadata.FileName] = PluginArchives.Metadata("damagesources", "1.0.0", "Damage sources")
+            }))
+        };
+        var behavior = new DamageSourceRecorder();
+        var definition = EntityDefinitionsRegistry.Register("damagesources:mob", EntityKind.Mob);
+        Assert.True(EntityDefinitionsRegistry.TryBind(definition, new EntityProperties { Behavior = behavior },
+            owner, () => false));
+        var mob = Assert.IsType<PluginMob>(PluginEntity.Create(definition, context.World));
+        mob.EntityId = Server.GetNextEntityId();
+        mob.Position = new VectorD(8.5, 71, 8.5);
+        context.World.SpawnEntity(mob);
+        var attacker = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Attacker");
+        var projectile = new Arrow { Level = context.World };
+
+        // The scoped combat bridge must keep the attacker and direct entity for every kind of attributed damage.
+        foreach (var kind in Enum.GetValues<CombatDamageKind>())
+        {
+            await mob.DamageCombatAsync(attacker, 1, kind, directSource: projectile);
+            Assert.Same(attacker, behavior.Last!.Attacker);
+            Assert.Same(projectile, behavior.Last.DirectEntity);
+        }
+
+        await mob.ThunderHitAsync(new LightningBolt { Level = context.World });
+        Assert.Equal("minecraft:lightning_bolt", behavior.Last!.Type);
+        Assert.Null(behavior.Last.Attacker);
+        Assert.Null(behavior.Last.DirectEntity);
+        Assert.Null(mob.LastAttacker);
+
+        // An absent source must not leak into a later public damage call, or turn self-damage into an attack.
+        await mob.DamageAsync(attacker);
+        Assert.Same(attacker, behavior.Last!.Attacker);
+        Assert.Same(attacker, behavior.Last.DirectEntity);
+        await mob.DamageCombatAsync(mob, 1, CombatDamageKind.Fall);
+        Assert.Null(behavior.Last.Attacker);
+        Assert.Null(behavior.Last.DirectEntity);
+
+        behavior.CancelDamage = false;
+        await mob.DamageCombatAsync(attacker, 1, CombatDamageKind.Melee);
+        Assert.Same(attacker, mob.LastAttacker);
+        Assert.Same(attacker, mob.RecentPlayerAttacker);
+        await mob.DamageCombatAsync(null, 2, CombatDamageKind.Lightning);
+        Assert.Same(attacker, mob.LastAttacker);
+        Assert.Null(behavior.Last.Attacker);
+        Assert.Null(behavior.Last.DirectEntity);
+    }
+
+    [Fact]
+    public async Task PluginMobDeathIgnoresAHitItsHookCancelled()
+    {
+        await using var context = TestServerFactory.CreateServer($"cancelled-damage-{Guid.NewGuid():N}");
+        await BlockUpdates.AddChunksAsync(context.World);
+        var owner = new PluginContainer
+        {
+            Info = new PluginInfo("cancelleddamage"),
+            Archive = PluginArchive.Open("cancelleddamage.obby", PluginArchives.Zip(new Dictionary<string, byte[]>
+            {
+                [PluginMetadata.FileName] = PluginArchives.Metadata("cancelleddamage", "1.0.0", "Cancelled damage")
+            }))
+        };
+        var behavior = new DamageSourceRecorder();
+        var definition = EntityDefinitionsRegistry.Register("cancelleddamage:mob", EntityKind.Mob);
+        Assert.True(EntityDefinitionsRegistry.TryBind(definition, new EntityProperties { Behavior = behavior },
+            owner, () => false));
+        var mob = Assert.IsType<PluginMob>(PluginEntity.Create(definition, context.World));
+        mob.EntityId = Server.GetNextEntityId();
+        mob.Position = new VectorD(8.5, 71, 8.5);
+        context.World.SpawnEntity(mob);
+        var attacker = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Attacker");
+
+        // The hook cancels the player's hit, so a death in the same tick is an outright kill, not the player's.
+        await mob.DamageCombatAsync(attacker, 1, CombatDamageKind.Melee);
+        Assert.Equal("minecraft:player_attack", behavior.Last!.Type);
+        await mob.KillAsync(mob);
+
+        Assert.Equal("minecraft:generic_kill", behavior.Death!.Type);
+    }
+
+    [Fact]
+    public async Task PluginMobDeathKeepsItsOwnHitsSourceWhenHitsOverlap()
+    {
+        await using var context = TestServerFactory.CreateServer($"overlapping-damage-{Guid.NewGuid():N}");
+        await BlockUpdates.AddChunksAsync(context.World);
+        var owner = new PluginContainer
+        {
+            Info = new PluginInfo("overlappingdamage"),
+            Archive = PluginArchive.Open("overlappingdamage.obby", PluginArchives.Zip(new Dictionary<string, byte[]>
+            {
+                [PluginMetadata.FileName] = PluginArchives.Metadata("overlappingdamage", "1.0.0", "Overlapping damage")
+            }))
+        };
+        var behavior = new GatedHurtBehavior();
+        var definition = EntityDefinitionsRegistry.Register("overlappingdamage:mob", EntityKind.Mob);
+        Assert.True(EntityDefinitionsRegistry.TryBind(definition, new EntityProperties { Behavior = behavior },
+            owner, () => false));
+        var mob = Assert.IsType<PluginMob>(PluginEntity.Create(definition, context.World));
+        mob.EntityId = Server.GetNextEntityId();
+        mob.Position = new VectorD(8.5, 71, 8.5);
+        context.World.SpawnEntity(mob);
+        var attacker = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Attacker");
+        var arrow = new Arrow { Level = context.World };
+
+        // A melee hit waits in the hook, then a lethal arrow hit waits there too.
+        var melee = new GatedHurtBehavior.Call(cancel: true);
+        var shot = new GatedHurtBehavior.Call(cancel: false);
+        behavior.Calls.Enqueue(melee);
+        behavior.Calls.Enqueue(shot);
+        var first = mob.DamageCombatAsync(attacker, 1, CombatDamageKind.Melee).AsTask();
+        await melee.Reached.Task;
+        var second = mob.DamageCombatAsync(attacker, 100, CombatDamageKind.Projectile, directSource: arrow).AsTask();
+        await shot.Reached.Task;
+
+        // The melee hit is cancelled and finishes first; then the arrow's hit commits and kills the mob.
+        melee.Release.SetResult();
+        await first;
+        shot.Release.SetResult();
+        await second;
+
+        Assert.False(mob.Alive);
+        Assert.Equal("minecraft:arrow", behavior.Death!.Type);
+        Assert.Same(attacker, behavior.Death.Attacker);
+        Assert.Same(arrow, behavior.Death.DirectEntity);
+        Assert.Equal(CombatDamageKind.Projectile, mob.LastDamageKind);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PluginMobHitFromATaskAHookStartedIsNotTheHooksHit(bool whileTheHitWaits)
+    {
+        await using var context = TestServerFactory.CreateServer($"background-damage-{Guid.NewGuid():N}");
+        await BlockUpdates.AddChunksAsync(context.World);
+        var owner = new PluginContainer
+        {
+            Info = new PluginInfo("backgrounddamage"),
+            Archive = PluginArchive.Open("backgrounddamage.obby", PluginArchives.Zip(new Dictionary<string, byte[]>
+            {
+                [PluginMetadata.FileName] = PluginArchives.Metadata("backgrounddamage", "1.0.0", "Background damage")
+            }))
+        };
+        var behavior = new GatedHurtBehavior();
+        var definition = EntityDefinitionsRegistry.Register($"backgrounddamage:mob_{whileTheHitWaits}", EntityKind.Mob);
+        Assert.True(EntityDefinitionsRegistry.TryBind(definition, new EntityProperties { Behavior = behavior },
+            owner, () => false));
+        var mob = Assert.IsType<PluginMob>(PluginEntity.Create(definition, context.World));
+        mob.EntityId = Server.GetNextEntityId();
+        mob.Position = new VectorD(8.5, 71, 8.5);
+        context.World.SpawnEntity(mob);
+        var shooter = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Shooter");
+        var other = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Other");
+        var arrow = new Arrow { Level = context.World };
+
+        // The arrow's hook starts work that waits, then reads the mob's hit and deals it a lethal hit outright.
+        var go = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task? background = null;
+        IEntity? seenAttacker = null;
+        CombatDamageKind? seenKind = null;
+        var shot = new GatedHurtBehavior.Call(cancel: true)
+        {
+            Started = () => background = Task.Run(async () =>
+            {
+                await go.Task;
+                seenAttacker = mob.IncomingAttacker;
+                seenKind = mob.IncomingDamageKind;
+                await mob.DamageAsync(other, 100);
+            })
+        };
+        var lethal = new GatedHurtBehavior.Call(cancel: false);
+        lethal.Release.SetResult();
+        behavior.Calls.Enqueue(shot);
+        behavior.Calls.Enqueue(lethal);
+        var hit = mob.DamageCombatAsync(shooter, 1, CombatDamageKind.Projectile, directSource: arrow).AsTask();
+        await shot.Reached.Task;
+
+        if (whileTheHitWaits)
+        {
+            // The lethal hit lands while the arrow's hit still waits in its hook, then the arrow's hit is cancelled.
+            go.SetResult();
+            await background!;
+            shot.Release.SetResult();
+            await hit;
+        }
+        else
+        {
+            // The arrow's hit is cancelled and done before the work goes on.
+            shot.Release.SetResult();
+            await hit;
+            go.SetResult();
+            await background!;
+            Assert.Null(seenAttacker);
+            Assert.Null(seenKind);
+        }
+
+        Assert.False(mob.Alive);
+        Assert.Equal("minecraft:player_attack", behavior.Death!.Type);
+        Assert.Same(other, behavior.Death.Attacker);
+        Assert.Same(other, behavior.Death.DirectEntity);
+
+        // Damage dealt outright records no kind; the cancelled arrow's must not stand in for it.
+        Assert.Null(mob.LastDamageKind);
+    }
+
+    [Fact]
+    public async Task MobSubclassKilledFromATaskItsHurtHookStartedIsNotKilledByTheHit()
+    {
+        await using var context = TestServerFactory.CreateServer($"background-kill-{Guid.NewGuid():N}");
+        await BlockUpdates.AddChunksAsync(context.World);
+        var zombie = SpawnRecordingZombie(context.World);
+        var shooter = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Shooter");
+        var other = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Other");
+        var arrow = new Arrow { Level = context.World };
+
+        // The arrow's hit waits in OnHurtAsync, which first starts work that waits too, then kills the zombie outright.
+        var go = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task? background = null;
+        var hurt = new RecordingZombie.Gate
+        {
+            Started = () => background = Task.Run(async () =>
+            {
+                await go.Task;
+                await zombie.KillAsync(other);
+            })
+        };
+        zombie.HurtGate = hurt;
+        var hit = zombie.DamageCombatAsync(shooter, 1, CombatDamageKind.Projectile, directSource: arrow).AsTask();
+        await hurt.Reached.Task;
+
+        // The kill lands while the arrow's hit still waits; then the arrow's hit goes on.
+        go.SetResult();
+        await background!;
+        hurt.Release.SetResult();
+        await hit;
+
+        // What the zombie's loot reads (see Mob.DropVanillaLoot): the kill's source, not the arrow or its shooter.
+        Assert.False(zombie.Alive);
+        Assert.Same(other, zombie.DeathSource);
+        Assert.Same(other, zombie.DeathDirect);
+    }
+
+    [Fact]
+    public async Task MobSubclassDamageOverrideSeesEachHitAndItsDeathKeepsTheHit()
+    {
+        await using var context = TestServerFactory.CreateServer($"subclass-damage-{Guid.NewGuid():N}");
+        await BlockUpdates.AddChunksAsync(context.World);
+        var zombie = SpawnRecordingZombie(context.World);
+        var shooter = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Shooter");
+        var arrow = new Arrow { Level = context.World };
+
+        // A plugin's DamageAsync override sees combat hits, and a lethal arrow's death keeps the arrow for its loot.
+        await zombie.DamageCombatAsync(shooter, 100, CombatDamageKind.Projectile, directSource: arrow);
+
+        Assert.Equal(1, zombie.DamageCalls);
+        Assert.False(zombie.Alive);
+        Assert.Same(shooter, zombie.DeathSource);
+        Assert.Same(arrow, zombie.DeathDirect);
+        Assert.Equal(CombatDamageKind.Projectile, zombie.LastDamageKind);
+    }
+
+    [Fact]
+    public async Task MobSubclassKillingInsteadOfDamageKillsWithItsOwnSource()
+    {
+        await using var context = TestServerFactory.CreateServer($"override-kill-{Guid.NewGuid():N}");
+        await BlockUpdates.AddChunksAsync(context.World);
+        var zombie = SpawnRecordingZombie(context.World);
+        var shooter = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Shooter");
+        var other = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Other");
+        var arrow = new Arrow { Level = context.World };
+
+        // The override kills the zombie outright, before (and instead of) the base DamageAsync, which the arrow's hit
+        // was handed to: the kill must not take it.
+        zombie.KillOnDamage = other;
+        await zombie.DamageCombatAsync(shooter, 1, CombatDamageKind.Projectile, directSource: arrow);
+
+        Assert.False(zombie.Alive);
+        Assert.Same(other, zombie.DeathSource);
+        Assert.Same(other, zombie.DeathDirect);
+    }
+
+    [Fact]
+    public async Task MobHitBesideAnotherIsDecidedByTheHurtCooldownAtItsCommit()
+    {
+        await using var context = TestServerFactory.CreateServer($"overlapping-cooldown-{Guid.NewGuid():N}");
+        await BlockUpdates.AddChunksAsync(context.World);
+        var zombie = SpawnRecordingZombie(context.World);
+        var first = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "First");
+        var second = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Second");
+
+        // A hit on another thread passes the cooldown and is held just before its commit; a bigger hit lands meanwhile.
+        var reached = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        zombie.BeforeAbsorb = () =>
+        {
+            reached.SetResult();
+            release.Task.GetAwaiter().GetResult();
+        };
+        var smaller = Task.Run(() => zombie.DamageCombatAsync(first, 3, CombatDamageKind.Melee).AsTask());
+        await reached.Task;
+        await zombie.DamageCombatAsync(second, 5, CombatDamageKind.Melee);
+        var health = zombie.Health;
+
+        // Like vanilla, the cooldown the bigger hit started takes all of the smaller one.
+        release.SetResult();
+        await smaller;
+
+        Assert.Equal(health, zombie.Health);
+        Assert.Equal(1, zombie.AcceptedDamageCount);
+    }
+
+    private static RecordingZombie SpawnRecordingZombie(WorldData.World world)
+    {
+        var zombie = new RecordingZombie
+        {
+            EntityId = Server.GetNextEntityId(),
+            Level = world,
+            Position = new VectorD(8.5, 71, 8.5),
+            NoGravity = true
+        };
+        world.SpawnEntity(zombie);
+        return zombie;
+    }
+
+    // A zombie subclassed the way a plugin may: it overrides DamageAsync, can hold a hit in OnHurtAsync, and records
+    // what its death's loot would read.
+    private sealed class RecordingZombie : Zombie
+    {
+        public Gate? HurtGate { get; set; }
+        public IEntity? KillOnDamage { get; set; }
+        public Action? BeforeAbsorb { get; set; }
+        public int DamageCalls { get; private set; }
+        public IEntity? DeathSource { get; private set; }
+        public IEntity? DeathDirect { get; private set; }
+
+        public override ValueTask DamageAsync(IEntity source, float amount = 1)
+        {
+            this.DamageCalls++;
+            if (this.KillOnDamage is { } killer)
+                return this.KillAsync(killer);
+
+            return base.DamageAsync(source, amount);
+        }
+
+        // Runs once, on the hit's thread, between the hit's first look at the hurt cooldown and its commit.
+        private protected override bool TryAbsorbDamage(float amount, CombatDamageKind kind)
+        {
+            var before = this.BeforeAbsorb;
+            this.BeforeAbsorb = null;
+            before?.Invoke();
+            return base.TryAbsorbDamage(amount, kind);
+        }
+
+        protected override async ValueTask OnHurtAsync(IEntity source)
+        {
+            await base.OnHurtAsync(source);
+            if (this.HurtGate is not { } gate)
+                return;
+
+            this.HurtGate = null;
+            gate.Started?.Invoke();
+            gate.Reached.SetResult();
+            await gate.Release.Task;
+        }
+
+        protected override ValueTask OnDeathAsync(IEntity source)
+        {
+            this.DeathSource = source;
+            this.DeathDirect = this.IncomingDirectSource ?? source;
+            return base.OnDeathAsync(source);
+        }
+
+        internal sealed class Gate
+        {
+            public Action? Started { get; init; }
+
+            public TaskCompletionSource Reached { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        }
+    }
+
+    // A damage hook that holds each hit until the test lets it go on, then cancels it or lets it through.
+    private sealed class GatedHurtBehavior : IEntityBehavior
+    {
+        public Queue<Call> Calls { get; } = new();
+
+        public DamageSource? Death { get; private set; }
+
+        public async ValueTask HurtAsync(IEntity entity, EntityDamage damage)
+        {
+            var call = this.Calls.Dequeue();
+            call.Started?.Invoke();
+            call.Reached.SetResult();
+            await call.Release.Task;
+            damage.Cancelled = call.Cancel;
+        }
+
+        public ValueTask DiedAsync(IEntity entity, DamageSource source)
+        {
+            this.Death = source;
+            return ValueTask.CompletedTask;
+        }
+
+        internal sealed class Call(bool cancel)
+        {
+            public bool Cancel { get; } = cancel;
+
+            // Runs in the hook when the hit reaches it, as the hook would.
+            public Action? Started { get; init; }
+
+            public TaskCompletionSource Reached { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        }
+    }
+
+    private sealed class DamageSourceRecorder : IEntityBehavior
+    {
+        public DamageSource? Last { get; private set; }
+        public DamageSource? Death { get; private set; }
+        public bool CancelDamage { get; set; } = true;
+
+        public ValueTask HurtAsync(IEntity entity, EntityDamage damage)
+        {
+            this.Last = damage.Source;
+            damage.Cancelled = this.CancelDamage;
+            return ValueTask.CompletedTask;
+        }
+
+        public ValueTask DiedAsync(IEntity entity, DamageSource source)
+        {
+            this.Death = source;
+            return ValueTask.CompletedTask;
+        }
     }
 
     private sealed class DrakeBehavior : IEntityBehavior

@@ -171,6 +171,7 @@ public abstract partial class AbstractLevel : ILevel
     private readonly IDisposable optionsMonitor;
     private readonly Lock regionLock = new();
     private readonly ConcurrentQueue<Func<ValueTask>> entityActions = new();
+    private readonly ConcurrentDictionary<OwnedEntityAction, byte> ownedEntityActions = new();
     // Due block ticks run before ordinary deferred mutations in the same level tick.
     private readonly ConcurrentQueue<Func<ValueTask>> simulationActions = new();
     private MobSpawner? mobSpawner;
@@ -184,6 +185,54 @@ public abstract partial class AbstractLevel : ILevel
     private readonly SemaphoreSlim simulationGate = new(1, 1);
 
     internal void EnqueueEntityAction(Func<ValueTask> action) => entityActions.Enqueue(action);
+
+    // An undrained action must release its plugin lease when the level closes, including enqueue/dispose races.
+    internal void EnqueueEntityAction(Func<ValueTask> action, IDisposable lifetime)
+    {
+        var owned = new OwnedEntityAction(action, lifetime);
+        this.ownedEntityActions.TryAdd(owned, 0);
+        if (this.IsDisposed)
+        {
+            this.ownedEntityActions.TryRemove(owned, out _);
+            owned.Dispose();
+            return;
+        }
+
+        this.entityActions.Enqueue(async () =>
+        {
+            if (this.ownedEntityActions.TryRemove(owned, out _))
+                await owned.RunAsync();
+        });
+    }
+
+    private sealed class OwnedEntityAction(Func<ValueTask> action, IDisposable lifetime) : IDisposable
+    {
+        private (Func<ValueTask> Action, IDisposable Lifetime)? work = (action, lifetime);
+        private readonly Lock sync = new();
+
+        internal async ValueTask RunAsync()
+        {
+            var pending = this.Take();
+            if (pending is null)
+                return;
+
+            var running = pending.Value;
+            using (running.Lifetime)
+                await running.Action();
+        }
+
+        private (Func<ValueTask> Action, IDisposable Lifetime)? Take()
+        {
+            lock (this.sync)
+            {
+                var pending = this.work;
+                this.work = null;
+                return pending;
+            }
+        }
+
+        public void Dispose() => this.Take()?.Lifetime.Dispose();
+    }
 
     internal void EnqueueSimulationAction(Func<ValueTask> action) => simulationActions.Enqueue(action);
 
@@ -250,6 +299,27 @@ public abstract partial class AbstractLevel : ILevel
     private TickPlayerSnapshot? tickPlayers;
     private int playerChanges;
     private readonly PlayerGrid playerGrid = new();
+    private readonly List<IPlayer> playersByArrival = [];
+
+    /// <summary>
+    /// Players in level-registration order, as vanilla's level player list. Trial scans need this order when
+    /// choosing between players with Bad Omen. Direct edits to the public dictionary are reconciled when queried.
+    /// </summary>
+    internal IPlayer[] PlayersByArrival()
+    {
+        lock (this.playerGrid.MembershipGate)
+        {
+            this.playersByArrival.RemoveAll(player => !this.Players.TryGetValue(player.Uuid, out var current)
+                || !ReferenceEquals(current, player));
+            foreach (var player in this.Players.Values)
+            {
+                if (!this.playersByArrival.Contains(player))
+                    this.playersByArrival.Add(player);
+            }
+
+            return this.playersByArrival.ToArray();
+        }
+    }
 
     private sealed record TickPlayerSnapshot(IPlayer[] Players, int Changes);
 
@@ -432,6 +502,9 @@ public abstract partial class AbstractLevel : ILevel
     // on generator or loading threads.
     private readonly ConcurrentQueue<Chunk> entitySpawns = new();
 
+    // The blocks changed for players since the last flush (see BlockChanged).
+    private readonly BlockChangeBroadcasts blockChanges;
+
 
 
     public AbstractLevel(ILogger logger, IPacketBroadcaster packetBroadcaster, IOptionsMonitor<ServerConfiguration> configuration,
@@ -454,11 +527,11 @@ public abstract partial class AbstractLevel : ILevel
         this.RedstoneRules = new RedstoneBehaviors(new PluginRedstoneBehavior(this));
         this.BlockNotifications = new BlockNotificationPipeline(this, this.Neighbors);
         this.RedstoneInstall = RedstoneRegistration.Install(this, this.BlockUpdates.Ticks, this.Neighbors, this.RedstoneRules, position => this.PlayNoteBlock(position));
-        this.Plates = new PressurePlates(this);
-        this.Plates.RegisterTicks(this.BlockUpdates.Ticks, this);
+        this.EntityContacts = new EntityContactPass(this);
         this.Lighting = new RuntimeLightEngine(
             this.Fluids.TickLock, () => this.DimensionType?.Element.HasSkylight ?? true);
         this.Portals = new LevelPortals(this);
+        this.blockChanges = new BlockChangeBroadcasts(this);
 
         var spawnChunkCount = 2 * this.Configuration.SpawnChunkRadius + 1;
         this.spawnChunks = new long[spawnChunkCount * spawnChunkCount];
@@ -678,16 +751,31 @@ public abstract partial class AbstractLevel : ILevel
         return true;
     }
 
-    internal void BroadcastBlockChange(IBlock block, Vector location)
-    {
-        if (this.ActiveBlockUse is BlockUseEffects effects)
-        {
-            effects.After(() => this.BroadcastBlockChange(block, location));
-            return;
-        }
+    /// <summary>
+    /// Records that the block at <paramref name="location"/> changed, for the players who have its chunk. They're sent
+    /// its state as it is at the next flush (see <see cref="FlushBlockChanges"/>), with the other changes in its
+    /// section.
+    /// </summary>
+    internal void BlockChanged(Vector location) => this.blockChanges.Changed(location);
 
-        this.PacketBroadcaster.BroadcastTo(new BlockUpdatePacket(location, block.GetHashCode()), PlayersInRange(location));
+    /// <summary>
+    /// Sends the players the blocks changed since the last flush, once per chunk section, like vanilla's chunk
+    /// broadcast, and then the prediction acknowledgements whose changes have gone out. The server's tick loop calls
+    /// it while the server is paused, when no block events run (see <see cref="Server.RunTickTurnAsync"/>). The
+    /// level's tick sends the two apart, with its block events between them.
+    /// </summary>
+    internal void FlushBlockChanges()
+    {
+        this.blockChanges.Flush();
+        this.blockChanges.SendAcknowledgements();
     }
+
+    /// <summary>
+    /// Sends <paramref name="player"/> <paramref name="acknowledgement"/> after this level's next flush of block
+    /// changes, and after that tick's block events (see <see cref="BlockChangeBroadcasts.Acknowledge"/>).
+    /// </summary>
+    internal void AcknowledgeAfterBlockChanges(PlayerBase player, BlockAcknowledgement acknowledgement) =>
+        this.blockChanges.Acknowledge(player, acknowledgement);
 
     /// <summary>
     /// Sends a level event (a sound or particle effect, like lava fizzing) to the players that have its chunk.
@@ -706,7 +794,7 @@ public abstract partial class AbstractLevel : ILevel
     public IEnumerable<IPlayer> PlayersInRange(Vector location) => this.PlayersWithChunk(location);
 
     // The players that have the chunk at the location loaded. It reads the players as it goes rather than copying them
-    // first: a copy of a ConcurrentDictionary's values takes all its locks, and this runs for every block change sent.
+    // first: a copy of a ConcurrentDictionary's values takes all its locks.
     private IEnumerable<IPlayer> PlayersWithChunk(Vector location)
     {
         var (x, z) = location.ToChunkCoord();
@@ -755,40 +843,53 @@ public abstract partial class AbstractLevel : ILevel
         // Under the lock fluid ticks and growth hold, so that neither reads a block, has it changed here, and then
         // writes what it worked out from the old block over the change; and with the change's updates, so that
         // another change's can't run between the block and its own.
-        API.BlockEntities.BlockEntity? removed;
-        lock (this.Fluids.TickLock)
-        {
-            if (!this.Fluids.IsResident(c) || c is Chunk { EntitiesUnloaded: true })
-                return false;
+        // A caller already holding tick/transfer cannot unwind that outer lock here: it must refuse contention.
+        var canWait = !this.Fluids.TickLock.IsHeldByCurrentThread
+            && !EntityTransferLock.IsAnyHeldByCurrentThread;
+        var committed = TryCommit(out var removed);
+        if (committed is null && canWait && placement is not null && await placement.WaitForHandAsync())
+            committed = TryCommit(out removed);
 
-            // One attempt: a busy hand refuses placement, and the packet path repairs the client's prediction.
-            // Waiting or retrying under tick would deadlock an inventory hook that writes to this level.
-            IDisposable? held = null;
-            if (placement is not null && !placement.TryLockHand(out held))
-                return false;
-
-            using var handLock = held;
-            var old = c.GetBlock(x, y, z);
-            if (canReplace is not null && !canReplace(old))
-                return false;
-
-            using var prepared = placement?.Prepare(block, new Vector(x, y, z), this.Logger);
-            if (placement is not null && prepared is null)
-                return false;
-
-            // Publish the initialized entity first: lock-free readers must never see a filled box as empty.
-            removed = this.UpdateBlockEntity(c, new Vector(x, y, z), block, prepared?.Entity);
-            c.SetBlock(x, y, z, block);
-            placement?.Consume();
-            this.CompleteBlockEntityPlacement(c, prepared?.Entity);
-            this.AfterBlockSet(new Vector(x, y, z), old, block, flags);
-            placement?.Placed?.Invoke();
-        }
+        if (committed != true)
+            return false;
 
         if (removed is not null)
             await this.RunBlockEntityRemovalAsync(removed);
 
         return true;
+
+        // Null means contention, false means a validation refusal. Only contention gets one more attempt.
+        bool? TryCommit(out API.BlockEntities.BlockEntity? removedEntity)
+        {
+            removedEntity = null;
+            lock (this.Fluids.TickLock)
+            {
+                if (!this.Fluids.IsResident(c) || c is Chunk { EntitiesUnloaded: true })
+                    return false;
+
+                IDisposable? held = null;
+                if (placement is not null && !placement.TryLockHand(out held))
+                    return null;
+
+                using var handLock = held;
+                var old = c.GetBlock(x, y, z);
+                if (canReplace is not null && !canReplace(old))
+                    return false;
+
+                using var prepared = placement?.Prepare(block, new Vector(x, y, z), this.Logger);
+                if (placement is not null && prepared is null)
+                    return false;
+
+                // Publish the initialized entity first: lock-free readers must never see a filled box as empty.
+                removedEntity = this.UpdateBlockEntity(c, new Vector(x, y, z), block, prepared?.Entity);
+                c.SetBlock(x, y, z, block);
+                placement?.Consume();
+                this.CompleteBlockEntityPlacement(c, prepared?.Entity);
+                this.AfterBlockSet(new Vector(x, y, z), old, block, flags);
+                placement?.Placed?.Invoke();
+                return true;
+            }
+        }
     }
 
     /// <summary>
@@ -943,6 +1044,7 @@ public abstract partial class AbstractLevel : ILevel
                 return false;
 
             Interlocked.Increment(ref this.playerChanges);
+            this.playersByArrival.Add(player);
             this.playerGrid.Add(player);
             return true;
         }
@@ -957,6 +1059,7 @@ public abstract partial class AbstractLevel : ILevel
                 return false;
 
             Interlocked.Increment(ref this.playerChanges);
+            this.playersByArrival.Remove(player);
             this.playerGrid.Remove(player);
             return true;
         }
@@ -975,7 +1078,18 @@ public abstract partial class AbstractLevel : ILevel
 
             // Set in this method, it flows into what the tick awaits but not back to the caller.
             tickingLevel.Value = new TickFlow(this, this.CurrentTickId);
-            await TickLevelAsync();
+            try
+            {
+                await TickLevelAsync();
+            }
+            catch
+            {
+                // A tick that fails, every tick perhaps, still sends the blocks changed so far and then the
+                // acknowledgements that follow them, as the old immediate broadcasts did. If it failed before its block
+                // events, there are none to wait for.
+                this.FlushBlockChanges();
+                throw;
+            }
         }
         finally
         {
@@ -1103,9 +1217,19 @@ public abstract partial class AbstractLevel : ILevel
         this.TickRandomBlocks();
         timings.Lap("random ticks");
 
+        // Like vanilla's chunk broadcast, which ends its chunk ticks: the blocks changed since the last one, before
+        // block events, so the events' changes go out in the next tick's.
+        TickStage = "sending block changes";
+        this.blockChanges.Flush();
+        timings.Lap("block changes");
+
         // Like ServerLevel's block-event phase, after chunk ticks and before entity ticks.
         await this.ProcessBlockEventsAsync();
         timings.Lap("block events");
+
+        // Vanilla acknowledges predictions from its connection tick, after the levels' ticks: a client sees the tick's
+        // block events before the acknowledgement, while the block it predicted still stands in for the server's.
+        this.blockChanges.SendAcknowledgements();
 
         foreach (var entity in this.SnapshotEntities())
         {
@@ -1122,8 +1246,27 @@ public abstract partial class AbstractLevel : ILevel
                 if (GetRegionForLocation(entity.Position)?.Entities.ContainsKey(entity.EntityId) == true)
                 {
                     this.tickingEntity = entity;
+
+                    // Vanilla's setOldPosAndRot before the tick; a player's client moves them before it instead.
+                    if (entity is Entity starting && entity is not IPlayer)
+                        starting.TickStartPosition = starting.Position;
+
                     await entity.TickAsync();
-                    await this.TouchPluginBlocksAsync(entity);
+
+                    // Like vanilla's entity movement, the blocks it touches react now, before the next entity ticks;
+                    // as in vanilla, only where entities tick (players everywhere), and not once its tick removed it
+                    // (an arrow despawning, a projectile breaking: removal takes it out of the level's grid) or moved
+                    // it to another level.
+                    if (entity is Entity toucher
+                        && entity.Level == this
+                        && (entity is IPlayer || toucher.Grid == this.EntityGrid && this.IsMobTicking(entity.Position)))
+                    {
+                        await this.EntityContacts.TouchAsync(toucher);
+                    }
+
+                    if (entity is PlayerBase moved)
+                        moved.TickStartPosition = moved.Position;
+
                     if (entity is Entity concrete && entity is not IPlayer && entity.Level == this)
                         await concrete.TickEntityPortalAsync();
                     timings.LapEntity(entity.GetType());
@@ -1134,11 +1277,6 @@ public abstract partial class AbstractLevel : ILevel
                 claimed?.ReleaseTick(this);
             }
         }
-        // Like vanilla's entity movement, the redstone that entities touch reacts once they've all ticked: pressure plates,
-        // then tripwires, on the entities' current positions.
-        var movers = this.SnapshotEntities().ToList();
-        await this.Plates.UpdateAsync(movers);
-        await this.RedstoneInstall.Tripwires.UpdateAsync(movers);
         timings.Lap("entities");
 
         TickStage = "sleeping";
@@ -1270,7 +1408,7 @@ public abstract partial class AbstractLevel : ILevel
     /// The level's entities in entity id order, each once, even while crossing a region boundary. Taken once per tick,
     /// so entities spawned during the tick wait for the next one. Valid until the next call.
     /// </summary>
-    private List<IEntity> SnapshotEntities()
+    internal List<IEntity> SnapshotEntities()
     {
         this.entitySnapshot.Clear();
         this.entitySnapshotIds.Clear();
@@ -1377,6 +1515,7 @@ public abstract partial class AbstractLevel : ILevel
                 LightLoaded = this.TrackPublishedChunk,
                 LightUnloaded = this.Lighting.Untrack,
                 BlockAccessUnloaded = this.Fluids.Untrack,
+                BlockAccessRestored = this.Fluids.RestoreTracking,
                 BlockEntityUnloaded = this.OnBlockEntityUnloaded,
                 EntitiesLoaded = this.QueueEntitySpawn,
                 SaveStructureStarts = this.Generator is IStructureStartStorage storage ? storage.SaveStructureStarts : null,
@@ -2578,6 +2717,23 @@ public abstract partial class AbstractLevel : ILevel
         if (Interlocked.Exchange(ref this.disposed, 1) != 0)
             return;
 
+        try
+        {
+            await this.DisposeCoreAsync();
+        }
+        finally
+        {
+            // Keep queued plugin code alive through the final save, then release even if no tick drains it.
+            foreach (var owned in this.ownedEntityActions.Keys)
+            {
+                if (this.ownedEntityActions.TryRemove(owned, out _))
+                    owned.Dispose();
+            }
+        }
+    }
+
+    private async Task DisposeCoreAsync()
+    {
         GC.SuppressFinalize(this);
 
         this.ClearChunkTickets();

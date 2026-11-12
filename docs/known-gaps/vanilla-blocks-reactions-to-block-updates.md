@@ -16,8 +16,11 @@ tick behaviour (`TickBehaviors`: leaves, fire, farmland, sugar cane, cactus, bam
 sand, magma, composters, frogspawn, sulfur spikes) and for redstone components and falling blocks; the rest do
 nothing when they come due.
 Of vanilla's own blocks, pressure plates, tripwire, wooden buttons, detector rails and bubble columns react to
-entities inside them; none has a stepped-on reaction, though magma, turtle eggs and sculk shriekers are handled by
-checks of their own. The [block interactions plan](../block-interactions-plan.md) lists what is missing, phase by
+entities inside them. Magma and turtle eggs bind stepped-on owners; farmland, turtle eggs, slime, hay and honey
+bind fallen-on owners, and beds use their inherited fall-distance reduction. Cactus, campfires, honey, hoppers,
+powder snow and big dripleaf bind inside owners; sculk shriekers bind stepped-on owners. Dripleaf tilts and shrieker
+resets use scheduled block ticks. Contact capture limits and remaining phase 3 work are listed in
+[stepped and fallen-on contacts](stepped-and-fallen-on-contacts.md). The [block interactions plan](../block-interactions-plan.md) lists what is missing, phase by
 phase. Some vanilla blocks' shape rules aren't modelled yet:
 a bell keeps its `single_wall` or `double_wall` attachment when a wall beside it is added or removed, and doesn't drop
 when it loses all support (vanilla's `BellBlock.updateShape`). Dead coral plants and fans don't break when their
@@ -104,7 +107,7 @@ before it is implemented. "Phase" refers to the [block interactions plan](../blo
 | `DecoratedPotBlock` | decorated pot | Fluid tick only | 2 (batch D) |
 | `DriedGhastBlock` | dried ghast | Fluid tick only | 5 |
 | `EnderChestBlock` | ender chest | Fluid tick only | 6 |
-| `FlowerPotBlock` | flower pots | Don't drop when their floor goes | 2 (batch D) |
+| `FlowerPotBlock` | flower pots | Stay when their floor goes, as vanilla's do: its rule drops a pot that can't survive, and `FlowerPotBlock` doesn't override `canSurvive` (26.3 jar; not captured) | Shape-rule follow-up |
 | `FrogspawnBlock` | frogspawn | Doesn't drop without water | 5 |
 | `HeavyCoreBlock` | heavy core | Fluid tick only | Shape-rule follow-up |
 | `HugeMushroomBlock` | mushroom blocks and stems | Faces don't join neighbours | 5 |
@@ -132,7 +135,9 @@ Three kinds of block have their class's rule but miss part of it:
   never breaks; vanilla's crops also need light, which no crop checks yet. The `more_blocks` probe can't record
   crops: their survival reads light, and its bounded level has no light engine. Phase 5.
 - Mushrooms (`VegetationBlock`) read the live level's light; generation's shape pass reads 15, as it always has.
-- Pointed dripstone, sulfur spikes and kelp only reshape in the shared pass: one that has lost its support during
-  chunk completion keeps its state and gets no tick. Vanilla's completion (`LevelChunk.postProcessGeneration`) runs
-  `updateFromNeighbourShapes` against the live level, so vanilla would schedule the fall, break or support check
-  there. Obsidian keeps what it always did until a completion capture shows the ticks. Phase 5.
+- Pointed dripstone, sulfur spikes, kelp and the vines only reshape in generation's shared pass. Chunk completion
+  schedules what vanilla's `LevelChunk.postProcessGeneration` schedules against the live level for one that lost its
+  support (a stalactite's fall, a stalagmite's break, a plant's support check), through their
+  `IPostProcessBehavior`, as `ticking_blocks.json`'s `completion_*` cases capture. A vine or kelp stem whose plant
+  ahead is gone still keeps its state at completion: vanilla turns it into a head with an age drawn from the live
+  level's random, which completion doesn't have.

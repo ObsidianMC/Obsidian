@@ -115,6 +115,24 @@ internal sealed class LevelFluids : IFluidLevelAccess
         }
     }
 
+    // Rollback rejoins the same resident chunk, with unchanged blocks. Restore scheduler ownership without
+    // re-running plugin neighbor/shape callbacks: an error there must not interrupt restoration of other chunks.
+    internal void RestoreTracking(Chunk chunk, bool fluids, bool blocks)
+    {
+        lock (this.sync)
+        {
+            var key = NumericsHelper.IntsToLong(chunk.X, chunk.Z);
+            if (fluids)
+            {
+                this.chunks[key] = chunk;
+                chunk.FluidTicks.StartTicking(this.scheduler, key);
+            }
+
+            if (blocks)
+                this.Blocks.Ticks.Track(chunk);
+        }
+    }
+
     /// <summary>Checks the slot identity while holding TickLock, including in-flight unloading saves.</summary>
     internal bool IsResident(IChunk chunk) =>
         this.level.GetRegionForChunk(chunk.X, chunk.Z) is Region region && region.IsChunkResident(chunk);
@@ -266,7 +284,9 @@ internal sealed class LevelFluids : IFluidLevelAccess
     }
 
     /// <inheritdoc/>
-    public bool SetBlock(Vector position, IBlock block)
+    public bool SetBlock(Vector position, IBlock block) => this.SetBlock(position, block, BlockUpdateFlags.All);
+
+    public bool SetBlock(Vector position, IBlock block, BlockUpdateFlags flags)
     {
         if (this.level.IsOutsideBuildHeight(position.Y) || !this.TryGetChunk(position, out var chunk))
             return false;
@@ -276,7 +296,8 @@ internal sealed class LevelFluids : IFluidLevelAccess
         // Like AbstractLevel.SetBlockUntrackedAsync; the removal's side effects run on the next tick, without the
         // fluid tick's lock.
         if (this.level.UpdateBlockEntity(chunk, position, block) is API.BlockEntities.BlockEntity removed)
-            this.level.QueueBlockEntityRemoval(removed);
+            this.level.QueueBlockEntityRemoval(removed,
+                skipSideEffects: flags.HasFlag(BlockUpdateFlags.SkipBlockEntitySideEffects));
 
         return true;
     }
@@ -289,15 +310,15 @@ internal sealed class LevelFluids : IFluidLevelAccess
 
     /// <inheritdoc/>
     /// <remarks>
-    /// Players see the change with <see cref="BlockUpdateFlags.Clients"/>, and portals check their frames around it
-    /// with <see cref="BlockUpdateFlags.Neighbors"/>.
+    /// Players see the change with <see cref="BlockUpdateFlags.Clients"/>, at the level's next flush of block changes,
+    /// and portals check their frames around it with <see cref="BlockUpdateFlags.Neighbors"/>.
     /// </remarks>
     public void OnBlockStored(Vector position, IBlock block, BlockUpdateFlags flags)
     {
         this.BlockStored?.Invoke(position, block, flags);
 
         if ((flags & BlockUpdateFlags.Clients) != 0)
-            this.level.BroadcastBlockChange(block, position);
+            this.level.BlockChanged(position);
 
         if ((flags & BlockUpdateFlags.Neighbors) != 0)
             this.level.Portals.OnBlockChanged(position);

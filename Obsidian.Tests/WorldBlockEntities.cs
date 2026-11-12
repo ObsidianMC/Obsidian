@@ -119,12 +119,15 @@ public sealed class WorldBlockEntities : IDisposable
         Assert.Equal(hit.ClickedAt, AppContext.GetData(ProbePartsBehavior.UseKey));
 
         human.GameMode = GameMode.Creative;
+        // World ticks derive the pose from these flags, so keep the crouch through the intervening blocked attempt.
+        human.Sneaking = true;
         human.Pose = Pose.Sneaking;
         Assert.True(human.TryUpdateAttribute("minecraft:scale", 0.5f)
             || human.TryAddAttribute("minecraft:scale", 0.5f));
         human.Position = new VectorD(4.5, eye.Y - 1.27f * 0.5f, 2);
         human.Yaw = 0;
         human.Pitch = 0;
+        Assert.Equal(eye, PlayerBase.EyePosition(human));
 
         using var breakData = new NetworkBuffer();
         breakData.WriteVarInt((int)PlayerActionStatus.StartedDigging);
@@ -141,6 +144,8 @@ public sealed class WorldBlockEntities : IDisposable
         await breaking.HandleAsync(context.Server, human);
         await context.World.DoWorldTickAsync();
         Assert.Null(AppContext.GetData(ProbePartsBehavior.BreakKey));
+        Assert.Equal(Pose.Sneaking, human.Pose);
+        Assert.Equal(eye, PlayerBase.EyePosition(human));
         await context.World.SetBlockAsync(new Vector(4, 70, 3), BlocksRegistry.Air);
 
         client.ClearPackets();
@@ -173,10 +178,16 @@ public sealed class WorldBlockEntities : IDisposable
         Assert.False(context.World.IsFaceSturdy(position, BlockFace.Up));
 
         // The final part permits ordinary block removal.
+        human.Sneaking = false;
+        human.Swimming = true;
         human.Pose = Pose.Swimming;
         human.Position = new VectorD(4.5, eye.Y - 0.4f * 0.5f, 2);
+        Assert.Equal(eye, PlayerBase.EyePosition(human));
+
         await breaking.HandleAsync(context.Server, human);
         await context.World.DoWorldTickAsync();
+        Assert.Equal(Pose.Swimming, human.Pose);
+        Assert.Equal(eye, PlayerBase.EyePosition(human));
         Assert.True(chunk.GetBlock(position.X, position.Y, position.Z).IsAir);
         Assert.Null(chunk.GetBlockEntity(4, 70, 4));
 
@@ -418,8 +429,10 @@ public sealed class WorldBlockEntities : IDisposable
             Assert.InRange(drop.Position.Z, 4.125, 4.875);
             Assert.InRange(drop.Motion.Y, 0.2 - 0.11485, 0.2 + 0.11485);
         });
-        Assert.All(drops.Where(drop => drop.Item.Is(ItemsRegistry.Stone)).SkipLast(1), drop =>
-            Assert.InRange(drop.Item.Count, 10, 30));
+        // The range query doesn't return drops in spawn order, so only the count of small stacks is checked.
+        var stones = drops.Where(drop => drop.Item.Is(ItemsRegistry.Stone)).ToArray();
+        Assert.All(stones, drop => Assert.InRange(drop.Item.Count, 1, 30));
+        Assert.True(stones.Count(drop => drop.Item.Count < 10) <= 1);
 
         // A shulker box keeps its items, which vanilla's box item holds.
         await context.World.SetBlockAsync(position, BlocksRegistry.ShulkerBox);
@@ -1145,7 +1158,7 @@ public sealed class WorldBlockEntities : IDisposable
         human.GameMode = GameMode.Survival;
         var pot = BlocksRegistry.DecoratedPot.WithProperty("cracked", "true");
         await context.World.SetBlockAsync(position, pot);
-        var potEntity = Assert.IsType<DataBlockEntity>(chunk.GetBlockEntity(4, 70, 4));
+        var potEntity = Assert.IsType<DecoratedPotBlockEntity>(chunk.GetBlockEntity(4, 70, 4));
         var decoratedSherd = new ItemStack(ItemsRegistry.AnglerPotterySherd, 1, ComponentBuilder.CustomData with
         {
             Value = new NbtCompound { new NbtTag<int>("pattern", 7) }
@@ -1166,7 +1179,7 @@ public sealed class WorldBlockEntities : IDisposable
         Assert.Equal(7, droppedSherd.GetComponent<SimpleDataComponent<NbtCompound>>(DataComponentType.CustomData)!.Value.GetInt("pattern"));
         Assert.Equal(3, pieces.Count(item => item.Is(ItemsRegistry.Brick)));
         Assert.Equal(7, pieces.Where(item => item.Is(ItemsRegistry.Diamond)).Sum(item => item.Count));
-        Assert.False(potEntity.Data.HasTag("item"));
+        Assert.Null(potEntity.Inventory.GetItem(0));
 
         // Replacing an intact pot uses the same spill path, without relying on its loot table.
         await context.World.SetBlockAsync(position, BlocksRegistry.DecoratedPot);

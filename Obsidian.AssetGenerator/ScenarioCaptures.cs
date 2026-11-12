@@ -18,6 +18,7 @@ namespace Obsidian.AssetGenerator;
 /// </remarks>
 internal static class ScenarioCaptures
 {
+    public const string Invisibility = "invisibility";
     public const string Redstone = "redstone";
     public const string Fluids = "fluids";
     public const string Daylight = "daylight";
@@ -32,11 +33,29 @@ internal static class ScenarioCaptures
     public const string Fire = "fire";
     public const string TickingBlocks = "ticking_blocks";
     public const string BlockUse = "block_use";
+    public const string FoodHarvest = "food_and_harvest";
+    public const string WaxingBellsOre = "waxing_bells_ore";
+    public const string Cauldrons = "cauldrons";
+    public const string ProjectileHits = "projectile_hits";
     public const string TurtleEggs = "turtle_eggs";
     public const string Frogspawn = "frogspawn";
     public const string EyeblossomGhastPortal = "eyeblossom_ghast_portal";
     public const string GrowingPlantTicks = "growing_plant_ticks";
     public const string FurnaceResults = "furnace_results";
+    public const string Dispenser = "dispenser";
+    public const string Brushing = "brushing";
+    public const string ArmorStandUse = "armor_stand_use";
+    public const string Shelves = "shelves";
+    public const string StrawBeds = "straw_beds";
+    public const string GoldenDandelions = "golden_dandelions";
+    public const string Lightning = "lightning";
+    public const string StructureBlocks = "structure_blocks";
+    public const string JigsawBlocks = "jigsaw_blocks";
+    public const string TrialSpawners = "trial_spawners";
+    public const string Vaults = "vaults";
+    public const string OminousTrials = "ominous_trials";
+    public const string CommandBlocks = "command_blocks";
+    public const string SpecialBlocks = "special_blocks";
 
     public const string MeltingWeather = "melting_weather";
 
@@ -67,13 +86,18 @@ internal static class ScenarioCaptures
 
     // The fixtures whose probes record only the cases asked for.
     private static readonly string[] SelectableCases =
-        [Redstone, Sulfur, MoreBlocks, StructurePieces, Fire, TickingBlocks, BlockUse, MeltingWeather,
-            EyeblossomGhastPortal];
+        [Redstone, Sulfur, MoreBlocks, StructurePieces, Fire, TickingBlocks, BlockUse, MeltingWeather, GrowingPlantTicks,
+            EyeblossomGhastPortal, Brushing, ArmorStandUse, WaxingBellsOre, FoodHarvest, Cauldrons,
+            ProjectileHits, Dispenser, Shelves, StrawBeds, GoldenDandelions, Lightning, TrialSpawners, Vaults, OminousTrials,
+            CommandBlocks, StructureBlocks, JigsawBlocks, SpecialBlocks];
 
     public static readonly string[] All =
-        [Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps, SavedHeightmaps, Mining,
-            Placement, CopperWeathering, Fire, TickingBlocks, BlockUse, TurtleEggs, Frogspawn,
-            GrowingPlantTicks, MeltingWeather, FurnaceResults, EyeblossomGhastPortal];
+        [Invisibility, Redstone, Fluids, Daylight, Sulfur, MoreBlocks, StructurePieces, Heightmaps, SavedHeightmaps,
+            Mining, Placement, CopperWeathering, Fire, TickingBlocks, BlockUse, TurtleEggs, Frogspawn,
+            GrowingPlantTicks, MeltingWeather, FurnaceResults, EyeblossomGhastPortal, Brushing, ArmorStandUse,
+            WaxingBellsOre, FoodHarvest, Cauldrons, ProjectileHits, Dispenser, Shelves, StrawBeds,
+            GoldenDandelions, Lightning, TrialSpawners, Vaults, OminousTrials, CommandBlocks, StructureBlocks, JigsawBlocks,
+            SpecialBlocks];
 
     private const string RedstoneNotes = """
         Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a
@@ -112,11 +136,50 @@ internal static class ScenarioCaptures
     public static async Task RunAsync(VanillaServer server, string assetsDirectory,
         IReadOnlyCollection<string> fixtures, IReadOnlyCollection<string>? cases = null)
     {
+        // Entities touching blocks, recorded by name only (CaptureFixtures=block_contact), with or without cases.
+        if (fixtures.Contains(ScenarioContactCaptures.Fixture))
+        {
+            if (cases is not null && fixtures.Count != 1)
+                throw new ArgumentException("Case selection for block_contact requires CaptureFixtures=block_contact.");
+
+            await ScenarioContactCaptures.RunAsync(server, assetsDirectory, cases);
+            if (fixtures.Count == 1)
+                return;
+
+            fixtures = [.. fixtures.Where(fixture => fixture != ScenarioContactCaptures.Fixture)];
+        }
+
+        // The block change packets a player receives (CaptureFixtures=block_change_packets), with or without cases.
+        if (fixtures.Contains(ScenarioPacketCaptures.Fixture))
+        {
+            if (cases is not null && fixtures.Count != 1)
+            {
+                throw new ArgumentException(
+                    "Case selection for block_change_packets requires CaptureFixtures=block_change_packets.");
+            }
+
+            await ScenarioPacketCaptures.RunAsync(server, assetsDirectory, cases);
+            if (fixtures.Count == 1)
+                return;
+
+            fixtures = [.. fixtures.Where(fixture => fixture != ScenarioPacketCaptures.Fixture)];
+        }
+
         if (cases is not null && (fixtures.Count != 1 || !SelectableCases.Any(fixtures.Contains)))
         {
             throw new ArgumentException(
                 "Case selection requires CaptureFixtures=redstone, sulfur, more_blocks, structure_pieces, "
-                + "fire, ticking_blocks, block_use, melting_weather or eyeblossom_ghast_portal.");
+                + "fire, ticking_blocks, block_use, melting_weather, eyeblossom_ghast_portal, brushing, "
+                + "armor_stand_use, waxing_bells_ore, food_and_harvest, cauldrons, projectile_hits, dispenser, "
+                + "shelves, straw_beds, golden_dandelions, lightning, trial_spawners, vaults, ominous_trials, growing_plant_ticks, "
+                + "command_blocks, structure_blocks, jigsaw_blocks or special_blocks.");
+        }
+
+        if (fixtures.Contains(Invisibility))
+        {
+            await FixtureDumper.DumpInvisibilityAsync(server, Path.Combine(assetsDirectory, "invisibility.json"));
+            if (fixtures.Count == 1)
+                return;
         }
 
         if (fixtures.Contains(CopperWeathering))
@@ -150,10 +213,151 @@ internal static class ScenarioCaptures
                 return;
         }
 
+        if (fixtures.Contains(Brushing))
+        {
+            await FixtureDumper.DumpBrushingAsync(server, Path.Combine(assetsDirectory, "brushing.json"), cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(ArmorStandUse))
+        {
+            await FixtureDumper.DumpArmorStandUseAsync(server, Path.Combine(assetsDirectory, "armor_stand_use.json"),
+                cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(FoodHarvest))
+        {
+            var path = Path.Combine(assetsDirectory, "food_and_harvest.json");
+            await FixtureDumper.DumpFoodHarvestAsync(server, path, cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(WaxingBellsOre))
+        {
+            var path = Path.Combine(assetsDirectory, "waxing_bells_redstone_ore.json");
+            await FixtureDumper.DumpWaxingBellsOreAsync(server, path, cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(Cauldrons))
+        {
+            var path = Path.Combine(assetsDirectory, "cauldrons.json");
+            await FixtureDumper.DumpCauldronsAsync(server, path, cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(Shelves))
+        {
+            await FixtureDumper.DumpShelvesAsync(server, Path.Combine(assetsDirectory, "shelves.json"), cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(StrawBeds))
+        {
+            var path = Path.Combine(assetsDirectory, "straw_bed_sleep.json");
+            await FixtureDumper.DumpStrawBedsAsync(server, path, cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(GoldenDandelions))
+        {
+            var path = Path.Combine(assetsDirectory, "golden_dandelions.json");
+            await FixtureDumper.DumpGoldenDandelionsAsync(server, path, cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(Dispenser))
+        {
+            await FixtureDumper.DumpDispenserAsync(server, Path.Combine(assetsDirectory, "dispenser.json"), cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(JigsawBlocks))
+        {
+            var path = Path.Combine(assetsDirectory, "jigsaw_blocks.json");
+            await FixtureDumper.DumpJigsawBlocksAsync(server, path, cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(StructureBlocks))
+        {
+            var path = Path.Combine(assetsDirectory, "structure_blocks.json");
+            await FixtureDumper.DumpStructureBlocksAsync(server, path, cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(CommandBlocks))
+        {
+            var path = Path.Combine(assetsDirectory, "command_blocks.json");
+            await FixtureDumper.DumpCommandBlocksAsync(server, path, cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(ProjectileHits))
+        {
+            var path = Path.Combine(assetsDirectory, "projectile_block_hits.json");
+            await FixtureDumper.DumpProjectileHitsAsync(server, path, cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
         if (fixtures.Contains(EyeblossomGhastPortal))
         {
             await FixtureDumper.DumpEyeblossomGhastPortalAsync(server,
                 Path.Combine(assetsDirectory, "eyeblossom_ghast_portal_ticks.json"), cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(Lightning))
+        {
+            var path = Path.Combine(assetsDirectory, "lightning_bolts.json");
+            await FixtureDumper.DumpLightningAsync(server, path, cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(TrialSpawners))
+        {
+            var path = Path.Combine(assetsDirectory, "trial_spawners.json");
+            await FixtureDumper.DumpTrialSpawnersAsync(server, path, cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(OminousTrials))
+        {
+            var path = Path.Combine(assetsDirectory, "ominous_trials.json");
+            await FixtureDumper.DumpTrialSpawnersAsync(server, path, cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(Vaults))
+        {
+            var path = Path.Combine(assetsDirectory, "vaults.json");
+            await FixtureDumper.DumpTrialSpawnersAsync(server, path, cases);
+            if (fixtures.Count == 1)
+                return;
+        }
+
+        if (fixtures.Contains(SpecialBlocks))
+        {
+            var path = Path.Combine(assetsDirectory, "special_blocks.json");
+            await FixtureDumper.DumpSpecialBlocksAsync(server, path, cases);
             if (fixtures.Count == 1)
                 return;
         }
@@ -197,7 +401,7 @@ internal static class ScenarioCaptures
         if (fixtures.Contains(GrowingPlantTicks))
         {
             var path = Path.Combine(assetsDirectory, "growing_plant_ticks.json");
-            await FixtureDumper.DumpGrowingPlantTicksAsync(server, path);
+            await FixtureDumper.DumpGrowingPlantTicksAsync(server, path, cases);
             if (fixtures.Count == 1)
                 return;
         }
@@ -360,6 +564,7 @@ internal static class ScenarioCaptures
             scenario["checkpoints"] = checkpoints;
             await RemoveEntitiesAsync(vanilla, dimension);
             await KillItemsAsync(vanilla, dimension, box.Grow(2));
+            await KillPrimedTntAsync(vanilla, dimension, box.Grow(2));
             await ClearAsync(vanilla, dimension, box.Grow(1));
         }
     }
@@ -396,14 +601,23 @@ internal static class ScenarioCaptures
         await vanilla.RunInAsync(dimension, $"kill {ItemsIn(area)}");
     }
 
+    // Removes the TNT a scenario primed, so it doesn't explode during a later one.
+    private static async Task KillPrimedTntAsync(ScenarioServer vanilla, string dimension, Box area)
+    {
+        await vanilla.RunInAsync(dimension, $"kill {EntitiesIn(area, "minecraft:tnt")}");
+    }
+
     // The item entities in the area, narrowed by any further selector arguments in filter.
-    private static string ItemsIn(Box area, string filter = "")
+    private static string ItemsIn(Box area, string filter = "") => EntitiesIn(area, "minecraft:item", filter);
+
+    // The entities of the type in the area, narrowed by any further selector arguments in filter.
+    private static string EntitiesIn(Box area, string type, string filter = "")
     {
         var dx = area.Max.X - area.Min.X;
         var dy = area.Max.Y - area.Min.Y;
         var dz = area.Max.Z - area.Min.Z;
         var volume = $"x={area.Min.X},y={area.Min.Y},z={area.Min.Z},dx={dx},dy={dy},dz={dz}";
-        return $"@e[type=minecraft:item,{volume}{filter}]";
+        return $"@e[type={type},{volume}{filter}]";
     }
 
     // A placement's state with its block entity's items as /setblock data: each item's slot, id and count.

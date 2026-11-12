@@ -1,13 +1,57 @@
 using Obsidian.API.Inventory;
+using Obsidian.Net.Packets.Play.Clientbound;
 
 namespace Obsidian.Entities;
 
 [MinecraftEntity("minecraft:mooshroom")]
-public sealed partial class Mooshroom : Cow
+public sealed partial class Mooshroom : Cow, IShearable
 {
     public Mooshroom() => Type = EntityType.Mooshroom;
     public bool Brown { get; set; }
+
+    // The bolt that last turned it, which turns it only once however many ticks it strikes.
+    private Guid lastLightningBolt;
+
+    // Vanilla's MushroomCow.thunderHit: the first time a bolt strikes it, it turns the other colour. It isn't hurt.
+    internal override ValueTask ThunderHitAsync(LightningBolt bolt)
+    {
+        if (bolt.Uuid == lastLightningBolt || Level is not Obsidian.WorldData.AbstractLevel level)
+            return ValueTask.CompletedTask;
+
+        Brown = !Brown;
+        lastLightningBolt = bolt.Uuid;
+        SynchronizeMetadata();
+        Obsidian.WorldData.LevelSounds.Play(level, Position, "minecraft:entity.mooshroom.convert", MobSoundCategory, 2);
+        return ValueTask.CompletedTask;
+    }
     internal Obsidian.API.Effects.SuspiciousStewEffect? StewEffect { get; set; }
+
+    /// <inheritdoc/>
+    public bool ReadyForShearing => Alive && !IsBaby;
+
+    /// <summary>
+    /// Vanilla's <c>MushroomCow.shear</c>: its shearing sound, then it turns into a cow in a puff of smoke and drops
+    /// five of its mushrooms.
+    /// </summary>
+    public async ValueTask ShearAsync(SoundCategory category)
+    {
+        Shearing.PlaySound(this, "minecraft:entity.mooshroom.shear", category);
+        DropItem(Brown ? ItemsRegistry.BrownMushroom : ItemsRegistry.RedMushroom, 5);
+        await ConvertToAsync(EntityType.Cow);
+
+        var center = Position + new VectorD(0, Dimension.Height / 2, 0);
+        PacketBroadcaster.QueuePacketToLevelInRange(Level, center, new LevelParticlesPacket
+        {
+            Position = center,
+            ParticleCount = 1,
+            Data = new ExplosionParticle()
+        });
+    }
+
+    private sealed class ExplosionParticle : ParticleData
+    {
+        public override ParticleType ParticleType => ParticleType.Explosion;
+    }
 
     internal override async ValueTask<bool> FeedAsync(IPlayer player, InteractionHand hand)
     {

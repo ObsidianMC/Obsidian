@@ -4,7 +4,7 @@
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
 		<RootNamespace>WorldgenBench</RootNamespace>
-		<TargetFramework>net10.0</TargetFramework>
+		<TargetFramework>net11.0</TargetFramework>
 		<ImplicitUsings>disable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<EnablePreviewFeatures>true</EnablePreviewFeatures>
@@ -22,5 +22,7 @@
 		<Compile Include="..\Obsidian.Tests\RedstoneTestWorld.cs" Link="RedstoneTestWorld.cs" />
 		<!-- The block entity and live level cases run a real level, built the way the tests build one. -->
 		<Compile Include="..\Obsidian.Tests\Fakes\FakeInfrastructure.cs" Link="FakeInfrastructure.cs" />
+		<!-- The packet case runs a real server's level with a connected player, as the tests do. -->
+		<Compile Include="..\Obsidian.Tests\Fakes\RealServerInfrastructure.cs" Link="RealServerInfrastructure.cs" />
 	</ItemGroup>
 </Project>

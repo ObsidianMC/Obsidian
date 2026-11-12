@@ -679,7 +679,8 @@ public sealed partial class LevelTransfers
         && region.Entities.TryGetValue(player.EntityId, out var entity)
         && ReferenceEquals(entity, player);
 
-    private static WorldData.Dimension AddNether(RealServerContext context) => AddDimension(context, "minecraft:the_nether");
+    internal static WorldData.Dimension AddNether(RealServerContext context) =>
+        AddDimension(context, "minecraft:the_nether");
 
     private static WorldData.Dimension AddDimension(RealServerContext context, string identifier)
     {
@@ -697,7 +698,7 @@ public sealed partial class LevelTransfers
         return dimension;
     }
 
-    private static void AddEmptyChunk(AbstractLevel level) =>
+    internal static void AddEmptyChunk(AbstractLevel level) =>
         level.LoadRegionByChunk(0, 0).SetChunk(new Chunk(0, 0, level.MinY, level.Height, ChunkGenStage.full));
 
     // Teleports an entity while the target's transfer lock is held elsewhere. Once the entity has left its level and

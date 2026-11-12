@@ -44,6 +44,7 @@ public sealed class ExecuteCommandModule : CommandModuleBase
         List<CommandContext> contexts = [this.CommandContext];
         var index = 0;
         var countedCondition = false;
+        var countedPass = false;
 
         while (index < words.Count)
         {
@@ -63,6 +64,8 @@ public sealed class ExecuteCommandModule : CommandModuleBase
                 var successes = 0;
                 var result = 0;
 
+                // Like vanilla's result callbacks, each branch's successful results count (a nested /execute's
+                // own branches each), apart from the values they return.
                 foreach (var context in contexts)
                 {
                     var child = context.Derive($"{CommandHelpers.DefaultPrefix}{command}", context.Executor,
@@ -70,17 +73,19 @@ public sealed class ExecuteCommandModule : CommandModuleBase
                     await handler.ProcessCommand(child);
                     if (child.Succeeded)
                     {
-                        successes++;
+                        successes += child.SuccessCount;
                         result += child.Result;
                     }
                 }
 
-                this.CommandContext.SetResult(successes > 0, result);
+                this.CommandContext.SetResult(successes > 0, result, successes);
                 return;
             }
 
+            // Vanilla's numeric conditions (entity, items): each branch's result is the count, or 1 with unless.
             countedCondition = keyword is "if" or "unless" && index < words.Count
-                && words[index].Value is "slots" or "items";
+                && words[index].Value is "slots" or "items" or "entity";
+            countedPass = countedCondition && keyword == "if";
 
             var next = keyword switch
             {
@@ -114,9 +119,16 @@ public sealed class ExecuteCommandModule : CommandModuleBase
         }
         else
         {
-            await this.CommandContext.SuccessAsync(contexts.Count == 1 ? "Test passed" : $"Test passed, count: {contexts.Count}");
+            // Like vanilla's, each branch whose conditions held passes on its own: it sends its own message, which
+            // operators aren't told of, and is a success of its own to the result callbacks.
+            foreach (var context in contexts)
+            {
+                var passed = countedPass ? $"Test passed. Count: {context.Result}" : "Test passed";
+                await this.CommandContext.UnbroadcastSuccessAsync(passed);
+            }
+
             var result = countedCondition ? contexts.Sum(context => context.Result) : contexts.Count;
-            this.CommandContext.SetResult(true, result);
+            this.CommandContext.SetResult(true, result, contexts.Count);
         }
     }
 
@@ -173,7 +185,7 @@ public sealed class ExecuteCommandModule : CommandModuleBase
         foreach (var context in contexts)
         {
             var (currentYaw, currentPitch) = context.Rotation ?? (default, default);
-            if (!TryParseAngle(yawText, currentYaw.Degrees, out var yaw) || !TryParseAngle(pitchText, currentPitch.Degrees, out var pitch))
+            if (!TryParseAngle(yawText, currentYaw, out var yaw) || !TryParseAngle(pitchText, currentPitch, out var pitch))
                 return null;
 
             rotated.Add(context.Derive(context.Message, context.Executor, context.Origin, context.Level, (yaw, pitch)));
@@ -266,7 +278,16 @@ public sealed class ExecuteCommandModule : CommandModuleBase
                 if (!EntitySelector.TryParse(Take(words, ref index) ?? string.Empty, out var selector))
                     return null;
 
-                kept.AddRange(contexts.Where(context => selector.Select(context).Count > 0 == expected));
+                foreach (var context in contexts)
+                {
+                    var count = selector.Select(context).Count;
+                    if (count > 0 == expected)
+                    {
+                        context.SetResult(true, expected ? count : 1);
+                        kept.Add(context);
+                    }
+                }
+
                 break;
             }
             case "block":

@@ -1,3 +1,4 @@
+using Obsidian.API.Blocks;
 using Obsidian.Entities;
 using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.BlockTicks;
@@ -26,13 +27,21 @@ internal sealed class RedstoneComparator(IRedstoneLevel level, RedstoneEngine en
     public static IBlock DerivePlacement(IBlock state, float yaw) =>
         state.WithProperty("facing", PlacementFacing.FromYaw(yaw).Opposite().ToString().ToLowerInvariant());
 
-    /// <summary>Toggles compare and subtract mode (vanilla use). The output is refreshed by a tick two ticks later.</summary>
-    public static async ValueTask ToggleModeAsync(IRedstoneLevel level, Vector position, IBlock state, IPlayer player)
+    /// <summary>
+    /// Toggles compare and subtract mode (vanilla use), and refreshes the output in the new mode at once, as vanilla's
+    /// <c>refreshOutputState</c> does.
+    /// </summary>
+    public static async ValueTask ToggleModeAsync(
+        IRedstoneLevel level,
+        RedstoneEngine engine,
+        Vector position,
+        IBlock state,
+        IPlayer player)
     {
         var mode = state.GetProperty("mode") == "subtract" ? "compare" : "subtract";
-        await level.WriteAsync(position, state.WithProperty("mode", mode), notifyNeighbors: false);
+        await level.WriteAsync(position, state.WithProperty("mode", mode), BlockUpdateFlags.Clients);
         level.PlaySound(position, "minecraft:block.comparator.click", 0.3f, mode == "subtract" ? 0.55f : 0.5f, player);
-        level.ScheduleBlockTick(position, state, DelayTicks);
+        await new RedstoneComparator(level, engine).RefreshAsync(position);
     }
 
     public static void Register(IRedstoneLevel level, LevelBlockTicks ticks, RedstoneBehaviors redstone, NeighborBehaviors neighbors, RedstoneEngine engine)
@@ -41,7 +50,7 @@ internal sealed class RedstoneComparator(IRedstoneLevel level, RedstoneEngine en
         redstone.Register(BlocksRegistry.GetDefault(BlockId).BlockClass(), comparator);
         neighbors.Register(BlockId, comparator);
         neighbors.RegisterPlaced(BlockId, comparator);
-        ticks.Register(BlockId, (position, _) => level.EnqueueSimulation(() => comparator.TickAsync(position)));
+        ticks.Register(BlockId, (position, _) => level.EnqueueSimulation(() => comparator.RefreshAsync(position)));
     }
 
     public int GetSignal(IBlock state, Vector position, BlockFace direction, bool wiresGiveSignal) =>
@@ -53,24 +62,26 @@ internal sealed class RedstoneComparator(IRedstoneLevel level, RedstoneEngine en
 
     public ValueTask OnNeighborChangedAsync(NeighborChange change, IBlockChangeWorld world) => this.ScheduleIfChanged(change.Position, change.State);
 
-    /// <summary>A scheduled refresh: recompute the output and, when it changed, commit it and notify the neighbours.</summary>
-    public async ValueTask TickAsync(Vector position)
+    /// <summary>
+    /// Recomputes the output. Compare mode refreshes the front neighbours even when the output stays the same.
+    /// </summary>
+    public async ValueTask RefreshAsync(Vector position)
     {
         var state = level.GetLoadedBlock(position);
         if (state is null || !IsComparator(state) || level.GetBlockEntityAt(position) is not ComparatorBlockEntity entity)
             return;
 
         var target = this.Calculate(position, state);
-        if (target == entity.OutputSignal)
+        if (target == entity.OutputSignal && state.GetProperty("mode") != "compare")
             return;
 
         entity.OutputSignal = target;
         entity.SetChanged();
-        var powered = (target > 0).ToString().ToLowerInvariant();
-        if (state.GetProperty("powered") != powered)
-            await level.SetBlockAsync(position, state.WithProperty("powered", powered));
+        var powered = target > 0;
+        if (PropertyHandles.Powered.IsTrue(state) != powered)
+            await level.WriteAsync(position, PropertyHandles.Powered.With(state, powered), BlockUpdateFlags.Clients);
 
-        // Vanilla ComparatorBlock.tick: an output change goes to the block in front of the comparator.
+        // Vanilla refreshes only the front, including an unchanged compare-mode output.
         await BasicRedstoneComponents.NotifyOutputFrontAsync(level, position, Facing(state).Opposite());
     }
 
@@ -163,5 +174,5 @@ internal sealed class RedstoneComparator(IRedstoneLevel level, RedstoneEngine en
     private int Output(Vector position) =>
         level.GetBlockEntityAt(position) is ComparatorBlockEntity entity ? entity.OutputSignal : 0;
 
-    private static BlockFace Facing(IBlock state) => FeatureHelpers.ParseFace(state.GetProperty("facing"));
+    private static BlockFace Facing(IBlock state) => PropertyHandles.Facing.Get(state);
 }

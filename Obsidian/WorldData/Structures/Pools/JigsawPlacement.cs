@@ -12,6 +12,21 @@ internal static class JigsawPlacement
 {
     private static readonly StructureRotation[] rotations = Enum.GetValues<StructureRotation>();
 
+    /// <summary>Assembles an editor generation using vanilla's named anchor and 128-block distance.</summary>
+    internal static IReadOnlyList<StructurePiece> Generate(
+        StructureGenerationContext context, StructureTemplatePool pool, string target, int levels, Vector position)
+    {
+        var stub = AddPieces(context, pool, target, levels, position, false, null, 128,
+            PoolAliasLookup.Empty, null, LiquidSettings.ApplyWaterlogging);
+        // Vanilla's editor stub publishes no pieces for a non-positive depth, including the start piece.
+        if (stub is null || levels <= 0)
+            return [];
+
+        var builder = new StructurePiecesBuilder();
+        stub.Generator(builder);
+        return builder.Build();
+    }
+
     /// <summary>
     /// Vanilla <c>addPieces</c>: picks the start piece and, if it fits, returns the stub that grows the structure from it.
     /// </summary>

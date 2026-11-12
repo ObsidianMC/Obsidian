@@ -114,6 +114,34 @@ Rides with: plan phase 1, before the new behaviours are added, so they're bound 
 
 ### 3. One pass for entities touching blocks
 
+*Done. About three times faster, and it no longer allocates; plates and tripwires now fire when vanilla's do.*
+
+`EntityContactPass` (`WorldData/EntityContacts.cs`) runs for each entity straight after its tick. It reads each
+touched cell once and checks `ContactFlags`, a byte per block state built from the generated owners of
+`entityInside`, `stepOn` and `fallOn`; a cell without a flag costs that array read. Flagged cells go to the owner
+bound by block id (plates, tripwire, buttons, detector rails and bubble columns today), or to a plugin block's
+behaviour. The pass stays synchronous until a behaviour doesn't finish at once, reads chunks straight from the
+level's regions (`GetRegionForChunk`'s per-thread cache allocates a record whenever the region changes, which going
+from entity to entity does), and keeps no state between entities. Plates and tripwires count the entities on them
+when an entity is inside an unpressed one and on their scheduled checks, as vanilla's do, so the two passes after
+the entity loop are gone.
+
+Same harness as the re-runnable block probe below, in a temporary level that is deleted afterwards: 400 armor stands
+standing on stone over 25 chunks, then the same with four pressed oak plates under four of them. One operation is
+the contact work of one level tick for all of them, not their own ticks. Before is `51062463a` (the plugin pass per
+entity, then the plate and tripwire passes over a fresh snapshot); after is this change. Runs made on 2026-11-09 on
+the machine described below; ranges are over three runs.
+
+| Case | Before (ns/op) | After (ns/op) | Before (B/op) | After (B/op) |
+|---|---:|---:|---:|---:|
+| 400 entities on stone | 69,437 to 73,970 | 22,857 to 23,257 | 42,928 | 0 |
+| 400 entities, 4 plates | 76,587 to 79,994 | 25,310 to 25,761 | 43,192 | 0 |
+
+`RedstoneBehaviors.ContactFor` is gone with the passes it served; the probe's `ContactFlags/air` row reads the flag
+instead (1.8 to 2.2 ns, 0 B).
+
+The original proposal follows.
+
 *From the code. Changes when plates and tripwires fire, towards vanilla's timing.*
 
 Three separate passes walk the blocks each entity touches. The first runs straight after each entity's own tick;
@@ -143,7 +171,62 @@ Rides with: plan phase 3 (entity contact). It is the phase's foundation, not an 
 
 ### 4. Typed block-state properties on the hot paths
 
-*Measured. No behaviour change, but touches many call sites if done widely, so do it narrowly.*
+*Done, narrowly (PR #758). No behaviour change: the handles match the by-name API for every vanilla state.*
+
+What landed:
+
+- The blocks generator emits `BlocksRegistry.TypedPropertyLayouts`: for each of the ten properties below, the
+  stride and values of every block that has it. Vanilla numbers a block's states over its properties in name order,
+  the last varying fastest.
+- `PropertyHandles` (`Obsidian/Registries/PropertyHandles.cs`, internal) holds one handle per property: integer
+  (`Power`, `Age`, `Distance`, `Level`), boolean (`Powered`, `Open`, `Waterlogged`, `Enabled`, `Lit`) and direction
+  (`Facing`). Get and set are arithmetic on the state id. A block without the property, or a value it doesn't take,
+  gives what the by-name API gives: no value, and the block unchanged. Plugin blocks fall back to the by-name API.
+- `BlockStatePropertyHandles` compares every handle with the by-name API over every vanilla state, for get and set.
+- Call sites converted:
+  - `RedstoneWire`: `power`, read and written on every step
+  - repeaters and comparators: `powered` and `facing`
+  - `Hoppers.MoveItemsAsync`, which the tick and item pickup both run: `enabled` and `facing`
+  - `ShapeUpdater.ScheduleFluidTick`: `waterlogged`
+  - leaves: `distance` in `LeavesBlockBehavior`
+  - crops and other aging plants: `age` through `Growth.Age` and `Growth.GrownState`
+
+The block probe has three handle cases (`Handle/*`) next to the by-name ones. Before (`886bcfff2`) and after
+(`0999f0e88`) are medians of three interleaved runs of that probe on 2026-11-11 (.NET 11.0.0, Windows 11, x64,
+Release, a shared machine). The handle cases didn't exist before, so their before column is the matching by-name
+case.
+
+| Operation | Before (ns/op) | After (ns/op) |
+|---|---:|---:|
+| `waterlogged` on stone (`GetProperty` → `Waterlogged.IsTrue`) | 4.69 | 2.11 |
+| dust `power` get (`int.Parse(GetProperty)` → `Power.Get`) | 16.74 | 4.99 |
+| dust `power` set (`WithProperty` → `Power.With`) | 14.41 | 4.49 |
+| UpdateShape / stone | 6.94 | 4.74 |
+| UpdateShape / air | 12.52 | 10.35 |
+| UpdateShape / generation-fence | 59.67 | 51.09 |
+| Pipeline / toggle 15 dust | 201,090 | 191,997 |
+| Pipeline / toggle 30 dust | 199,477 | 191,212 |
+| Level / toggle 15 dust | 279,664 | 275,366 |
+
+- The `UpdateShape` rows include `ScheduleFluidTick`'s `waterlogged` read.
+- Dust toggles through the pipeline are about 4% faster; the level's 1.5% is within run-to-run noise.
+- Allocations didn't change.
+
+What's left:
+
+- Properties on the converted components that still go by name:
+  - repeater `locked` and `delay`
+  - comparator `mode`
+  - dust's side connections (`north`, `east`, `south` and `west`) in `RedstoneWire.GetSignal` and `WireConnections`
+  - leaf `persistent`
+  - sapling `stage` and propagule `hanging`
+- `Open`, `Lit` and `Level` have handles, and are tested, but no call site uses them yet. Doors, lamps and fluids are
+  candidates once a profile shows them.
+- Worldgen's leaf distance (`LeafDistanceUpdater`) still writes `distance` by name.
+- Adding a handle for another property is one name in the generator's `TypedProperties` and one field in
+  `PropertyHandles`; the equivalence test needs it added to its lists too.
+
+The proposal as written:
 
 `GetProperty(name)` finds the state's property dictionary, then the value by name, and returns a string that the
 caller compares or parses. `WithProperty(name, value)` looks up a `(state, property, value)` tuple in a concurrent
@@ -163,7 +246,74 @@ Rides with: plan phases 4 and 5, for the components each batch touches.
 
 ### 5. Send block changes to clients once per tick per section
 
-*From the code. Changes packet timing to vanilla's, so it needs a check on a real client. Approved 2026-11-09.*
+*Done (branch `perf/section-block-updates`). Matches a vanilla capture of the packets a client receives; still needs
+a check on a real 26.3 client: pistons, note blocks, and placing and breaking with prediction.*
+
+What landed:
+
+- `SectionBlocksUpdatePacket` is hand-written: section coordinates packed into a long, then each change as a var-long
+  of state id and position in the section. Its bytes match vanilla's capture.
+- `BlockChangeBroadcasts` (`Obsidian/WorldData/BlockChangeBroadcasts.cs`) collects each level's changed positions
+  per chunk section. A section's positions come out in the order of vanilla's `ShortOpenHashSet`, which the client
+  applies in turn. The level's tick flushes them after block and fluid ticks and before block events, like vanilla's
+  chunk broadcast: one block update for a section with one change, otherwise one section update, each with the
+  block's state at the flush. A change made outside the tick (a plugin, a command, a packet handler) goes out at the
+  next flush. Only players who have the chunk get it.
+- Prediction acknowledgements follow the flush that carries their block changes, and that tick's block events:
+  - A use or break handler records the sequences it queues. When it's done, it hands the highest to its player's
+    level. The level's next flush sends the player its block changes, and the acknowledgement goes out once the tick's
+    block events have, as vanilla's connection tick sends it after the levels' ticks. Until then the client keeps the
+    server's corrections in its prediction cache and runs block events against the block it predicted.
+  - A level tick that fails still sends the blocks changed so far and then the acknowledgements that follow them, as
+    it ends; if it failed before its block events, there are none to wait for. Steady use is acknowledged every tick.
+  - While the server is paused (vanilla's frozen game still broadcasts, and runs no block events), each turn of the
+    tick loop flushes every level and then sends its acknowledgements, in place of the world tick. The turn holds the
+    tick gate, as a world tick does, so the paused flush never runs beside a tick, and a resumed tick's
+    acknowledgements never overtake that tick's block events. It's the loop's own work, so nothing else taking the
+    gate can starve it. A level whose paused flush fails is reported like a failing tick; the others still flush.
+  - The client numbers its predictions afresh in each level. An acknowledgement is dropped if the client has been sent
+    a level change since its sequence came in (it dropped those predictions with the level), or if an equal or higher
+    one of the same level went out before it (a level whose flush came later).
+  - Acknowledgements still waiting when a level is disposed are dropped: its players have left it, or a later, higher
+    acknowledgement covers them.
+- A flush sends nothing under a lock, and sends once what was recorded when it began: what's recorded while it
+  sends waits for the next flush, which the next tick (or paused turn) brings, so a writer that never stops can't hold
+  the tick. If a send throws, the flush puts what it took back, changes and acknowledgements, and the next flush
+  sends it again; a player may get a correction twice, which does no harm. One flush per level sends at a time. A
+  flush asked for while another runs returns at once, and its changes are either taken by the running one or still
+  pending when it ends, so a stuck connection holds up only the flush that is sending to it.
+- A block packet names no level. Each connection counts the level changes (respawns) admitted to its output, and
+  records the level each one put the client in. A flush chooses a player only if their client's current level is the
+  flushing one, and a block packet is admitted only if the count hasn't changed and the player is still in the level
+  with the chunk, checked under the lock that admits every packet. A player leaving for another level never gets its
+  blocks after their respawn, even if they have come back by then, and a player arriving gets none before it, though
+  their level is set and their old chunks still listed before the respawn is queued. The exception is a plugin that
+  cancels the respawn packet, which leaves the client in the old level (see `known-gaps/26-3-blocks.md`).
+- Block events go out as the tick dispatches them. The block changes they make go out at the next tick's flush, as
+  in vanilla.
+- Vanilla doesn't send a moving piston's block or its block-entity data. Obsidian sent both from the block-entity
+  pass, and no longer does.
+- Breaking a block no longer sends the breaker an extra air update before the flush's, which vanilla doesn't send.
+
+`block_change_packets.json` (`VanillaBlockChangePackets`) replays vanilla's packets in order: a dust line toggled,
+a piston push, a note block, a place and a break with acknowledgements, and water spreading in two sections in one
+tick. The block probe's `Packets/toggle-15-dust` case counts block update and section update packets, and their
+bytes, sent to one player per toggle of a 15-dust line spanning two chunks. Each case uses the same harness
+(.NET 11.0.0, Windows 11, x64, Release), measured on 2026-11-11.
+
+| Toggle 15 dust | Before | After |
+|---|---:|---:|
+| Packets per tick | 40.50 | 2.00 |
+| Bytes per tick (id and body, before compression) | 445.00 | 83.00 |
+
+What's left:
+
+- Block-entity data still goes out at the end of the block-entity pass rather than with the block change in the
+  flush, and light updates at the end of the tick rather than with the chunk broadcast.
+- Vanilla's chunks broadcast in hash-map order. Obsidian's go in the order of each chunk's first change.
+- Corrections (refused uses, buckets, aborted breaks) still go out at once, as in vanilla.
+
+The proposal as written:
 
 `LevelFluids.OnBlockStored` broadcasts a `BlockUpdatePacket` for every block write as it happens, and
 `PlayersWithChunk` walks every player in the level for each one. Vanilla collects changed positions per chunk
@@ -383,15 +533,65 @@ Rides with: plan phase 5 (furnaces, brewing, campfires and the other ticking blo
 
 ### 9. Smaller items
 
-- **Pipeline bookkeeping.** `BlockNotificationPipeline` takes its own lock for every enqueue and dequeue, makes an
-  async call per step, and dedupes steps in a hash set of five-field records. Check the block's behaviour flag
-  before queueing a neighbour step's work, and keep the per-step path synchronous when the behaviour completes
-  synchronously. Fold into item 2 or 6. Keep the pipeline's own lock: not every caller holds the tick lock.
-  `NotifyNeighborsAsync` (`AbstractLevel.BlockNotifications.cs:76`) enqueues and drains without it, and pressure
-  plates and lever and button use reach it that way. Removing the lock needs those callers serialized first.
-- **Hoppers.** Besides the property reads in item 4, each transfer resolves item access for the hopper and its
-  targets again, allocating a combined access for double chests. Measure a hopper line before changing anything:
-  the timings contraptions depend on are easy to break.
+- **Pipeline bookkeeping.** *Done: a neighbour step that reaches a block with no reaction costs about a third less,
+  and every pipeline and level case in the probe is 10 to 20 percent faster. Update order and allocations are
+  unchanged.* `BlockNotificationPipeline` took its own lock for every enqueue and dequeue, made an async call per
+  step, and deduped steps in a hash set of five-field records. Now:
+  - A step runs through a plain method that returns the behaviour's own `ValueTask`. The drain finishes a completed
+    one inline and awaits only a step that yields; only placement, which can await two behaviours, keeps an async
+    method. `NotifyNeighborsAsync` and `NotifyNeighborAsync` return the drain's task instead of wrapping it.
+  - A neighbour step checks for the block's reaction first and reads the source only when there is one. The check
+    happens when the step runs, not when it is queued: queueing runs under the fluid lock and must not read the
+    world, and the reaction belongs to whatever block is committed when the step runs.
+  - The dedupe key keeps the same fields and equality but hashes only the two positions; the record struct ran every
+    field, the old state included, through its default comparer.
+  - The lock stays, as a `System.Threading.Lock`: not every caller holds the tick lock. `NotifyNeighborsAsync`
+    (`AbstractLevel.BlockNotifications.cs`) enqueues and drains without it, and pressure plates and lever and button
+    use reach it that way. Removing the lock needs those callers serialized first.
+
+  Measured with the re-runnable block probe below, which gained a `Pipeline/notify-neighbors-in-stone` case: six
+  neighbour steps around a block inside stone, with no write and no shape pass. Before is `7fb280c6f`; the two
+  Release builds ran alternately, three times each, on 2026-11-11 on the machine described below (.NET 11.0.0).
+  Ranges are over the three runs.
+
+  | Case | Before (ns/op) | After (ns/op) | B/op (both) |
+  |---|---:|---:|---:|
+  | Pipeline / notify neighbours in stone | 316 to 353 | 223 to 238 | 0 |
+  | Pipeline / change inside solid stone | 882 to 943 | 691 to 750 | 32 |
+  | Pipeline / toggle 15 dust | 193,386 to 204,264 | 168,058 to 179,570 | 17,698 |
+  | Pipeline / toggle 30 dust | 193,695 to 202,915 | 169,918 to 178,601 | 17,890 |
+  | Level / change inside solid stone | 1,460 to 1,566 | 1,343 to 1,349 | 1,760 |
+  | Level / toggle 15 dust | 269,045 to 282,024 | 239,912 to 251,249 | 107,408 |
+- **Hoppers.** Done. Since item 4, `Hoppers.MoveItemsAsync` reads `enabled` and `facing` through
+  `PropertyHandles.Enabled` and `PropertyHandles.Facing`. Item access was measured next, with the `Hopper/` cases of
+  the block probe (below), and the cost wasn't where this item guessed. Resolving an access is cheap: 85 ns and 40 B
+  for a chest, 210 ns and 144 B for a double chest with its combined access, 240 ns and 880 B for a minecart found
+  by the entity search. Vanilla resolves once per push and once per pull too, so that stays. The cost was each call
+  through a container's access: every `GetItem`, `Insert` and `Extract` took the inventory's lock through
+  `BaseContainer.Lock`, which orders lock parts with LINQ, allocates a list and release handles and scans every slot
+  twice for the revision: about 110 ns and 640 B a call on a hopper, more on a chest. A transfer makes one call per
+  slot it reads, simulates or writes, and a hopper's empty and full checks copied every stack they read.
+
+  Now a container guarded by its own lock alone takes its semaphore directly (an inventory made of several still
+  goes through `Lock`). Inserting a whole stack holds the lock once across the slots it fills, and a combined access
+  lets each half do that. A hopper's empty and full checks read the slots without copying, a full slot skips the
+  stack comparison it can't pass, and the searches above a hopper allocate a list only when they find something.
+  Results are the same: the same slots in the same order, the same cooldowns, and the hopper replays pass unchanged.
+  Medians of three runs of each build, alternated (before `1c4612945`, after `2517db041`; 2026-11-11, AMD Ryzen 9
+  9950X, Windows 11 (10.0.22631), x64, .NET SDK 11.0.100, runtime .NET 11.0.0, Release):
+
+  | Operation | Before (ns/op) | After (ns/op) | Before (B/op) | After (B/op) |
+  |---|---:|---:|---:|---:|
+  | Hopper / line of 5, chest to double chest | 28668.95 | 16142.90 | 121667.12 | 62129.56 |
+  | Hopper / minecart to chest | 14015.08 | 6331.62 | 50966.64 | 24468.12 |
+  | Hopper / idle, empty | 1185.91 | 413.52 | 5360.00 | 1192.00 |
+  | BlockEntityPass / 4000 idle, 50 ticking | 205686.10 | 175904.20 | 152384.00 | 48184.00 |
+
+  What's left is in `ItemStack`, not in hoppers: copying a stack of stone costs about 430 ns and 2.7 KB, and
+  comparing two about 250 ns and 600 B. A transfer copies a stack about four times (the simulated extraction, the
+  extraction and what's left in the slot, the inserted stack), so cheaper copies are the next place to look, and
+  would help every inventory, not just hoppers. The entity searches an idle hopper runs each tick
+  (`GetEntitiesInRange`) still allocate about 470 B each.
 
 ## Measuring before and after
 
@@ -418,7 +618,8 @@ dotnet run --project Obsidian.WorldgenBench -c Release --no-build -- block > ../
 It writes CSV to standard output; keep the file outside the checkout. The probe shares `RedstoneTestWorld`, runs
 offline, excludes setup, and reports the median of seven samples after 250 ms warmup per case; one dust operation is
 an alternating on/off transition. The `Level/` cases make the same changes on a real level (both update engines),
-kept in a temporary folder that is deleted afterwards.
+kept in a temporary folder that is deleted afterwards. The `Hopper/` cases run hoppers' block entity ticks on such a
+level, each hopper's cooldown ending on every operation and the containers refilled every 1,000 operations.
 Before: docs branch point `15309c34b`; both runs: 2026-11-09, AMD Ryzen 9 9950X, Windows 11 (10.0.22631), x64,
 .NET SDK 10.0.403, runtime .NET 10.0.14, Release. Shared-machine timings include load and JIT variation.
 

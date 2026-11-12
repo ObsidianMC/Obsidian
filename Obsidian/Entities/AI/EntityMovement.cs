@@ -37,28 +37,14 @@ internal static class EntityMovement
             if (inWater || inLava)
                 velocity.Y += 0.04f;
             else if (grounded && jumpingMob.TryJump())
-                velocity.Y = jumpingMob.JumpPower;
+                velocity.Y = Math.Max(JumpPower(jumpingMob, terrain), velocity.Y);
         }
 
         var bounds = mob.Dimension.CreateBBFromPosition(mob.Position);
-        var stepHeight = Math.Clamp(mob.GetAttributeValue("minecraft:generic.step_height"), 0, 10);
-        var displacement = Collide(terrain, bounds, velocity, mob is Mob ? stepHeight : 0, grounded);
-        var horizontalCollision = Math.Abs(displacement.X - velocity.X) > 0.00001f ||
-            Math.Abs(displacement.Z - velocity.Z) > 0.00001f;
-
-        var onGround = velocity.Y < 0 && Math.Abs(displacement.Y - velocity.Y) > 0.00001f;
-        if (!onGround && Math.Abs(velocity.Y) < 0.00001f)
-            onGround = !terrain.IsFree(bounds.OffsetBy(displacement + new VectorD(0, -0.001f, 0)));
-
-        mob.MovementFlags = (onGround ? MovementFlags.OnGround : MovementFlags.None) |
-            (horizontalCollision ? MovementFlags.HorizontalCollision : MovementFlags.None);
-
-        if (Math.Abs(displacement.X - velocity.X) > 0.00001f)
-            velocity.X = 0;
-        if (Math.Abs(displacement.Z - velocity.Z) > 0.00001f)
-            velocity.Z = 0;
-        if (Math.Abs(displacement.Y - velocity.Y) > 0.00001f)
-            velocity.Y = 0;
+        var next = Displace(mob, terrain, velocity, inWater || inLava ? 0.02 : gravity);
+        velocity = mob.Motion;
+        var displacement = next - mob.Position;
+        var horizontalCollision = mob.MovementFlags.HasFlag(MovementFlags.HorizontalCollision);
 
         if (!mob.NoGravity)
             velocity.Y -= inWater || inLava ? 0.02f : gravity;
@@ -73,19 +59,208 @@ internal static class EntityMovement
             if (terrain.IsFree(exit) && terrain.IsFreeOfFluid(exit))
                 mob.Motion = new VectorD(mob.Motion.X, 0.3f, mob.Motion.Z);
         }
-        return mob.Position + displacement;
+        return next;
+    }
+
+    /// <summary>
+    /// An item entity's move, like vanilla's <c>ItemEntity.tick</c> after its fluid contact was updated (see
+    /// <see cref="ItemEntity"/>): deep in water or lava it rises a little and slows across, or else gravity pulls it;
+    /// then the move, then drag (and the friction of the block it lands on), and a bounce off the ground. An item at
+    /// rest on the ground only moves every fourth tick of its age and id (see <see cref="ItemEntity.RestPhase"/>).
+    /// Living things move before gravity pulls (see <see cref="Move(Entity, MobTerrain, VectorD, float, float)"/>),
+    /// which would leave an item one gravity step higher on every tick it flies.
+    /// </summary>
+    /// <remarks>
+    /// Vanilla keeps the item's gravity in double precision and its drag, fluid factors and rise as floats.
+    /// </remarks>
+    /// <param name="age">The ticks the item has existed, which with its id picks its resting moves.</param>
+    internal static VectorD MoveItem(ItemEntity item, MobTerrain terrain, int age)
+    {
+        const double gravity = 0.04;
+        const float drag = 0.98f;
+
+        var bounds = item.Dimension.CreateBBFromPosition(item.Position);
+        var waterHeight = terrain.FluidHeight(bounds, water: true);
+        var lavaHeight = terrain.FluidHeight(bounds, water: false);
+
+        // Deep enough in a fluid (more than 0.1 above its feet), it's held up instead of pulled down.
+        if (waterHeight > 0.1f)
+            item.Motion = InFluid(item.Motion, 0.99f);
+        else if (lavaHeight > 0.1f)
+            item.Motion = InFluid(item.Motion, 0.95f);
+        else if (!item.NoGravity)
+            item.Motion = new VectorD(item.Motion.X, item.Motion.Y - gravity, item.Motion.Z);
+
+        var motion = item.Motion;
+        var resting = item.MovementFlags.HasFlag(MovementFlags.OnGround)
+            && motion.X * motion.X + motion.Z * motion.Z <= 1.0E-5f
+            && (age + item.RestPhase) % 4 != 0;
+        if (resting)
+            return item.Position;
+
+        var next = Displace(item, terrain, motion, gravity);
+
+        // Vanilla's Entity.move leaves the entity where it is when collision cut its move to almost nothing, which is
+        // what stops a resting item creeping on. It holds for every entity; only items apply it so far.
+        var moved = (next - item.Position).MagnitudeSquared();
+        if (moved <= 1.0E-7 && motion.MagnitudeSquared() - moved >= 1.0E-7)
+            next = item.Position;
+
+        var grounded = item.MovementFlags.HasFlag(MovementFlags.OnGround);
+        var friction = grounded ? drag * terrain.GetFriction(next) : drag;
+        var after = item.Motion;
+        var vertical = after.Y * drag;
+        if (grounded && vertical < 0)
+            vertical *= -0.5;
+
+        item.Motion = new VectorD(after.X * friction, vertical, after.Z * friction);
+        return next;
+    }
+
+    // Vanilla's ItemEntity.setFluidMovement: slowed across by the fluid's factor, and lifted a little while it rises
+    // slower than 0.06 a tick.
+    private static VectorD InFluid(VectorD motion, float factor)
+    {
+        var rise = motion.Y < 0.06f ? 5.0E-4f : 0;
+        return new VectorD(motion.X * factor, motion.Y + rise, motion.Z * factor);
+    }
+
+    /// <summary>
+    /// The upward velocity a jump gives <paramref name="mob"/> where it stands, like vanilla's <c>getJumpPower</c>: its
+    /// jump strength by the jump factor of the block it's on (honey halves it).
+    /// </summary>
+    internal static float JumpPower(Mob mob, MobTerrain terrain) =>
+        mob.JumpPower * BlockMovementFactors.Jump(mob, terrain);
+
+    /// <summary>
+    /// Resolves one movement against the world's collision shapes, records its fall, and restitutes collisions.
+    /// Travel adds gravity and drag afterwards; externally driven movement can use the same collision boundary.
+    /// </summary>
+    /// <remarks>
+    /// Like vanilla's <c>Entity.move</c>, a block the entity was stuck in last tick scales this move and stops it, and
+    /// the block it ends up on or in (soul sand, honey) slows what's left of its horizontal velocity.
+    /// </remarks>
+    internal static VectorD Displace(Entity entity, MobTerrain terrain, VectorD velocity, double gravity = 0.08)
+    {
+        // The velocity the entity keeps after the move; a stuck entity's is gone, though it still moves a little.
+        var motion = velocity;
+        if (entity.TakeStuckMultiplier() is VectorD stuck)
+        {
+            velocity = new VectorD(velocity.X * stuck.X, velocity.Y * stuck.Y, velocity.Z * stuck.Z);
+            motion = VectorD.Zero;
+        }
+
+        var bounds = entity.Dimension.CreateBBFromPosition(entity.Position);
+        var stepHeight = entity is Mob
+            ? Math.Clamp(entity.GetAttributeValue("minecraft:generic.step_height"), 0, 10)
+            : 0;
+        var grounded = entity.MovementFlags.HasFlag(MovementFlags.OnGround);
+        var displacement = Collide(terrain, bounds, velocity, stepHeight, grounded, entity);
+        var hitX = Math.Abs(displacement.X - velocity.X) > 1e-7;
+        var hitZ = Math.Abs(displacement.Z - velocity.Z) > 1e-7;
+        var hitY = displacement.Y != velocity.Y;
+        var onGround = hitY && velocity.Y < 0;
+        entity.MovementFlags = (onGround ? MovementFlags.OnGround : MovementFlags.None)
+            | (hitX || hitZ ? MovementFlags.HorizontalCollision : MovementFlags.None);
+        var next = entity.Position + displacement;
+        var effectiveGravity = entity.NoGravity ? 0 : gravity;
+        (Vector, IBlock)? support = null;
+        var needsSupport = onGround && (entity.ContactFallDistance > 0 || displacement.Y < 0
+            || !entity.Sneaking && -motion.Y > effectiveGravity);
+        if (needsSupport && entity.Level is WorldData.IContactLevel contactLevel)
+            support = WorldData.EntityContactPass.SupportAt(contactLevel, entity, next);
+
+        if (entity.ContactFallDistance > 0 && displacement.MagnitudeSquared() >= 1
+            && CrossesFallResetSurface(terrain, entity.Position, displacement))
+        {
+            entity.ResetFallDistance();
+        }
+
+        // LivingEntity refreshes fluid interaction at the resolved position before checking its fall.
+        if (entity is Living && terrain.ContainsFluid(bounds.OffsetBy(displacement), water: true))
+        {
+            entity.ResetFallDistance();
+        }
+        else
+        {
+            entity.TrackContactFall(displacement.Y, onGround, next, support);
+        }
+        var motionY = motion.Y;
+        if (hitY)
+        {
+            motionY = 0;
+            if (onGround && !entity.Sneaking && -motion.Y > effectiveGravity)
+            {
+                var floor = support?.Item2
+                    ?? terrain.GetBlock((Vector)(next - new VectorD(0, 0.2, 0)).Floor());
+                var restitution = floor?.RegistryId == BlockIds.SlimeBlock ? 1f : 0f;
+                if (floor is not null && TagsRegistry.Block.Beds.Entries.Contains(floor.RegistryId))
+                    restitution = 0.75f;
+
+                if (entity is not Living)
+                    restitution *= 0.8f;
+
+                if (restitution > 0)
+                {
+                    // 26.3 compensates for the portion of this move before impact, in vanilla's float drag.
+                    var fraction = displacement.Y / velocity.Y;
+                    var impactDrag = 1 + fraction * ((double)0.98f - 1);
+                    motionY = (fraction * effectiveGravity - velocity.Y) * impactDrag * restitution;
+                    entity.ContactBounced = true;
+                }
+            }
+        }
+
+        var speed = BlockMovementFactors.Speed(entity, terrain, next, onGround);
+        var motionX = hitX ? 0 : motion.X * speed;
+        var motionZ = hitZ ? 0 : motion.Z * speed;
+        entity.Motion = new VectorD(motionX, motionY, motionZ);
+        return next;
+    }
+
+    // Vanilla clips the feet's segment, capped at eight blocks, against resetting blocks and water.
+    private static bool CrossesFallResetSurface(MobTerrain terrain, VectorD start, VectorD displacement)
+    {
+        var length = displacement.Magnitude;
+        var end = start + displacement * (Math.Min(length, 8) / length);
+        var direction = end - start;
+        foreach (var cell in MobTerrain.CellsAlong(start, end))
+        {
+            if (terrain.GetBlock(cell) is not IBlock state)
+                continue;
+
+            var height = 1d;
+            if (!TagsRegistry.Block.FallDamageResetting.Entries.Contains(state.RegistryId))
+            {
+                var fluid = WorldData.Fluids.FluidState.Of(state);
+                if (!fluid.IsWater)
+                    continue;
+
+                var above = terrain.GetBlock(cell + Vector.Up);
+                height = above is not null && WorldData.Fluids.FluidState.Of(above).IsWater
+                    ? 1 : fluid.OwnHeight;
+            }
+
+            var surface = new BoundingBox((VectorD)cell, (VectorD)cell + new VectorD(1, height, 1));
+            if (MobTerrain.RayIntersection(surface, start, direction) is not null)
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>
     /// How far <paramref name="bounds"/> moves of <paramref name="velocity"/> before blocks stop it, stepping up
     /// blocks up to <paramref name="stepHeight"/> high when it stands on the ground or lands, if that gets it further.
+    /// With the <paramref name="entity"/> moving, powder snow and scaffolding collide as they do for it.
     /// </summary>
     internal static VectorD Collide(
         MobTerrain terrain,
         BoundingBox bounds,
         VectorD velocity,
         float stepHeight,
-        bool grounded)
+        bool grounded,
+        Entity? entity = null)
     {
         // Not moving, nothing clips it and it doesn't step: idle minecarts and mobs standing still ask every tick.
         if (velocity == VectorD.Zero)
@@ -95,7 +270,7 @@ internal static class EntityMovement
             VectorD.Max(bounds.Max, bounds.Max + velocity) + new VectorD(0, stepHeight, 0));
         var shapes = collisionShapes ??= [];
         shapes.Clear();
-        terrain.CollectCollisions(swept, shapes);
+        terrain.CollectCollisions(swept, shapes, entity);
         var displacement = Clip(bounds, velocity, shapes);
         var horizontalCollision = Math.Abs(displacement.X - velocity.X) > 0.00001f ||
             Math.Abs(displacement.Z - velocity.Z) > 0.00001f;

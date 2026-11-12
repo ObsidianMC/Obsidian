@@ -56,8 +56,8 @@ public partial class UseItemOnPacket
             ClickedFace = this.Face,
             ClickedAt = this.Cursor,
             ReplacesClicked = replacesClicked,
-            HorizontalDirection = PlacementDirections.Horizontal(player.Yaw.Degrees),
-            NearestLookDirection = PlacementDirections.Nearest(player.Yaw.Degrees, player.Pitch.Degrees)
+            HorizontalDirection = PlacementDirections.Horizontal(player.Yaw),
+            NearestLookDirection = PlacementDirections.Nearest(player.Yaw, player.Pitch)
         };
 
         // Like the block's other hooks, while the level's block updates wait, so what it reads stays as it read.
@@ -120,6 +120,8 @@ public partial class UseItemOnPacket
             BlockSoundPlayback.Play(placeLevel, block, position, breaking: false, player.EntityId);
 
         Signs.OnPlacedByPlayer(placeLevel, position, block, player);
+        CommandBlocks.OnPlacedByPlayer(placeLevel, position, block, use.UsedItem);
+        StructureBlocks.OnPlacedByPlayer(placeLevel, position, player);
 
         var center = (VectorD)position + new VectorD(0.5, 0.5, 0.5);
         placeLevel.EmitGameEvent(MobGameEvent.BlockPlace, center, player, affectedBlock: block);
@@ -144,6 +146,28 @@ public partial class UseItemOnPacket
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Vanilla's <c>BlockPlaceContext.canPlace</c> for the held item, which some blocks' uses read to leave the click
+    /// to placement: whether the item places a block, and the clicked block or the one beside it on the clicked face
+    /// can be replaced by it.
+    /// </summary>
+    internal static bool CanPlace(BlockUse use)
+    {
+        if (!use.HasItem || PlacedBlock(use.Player, use.Item!) is not IBlock block)
+            return false;
+
+        var upperHit = use.Cursor.Y > 0.5;
+        var clicked = use.Block;
+        var replacesClicked = clicked.CanBeReplaced() && clicked.RegistryId != block.RegistryId
+            || VanillaPlacement.SlabCanBeReplaced(clicked, block, true, use.Face, upperHit);
+        if (replacesClicked)
+            return true;
+
+        var beside = use.Level.BlockUpdates.GetBlock(use.Position + use.Face.ToVector());
+        return beside.CanBeReplaced()
+            || VanillaPlacement.SlabCanBeReplaced(beside, block, false, use.Face, upperHit);
     }
 
     // A placement that didn't happen: the player's client, which predicted it, gets the item back.
@@ -218,7 +242,7 @@ public partial class UseItemOnPacket
 
     // Vanilla's Entity.blocksBuilding: living entities (players but spectators, mobs, armor stands), boats and
     // minecarts. Items, projectiles and the like don't keep a block from going where they are.
-    private static bool BlocksBuilding(IEntity entity) => entity switch
+    internal static bool BlocksBuilding(IEntity entity) => entity switch
     {
         IPlayer player => player.GameMode != GameMode.Spectator,
         Living or VehicleEntity => true,

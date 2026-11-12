@@ -13,6 +13,7 @@ using Obsidian.WorldData;
 using Obsidian.WorldData.BlockTicks;
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -93,20 +94,21 @@ public sealed class ChunkSaves
         var folder = Path.Join(Path.GetTempPath(), $"obsidian-chunk-saves-{Guid.NewGuid():N}");
         try
         {
-            // The region asks for the starts of each chunk it writes, and only those.
-            var written = new List<(int X, int Z)>();
-            var region = new Region(0, 0, folder)
-            {
-                SaveStructureStarts = (x, z, loaded) =>
-                {
-                    written.Add((x, z));
-                    return loaded;
-                },
-            };
+            // Observe persisted payloads rather than preparatory structure serialization.
+            var written = new ConcurrentQueue<(int X, int Z)>();
+            var region = new Region(0, 0, folder);
 
             await using (region)
             {
                 await region.InitAsync();
+                region.ChunkFile.Observe = change =>
+                {
+                    if (change.Step == RegionFile.Step.PayloadWritten)
+                        written.Enqueue((change.ChunkX, change.ChunkZ));
+
+                    return default;
+                };
+
                 var changed = Complete(0, 0);
                 region.SetChunk(changed);
                 region.SetChunk(Complete(1, 0));
@@ -145,16 +147,10 @@ public sealed class ChunkSaves
         var folder = Path.Join(Path.GetTempPath(), $"obsidian-chunk-saves-{Guid.NewGuid():N}");
         try
         {
-            var written = new List<(int X, int Z)>();
+            var written = new ConcurrentQueue<(int X, int Z)>();
             var scheduler = new BlockTickScheduler();
             var region = new Region(0, 0, folder)
             {
-                SaveStructureStarts = (x, z, loaded) =>
-                {
-                    written.Add((x, z));
-                    return loaded;
-                },
-
                 // Like the level's, which stops an unloading chunk's ticks as its final save starts.
                 BlockAccessUnloaded = chunk => ((Chunk)chunk).BlockTicks.StopTicking(),
             };
@@ -162,6 +158,14 @@ public sealed class ChunkSaves
             await using (region)
             {
                 await region.InitAsync();
+                region.ChunkFile.Observe = change =>
+                {
+                    if (change.Step == RegionFile.Step.PayloadWritten)
+                        written.Enqueue((change.ChunkX, change.ChunkZ));
+
+                    return default;
+                };
+
                 var chunks = Enumerable.Range(0, 3).Select(x => Ticking(x, scheduler)).ToArray();
                 foreach (var chunk in chunks)
                     region.SetChunk(chunk);
@@ -232,6 +236,43 @@ public sealed class ChunkSaves
                 await reloaded.InitAsync();
                 var chunk = (Chunk)await reloaded.GetChunkAsync(0, 0);
                 Assert.Empty(chunk.PendingEntities);
+            }
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
+
+    [Fact(DisplayName = "An active trial spawner loaded with its chunk tells clients its next spawn before it ticks")]
+    public async Task LoadedActiveTrialSpawnerSendsItsNextSpawn()
+    {
+        var folder = Path.Join(Path.GetTempPath(), $"obsidian-chunk-saves-{Guid.NewGuid():N}");
+        var position = new Vector(8, 65, 8);
+        try
+        {
+            await using (var region = new Region(0, 0, folder))
+            {
+                await region.InitAsync();
+                var chunk = Complete(0, 0);
+                chunk.SetBlock(position.X, position.Y, position.Z,
+                    BlocksRegistry.GetDefault(BlockIds.TrialSpawner).WithProperty("trial_spawner_state", "active"));
+                var data = new NbtCompound { new NbtTag<long>("next_mob_spawns_at", 1234) };
+                chunk.SetBlockEntity(position.X, position.Y, position.Z,
+                    BlockEntityNbt.Create("minecraft:trial_spawner", position, data)!);
+                region.SetChunk(chunk);
+                await region.FlushAsync();
+            }
+
+            await using (var reloaded = new Region(0, 0, folder))
+            {
+                await reloaded.InitAsync();
+                var chunk = (Chunk)await reloaded.GetChunkAsync(0, 0);
+                var spawner = (BlockEntity)chunk.GetBlockEntity(position.X, position.Y, position.Z);
+                var update = spawner.GetUpdateData();
+                Assert.NotNull(update);
+                Assert.True(update.TryGetTag<NbtTag<long>>("next_mob_spawns_at", out var next));
+                Assert.Equal(1234, next.Value);
             }
         }
         finally
@@ -837,9 +878,9 @@ public sealed class ChunkSaves
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => world.UnloadRegionAsync(region.X, region.Z));
 
-        // The region stays with the chunk that couldn't be taken, and both its entities; the other left with its save.
+        // The whole-region transaction keeps both chunks and their entities when either snapshot fails.
         Assert.Same(region, world.GetRegionForChunk(64, 64));
-        Assert.Null(region.GetLoadedChunk(0, 0));
+        Assert.Same(unloading, region.GetLoadedChunk(0, 0));
         Assert.Same(failing, region.GetLoadedChunk(1, 0));
         Assert.Same(saving, world.FindEntity(saving.Uuid));
         Assert.Same(entity, world.FindEntity(entity.Uuid));

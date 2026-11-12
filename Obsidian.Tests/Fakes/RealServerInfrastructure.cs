@@ -29,7 +29,7 @@ using System.Threading.Tasks;
 
 namespace Obsidian.Tests.Fakes;
 
-internal sealed class TestClient(IServer server, bool connected = true) : IClient
+internal sealed class TestClient(IServer server, bool connected = true) : IClient, IConditionalPacketSender
 {
     private readonly List<IClientboundPacket> packets = [];
 
@@ -37,6 +37,7 @@ internal sealed class TestClient(IServer server, bool connected = true) : IClien
     public string? Brand { get; set; } = "test-client";
     public string? Ip => "127.0.0.1";
     public bool Connected { get; private set; } = connected;
+    internal ChatMessage? DisconnectReason { get; private set; }
     public long? LastKeepAliveId { get; set; }
     public IServer Server { get; } = server;
     public ClientState State { get; private set; } = ClientState.Play;
@@ -51,22 +52,65 @@ internal sealed class TestClient(IServer server, bool connected = true) : IClien
 
     public bool SendPacket(IClientboundPacket packet)
     {
-        this.packets.Add(packet);
+        this.BeforeSend?.Invoke(packet);
+        this.Add(packet);
         return true;
     }
+
+    // Like Client's: level changes counted, and the checks made, under the lock every packet is added under. A test
+    // client starts in play without a login packet: until it's sent a level change, it's in its player's level, which
+    // tests set as they need.
+    public LevelEpoch LevelEpoch
+    {
+        get
+        {
+            lock (this.packets)
+                return this.levelEpoch ?? new LevelEpoch(0, this.Player?.Level);
+        }
+    }
+
+    public bool SendPacketIf(SharedPacketBodies shared, int levelEpoch, Func<bool> wanted)
+    {
+        this.BeforeSend?.Invoke(shared.Packet);
+        lock (this.packets)
+        {
+            if (!this.Connected || (this.levelEpoch?.Number ?? 0) != levelEpoch || !wanted())
+                return false;
+
+            this.packets.Add(shared.Packet);
+        }
+
+        return true;
+    }
+
+    private LevelEpoch? levelEpoch;
+
+    private void Add(IClientboundPacket packet)
+    {
+        lock (this.packets)
+        {
+            this.packets.Add(packet);
+            if (packet is RespawnPacket or LoginPacket)
+                this.levelEpoch = new LevelEpoch((this.levelEpoch?.Number ?? 0) + 1, this.Player?.Level);
+        }
+    }
+
+    // Runs before a packet is sent, on the sending thread: tests can hold a sender there with a gate.
+    internal Action<IClientboundPacket>? BeforeSend { get; set; }
 
     public ReadOnlySpan<byte> SetSharedKeyAndDecodeVerifyToken(
         ReadOnlySpan<byte> sharedKey, ReadOnlySpan<byte> verifyToken) => verifyToken;
 
     public ValueTask DisconnectAsync(ChatMessage reason)
     {
+        this.DisconnectReason = reason;
         this.Dispose();
         return default;
     }
 
     public ValueTask QueuePacketAsync(IClientboundPacket packet)
     {
-        this.packets.Add(packet);
+        this.Add(packet);
         return this.AfterQueue?.Invoke(packet) ?? default;
     }
 
@@ -85,7 +129,11 @@ internal sealed class TestClient(IServer server, bool connected = true) : IClien
     public ValueTask<bool> SendPayloadAsync<TPayload>(TPayload payload) where TPayload : ICustomPayload<TPayload> =>
         ValueTask.FromResult(false);
 
-    public void ClearPackets() => this.packets.Clear();
+    public void ClearPackets()
+    {
+        lock (this.packets)
+            this.packets.Clear();
+    }
 
     // A 26.3 client confirms with its resolved position and rotation, not just the id. Tests can hold an older
     // packet to simulate a delayed confirmation, or omit it to confirm the latest one received.
@@ -351,6 +399,9 @@ internal static class TestServerFactory
 
         broadcaster.Server = server;
         eventDispatcher.RegisterEvents();
+
+        // As the level factory does: the level runs its command blocks' commands on this server.
+        world.OwningServer = server;
 
         return new RealServerContext
         {

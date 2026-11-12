@@ -1,3 +1,4 @@
+using Obsidian.WorldData.BlockNotifications;
 using Obsidian.API.Blocks;
 using Obsidian.API.Inventory;
 using Obsidian.Entities;
@@ -19,6 +20,45 @@ public abstract partial class AbstractLevel
     public bool DestroyBlock(Vector position, bool dropItems, IEntity? breaker = null) =>
         this.QueueBlockDestruction(
             position, dropItems, breaker, replacement: null, playEffect: true, removePartner: true);
+
+    /// <summary>
+    /// Vanilla's <c>Level.destroyBlock</c> with drops, done now rather than queued as <see cref="DestroyBlock"/>
+    /// does: for a caller in the level's tick whose break vanilla makes in that same moment, like a projectile
+    /// breaking a chorus flower. An unloaded or air block, or one already being destroyed, is left alone.
+    /// </summary>
+    /// <param name="position">The block to destroy.</param>
+    /// <param name="breaker">The entity the <c>block_destroy</c> game event and the loot credit, if any.</param>
+    internal async ValueTask DestroyBlockInTickAsync(Vector position, IEntity? breaker)
+    {
+        IBlock block;
+        IBlockEntity? entity;
+        lock (this.Fluids.TickLock)
+        {
+            if (((IBlockChangeWorld)this).GetLoadedBlock(position) is not IBlock loaded || loaded.IsAir)
+                return;
+
+            if (!this.pendingDestruction.Add(position))
+                return;
+
+            block = loaded;
+            entity = this.GetResidentBlockEntity(position);
+        }
+
+        try
+        {
+            await this.DestroyCapturedBlockAsync(position, block, entity, dropItems: true, breaker,
+                replacement: null, playEffect: true, removePartner: true, stillUnsupported: null);
+        }
+        catch (Exception exception)
+        {
+            BlockDestructionFailed(this.Logger, exception, block.UnlocalizedName, position);
+        }
+        finally
+        {
+            lock (this.Fluids.TickLock)
+                this.pendingDestruction.Remove(position);
+        }
+    }
 
     // Environmental removal evaluates the selected state's loot. Its partner reacts through shape updates,
     // rather than redirecting an upper half's empty loot table to the lower half as a player's break does.
@@ -88,6 +128,17 @@ public abstract partial class AbstractLevel
         }
     }
 
+    /// <summary>
+    /// Drops <paramref name="stack"/> at <paramref name="position"/> moving as given, under the tick lock.
+    /// </summary>
+    internal bool DropItemAt(VectorD position, ItemStack stack, VectorD motion)
+    {
+        lock (this.Fluids.TickLock)
+        {
+            return this.SpawnItem(position, stack, motion);
+        }
+    }
+
     // Both direct drops and block resources use a detached stack and explicit host ownership.
     private bool SpawnItem(VectorD position, ItemStack stack, VectorD motion) => this.TrySpawnEntity(new ItemEntity
     {
@@ -98,17 +149,19 @@ public abstract partial class AbstractLevel
         Motion = motion
     }, hostOwned: true);
 
-    private void PopBlockResource(Vector position, ItemStack stack)
+    internal void PopBlockResource(Vector position, ItemStack stack)
     {
         lock (this.Fluids.TickLock)
         {
-            // Vanilla Block.popResource: three location draws, then the item's two horizontal motion draws.
-            // Use the level random, as the existing environmental redstone drops do, to keep seed ordering.
+            // Vanilla's Block.popResource: three draws from the level's random place the item (Mth.nextDouble between
+            // -0.25 and 0.25, added to the centre as vanilla adds it). The item's own motion comes from its own random,
+            // as in 26.3 an item entity's constructor draws it there, not from the level's.
             var random = this.GrowthRandom;
-            var x = position.X + 0.5 + random.NextDouble() * 0.5 - 0.25;
-            var y = position.Y + 0.5 + random.NextDouble() * 0.5 - 0.25 - ItemEntityWidth / 2;
-            var z = position.Z + 0.5 + random.NextDouble() * 0.5 - 0.25;
-            var motion = new VectorD(random.NextDouble() * 0.2 - 0.1, 0.2, random.NextDouble() * 0.2 - 0.1);
+            var x = position.X + 0.5 + (random.NextDouble() * 0.5 + -0.25);
+            var y = position.Y + 0.5 + (random.NextDouble() * 0.5 + -0.25) - ItemEntityWidth / 2;
+            var z = position.Z + 0.5 + (random.NextDouble() * 0.5 + -0.25);
+            var own = Globals.Random;
+            var motion = new VectorD(own.NextDouble() * 0.2 - 0.1, 0.2, own.NextDouble() * 0.2 - 0.1);
             this.SpawnItem(new VectorD(x, y, z), stack, motion);
         }
     }
@@ -177,11 +230,14 @@ public abstract partial class AbstractLevel
         this.BlockDestroyed?.Invoke(position, block, dropItems);
 
         await parts.RemovePartnerAsync(this);
-        // Vanilla Level.destroyBlock sends 2001 (sound and particles), except for fire. Water washout and
-        // dropResources/removeBlock callers deliberately omit it; sending a separate sound would play it twice.
+        // Vanilla Level.destroyBlock sends 2001 (sound and particles), except for fire, and a straw bed's own 2014
+        // (its spawnDestroyParticles). Water washout and dropResources/removeBlock callers deliberately omit it;
+        // sending a separate sound would play it twice.
         if (playEffect)
         {
-            if (block.BlockClass() is not ("FireBlock" or "SoulFireBlock"))
+            if (block.Is(BlockIds.StrawBed))
+                this.BroadcastLevelEvent(StrawBedBreakEvent, position, block.GetHashCode());
+            else if (block.BlockClass() is not ("FireBlock" or "SoulFireBlock"))
                 this.BroadcastLevelEvent(2001, position, block.GetHashCode());
 
             this.EmitGameEvent(MobGameEvent.BlockDestroy, (VectorD)position + 0.5, breaker, affectedBlock: block);

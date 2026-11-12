@@ -9,10 +9,25 @@ namespace Obsidian.Entities;
 [MinecraftEntity("minecraft:item")]
 public partial class ItemEntity : Entity
 {
+    // Vanilla's INFINITE_PICKUP_DELAY and INFINITE_LIFETIME: a pickup delay that never runs down, and an age that never
+    // counts up. Neither item merges.
+    private const int InfinitePickupDelay = 32767;
+    private const int InfiniteLifetime = -32768;
+
     private int age;
+
+    // Who alone may pick the item up (vanilla's target, saved as Owner), or null for anyone.
+    private Guid? target;
 
     // Ticks since it was spawned or loaded, like vanilla's unsaved Entity.tickCount; it paces merging.
     private int ticksExisted;
+
+    private int? restPhase;
+
+    // Whether it touched water when it last checked, like vanilla's wasTouchingWater, which decides its splash.
+    private bool wasTouchingWater;
+
+    internal override bool TouchesWaterForFalls => this.wasTouchingWater;
     internal void SetExtendedLifetime() => age = -6000;
     // Merges, pickups, hopper pulls and removal check and set it under the transfer lock of the level owning the item
     // (see Entity.EnterOwningLevel), so a stack isn't transferred after its entity is removed, even when the removal
@@ -26,6 +41,16 @@ public partial class ItemEntity : Entity
     private ILevel? terrainLevel;
 
     public ItemStack Item { get; set; }
+
+    /// <summary>
+    /// What, with its age, picks the ticks the item moves on while it rests on the ground (vanilla's entity id, which
+    /// staggers resting items): its own id unless set. Replays set vanilla's, as ids can't match between servers.
+    /// </summary>
+    internal int RestPhase
+    {
+        get => this.restPhase ?? this.EntityId;
+        set => this.restPhase = value;
+    }
 
     public bool CanPickup
     {
@@ -49,6 +74,19 @@ public partial class ItemEntity : Entity
     }
 
     internal static bool Drop(IPlayer player, ItemStack stack) => Drop(player, stack, hostOwned: false);
+
+    /// <summary>
+    /// Drops a stack in front of the player like <see cref="Drop(IPlayer, ItemStack)"/>, without counting it as
+    /// dropped: vanilla's <c>Player.drop</c> for an item a use gave back that didn't fit their inventory. The server
+    /// owns the drop, so a level that can't take it yet gets it on a later entity action rather than losing it.
+    /// </summary>
+    internal static void DropUncounted(IPlayer player, ItemStack stack)
+    {
+        // Player.drop uses a float eye height and float 0.3 offset, promoted to double for the position.
+        var eyeHeight = (float)(player.HeadY - player.Position.Y);
+        var dropY = player.Position.Y + eyeHeight - 0.3f;
+        Drop(player, stack, hostOwned: true, counted: false, dropY: dropY);
+    }
 
     // Finished menu clicks drop the player's items, regardless of the menu's ambient plugin call.
     internal static void DropHostOwned(IPlayer player, ItemStack stack) => Drop(player, stack, hostOwned: true);
@@ -99,7 +137,8 @@ public partial class ItemEntity : Entity
     }
 
     // Thrown where the player looks, or with the given motion for a drop around them.
-    private static bool Drop(IPlayer player, ItemStack stack, bool hostOwned, VectorD? around = null)
+    private static bool Drop(IPlayer player, ItemStack stack, bool hostOwned, VectorD? around = null,
+        bool counted = true, double? dropY = null)
     {
         var direction = player.GetLookDirection();
         var motion = around ?? new VectorD(direction.X * 0.3, direction.Y * 0.3 + 0.1, direction.Z * 0.3);
@@ -108,7 +147,7 @@ public partial class ItemEntity : Entity
             EntityId = Server.GetNextEntityId(),
             Item = new ItemStack(stack, stack.Count),
             Level = player.Level,
-            Position = new VectorD(player.Position.X, player.HeadY - 0.3, player.Position.Z),
+            Position = new VectorD(player.Position.X, dropY ?? player.HeadY - 0.3, player.Position.Z),
             Motion = motion,
             // Vanilla gives an item a player drops 40 ticks before anyone can pick it up, so the thrower doesn't
             // collect it again straight away.
@@ -126,7 +165,7 @@ public partial class ItemEntity : Entity
             return false;
         }
 
-        if (around is null)
+        if (around is null && counted)
         {
             player.Statistics.Increment(stack.Holder.UnlocalizedName, stack.Count, "minecraft:dropped");
             player.Statistics.Increment("minecraft:drop");
@@ -165,6 +204,8 @@ public partial class ItemEntity : Entity
         tag.Set(this.Item.ToNbt("Item"));
         tag.Set(new NbtTag<short>("Age", (short)Math.Clamp(age, short.MinValue, short.MaxValue)));
         tag.Set(new NbtTag<short>("PickupDelay", (short)this.pickupDelay));
+        if (this.target is Guid owner)
+            tag.Set(new NbtArray<int>("Owner", EntityNbt.UuidToInts(owner)));
     }
 
     internal override void ReadNbt(NbtCompound tag)
@@ -176,7 +217,16 @@ public partial class ItemEntity : Entity
 
         if (tag.TryGetNumber<short>("Age", out var savedAge)) age = savedAge;
         this.pickupDelay = tag.TryGetNumber<short>("PickupDelay", out var delay) ? Math.Max(0, (int)delay) : 10;
+        this.target = tag.TryGetTag<NbtArray<int>>("Owner", out var owner) && owner.Count == 4
+            ? EntityNbt.UuidFromInts(owner.GetArray())
+            : null;
     }
+
+    /// <summary>
+    /// Whether <paramref name="player"/> may pick the item up, as far as its owner goes: vanilla's
+    /// <c>playerTouch</c> lets only its target take an item that has one.
+    /// </summary>
+    internal bool MayBePickedUpBy(Guid player) => this.target is not Guid owner || owner == player;
 
     public async override ValueTask TickAsync()
     {
@@ -186,10 +236,12 @@ public partial class ItemEntity : Entity
         {
             if (this.Removed)
                 return;
-            if (this.pickupDelay > 0)
+            if (this.pickupDelay > 0 && this.pickupDelay != InfinitePickupDelay)
                 this.pickupDelay--;
         }
-        if (++age >= 6000)
+        if (age != InfiniteLifetime)
+            age++;
+        if (age >= 6000)
         {
             await RemoveAsync();
             return;
@@ -201,11 +253,15 @@ public partial class ItemEntity : Entity
         }
 
         var from = Position;
-        var next = EntityMovement.Move(this, this.terrain, VectorD.Zero, 0.04f, 0.98f);
+        this.UpdateFluidContact(firstTick: this.ticksExisted == 1);
+        var next = EntityMovement.MoveItem(this, this.terrain, this.ticksExisted);
         if (Level is AbstractLevel level && !level.TryMoveEntity(this, Position, next))
             return;
         if (next != Position)
             await UpdateAsync(next, MovementFlags);
+
+        // Vanilla's item updates its fluid contact again once it has moved, after its first tick.
+        this.UpdateFluidContact(firstTick: false);
 
         // Like vanilla's ItemEntity.tick, it looks for items to merge with every 2 ticks after moving into another
         // block and every 40 otherwise, which decides how soon dropped items stack up.
@@ -213,38 +269,112 @@ public partial class ItemEntity : Entity
         if (this.ticksExisted % (movedBlock ? 2 : 40) != 0)
             return;
 
-        foreach (var ent in this.Level.GetNonPlayerEntitiesInRange(this.Position, 0.5f))
+        await this.MergeWithNeighboursAsync();
+    }
+
+    /// <summary>
+    /// Vanilla's <c>Entity.updateFluidInteraction</c>, which an item runs as its tick starts and again once it has
+    /// moved: in water its fall is forgotten and, coming in from out of it (not on its first tick), it splashes; then
+    /// the water's current and the lava's push it.
+    /// </summary>
+    private void UpdateFluidContact(bool firstTick)
+    {
+        if (this.terrain is not MobTerrain terrain || this.Level is not AbstractLevel level)
+            return;
+
+        var bounds = this.Dimension.CreateBBFromPosition(this.Position);
+        var inWater = terrain.FluidHeight(bounds, water: true) is not null;
+        var inLava = terrain.FluidHeight(bounds, water: false) is not null;
+        if (inWater)
         {
-            if (ent is not ItemEntity itemEntity)
-                continue;
+            this.ResetFallDistance();
+            if (!this.wasTouchingWater && !firstTick)
+                this.Splash(level);
+        }
 
-            if (itemEntity.EntityId <= this.EntityId)
-                continue;
+        this.wasTouchingWater = inWater;
+        if (inWater)
+            this.Motion += terrain.FluidPush(bounds, water: true, this.Motion);
 
-            bool remove;
+        if (inLava)
+            this.Motion += terrain.FluidPush(bounds, water: false, this.Motion);
+    }
+
+    // Vanilla's doWaterSplashEffect for an item: a splash as loud as it was moving (sideways counting a fifth), its
+    // pitch from the item's own random, and the splash game event. Its bubbles are drawn by clients.
+    private void Splash(AbstractLevel level)
+    {
+        var motion = this.Motion;
+        var moving = Math.Sqrt(motion.X * motion.X * 0.2f + motion.Y * motion.Y + motion.Z * motion.Z * 0.2f);
+        var volume = Math.Min(1f, (float)moving * 0.2f);
+        var pitch = 1f + (Globals.Random.NextSingle() - Globals.Random.NextSingle()) * 0.4f;
+        // Vanilla's Entity.playSound skips a silent entity's sound, after the pitch's draws and before the event.
+        if (!this.Silent)
+            LevelSounds.Play(level, this.Position, "minecraft:entity.generic.splash", SoundCategory.Neutral, volume, pitch);
+        level.EmitGameEvent(MobGameEvent.Splash, this.Position, this);
+    }
+
+    // Vanilla's mergeWithNeighbours: each item whose box meets this one's, widened by half a block across, that can
+    // take the other's stack whole. The smaller stack goes into the larger, and on a tie this one into the other,
+    // which decides which of them is left and where.
+    private async ValueTask MergeWithNeighboursAsync()
+    {
+        var reach = this.BoundingBox;
+        reach = new BoundingBox(reach.Min - new VectorD(0.5, 0, 0.5), reach.Max + new VectorD(0.5, 0, 0.5));
+        foreach (var ent in this.Level.GetNonPlayerEntitiesInRange(this.Position, 1.5f))
+        {
+            if (ent is not ItemEntity itemEntity || ReferenceEquals(itemEntity, this)
+                || !MobTerrain.Overlaps(reach, itemEntity.BoundingBox))
+            {
+                continue;
+            }
+
+            ItemEntity? emptied;
             using (this.EnterOwningLevel(out var owner))
             {
                 // Both stacks are this level's only while the other item hasn't left it since the lookup.
                 if (itemEntity.Level != owner || !itemEntity.IsMemberOf(owner) || !this.IsMemberOf(owner))
                     continue;
-                if (this.Removed || itemEntity.Removed || this.Item.IsNullOrAir() || itemEntity.Item.IsNullOrAir() || this.Item != itemEntity.Item)
+                // Vanilla's tryToMerge and areMergable: the same owner, the same item and components, and room for
+                // both stacks within the other's largest stack.
+                if (!this.IsMergeable || !itemEntity.IsMergeable || this.target != itemEntity.target
+                    || this.Item != itemEntity.Item
+                    || this.Item.Count + itemEntity.Item.Count > itemEntity.Item.MaxStackSize)
+                {
                     continue;
-                var count = Math.Min(this.Item.MaxStackSize - this.Item.Count, itemEntity.Item.Count);
-                if (count <= 0)
-                    continue;
-                this.Item.Count += count;
-                itemEntity.Item.Count -= count;
-                this.pickupDelay = Math.Max(this.pickupDelay, itemEntity.pickupDelay);
-                this.age = Math.Min(this.age, itemEntity.age);
-                remove = itemEntity.Removed = itemEntity.Item.Count == 0;
-                this.SendItemUpdate();
-                if (!remove)
-                    itemEntity.SendItemUpdate();
+                }
+
+                // Vanilla's merge, which fills the larger stack only up to 64 even when it holds more: a stack of 65
+                // of 99 given one more is cut to 64, and the other grows by one, as vanilla's does.
+                var (into, merged) = itemEntity.Item.Count < this.Item.Count ? (this, itemEntity) : (itemEntity, this);
+                var count = Math.Min(Math.Min(into.Item.MaxStackSize, 64) - into.Item.Count, merged.Item.Count);
+                into.Item.Count += count;
+                merged.Item.Count -= count;
+                into.pickupDelay = Math.Max(into.pickupDelay, merged.pickupDelay);
+                into.age = Math.Min(into.age, merged.age);
+                emptied = merged.Item.Count == 0 ? merged : null;
+                if (emptied is not null)
+                    emptied.Removed = true;
+
+                into.SendItemUpdate();
+                if (emptied is null)
+                    merged.SendItemUpdate();
             }
-            if (remove)
-                await itemEntity.RemoveAsync();
+
+            if (emptied is null)
+                continue;
+
+            await emptied.RemoveAsync();
+            if (ReferenceEquals(emptied, this))
+                break;
         }
     }
+
+    // Vanilla's isMergable: still there, able to be picked up some day, not past its lifetime nor without one, and
+    // with room in its stack.
+    private bool IsMergeable =>
+        !this.Removed && this.pickupDelay != InfinitePickupDelay && this.age != InfiniteLifetime && this.age < 6000
+        && !this.Item.IsNullOrAir() && this.Item.Count < this.Item.MaxStackSize;
 
     /// <summary>What <see cref="TryTake"/> took from an item entity's stack, and whether that emptied it.</summary>
     internal readonly record struct Taken(ItemStack Stack, bool Emptied);
@@ -285,17 +415,51 @@ public partial class ItemEntity : Entity
     // Vanilla's ItemEntity health: what's left of it before damage destroys it.
     private float itemHealth = 5;
 
+    /// <summary>Cactus takes one of the item's five health on each contact, including fire-resistant items.</summary>
+    internal async ValueTask HurtByCactusAsync()
+    {
+        bool destroyed;
+        using (this.EnterOwningLevel(out var level))
+        {
+            if (this.Removed || !this.IsMemberOf(level))
+                return;
+
+            this.itemHealth--;
+            destroyed = this.itemHealth <= 0;
+            this.Removed = destroyed;
+            if (level is AbstractLevel world)
+                world.EmitGameEvent(MobGameEvent.EntityDamage, this.Position);
+        }
+
+        if (destroyed)
+            await this.RemoveAsync();
+    }
+
     /// <summary>
     /// Hurts it by <paramref name="damage"/> from an explosion, as vanilla's <c>ItemEntity.hurtServer</c> does: a nether
     /// star withstands it, and anything else is gone once its five health is.
     /// </summary>
     /// <returns>Whether it was destroyed.</returns>
-    internal async ValueTask<bool> HurtByExplosionAsync(float damage)
+    internal ValueTask<bool> HurtByExplosionAsync(float damage)
     {
         if (this.Item.Holder.Id == ItemIds.NetherStar)
-            return false;
+            return ValueTask.FromResult(false);
 
+        return this.HurtAsync(damage);
+    }
+
+    // Vanilla's Entity.thunderHit on an item: five lightning damage, which nothing withstands (fire resistant items
+    // only withstand fire, and lightning isn't fire), so it's gone.
+    internal override async ValueTask ThunderHitAsync(LightningBolt bolt) => await this.HurtAsync(5);
+
+    // Vanilla's ItemEntity.hurtServer once the item takes the damage: the damage's game event, which names no
+    // source for explosions and lightning, then the item is gone once its five health is.
+    private async ValueTask<bool> HurtAsync(float damage)
+    {
         this.itemHealth -= damage;
+        if (this.Level is WorldData.AbstractLevel level)
+            level.EmitGameEvent(WorldData.MobGameEvent.EntityDamage, this.Position);
+
         if (this.itemHealth > 0)
             return false;
 

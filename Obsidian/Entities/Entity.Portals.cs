@@ -180,7 +180,8 @@ public partial class Entity
         this.travelPortalType = null;
         this.travelPortalTime = 0;
         if (portal.BlockId == BlockIds.EndGateway
-            && (this.Level is not AbstractLevel level || !level.TryUseEndGateway(portal.Position)))
+            && (this.Level is not AbstractLevel level
+                || !level.TryUseEndGateway(portal.Position, EndGateways.EventPosition(this.CurrentBox))))
         {
             return;
         }

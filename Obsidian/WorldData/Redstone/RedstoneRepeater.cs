@@ -36,7 +36,7 @@ internal sealed class RedstoneRepeater(IRedstoneLevel level, RedstoneEngine engi
     }
 
     public int GetSignal(IBlock state, Vector position, BlockFace direction, bool wiresGiveSignal) =>
-        state.GetProperty("powered") == "true" && direction == InputFace(state) ? RedstoneEngine.MaxSignal : 0;
+        PropertyHandles.Powered.IsTrue(state) && direction == InputFace(state) ? RedstoneEngine.MaxSignal : 0;
 
     public int GetDirectSignal(IBlock state, Vector position, BlockFace direction, bool wiresGiveSignal) => this.GetSignal(state, position, direction, wiresGiveSignal);
 
@@ -63,7 +63,7 @@ internal sealed class RedstoneRepeater(IRedstoneLevel level, RedstoneEngine engi
         // Vanilla RepeaterBlock.tick: the live input decides whether a powered repeater turns off. An unpowered one turns on whatever
         // its input is now, and schedules its turn-off when the input has already gone (a short pulse).
         var inputPowered = IsInputPowered(position, state);
-        var powered = state.GetProperty("powered") == "true";
+        var powered = PropertyHandles.Powered.IsTrue(state);
         if (powered && !inputPowered)
         {
             await this.SetOutputAsync(position, state, false);
@@ -79,7 +79,7 @@ internal sealed class RedstoneRepeater(IRedstoneLevel level, RedstoneEngine engi
     // Commits the output and tells the block in front of it (vanilla updateNeighborsInFront).
     private async ValueTask<IBlock> SetOutputAsync(Vector position, IBlock state, bool powered)
     {
-        var next = state.WithProperty("powered", powered.ToString().ToLowerInvariant());
+        var next = PropertyHandles.Powered.With(state, powered);
         await level.SetBlockAsync(position, next);
         await BasicRedstoneComponents.NotifyOutputFrontAsync(level, position, InputFace(state).Opposite());
         return next;
@@ -98,7 +98,7 @@ internal sealed class RedstoneRepeater(IRedstoneLevel level, RedstoneEngine engi
             return;
 
         var powered = IsInputPowered(position, state);
-        if ((state.GetProperty("powered") == "true") != powered)
+        if (PropertyHandles.Powered.IsTrue(state) != powered)
             level.ScheduleBlockTick(position, state, ParseDelay(state) * 2);
     }
 
@@ -123,7 +123,7 @@ internal sealed class RedstoneRepeater(IRedstoneLevel level, RedstoneEngine engi
 
     private static bool IsLockSource(IBlock block) => block.Is(BlockId) || block.Is(BlockIds.Comparator);
 
-    private static BlockFace InputFace(IBlock state) => FeatureHelpers.ParseFace(state.GetProperty("facing"));
+    private static BlockFace InputFace(IBlock state) => PropertyHandles.Facing.Get(state);
 
     private static int ParseDelay(IBlock state) => int.TryParse(state.GetProperty("delay"), out var delay) ? Math.Clamp(delay, 1, 4) : 1;
 }

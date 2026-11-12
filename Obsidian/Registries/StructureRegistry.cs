@@ -56,7 +56,7 @@ internal static class StructureRegistry
         id = Qualify(id);
 
         // Only vanilla's templates are extracted; another namespace's isn't cached, so the cache holds only vanilla's.
-        if (!id.StartsWith(Vanilla, StringComparison.Ordinal))
+        if (!StructureTemplateNames.IsValid(id) || !id.StartsWith(Vanilla, StringComparison.Ordinal))
             return StructureTemplate.CreateEmpty();
 
         return GetOrLoad(currentTemplates, id, static () => Volatile.Read(ref currentDirectory),

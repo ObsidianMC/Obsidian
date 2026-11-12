@@ -1,0 +1,7644 @@
+{
+  "_notes": "Vanilla projectile block hits, recorded by the asset generator's ProjectileHitFixtures.java on a headless dedicated server in a flat world of air (easy, mob griefing off, time, weather and spawning stopped). Each case sets up its blocks around the target without updates, spawns its projectile at target + from with its motion, owned by a player standing at target + owner (unless owner is none), and calls ServerLevel.tick ticks times. record holds each tick: the blocks of the 5x5x5 area that changed (dx,dy,dz=state), the best neighbor signal at the cell east of the target, the entities whose boxes reach within three blocks of it (sorted; the case's projectile as projectile, experience orbs by type alone), the sounds, level events and block events a bystander at target + bystander receives, the game events within 16 blocks, the ordered block writes with their flags, the blocks destroyed, and the criteria and statistics the owner gained. Fields with nothing to report are left out. A case with boltSeed and levelSeed seeds a lightning bolt its hit summons after the tick it appeared in, before its first tick: the bolt's own random with boltSeed (its seed and flashes drawn again, as its constructor draws them), then the level's random with levelSeed.",
+  "version": "26.3",
+  "target": [0, 64, 0],
+  "owner": [0.5, 0, 9.5],
+  "bystander": [9.5, 0, 0.5],
+  "cases": [
+    {
+      "name": "arrow_target",
+      "projectile": "minecraft:arrow",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:target"
+        }
+      ],
+      "ticks": 24,
+      "criteria": {
+        "hit": {
+          "trigger": "minecraft:target_hit"
+        },
+        "bullseye": {
+          "trigger": "minecraft:target_hit",
+          "conditions": {
+            "signal_strength": 15
+          }
+        }
+      },
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:target[power=15]",
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "sounds": [
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:arrow",
+            "minecraft:projectile_shoot 0,1,0 player"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target[power=15] flags 3"
+          ],
+          "criteria": [
+            "hit",
+            "bullseye"
+          ],
+          "stats": [
+            "minecraft:custom minecraft:target_hit 1"
+          ]
+        },
+        {
+          "tick": 2,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 7,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 8,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 9,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 10,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 11,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 12,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 13,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 14,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 15,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 16,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 17,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 18,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 19,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 20,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 21,
+          "changes": "0,0,0=minecraft:target",
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target flags 3"
+          ]
+        },
+        {
+          "tick": 22,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 23,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 24,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "flaming_arrow_target",
+      "projectile": "minecraft:arrow",
+      "motion": [0, -1.5, 0],
+      "burning": true,
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:target"
+        }
+      ],
+      "ticks": 24,
+      "criteria": {
+        "hit": {
+          "trigger": "minecraft:target_hit"
+        },
+        "bullseye": {
+          "trigger": "minecraft:target_hit",
+          "conditions": {
+            "signal_strength": 15
+          }
+        }
+      },
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:target[power=15]",
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "sounds": [
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:arrow",
+            "minecraft:projectile_shoot 0,1,0 player"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target[power=15] flags 3"
+          ],
+          "criteria": [
+            "hit",
+            "bullseye"
+          ],
+          "stats": [
+            "minecraft:custom minecraft:target_hit 1"
+          ]
+        },
+        {
+          "tick": 2,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 7,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 8,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 9,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 10,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 11,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 12,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 13,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 14,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 15,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 16,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 17,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 18,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 19,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 20,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 21,
+          "changes": "0,0,0=minecraft:target",
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target flags 3"
+          ]
+        },
+        {
+          "tick": 22,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 23,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 24,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "spectral_arrow_target",
+      "projectile": "minecraft:spectral_arrow",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:target"
+        }
+      ],
+      "ticks": 24,
+      "criteria": {
+        "hit": {
+          "trigger": "minecraft:target_hit"
+        },
+        "bullseye": {
+          "trigger": "minecraft:target_hit",
+          "conditions": {
+            "signal_strength": 15
+          }
+        }
+      },
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:target[power=15]",
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "sounds": [
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:spectral_arrow",
+            "minecraft:projectile_shoot 0,1,0 player"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target[power=15] flags 3"
+          ],
+          "criteria": [
+            "hit",
+            "bullseye"
+          ],
+          "stats": [
+            "minecraft:custom minecraft:target_hit 1"
+          ]
+        },
+        {
+          "tick": 2,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 7,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 8,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 9,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 10,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 11,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 12,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 13,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 14,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 15,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 16,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 17,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 18,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 19,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 20,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 21,
+          "changes": "0,0,0=minecraft:target",
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target flags 3"
+          ]
+        },
+        {
+          "tick": 22,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 23,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 24,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "trident_target",
+      "projectile": "minecraft:trident",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:target"
+        }
+      ],
+      "ticks": 24,
+      "criteria": {
+        "hit": {
+          "trigger": "minecraft:target_hit"
+        },
+        "bullseye": {
+          "trigger": "minecraft:target_hit",
+          "conditions": {
+            "signal_strength": 15
+          }
+        }
+      },
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:target[power=15]",
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "sounds": [
+            "minecraft:item.trident.hit_ground"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:trident",
+            "minecraft:projectile_shoot 0,1,0 player"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target[power=15] flags 3"
+          ],
+          "criteria": [
+            "hit",
+            "bullseye"
+          ],
+          "stats": [
+            "minecraft:custom minecraft:target_hit 1"
+          ]
+        },
+        {
+          "tick": 2,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 7,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 8,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 9,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 10,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 11,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 12,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 13,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 14,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 15,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 16,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 17,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 18,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 19,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 20,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 21,
+          "changes": "0,0,0=minecraft:target",
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target flags 3"
+          ]
+        },
+        {
+          "tick": 22,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 23,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 24,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "snowball_target",
+      "projectile": "minecraft:snowball",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:target"
+        }
+      ],
+      "ticks": 14,
+      "criteria": {
+        "hit": {
+          "trigger": "minecraft:target_hit"
+        },
+        "bullseye": {
+          "trigger": "minecraft:target_hit",
+          "conditions": {
+            "signal_strength": 15
+          }
+        }
+      },
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:target[power=15]",
+          "signal": 15,
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,1,0 player",
+            "minecraft:projectile_land 0,0,0 minecraft:snowball"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target[power=15] flags 3"
+          ],
+          "criteria": [
+            "hit",
+            "bullseye"
+          ],
+          "stats": [
+            "minecraft:custom minecraft:target_hit 1"
+          ]
+        },
+        {
+          "tick": 2,
+          "signal": 15
+        },
+        {
+          "tick": 3,
+          "signal": 15
+        },
+        {
+          "tick": 4,
+          "signal": 15
+        },
+        {
+          "tick": 5,
+          "signal": 15
+        },
+        {
+          "tick": 6,
+          "signal": 15
+        },
+        {
+          "tick": 7,
+          "signal": 15
+        },
+        {
+          "tick": 8,
+          "signal": 15
+        },
+        {
+          "tick": 9,
+          "changes": "0,0,0=minecraft:target",
+          "writes": [
+            "0,0,0=minecraft:target flags 3"
+          ]
+        },
+        {
+          "tick": 10
+        },
+        {
+          "tick": 11
+        },
+        {
+          "tick": 12
+        },
+        {
+          "tick": 13
+        },
+        {
+          "tick": 14
+        }
+      ]
+    },
+    {
+      "name": "egg_target",
+      "projectile": "minecraft:egg",
+      "motion": [0, -1.5, 0],
+      "seed": 1,
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:target"
+        }
+      ],
+      "ticks": 14,
+      "criteria": {
+        "hit": {
+          "trigger": "minecraft:target_hit"
+        },
+        "bullseye": {
+          "trigger": "minecraft:target_hit",
+          "conditions": {
+            "signal_strength": 15
+          }
+        }
+      },
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:target[power=15]",
+          "signal": 15,
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,1,0 player",
+            "minecraft:projectile_land 0,0,0 minecraft:egg"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target[power=15] flags 3"
+          ],
+          "criteria": [
+            "hit",
+            "bullseye"
+          ],
+          "stats": [
+            "minecraft:custom minecraft:target_hit 1"
+          ]
+        },
+        {
+          "tick": 2,
+          "signal": 15
+        },
+        {
+          "tick": 3,
+          "signal": 15
+        },
+        {
+          "tick": 4,
+          "signal": 15
+        },
+        {
+          "tick": 5,
+          "signal": 15
+        },
+        {
+          "tick": 6,
+          "signal": 15
+        },
+        {
+          "tick": 7,
+          "signal": 15
+        },
+        {
+          "tick": 8,
+          "signal": 15
+        },
+        {
+          "tick": 9,
+          "changes": "0,0,0=minecraft:target",
+          "writes": [
+            "0,0,0=minecraft:target flags 3"
+          ]
+        },
+        {
+          "tick": 10
+        },
+        {
+          "tick": 11
+        },
+        {
+          "tick": 12
+        },
+        {
+          "tick": 13
+        },
+        {
+          "tick": 14
+        }
+      ]
+    },
+    {
+      "name": "ender_pearl_target",
+      "projectile": "minecraft:ender_pearl",
+      "motion": [0, -1.5, 0],
+      "owner": "none",
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:target"
+        }
+      ],
+      "ticks": 14,
+      "criteria": {
+        "hit": {
+          "trigger": "minecraft:target_hit"
+        },
+        "bullseye": {
+          "trigger": "minecraft:target_hit",
+          "conditions": {
+            "signal_strength": 15
+          }
+        }
+      },
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:target[power=15]",
+          "signal": 15,
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,1,0 none",
+            "minecraft:projectile_land 0,0,0 minecraft:ender_pearl"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target[power=15] flags 3"
+          ]
+        },
+        {
+          "tick": 2,
+          "signal": 15
+        },
+        {
+          "tick": 3,
+          "signal": 15
+        },
+        {
+          "tick": 4,
+          "signal": 15
+        },
+        {
+          "tick": 5,
+          "signal": 15
+        },
+        {
+          "tick": 6,
+          "signal": 15
+        },
+        {
+          "tick": 7,
+          "signal": 15
+        },
+        {
+          "tick": 8,
+          "signal": 15
+        },
+        {
+          "tick": 9,
+          "changes": "0,0,0=minecraft:target",
+          "writes": [
+            "0,0,0=minecraft:target flags 3"
+          ]
+        },
+        {
+          "tick": 10
+        },
+        {
+          "tick": 11
+        },
+        {
+          "tick": 12
+        },
+        {
+          "tick": 13
+        },
+        {
+          "tick": 14
+        }
+      ]
+    },
+    {
+      "name": "splash_potion_target",
+      "projectile": "minecraft:splash_potion",
+      "motion": [0, -1.5, 0],
+      "potion": "SWIFTNESS",
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:target"
+        }
+      ],
+      "ticks": 14,
+      "criteria": {
+        "hit": {
+          "trigger": "minecraft:target_hit"
+        },
+        "bullseye": {
+          "trigger": "minecraft:target_hit",
+          "conditions": {
+            "signal_strength": 15
+          }
+        }
+      },
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:target[power=15]",
+          "signal": 15,
+          "levelEvents": [
+            "2002 0,1,0 -13374465",
+            "1053 0,1,0 0"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,1,0 player",
+            "minecraft:projectile_land 0,0,0 minecraft:splash_potion"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target[power=15] flags 3"
+          ],
+          "criteria": [
+            "hit",
+            "bullseye"
+          ],
+          "stats": [
+            "minecraft:custom minecraft:target_hit 1"
+          ]
+        },
+        {
+          "tick": 2,
+          "signal": 15
+        },
+        {
+          "tick": 3,
+          "signal": 15
+        },
+        {
+          "tick": 4,
+          "signal": 15
+        },
+        {
+          "tick": 5,
+          "signal": 15
+        },
+        {
+          "tick": 6,
+          "signal": 15
+        },
+        {
+          "tick": 7,
+          "signal": 15
+        },
+        {
+          "tick": 8,
+          "signal": 15
+        },
+        {
+          "tick": 9,
+          "changes": "0,0,0=minecraft:target",
+          "writes": [
+            "0,0,0=minecraft:target flags 3"
+          ]
+        },
+        {
+          "tick": 10
+        },
+        {
+          "tick": 11
+        },
+        {
+          "tick": 12
+        },
+        {
+          "tick": 13
+        },
+        {
+          "tick": 14
+        }
+      ]
+    },
+    {
+      "name": "experience_bottle_target",
+      "projectile": "minecraft:experience_bottle",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:target"
+        }
+      ],
+      "ticks": 14,
+      "criteria": {
+        "hit": {
+          "trigger": "minecraft:target_hit"
+        },
+        "bullseye": {
+          "trigger": "minecraft:target_hit",
+          "conditions": {
+            "signal_strength": 15
+          }
+        }
+      },
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:target[power=15]",
+          "signal": 15,
+          "entities": [
+            "minecraft:experience_orb"
+          ],
+          "levelEvents": [
+            "2002 0,1,0 -13083194",
+            "1053 0,1,0 0"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,1,0 player",
+            "minecraft:projectile_land 0,0,0 minecraft:experience_bottle"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target[power=15] flags 3"
+          ],
+          "criteria": [
+            "hit",
+            "bullseye"
+          ],
+          "stats": [
+            "minecraft:custom minecraft:target_hit 1"
+          ]
+        },
+        {
+          "tick": 2,
+          "signal": 15,
+          "entities": [
+            "minecraft:experience_orb"
+          ]
+        },
+        {
+          "tick": 3,
+          "signal": 15,
+          "entities": [
+            "minecraft:experience_orb"
+          ]
+        },
+        {
+          "tick": 4,
+          "signal": 15,
+          "entities": [
+            "minecraft:experience_orb"
+          ]
+        },
+        {
+          "tick": 5,
+          "signal": 15,
+          "entities": [
+            "minecraft:experience_orb"
+          ]
+        },
+        {
+          "tick": 6,
+          "signal": 15,
+          "entities": [
+            "minecraft:experience_orb"
+          ],
+          "gameEvents": [
+            "minecraft:hit_ground 1,1,0 minecraft:experience_orb"
+          ]
+        },
+        {
+          "tick": 7,
+          "signal": 15,
+          "entities": [
+            "minecraft:experience_orb"
+          ]
+        },
+        {
+          "tick": 8,
+          "signal": 15,
+          "entities": [
+            "minecraft:experience_orb"
+          ]
+        },
+        {
+          "tick": 9,
+          "changes": "0,0,0=minecraft:target",
+          "entities": [
+            "minecraft:experience_orb"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target flags 3"
+          ]
+        },
+        {
+          "tick": 10,
+          "entities": [
+            "minecraft:experience_orb"
+          ]
+        },
+        {
+          "tick": 11,
+          "entities": [
+            "minecraft:experience_orb"
+          ]
+        },
+        {
+          "tick": 12,
+          "entities": [
+            "minecraft:experience_orb"
+          ]
+        },
+        {
+          "tick": 13,
+          "entities": [
+            "minecraft:experience_orb"
+          ]
+        },
+        {
+          "tick": 14,
+          "entities": [
+            "minecraft:experience_orb"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "small_fireball_target",
+      "projectile": "minecraft:small_fireball",
+      "motion": [0, -0.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:target"
+        }
+      ],
+      "ticks": 14,
+      "criteria": {
+        "hit": {
+          "trigger": "minecraft:target_hit"
+        },
+        "bullseye": {
+          "trigger": "minecraft:target_hit",
+          "conditions": {
+            "signal_strength": 15
+          }
+        }
+      },
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,1,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "0,0,0=minecraft:target[power=15];0,1,0=minecraft:fire",
+          "signal": 15,
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:small_fireball"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target[power=15] flags 3",
+            "0,1,0=minecraft:fire flags 3"
+          ],
+          "criteria": [
+            "hit",
+            "bullseye"
+          ],
+          "stats": [
+            "minecraft:custom minecraft:target_hit 1"
+          ]
+        },
+        {
+          "tick": 3,
+          "signal": 15
+        },
+        {
+          "tick": 4,
+          "signal": 15
+        },
+        {
+          "tick": 5,
+          "signal": 15
+        },
+        {
+          "tick": 6,
+          "signal": 15
+        },
+        {
+          "tick": 7,
+          "signal": 15
+        },
+        {
+          "tick": 8,
+          "signal": 15
+        },
+        {
+          "tick": 9,
+          "signal": 15
+        },
+        {
+          "tick": 10,
+          "changes": "0,0,0=minecraft:target",
+          "writes": [
+            "0,0,0=minecraft:target flags 3"
+          ]
+        },
+        {
+          "tick": 11
+        },
+        {
+          "tick": 12
+        },
+        {
+          "tick": 13
+        },
+        {
+          "tick": 14
+        }
+      ]
+    },
+    {
+      "name": "fireball_target",
+      "projectile": "minecraft:fireball",
+      "motion": [0, -0.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:target"
+        }
+      ],
+      "ticks": 14,
+      "criteria": {
+        "hit": {
+          "trigger": "minecraft:target_hit"
+        },
+        "bullseye": {
+          "trigger": "minecraft:target_hit",
+          "conditions": {
+            "signal_strength": 15
+          }
+        }
+      },
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,1,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "0,0,0=minecraft:target[power=15]",
+          "signal": 15,
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:fireball",
+            "minecraft:explode 0,1,0 minecraft:fireball"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target[power=15] flags 3"
+          ],
+          "criteria": [
+            "hit",
+            "bullseye"
+          ],
+          "stats": [
+            "minecraft:custom minecraft:target_hit 1"
+          ]
+        },
+        {
+          "tick": 3,
+          "signal": 15
+        },
+        {
+          "tick": 4,
+          "signal": 15
+        },
+        {
+          "tick": 5,
+          "signal": 15
+        },
+        {
+          "tick": 6,
+          "signal": 15
+        },
+        {
+          "tick": 7,
+          "signal": 15
+        },
+        {
+          "tick": 8,
+          "signal": 15
+        },
+        {
+          "tick": 9,
+          "signal": 15
+        },
+        {
+          "tick": 10,
+          "changes": "0,0,0=minecraft:target",
+          "writes": [
+            "0,0,0=minecraft:target flags 3"
+          ]
+        },
+        {
+          "tick": 11
+        },
+        {
+          "tick": 12
+        },
+        {
+          "tick": 13
+        },
+        {
+          "tick": 14
+        }
+      ]
+    },
+    {
+      "name": "dragon_fireball_target",
+      "projectile": "minecraft:dragon_fireball",
+      "motion": [0, -0.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:target"
+        }
+      ],
+      "ticks": 14,
+      "criteria": {
+        "hit": {
+          "trigger": "minecraft:target_hit"
+        },
+        "bullseye": {
+          "trigger": "minecraft:target_hit",
+          "conditions": {
+            "signal_strength": 15
+          }
+        }
+      },
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,1,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "0,0,0=minecraft:target[power=15]",
+          "signal": 15,
+          "entities": [
+            "minecraft:area_effect_cloud 0,1,0"
+          ],
+          "levelEvents": [
+            "2006 0,1,0 1"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:dragon_fireball"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target[power=15] flags 3"
+          ],
+          "criteria": [
+            "hit",
+            "bullseye"
+          ],
+          "stats": [
+            "minecraft:custom minecraft:target_hit 1"
+          ]
+        },
+        {
+          "tick": 3,
+          "signal": 15,
+          "entities": [
+            "minecraft:area_effect_cloud 0,1,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "signal": 15,
+          "entities": [
+            "minecraft:area_effect_cloud 0,1,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "signal": 15,
+          "entities": [
+            "minecraft:area_effect_cloud 0,1,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "signal": 15,
+          "entities": [
+            "minecraft:area_effect_cloud 0,1,0"
+          ]
+        },
+        {
+          "tick": 7,
+          "signal": 15,
+          "entities": [
+            "minecraft:area_effect_cloud 0,1,0"
+          ]
+        },
+        {
+          "tick": 8,
+          "signal": 15,
+          "entities": [
+            "minecraft:area_effect_cloud 0,1,0"
+          ]
+        },
+        {
+          "tick": 9,
+          "signal": 15,
+          "entities": [
+            "minecraft:area_effect_cloud 0,1,0"
+          ]
+        },
+        {
+          "tick": 10,
+          "changes": "0,0,0=minecraft:target",
+          "entities": [
+            "minecraft:area_effect_cloud 0,1,0"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target flags 3"
+          ]
+        },
+        {
+          "tick": 11,
+          "entities": [
+            "minecraft:area_effect_cloud 0,1,0"
+          ]
+        },
+        {
+          "tick": 12,
+          "entities": [
+            "minecraft:area_effect_cloud 0,1,0"
+          ]
+        },
+        {
+          "tick": 13,
+          "entities": [
+            "minecraft:area_effect_cloud 0,1,0"
+          ]
+        },
+        {
+          "tick": 14,
+          "entities": [
+            "minecraft:area_effect_cloud 0,1,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "wither_skull_target",
+      "projectile": "minecraft:wither_skull",
+      "motion": [0, -0.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:target"
+        }
+      ],
+      "ticks": 14,
+      "criteria": {
+        "hit": {
+          "trigger": "minecraft:target_hit"
+        },
+        "bullseye": {
+          "trigger": "minecraft:target_hit",
+          "conditions": {
+            "signal_strength": 15
+          }
+        }
+      },
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,1,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "0,0,0=minecraft:target[power=15]",
+          "signal": 15,
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:wither_skull",
+            "minecraft:explode 0,1,0 minecraft:wither_skull"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target[power=15] flags 3"
+          ],
+          "criteria": [
+            "hit",
+            "bullseye"
+          ],
+          "stats": [
+            "minecraft:custom minecraft:target_hit 1"
+          ]
+        },
+        {
+          "tick": 3,
+          "signal": 15
+        },
+        {
+          "tick": 4,
+          "signal": 15
+        },
+        {
+          "tick": 5,
+          "signal": 15
+        },
+        {
+          "tick": 6,
+          "signal": 15
+        },
+        {
+          "tick": 7,
+          "signal": 15
+        },
+        {
+          "tick": 8,
+          "signal": 15
+        },
+        {
+          "tick": 9,
+          "signal": 15
+        },
+        {
+          "tick": 10,
+          "changes": "0,0,0=minecraft:target",
+          "writes": [
+            "0,0,0=minecraft:target flags 3"
+          ]
+        },
+        {
+          "tick": 11
+        },
+        {
+          "tick": 12
+        },
+        {
+          "tick": 13
+        },
+        {
+          "tick": 14
+        }
+      ]
+    },
+    {
+      "name": "breeze_wind_charge_target",
+      "projectile": "minecraft:breeze_wind_charge",
+      "motion": [0, -0.7, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:target"
+        }
+      ],
+      "ticks": 14,
+      "criteria": {
+        "hit": {
+          "trigger": "minecraft:target_hit"
+        },
+        "bullseye": {
+          "trigger": "minecraft:target_hit",
+          "conditions": {
+            "signal_strength": 15
+          }
+        }
+      },
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,1,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "0,0,0=minecraft:target[power=15]",
+          "signal": 15,
+          "gameEvents": [
+            "minecraft:explode 0,1,0 minecraft:breeze_wind_charge",
+            "minecraft:projectile_land 0,0,0 minecraft:breeze_wind_charge"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target[power=15] flags 3"
+          ],
+          "criteria": [
+            "hit",
+            "bullseye"
+          ],
+          "stats": [
+            "minecraft:custom minecraft:target_hit 1"
+          ]
+        },
+        {
+          "tick": 3,
+          "signal": 15
+        },
+        {
+          "tick": 4,
+          "signal": 15
+        },
+        {
+          "tick": 5,
+          "signal": 15
+        },
+        {
+          "tick": 6,
+          "signal": 15
+        },
+        {
+          "tick": 7,
+          "signal": 15
+        },
+        {
+          "tick": 8,
+          "signal": 15
+        },
+        {
+          "tick": 9,
+          "signal": 15
+        },
+        {
+          "tick": 10,
+          "changes": "0,0,0=minecraft:target",
+          "writes": [
+            "0,0,0=minecraft:target flags 3"
+          ]
+        },
+        {
+          "tick": 11
+        },
+        {
+          "tick": 12
+        },
+        {
+          "tick": 13
+        },
+        {
+          "tick": 14
+        }
+      ]
+    },
+    {
+      "name": "llama_spit_target",
+      "projectile": "minecraft:llama_spit",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:target"
+        }
+      ],
+      "ticks": 14,
+      "criteria": {
+        "hit": {
+          "trigger": "minecraft:target_hit"
+        },
+        "bullseye": {
+          "trigger": "minecraft:target_hit",
+          "conditions": {
+            "signal_strength": 15
+          }
+        }
+      },
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:target[power=15]",
+          "signal": 15,
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,1,0 player",
+            "minecraft:projectile_land 0,0,0 minecraft:llama_spit"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target[power=15] flags 3"
+          ],
+          "criteria": [
+            "hit",
+            "bullseye"
+          ],
+          "stats": [
+            "minecraft:custom minecraft:target_hit 1"
+          ]
+        },
+        {
+          "tick": 2,
+          "signal": 15
+        },
+        {
+          "tick": 3,
+          "signal": 15
+        },
+        {
+          "tick": 4,
+          "signal": 15
+        },
+        {
+          "tick": 5,
+          "signal": 15
+        },
+        {
+          "tick": 6,
+          "signal": 15
+        },
+        {
+          "tick": 7,
+          "signal": 15
+        },
+        {
+          "tick": 8,
+          "signal": 15
+        },
+        {
+          "tick": 9,
+          "changes": "0,0,0=minecraft:target",
+          "writes": [
+            "0,0,0=minecraft:target flags 3"
+          ]
+        },
+        {
+          "tick": 10
+        },
+        {
+          "tick": 11
+        },
+        {
+          "tick": 12
+        },
+        {
+          "tick": 13
+        },
+        {
+          "tick": 14
+        }
+      ]
+    },
+    {
+      "name": "shulker_bullet_target",
+      "projectile": "minecraft:shulker_bullet",
+      "motion": [0, -0.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:target"
+        }
+      ],
+      "ticks": 14,
+      "criteria": {
+        "hit": {
+          "trigger": "minecraft:target_hit"
+        },
+        "bullseye": {
+          "trigger": "minecraft:target_hit",
+          "conditions": {
+            "signal_strength": 15
+          }
+        }
+      },
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,1,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "0,0,0=minecraft:target[power=15]",
+          "signal": 15,
+          "sounds": [
+            "minecraft:entity.shulker_bullet.hit"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:shulker_bullet",
+            "minecraft:entity_damage 0,0,0 minecraft:shulker_bullet"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target[power=15] flags 3"
+          ],
+          "criteria": [
+            "hit",
+            "bullseye"
+          ],
+          "stats": [
+            "minecraft:custom minecraft:target_hit 1"
+          ]
+        },
+        {
+          "tick": 3,
+          "signal": 15
+        },
+        {
+          "tick": 4,
+          "signal": 15
+        },
+        {
+          "tick": 5,
+          "signal": 15
+        },
+        {
+          "tick": 6,
+          "signal": 15
+        },
+        {
+          "tick": 7,
+          "signal": 15
+        },
+        {
+          "tick": 8,
+          "signal": 15
+        },
+        {
+          "tick": 9,
+          "signal": 15
+        },
+        {
+          "tick": 10,
+          "changes": "0,0,0=minecraft:target",
+          "writes": [
+            "0,0,0=minecraft:target flags 3"
+          ]
+        },
+        {
+          "tick": 11
+        },
+        {
+          "tick": 12
+        },
+        {
+          "tick": 13
+        },
+        {
+          "tick": 14
+        }
+      ]
+    },
+    {
+      "name": "fishing_bobber_target",
+      "projectile": "minecraft:fishing_bobber",
+      "motion": [0, -1.0, 0],
+      "ownerHolds": "minecraft:fishing_rod",
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:target"
+        }
+      ],
+      "ticks": 14,
+      "criteria": {
+        "hit": {
+          "trigger": "minecraft:target_hit"
+        },
+        "bullseye": {
+          "trigger": "minecraft:target_hit",
+          "conditions": {
+            "signal_strength": 15
+          }
+        }
+      },
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:target[power=15]",
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,1,0 player",
+            "minecraft:projectile_land 0,0,0 minecraft:fishing_bobber"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target[power=15] flags 3"
+          ],
+          "criteria": [
+            "hit",
+            "bullseye"
+          ],
+          "stats": [
+            "minecraft:custom minecraft:target_hit 1"
+          ]
+        },
+        {
+          "tick": 2,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:fishing_bobber"
+          ],
+          "stats": [
+            "minecraft:custom minecraft:target_hit 1"
+          ]
+        },
+        {
+          "tick": 3,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:fishing_bobber",
+            "minecraft:hit_ground 0,1,0 minecraft:fishing_bobber"
+          ],
+          "stats": [
+            "minecraft:custom minecraft:target_hit 1"
+          ]
+        },
+        {
+          "tick": 5,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 7,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 8,
+          "signal": 15,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 9,
+          "changes": "0,0,0=minecraft:target",
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target flags 3"
+          ]
+        },
+        {
+          "tick": 10,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 11,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 12,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 13,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 14,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "arrow_target_off_centre",
+      "projectile": "minecraft:arrow",
+      "motion": [0, -1.5, 0],
+      "from": [0.8, 1.8, 0.3],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:target"
+        }
+      ],
+      "ticks": 24,
+      "criteria": {
+        "hit": {
+          "trigger": "minecraft:target_hit"
+        },
+        "bullseye": {
+          "trigger": "minecraft:target_hit",
+          "conditions": {
+            "signal_strength": 15
+          }
+        }
+      },
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:target[power=6]",
+          "signal": 6,
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "sounds": [
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:arrow",
+            "minecraft:projectile_shoot 0,1,0 player"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target[power=6] flags 3"
+          ],
+          "criteria": [
+            "hit"
+          ],
+          "stats": [
+            "minecraft:custom minecraft:target_hit 1"
+          ]
+        },
+        {
+          "tick": 2,
+          "signal": 6,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "signal": 6,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "signal": 6,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "signal": 6,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "signal": 6,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 7,
+          "signal": 6,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 8,
+          "signal": 6,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 9,
+          "signal": 6,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 10,
+          "signal": 6,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 11,
+          "signal": 6,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 12,
+          "signal": 6,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 13,
+          "signal": 6,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 14,
+          "signal": 6,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 15,
+          "signal": 6,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 16,
+          "signal": 6,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 17,
+          "signal": 6,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 18,
+          "signal": 6,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 19,
+          "signal": 6,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 20,
+          "signal": 6,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 21,
+          "changes": "0,0,0=minecraft:target",
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target flags 3"
+          ]
+        },
+        {
+          "tick": 22,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 23,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 24,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "snowball_target_off_centre",
+      "projectile": "minecraft:snowball",
+      "motion": [0, -1.5, 0],
+      "from": [0.15, 1.8, 0.6],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:target"
+        }
+      ],
+      "ticks": 14,
+      "criteria": {
+        "hit": {
+          "trigger": "minecraft:target_hit"
+        },
+        "bullseye": {
+          "trigger": "minecraft:target_hit",
+          "conditions": {
+            "signal_strength": 15
+          }
+        }
+      },
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:target[power=5]",
+          "signal": 5,
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,1,0 player",
+            "minecraft:projectile_land 0,0,0 minecraft:snowball"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target[power=5] flags 3"
+          ],
+          "criteria": [
+            "hit"
+          ],
+          "stats": [
+            "minecraft:custom minecraft:target_hit 1"
+          ]
+        },
+        {
+          "tick": 2,
+          "signal": 5
+        },
+        {
+          "tick": 3,
+          "signal": 5
+        },
+        {
+          "tick": 4,
+          "signal": 5
+        },
+        {
+          "tick": 5,
+          "signal": 5
+        },
+        {
+          "tick": 6,
+          "signal": 5
+        },
+        {
+          "tick": 7,
+          "signal": 5
+        },
+        {
+          "tick": 8,
+          "signal": 5
+        },
+        {
+          "tick": 9,
+          "changes": "0,0,0=minecraft:target",
+          "writes": [
+            "0,0,0=minecraft:target flags 3"
+          ]
+        },
+        {
+          "tick": 10
+        },
+        {
+          "tick": 11
+        },
+        {
+          "tick": 12
+        },
+        {
+          "tick": 13
+        },
+        {
+          "tick": 14
+        }
+      ]
+    },
+    {
+      "name": "arrow_target_west_face",
+      "projectile": "minecraft:arrow",
+      "motion": [1.5, 0, 0],
+      "from": [-0.6, 0.3, 0.7],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:target"
+        }
+      ],
+      "ticks": 24,
+      "criteria": {
+        "hit": {
+          "trigger": "minecraft:target_hit"
+        },
+        "bullseye": {
+          "trigger": "minecraft:target_hit",
+          "conditions": {
+            "signal_strength": 15
+          }
+        }
+      },
+      "noGravity": true,
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:target[power=9]",
+          "signal": 9,
+          "entities": [
+            "projectile -1,0,0"
+          ],
+          "sounds": [
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:arrow",
+            "minecraft:projectile_shoot -1,0,0 player"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target[power=9] flags 3"
+          ],
+          "criteria": [
+            "hit"
+          ],
+          "stats": [
+            "minecraft:custom minecraft:target_hit 1"
+          ]
+        },
+        {
+          "tick": 2,
+          "signal": 9,
+          "entities": [
+            "projectile -1,0,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "signal": 9,
+          "entities": [
+            "projectile -1,0,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "signal": 9,
+          "entities": [
+            "projectile -1,0,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "signal": 9,
+          "entities": [
+            "projectile -1,0,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "signal": 9,
+          "entities": [
+            "projectile -1,0,0"
+          ]
+        },
+        {
+          "tick": 7,
+          "signal": 9,
+          "entities": [
+            "projectile -1,0,0"
+          ]
+        },
+        {
+          "tick": 8,
+          "signal": 9,
+          "entities": [
+            "projectile -1,0,0"
+          ]
+        },
+        {
+          "tick": 9,
+          "signal": 9,
+          "entities": [
+            "projectile -1,0,0"
+          ]
+        },
+        {
+          "tick": 10,
+          "signal": 9,
+          "entities": [
+            "projectile -1,0,0"
+          ]
+        },
+        {
+          "tick": 11,
+          "signal": 9,
+          "entities": [
+            "projectile -1,0,0"
+          ]
+        },
+        {
+          "tick": 12,
+          "signal": 9,
+          "entities": [
+            "projectile -1,0,0"
+          ]
+        },
+        {
+          "tick": 13,
+          "signal": 9,
+          "entities": [
+            "projectile -1,0,0"
+          ]
+        },
+        {
+          "tick": 14,
+          "signal": 9,
+          "entities": [
+            "projectile -1,0,0"
+          ]
+        },
+        {
+          "tick": 15,
+          "signal": 9,
+          "entities": [
+            "projectile -1,0,0"
+          ]
+        },
+        {
+          "tick": 16,
+          "signal": 9,
+          "entities": [
+            "projectile -1,0,0"
+          ]
+        },
+        {
+          "tick": 17,
+          "signal": 9,
+          "entities": [
+            "projectile -1,0,0"
+          ]
+        },
+        {
+          "tick": 18,
+          "signal": 9,
+          "entities": [
+            "projectile -1,0,0"
+          ]
+        },
+        {
+          "tick": 19,
+          "signal": 9,
+          "entities": [
+            "projectile -1,0,0"
+          ]
+        },
+        {
+          "tick": 20,
+          "signal": 9,
+          "entities": [
+            "projectile -1,0,0"
+          ]
+        },
+        {
+          "tick": 21,
+          "changes": "0,0,0=minecraft:target",
+          "entities": [
+            "projectile -1,0,0"
+          ],
+          "writes": [
+            "0,0,0=minecraft:target flags 3"
+          ]
+        },
+        {
+          "tick": 22,
+          "entities": [
+            "projectile -1,0,0"
+          ]
+        },
+        {
+          "tick": 23,
+          "entities": [
+            "projectile -1,0,0"
+          ]
+        },
+        {
+          "tick": 24,
+          "entities": [
+            "projectile -1,0,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "flaming_arrow_campfire",
+      "projectile": "minecraft:arrow",
+      "motion": [0, -1.5, 0],
+      "burning": true,
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:campfire[lit=false]"
+        }
+      ],
+      "ticks": 8,
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:campfire",
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:arrow",
+            "minecraft:projectile_shoot 0,0,0 player"
+          ],
+          "writes": [
+            "0,0,0=minecraft:campfire flags 11"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 7,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 8,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "small_fireball_campfire",
+      "projectile": "minecraft:small_fireball",
+      "motion": [0, -0.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:campfire[lit=false]"
+        }
+      ],
+      "ticks": 8,
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,1,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "0,0,0=minecraft:campfire",
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:small_fireball"
+          ],
+          "writes": [
+            "0,0,0=minecraft:campfire flags 11",
+            "0,1,0=minecraft:fire flags 3",
+            "0,1,0=minecraft:air flags 3"
+          ]
+        },
+        {
+          "tick": 4
+        },
+        {
+          "tick": 5
+        },
+        {
+          "tick": 6
+        },
+        {
+          "tick": 7
+        },
+        {
+          "tick": 8
+        }
+      ]
+    },
+    {
+      "name": "fireball_campfire",
+      "projectile": "minecraft:fireball",
+      "motion": [0, -0.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:campfire[lit=false]"
+        }
+      ],
+      "ticks": 8,
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,1,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "0,0,0=minecraft:campfire",
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:fireball",
+            "minecraft:explode 0,0,0 minecraft:fireball"
+          ],
+          "writes": [
+            "0,0,0=minecraft:campfire flags 11"
+          ]
+        },
+        {
+          "tick": 4
+        },
+        {
+          "tick": 5
+        },
+        {
+          "tick": 6
+        },
+        {
+          "tick": 7
+        },
+        {
+          "tick": 8
+        }
+      ]
+    },
+    {
+      "name": "arrow_campfire",
+      "projectile": "minecraft:arrow",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:campfire[lit=false]"
+        }
+      ],
+      "ticks": 8,
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:arrow",
+            "minecraft:projectile_shoot 0,0,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 7,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 8,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "snowball_campfire",
+      "projectile": "minecraft:snowball",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:campfire[lit=false]"
+        }
+      ],
+      "ticks": 8,
+      "record": [
+        {
+          "tick": 1,
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,0,0 player",
+            "minecraft:projectile_land 0,0,0 minecraft:snowball"
+          ]
+        },
+        {
+          "tick": 2
+        },
+        {
+          "tick": 3
+        },
+        {
+          "tick": 4
+        },
+        {
+          "tick": 5
+        },
+        {
+          "tick": 6
+        },
+        {
+          "tick": 7
+        },
+        {
+          "tick": 8
+        }
+      ]
+    },
+    {
+      "name": "flaming_arrow_soul_campfire",
+      "projectile": "minecraft:arrow",
+      "motion": [0, -1.5, 0],
+      "burning": true,
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:soul_campfire[lit=false]"
+        }
+      ],
+      "ticks": 8,
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:soul_campfire",
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:arrow",
+            "minecraft:projectile_shoot 0,0,0 player"
+          ],
+          "writes": [
+            "0,0,0=minecraft:soul_campfire flags 11"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 7,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 8,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "flaming_arrow_waterlogged_campfire",
+      "projectile": "minecraft:arrow",
+      "motion": [0, -1.5, 0],
+      "burning": true,
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:campfire[lit=false,waterlogged=true]"
+        }
+      ],
+      "ticks": 8,
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:entity.generic.extinguish_fire",
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:arrow",
+            "minecraft:projectile_shoot 0,0,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 7,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 8,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "flaming_arrow_candle",
+      "projectile": "minecraft:arrow",
+      "motion": [0, -1.5, 0],
+      "burning": true,
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:candle"
+        }
+      ],
+      "ticks": 8,
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:candle[lit=true]",
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:arrow",
+            "minecraft:projectile_shoot 0,0,0 player"
+          ],
+          "writes": [
+            "0,0,0=minecraft:candle[lit=true] flags 11"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 7,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 8,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "small_fireball_candle",
+      "projectile": "minecraft:small_fireball",
+      "motion": [0, -0.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:candle"
+        }
+      ],
+      "ticks": 8,
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,1,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "changes": "0,0,0=minecraft:candle[lit=true]",
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:small_fireball"
+          ],
+          "writes": [
+            "0,0,0=minecraft:candle[lit=true] flags 11",
+            "0,1,0=minecraft:fire flags 3",
+            "0,1,0=minecraft:air flags 3"
+          ]
+        },
+        {
+          "tick": 4
+        },
+        {
+          "tick": 5
+        },
+        {
+          "tick": 6
+        },
+        {
+          "tick": 7
+        },
+        {
+          "tick": 8
+        }
+      ]
+    },
+    {
+      "name": "flaming_arrow_candle_cake",
+      "projectile": "minecraft:arrow",
+      "motion": [0, -1.5, 0],
+      "burning": true,
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:white_candle_cake"
+        }
+      ],
+      "ticks": 8,
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:white_candle_cake[lit=true]",
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:arrow",
+            "minecraft:projectile_shoot 0,0,0 player"
+          ],
+          "writes": [
+            "0,0,0=minecraft:white_candle_cake[lit=true] flags 11"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 7,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 8,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "flaming_arrow_tnt",
+      "projectile": "minecraft:arrow",
+      "motion": [0, -1.5, 0],
+      "burning": true,
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:tnt"
+        }
+      ],
+      "ticks": 6,
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:air",
+          "entities": [
+            "minecraft:tnt 0,0,0",
+            "projectile 0,1,0"
+          ],
+          "sounds": [
+            "minecraft:entity.tnt.primed",
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:prime_fuse 0,0,0 player",
+            "minecraft:projectile_land 0,0,0 minecraft:arrow",
+            "minecraft:projectile_shoot 0,1,0 player"
+          ],
+          "writes": [
+            "0,0,0=minecraft:air flags 3"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "minecraft:tnt 0,0,0",
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "minecraft:tnt 0,0,0",
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "minecraft:tnt 0,0,0",
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "minecraft:tnt 0,0,0",
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "minecraft:tnt 0,0,0",
+            "projectile 0,0,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "small_fireball_tnt",
+      "projectile": "minecraft:small_fireball",
+      "motion": [0, -0.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:tnt"
+        }
+      ],
+      "ticks": 6,
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,1,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "0,0,0=minecraft:air",
+          "entities": [
+            "minecraft:tnt 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:entity.tnt.primed"
+          ],
+          "gameEvents": [
+            "minecraft:prime_fuse 0,0,0 player",
+            "minecraft:projectile_land 0,0,0 minecraft:small_fireball"
+          ],
+          "writes": [
+            "0,0,0=minecraft:air flags 3",
+            "0,1,0=minecraft:fire flags 3",
+            "0,1,0=minecraft:air flags 3"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "minecraft:tnt 0,0,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "minecraft:tnt 0,0,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "minecraft:tnt 0,0,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "minecraft:tnt 0,0,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "fireball_tnt",
+      "projectile": "minecraft:fireball",
+      "motion": [0, -0.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:tnt"
+        }
+      ],
+      "ticks": 6,
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,1,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "0,0,0=minecraft:air",
+          "entities": [
+            "minecraft:tnt 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:entity.tnt.primed"
+          ],
+          "gameEvents": [
+            "minecraft:prime_fuse 0,0,0 player",
+            "minecraft:projectile_land 0,0,0 minecraft:fireball",
+            "minecraft:explode 0,1,0 minecraft:fireball"
+          ],
+          "writes": [
+            "0,0,0=minecraft:air flags 3"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "minecraft:tnt 0,-1,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "minecraft:tnt 0,-1,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "minecraft:tnt 0,-2,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "minecraft:tnt 0,-2,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "arrow_tnt",
+      "projectile": "minecraft:arrow",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:tnt"
+        }
+      ],
+      "ticks": 6,
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "sounds": [
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:arrow",
+            "minecraft:projectile_shoot 0,1,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "arrow_chorus_flower",
+      "projectile": "minecraft:arrow",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chorus_flower"
+        }
+      ],
+      "ticks": 6,
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:air",
+          "entities": [
+            "item minecraft:chorus_flower x1",
+            "projectile 0,1,0"
+          ],
+          "sounds": [
+            "minecraft:entity.arrow.hit"
+          ],
+          "levelEvents": [
+            "2001 0,0,0 16681"
+          ],
+          "gameEvents": [
+            "minecraft:block_destroy 0,0,0 minecraft:arrow",
+            "minecraft:projectile_land 0,0,0 minecraft:arrow",
+            "minecraft:projectile_shoot 0,1,0 player"
+          ],
+          "writes": [
+            "0,0,0=minecraft:air flags 3"
+          ],
+          "destroyed": [
+            "0,0,0=minecraft:chorus_flower drops true"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "item minecraft:chorus_flower x1",
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "item minecraft:chorus_flower x1",
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "item minecraft:chorus_flower x1",
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "item minecraft:chorus_flower x1",
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "item minecraft:chorus_flower x1",
+            "projectile 0,0,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "snowball_chorus_flower",
+      "projectile": "minecraft:snowball",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chorus_flower"
+        }
+      ],
+      "ticks": 6,
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:air",
+          "entities": [
+            "item minecraft:chorus_flower x1"
+          ],
+          "levelEvents": [
+            "2001 0,0,0 16681"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,1,0 player",
+            "minecraft:block_destroy 0,0,0 minecraft:snowball",
+            "minecraft:projectile_land 0,0,0 minecraft:snowball"
+          ],
+          "writes": [
+            "0,0,0=minecraft:air flags 3"
+          ],
+          "destroyed": [
+            "0,0,0=minecraft:chorus_flower drops true"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "item minecraft:chorus_flower x1"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "item minecraft:chorus_flower x1"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "item minecraft:chorus_flower x1"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "item minecraft:chorus_flower x1"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "item minecraft:chorus_flower x1"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "egg_chorus_flower",
+      "projectile": "minecraft:egg",
+      "motion": [0, -1.5, 0],
+      "seed": 1,
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chorus_flower"
+        }
+      ],
+      "ticks": 6,
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:air",
+          "entities": [
+            "item minecraft:chorus_flower x1"
+          ],
+          "levelEvents": [
+            "2001 0,0,0 16681"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,1,0 player",
+            "minecraft:block_destroy 0,0,0 minecraft:egg",
+            "minecraft:projectile_land 0,0,0 minecraft:egg"
+          ],
+          "writes": [
+            "0,0,0=minecraft:air flags 3"
+          ],
+          "destroyed": [
+            "0,0,0=minecraft:chorus_flower drops true"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "item minecraft:chorus_flower x1"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "item minecraft:chorus_flower x1"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "item minecraft:chorus_flower x1"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "item minecraft:chorus_flower x1"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "item minecraft:chorus_flower x1"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "trident_chorus_flower",
+      "projectile": "minecraft:trident",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chorus_flower"
+        }
+      ],
+      "ticks": 6,
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:air",
+          "entities": [
+            "item minecraft:chorus_flower x1",
+            "projectile 0,1,0"
+          ],
+          "sounds": [
+            "minecraft:item.trident.hit_ground"
+          ],
+          "levelEvents": [
+            "2001 0,0,0 16681"
+          ],
+          "gameEvents": [
+            "minecraft:block_destroy 0,0,0 minecraft:trident",
+            "minecraft:projectile_land 0,0,0 minecraft:trident",
+            "minecraft:projectile_shoot 0,1,0 player"
+          ],
+          "writes": [
+            "0,0,0=minecraft:air flags 3"
+          ],
+          "destroyed": [
+            "0,0,0=minecraft:chorus_flower drops true"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "item minecraft:chorus_flower x1",
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "item minecraft:chorus_flower x1",
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "item minecraft:chorus_flower x1",
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "item minecraft:chorus_flower x1",
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "item minecraft:chorus_flower x1",
+            "projectile 0,0,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ender_pearl_chorus_flower",
+      "projectile": "minecraft:ender_pearl",
+      "motion": [0, -1.5, 0],
+      "owner": "none",
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chorus_flower"
+        }
+      ],
+      "ticks": 6,
+      "record": [
+        {
+          "tick": 1,
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,1,0 none",
+            "minecraft:projectile_land 0,0,0 minecraft:ender_pearl"
+          ]
+        },
+        {
+          "tick": 2
+        },
+        {
+          "tick": 3
+        },
+        {
+          "tick": 4
+        },
+        {
+          "tick": 5
+        },
+        {
+          "tick": 6
+        }
+      ]
+    },
+    {
+      "name": "splash_potion_chorus_flower",
+      "projectile": "minecraft:splash_potion",
+      "motion": [0, -1.5, 0],
+      "potion": "SWIFTNESS",
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chorus_flower"
+        }
+      ],
+      "ticks": 6,
+      "record": [
+        {
+          "tick": 1,
+          "levelEvents": [
+            "2002 0,1,0 -13374465",
+            "1053 0,1,0 0"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,1,0 player",
+            "minecraft:projectile_land 0,0,0 minecraft:splash_potion"
+          ]
+        },
+        {
+          "tick": 2
+        },
+        {
+          "tick": 3
+        },
+        {
+          "tick": 4
+        },
+        {
+          "tick": 5
+        },
+        {
+          "tick": 6
+        }
+      ]
+    },
+    {
+      "name": "small_fireball_chorus_flower",
+      "projectile": "minecraft:small_fireball",
+      "motion": [0, -0.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chorus_flower"
+        }
+      ],
+      "ticks": 6,
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,1,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "0,0,0=minecraft:air",
+          "entities": [
+            "item minecraft:chorus_flower x1"
+          ],
+          "levelEvents": [
+            "2001 0,0,0 16681"
+          ],
+          "gameEvents": [
+            "minecraft:block_destroy 0,0,0 minecraft:small_fireball",
+            "minecraft:projectile_land 0,0,0 minecraft:small_fireball"
+          ],
+          "writes": [
+            "0,0,0=minecraft:air flags 3",
+            "0,1,0=minecraft:fire flags 3",
+            "0,1,0=minecraft:air flags 3"
+          ],
+          "destroyed": [
+            "0,0,0=minecraft:chorus_flower drops true"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "item minecraft:chorus_flower x1"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "item minecraft:chorus_flower x1"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "item minecraft:chorus_flower x1"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "item minecraft:chorus_flower x1"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "arrow_chorus_flower_rule_off",
+      "projectile": "minecraft:arrow",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chorus_flower"
+        }
+      ],
+      "ticks": 6,
+      "rules": {
+        "projectiles_can_break_blocks": false
+      },
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "sounds": [
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:arrow",
+            "minecraft:projectile_shoot 0,1,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ownerless_arrow_chorus_flower",
+      "projectile": "minecraft:arrow",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chorus_flower"
+        }
+      ],
+      "ticks": 6,
+      "owner": "none",
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:air",
+          "entities": [
+            "item minecraft:chorus_flower x1",
+            "projectile 0,1,0"
+          ],
+          "sounds": [
+            "minecraft:entity.arrow.hit"
+          ],
+          "levelEvents": [
+            "2001 0,0,0 16681"
+          ],
+          "gameEvents": [
+            "minecraft:block_destroy 0,0,0 minecraft:arrow",
+            "minecraft:projectile_land 0,0,0 minecraft:arrow",
+            "minecraft:projectile_shoot 0,1,0 none"
+          ],
+          "writes": [
+            "0,0,0=minecraft:air flags 3"
+          ],
+          "destroyed": [
+            "0,0,0=minecraft:chorus_flower drops true"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "item minecraft:chorus_flower x1",
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "item minecraft:chorus_flower x1",
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "item minecraft:chorus_flower x1",
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "item minecraft:chorus_flower x1",
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "item minecraft:chorus_flower x1",
+            "projectile 0,0,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ownerless_arrow_chorus_flower_griefing",
+      "projectile": "minecraft:arrow",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:end_stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:chorus_flower"
+        }
+      ],
+      "ticks": 6,
+      "owner": "none",
+      "rules": {
+        "mob_griefing": true
+      },
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:air",
+          "entities": [
+            "item minecraft:chorus_flower x1",
+            "projectile 0,1,0"
+          ],
+          "sounds": [
+            "minecraft:entity.arrow.hit"
+          ],
+          "levelEvents": [
+            "2001 0,0,0 16681"
+          ],
+          "gameEvents": [
+            "minecraft:block_destroy 0,0,0 minecraft:arrow",
+            "minecraft:projectile_land 0,0,0 minecraft:arrow",
+            "minecraft:projectile_shoot 0,1,0 none"
+          ],
+          "writes": [
+            "0,0,0=minecraft:air flags 3"
+          ],
+          "destroyed": [
+            "0,0,0=minecraft:chorus_flower drops true"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "item minecraft:chorus_flower x1",
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "item minecraft:chorus_flower x1",
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "item minecraft:chorus_flower x1",
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "item minecraft:chorus_flower x1",
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "item minecraft:chorus_flower x1",
+            "projectile 0,0,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "trident_pointed_dripstone",
+      "projectile": "minecraft:trident",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:pointed_dripstone[vertical_direction=up]"
+        }
+      ],
+      "ticks": 6,
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:air",
+          "entities": [
+            "item minecraft:pointed_dripstone x1",
+            "projectile 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:item.trident.hit_ground"
+          ],
+          "levelEvents": [
+            "2001 0,0,0 33571"
+          ],
+          "gameEvents": [
+            "minecraft:block_destroy 0,0,0 none",
+            "minecraft:projectile_land 0,0,0 minecraft:trident",
+            "minecraft:projectile_shoot 0,0,0 player"
+          ],
+          "writes": [
+            "0,0,0=minecraft:air flags 3"
+          ],
+          "destroyed": [
+            "0,0,0=minecraft:pointed_dripstone drops true"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "item minecraft:pointed_dripstone x1",
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "item minecraft:pointed_dripstone x1",
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "item minecraft:pointed_dripstone x1",
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "item minecraft:pointed_dripstone x1",
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "item minecraft:pointed_dripstone x1",
+            "projectile 0,0,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "slow_trident_pointed_dripstone",
+      "projectile": "minecraft:trident",
+      "motion": [0, -0.3, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:pointed_dripstone[vertical_direction=up]"
+        }
+      ],
+      "ticks": 8,
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,1,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:item.trident.hit_ground"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:trident"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 7,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 8,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "arrow_pointed_dripstone",
+      "projectile": "minecraft:arrow",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:pointed_dripstone[vertical_direction=up]"
+        }
+      ],
+      "ticks": 6,
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:arrow",
+            "minecraft:projectile_shoot 0,0,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "channeling_trident_lightning_rod",
+      "projectile": "minecraft:trident",
+      "boltSeed": 71,
+      "levelSeed": 72,
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lightning_rod"
+        }
+      ],
+      "ticks": 14,
+      "thundering": true,
+      "enchantments": {
+        "minecraft:channeling": 1
+      },
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "minecraft:lightning_bolt 0,0,0",
+            "projectile 0,1,0"
+          ],
+          "sounds": [
+            "minecraft:item.trident.thunder",
+            "minecraft:item.trident.hit_ground"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:trident",
+            "minecraft:projectile_shoot 0,1,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "0,0,0=minecraft:lightning_rod[powered=true]",
+          "signal": 15,
+          "entities": [
+            "minecraft:lightning_bolt 0,0,0",
+            "projectile 0,1,0"
+          ],
+          "levelEvents": [
+            "3002 0,0,0 1",
+            "3002 0,0,0 -1"
+          ],
+          "gameEvents": [
+            "minecraft:lightning_strike 0,0,0 minecraft:lightning_bolt"
+          ],
+          "writes": [
+            "0,0,0=minecraft:lightning_rod[powered=true] flags 3"
+          ]
+        },
+        {
+          "tick": 3,
+          "signal": 15,
+          "entities": [
+            "minecraft:lightning_bolt 0,0,0",
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "signal": 15,
+          "entities": [
+            "minecraft:lightning_bolt 0,0,0",
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "signal": 15,
+          "entities": [
+            "minecraft:lightning_bolt 0,0,0",
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "signal": 15,
+          "entities": [
+            "minecraft:lightning_bolt 0,0,0",
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 7,
+          "signal": 15,
+          "entities": [
+            "minecraft:lightning_bolt 0,0,0",
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 8,
+          "signal": 15,
+          "entities": [
+            "minecraft:lightning_bolt 0,0,0",
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 9,
+          "signal": 15,
+          "entities": [
+            "minecraft:lightning_bolt 0,0,0",
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 10,
+          "changes": "0,0,0=minecraft:lightning_rod",
+          "entities": [
+            "minecraft:lightning_bolt 0,0,0",
+            "projectile 0,1,0"
+          ],
+          "writes": [
+            "0,0,0=minecraft:lightning_rod flags 3"
+          ]
+        },
+        {
+          "tick": 11,
+          "entities": [
+            "minecraft:lightning_bolt 0,0,0",
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 12,
+          "entities": [
+            "minecraft:lightning_bolt 0,0,0",
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 13,
+          "entities": [
+            "minecraft:lightning_bolt 0,0,0",
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 14,
+          "entities": [
+            "minecraft:lightning_bolt 0,0,0",
+            "projectile 0,1,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "channeling_trident_lightning_rod_clear",
+      "projectile": "minecraft:trident",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lightning_rod"
+        }
+      ],
+      "ticks": 6,
+      "enchantments": {
+        "minecraft:channeling": 1
+      },
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "sounds": [
+            "minecraft:item.trident.hit_ground"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:trident",
+            "minecraft:projectile_shoot 0,1,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "trident_lightning_rod_thundering",
+      "projectile": "minecraft:trident",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:lightning_rod"
+        }
+      ],
+      "ticks": 6,
+      "thundering": true,
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "projectile 0,1,0"
+          ],
+          "sounds": [
+            "minecraft:item.trident.hit_ground"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,0,0 minecraft:trident",
+            "minecraft:projectile_shoot 0,1,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "projectile 0,1,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "arrow_oak_button",
+      "projectile": "minecraft:arrow",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_button[face=floor]"
+        }
+      ],
+      "ticks": 36,
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,0,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "0,0,0=minecraft:oak_button[face=floor,powered=true]",
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:block.wooden_button.click_on",
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:block_activate 0,0,0 minecraft:arrow",
+            "minecraft:projectile_land 0,-1,0 minecraft:arrow"
+          ],
+          "writes": [
+            "0,0,0=minecraft:oak_button[face=floor,powered=true] flags 3"
+          ]
+        },
+        {
+          "tick": 3,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 7,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 8,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 9,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 10,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 11,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 12,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 13,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 14,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 15,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 16,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 17,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 18,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 19,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 20,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 21,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 22,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 23,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 24,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 25,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 26,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 27,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 28,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 29,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 30,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 31,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 32,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 33,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 34,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 35,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 36,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "spectral_arrow_oak_button",
+      "projectile": "minecraft:spectral_arrow",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_button[face=floor]"
+        }
+      ],
+      "ticks": 36,
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,0,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "0,0,0=minecraft:oak_button[face=floor,powered=true]",
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:block.wooden_button.click_on",
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:block_activate 0,0,0 minecraft:spectral_arrow",
+            "minecraft:projectile_land 0,-1,0 minecraft:spectral_arrow"
+          ],
+          "writes": [
+            "0,0,0=minecraft:oak_button[face=floor,powered=true] flags 3"
+          ]
+        },
+        {
+          "tick": 3,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 7,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 8,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 9,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 10,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 11,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 12,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 13,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 14,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 15,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 16,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 17,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 18,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 19,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 20,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 21,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 22,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 23,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 24,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 25,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 26,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 27,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 28,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 29,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 30,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 31,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 32,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 33,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 34,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 35,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 36,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "trident_oak_button",
+      "projectile": "minecraft:trident",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_button[face=floor]"
+        }
+      ],
+      "ticks": 36,
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,0,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "changes": "0,0,0=minecraft:oak_button[face=floor,powered=true]",
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:block.wooden_button.click_on",
+            "minecraft:item.trident.hit_ground"
+          ],
+          "gameEvents": [
+            "minecraft:block_activate 0,0,0 minecraft:trident",
+            "minecraft:projectile_land 0,-1,0 minecraft:trident"
+          ],
+          "writes": [
+            "0,0,0=minecraft:oak_button[face=floor,powered=true] flags 3"
+          ]
+        },
+        {
+          "tick": 3,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 7,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 8,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 9,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 10,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 11,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 12,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 13,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 14,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 15,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 16,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 17,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 18,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 19,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 20,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 21,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 22,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 23,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 24,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 25,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 26,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 27,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 28,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 29,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 30,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 31,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 32,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 33,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 34,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 35,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 36,
+          "signal": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "snowball_oak_button",
+      "projectile": "minecraft:snowball",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:oak_button[face=floor]"
+        }
+      ],
+      "ticks": 36,
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,0,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "gameEvents": [
+            "minecraft:projectile_land 0,-1,0 minecraft:snowball"
+          ]
+        },
+        {
+          "tick": 3
+        },
+        {
+          "tick": 4
+        },
+        {
+          "tick": 5
+        },
+        {
+          "tick": 6
+        },
+        {
+          "tick": 7
+        },
+        {
+          "tick": 8
+        },
+        {
+          "tick": 9
+        },
+        {
+          "tick": 10
+        },
+        {
+          "tick": 11
+        },
+        {
+          "tick": 12
+        },
+        {
+          "tick": 13
+        },
+        {
+          "tick": 14
+        },
+        {
+          "tick": 15
+        },
+        {
+          "tick": 16
+        },
+        {
+          "tick": 17
+        },
+        {
+          "tick": 18
+        },
+        {
+          "tick": 19
+        },
+        {
+          "tick": 20
+        },
+        {
+          "tick": 21
+        },
+        {
+          "tick": 22
+        },
+        {
+          "tick": 23
+        },
+        {
+          "tick": 24
+        },
+        {
+          "tick": 25
+        },
+        {
+          "tick": 26
+        },
+        {
+          "tick": 27
+        },
+        {
+          "tick": 28
+        },
+        {
+          "tick": 29
+        },
+        {
+          "tick": 30
+        },
+        {
+          "tick": 31
+        },
+        {
+          "tick": 32
+        },
+        {
+          "tick": 33
+        },
+        {
+          "tick": 34
+        },
+        {
+          "tick": 35
+        },
+        {
+          "tick": 36
+        }
+      ]
+    },
+    {
+      "name": "arrow_stone_button",
+      "projectile": "minecraft:arrow",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:stone_button[face=floor]"
+        }
+      ],
+      "ticks": 6,
+      "record": [
+        {
+          "tick": 1,
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,0,0 player"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,-1,0 minecraft:arrow"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "arrow_big_dripleaf",
+      "projectile": "minecraft:arrow",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:big_dripleaf"
+        }
+      ],
+      "ticks": 104,
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:big_dripleaf[tilt=full]",
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:block.big_dripleaf.tilt_down",
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:block_change 0,0,0 none",
+            "minecraft:projectile_land 0,0,0 minecraft:arrow",
+            "minecraft:projectile_shoot 0,0,0 player"
+          ],
+          "writes": [
+            "0,0,0=minecraft:big_dripleaf[tilt=full] flags 2"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 7,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 8,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 9,
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,-1,0 minecraft:arrow"
+          ]
+        },
+        {
+          "tick": 10,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 11,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 12,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 13,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 14,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 16,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 17,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 18,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 19,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 20,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 21,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 22,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 23,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 24,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 25,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 26,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 27,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 28,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 29,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 30,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 31,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 32,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 33,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 34,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 35,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 36,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 37,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 38,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 39,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 40,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 41,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 42,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 43,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 44,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 45,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 46,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 47,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 48,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 49,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 50,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 51,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 52,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 53,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 54,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 55,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 56,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 57,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 58,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 59,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 60,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 61,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 62,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 63,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 64,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 65,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 66,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 67,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 68,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 69,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 70,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 71,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 72,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 73,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 74,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 75,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 76,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 77,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 78,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 79,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 80,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 81,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 82,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 83,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 84,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 85,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 86,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 87,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 88,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 89,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 90,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 91,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 92,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 93,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 94,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 95,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 96,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 97,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 98,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 99,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 100,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 101,
+          "changes": "0,0,0=minecraft:big_dripleaf",
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:block.big_dripleaf.tilt_up"
+          ],
+          "gameEvents": [
+            "minecraft:block_change 0,0,0 none"
+          ],
+          "writes": [
+            "0,0,0=minecraft:big_dripleaf flags 2"
+          ]
+        },
+        {
+          "tick": 102,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 103,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 104,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "snowball_big_dripleaf",
+      "projectile": "minecraft:snowball",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:big_dripleaf"
+        }
+      ],
+      "ticks": 104,
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:big_dripleaf[tilt=full]",
+          "sounds": [
+            "minecraft:block.big_dripleaf.tilt_down"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_shoot 0,0,0 player",
+            "minecraft:block_change 0,0,0 none",
+            "minecraft:projectile_land 0,0,0 minecraft:snowball"
+          ],
+          "writes": [
+            "0,0,0=minecraft:big_dripleaf[tilt=full] flags 2"
+          ]
+        },
+        {
+          "tick": 2
+        },
+        {
+          "tick": 3
+        },
+        {
+          "tick": 4
+        },
+        {
+          "tick": 5
+        },
+        {
+          "tick": 6
+        },
+        {
+          "tick": 7
+        },
+        {
+          "tick": 8
+        },
+        {
+          "tick": 9
+        },
+        {
+          "tick": 10
+        },
+        {
+          "tick": 11
+        },
+        {
+          "tick": 12
+        },
+        {
+          "tick": 13
+        },
+        {
+          "tick": 14
+        },
+        {
+          "tick": 15
+        },
+        {
+          "tick": 16
+        },
+        {
+          "tick": 17
+        },
+        {
+          "tick": 18
+        },
+        {
+          "tick": 19
+        },
+        {
+          "tick": 20
+        },
+        {
+          "tick": 21
+        },
+        {
+          "tick": 22
+        },
+        {
+          "tick": 23
+        },
+        {
+          "tick": 24
+        },
+        {
+          "tick": 25
+        },
+        {
+          "tick": 26
+        },
+        {
+          "tick": 27
+        },
+        {
+          "tick": 28
+        },
+        {
+          "tick": 29
+        },
+        {
+          "tick": 30
+        },
+        {
+          "tick": 31
+        },
+        {
+          "tick": 32
+        },
+        {
+          "tick": 33
+        },
+        {
+          "tick": 34
+        },
+        {
+          "tick": 35
+        },
+        {
+          "tick": 36
+        },
+        {
+          "tick": 37
+        },
+        {
+          "tick": 38
+        },
+        {
+          "tick": 39
+        },
+        {
+          "tick": 40
+        },
+        {
+          "tick": 41
+        },
+        {
+          "tick": 42
+        },
+        {
+          "tick": 43
+        },
+        {
+          "tick": 44
+        },
+        {
+          "tick": 45
+        },
+        {
+          "tick": 46
+        },
+        {
+          "tick": 47
+        },
+        {
+          "tick": 48
+        },
+        {
+          "tick": 49
+        },
+        {
+          "tick": 50
+        },
+        {
+          "tick": 51
+        },
+        {
+          "tick": 52
+        },
+        {
+          "tick": 53
+        },
+        {
+          "tick": 54
+        },
+        {
+          "tick": 55
+        },
+        {
+          "tick": 56
+        },
+        {
+          "tick": 57
+        },
+        {
+          "tick": 58
+        },
+        {
+          "tick": 59
+        },
+        {
+          "tick": 60
+        },
+        {
+          "tick": 61
+        },
+        {
+          "tick": 62
+        },
+        {
+          "tick": 63
+        },
+        {
+          "tick": 64
+        },
+        {
+          "tick": 65
+        },
+        {
+          "tick": 66
+        },
+        {
+          "tick": 67
+        },
+        {
+          "tick": 68
+        },
+        {
+          "tick": 69
+        },
+        {
+          "tick": 70
+        },
+        {
+          "tick": 71
+        },
+        {
+          "tick": 72
+        },
+        {
+          "tick": 73
+        },
+        {
+          "tick": 74
+        },
+        {
+          "tick": 75
+        },
+        {
+          "tick": 76
+        },
+        {
+          "tick": 77
+        },
+        {
+          "tick": 78
+        },
+        {
+          "tick": 79
+        },
+        {
+          "tick": 80
+        },
+        {
+          "tick": 81
+        },
+        {
+          "tick": 82
+        },
+        {
+          "tick": 83
+        },
+        {
+          "tick": 84
+        },
+        {
+          "tick": 85
+        },
+        {
+          "tick": 86
+        },
+        {
+          "tick": 87
+        },
+        {
+          "tick": 88
+        },
+        {
+          "tick": 89
+        },
+        {
+          "tick": 90
+        },
+        {
+          "tick": 91
+        },
+        {
+          "tick": 92
+        },
+        {
+          "tick": 93
+        },
+        {
+          "tick": 94
+        },
+        {
+          "tick": 95
+        },
+        {
+          "tick": 96
+        },
+        {
+          "tick": 97
+        },
+        {
+          "tick": 98
+        },
+        {
+          "tick": 99
+        },
+        {
+          "tick": 100
+        },
+        {
+          "tick": 101,
+          "changes": "0,0,0=minecraft:big_dripleaf",
+          "sounds": [
+            "minecraft:block.big_dripleaf.tilt_up"
+          ],
+          "gameEvents": [
+            "minecraft:block_change 0,0,0 none"
+          ],
+          "writes": [
+            "0,0,0=minecraft:big_dripleaf flags 2"
+          ]
+        },
+        {
+          "tick": 102
+        },
+        {
+          "tick": 103
+        },
+        {
+          "tick": 104
+        }
+      ]
+    },
+    {
+      "name": "arrow_big_dripleaf_powered",
+      "projectile": "minecraft:arrow",
+      "motion": [0, -1.5, 0],
+      "from": [0.5, 1.8, 0.5],
+      "setup": [
+        {
+          "offset": [0, -1, 0],
+          "state": "minecraft:stone"
+        },
+        {
+          "offset": [0, 0, 0],
+          "state": "minecraft:big_dripleaf"
+        },
+        {
+          "offset": [1, 0, 0],
+          "state": "minecraft:redstone_block"
+        }
+      ],
+      "ticks": 104,
+      "record": [
+        {
+          "tick": 1,
+          "changes": "0,0,0=minecraft:big_dripleaf[tilt=full]",
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:block.big_dripleaf.tilt_down",
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:block_change 0,0,0 none",
+            "minecraft:projectile_land 0,0,0 minecraft:arrow",
+            "minecraft:projectile_shoot 0,0,0 player"
+          ],
+          "writes": [
+            "0,0,0=minecraft:big_dripleaf[tilt=full] flags 2"
+          ]
+        },
+        {
+          "tick": 2,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 3,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 4,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 5,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 6,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 7,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 8,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 9,
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:entity.arrow.hit"
+          ],
+          "gameEvents": [
+            "minecraft:projectile_land 0,-1,0 minecraft:arrow"
+          ]
+        },
+        {
+          "tick": 10,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 11,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 12,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 13,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 14,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 15,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 16,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 17,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 18,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 19,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 20,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 21,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 22,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 23,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 24,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 25,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 26,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 27,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 28,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 29,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 30,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 31,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 32,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 33,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 34,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 35,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 36,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 37,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 38,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 39,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 40,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 41,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 42,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 43,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 44,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 45,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 46,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 47,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 48,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 49,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 50,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 51,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 52,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 53,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 54,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 55,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 56,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 57,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 58,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 59,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 60,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 61,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 62,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 63,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 64,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 65,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 66,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 67,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 68,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 69,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 70,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 71,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 72,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 73,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 74,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 75,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 76,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 77,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 78,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 79,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 80,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 81,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 82,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 83,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 84,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 85,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 86,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 87,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 88,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 89,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 90,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 91,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 92,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 93,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 94,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 95,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 96,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 97,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 98,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 99,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 100,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 101,
+          "changes": "0,0,0=minecraft:big_dripleaf",
+          "entities": [
+            "projectile 0,0,0"
+          ],
+          "sounds": [
+            "minecraft:block.big_dripleaf.tilt_up"
+          ],
+          "gameEvents": [
+            "minecraft:block_change 0,0,0 none"
+          ],
+          "writes": [
+            "0,0,0=minecraft:big_dripleaf flags 2"
+          ]
+        },
+        {
+          "tick": 102,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 103,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        },
+        {
+          "tick": 104,
+          "entities": [
+            "projectile 0,0,0"
+          ]
+        }
+      ]
+    }
+  ]
+}

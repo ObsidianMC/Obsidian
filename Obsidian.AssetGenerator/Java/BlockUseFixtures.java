@@ -200,6 +200,8 @@ public final class BlockUseFixtures {
                     sign.setText(text, SignTextSlot.FRONT);
                     sign.setText(text, SignTextSlot.BACK);
                 }
+                if (placement.has("nbt"))
+                    loadData(level, pos, placement.get("nbt").getAsString());
             }
 
             prepare(user, standing, input);
@@ -231,6 +233,11 @@ public final class BlockUseFixtures {
 
             if (input.has("randomSeed"))
                 level.getRandom().setSeed(input.get("randomSeed").getAsLong());
+            if (input.has("soundSeed")) {
+                var seeds = net.minecraft.world.level.Level.class.getDeclaredField("soundSeedGenerator");
+                seeds.setAccessible(true);
+                ((net.minecraft.util.RandomSource)seeds.get(level)).setSeed(input.get("soundSeed").getAsLong());
+            }
 
             observeWrites(level, input);
             var result = use(level, user, target, input);
@@ -258,12 +265,54 @@ public final class BlockUseFixtures {
             if (input.has("checkInventory")) {
                 var inventory = new JsonArray();
                 for (int slot = 0; slot < 36; slot++)
-                    inventory.add(stack(user.getInventory().getItem(slot)));
+                    inventory.add(detailedStack(level, user.getInventory().getItem(slot)));
 
                 input.add("inventory", inventory);
             }
             if (input.has("checkEffects"))
                 recordExtra(input, heard);
+            if (input.has("checkSoundRandom")) {
+                var draws = new JsonArray();
+                for (var packet : heard) {
+                    if (packet instanceof ClientboundSoundPacket sound) {
+                        var draw = new JsonObject();
+                        draw.addProperty("sound", sound.getSound().value().location().toString());
+                        draw.addProperty("pitch", sound.getPitch());
+                        draw.addProperty("seed", sound.getSeed());
+                        draws.add(draw);
+                    }
+                }
+
+                input.add("soundRandom", draws);
+                input.addProperty("nextRandom", level.getRandom().nextInt());
+            }
+            if (input.has("checkVibrationFrequencies")) {
+                var frequencies = new JsonObject();
+                var registry = level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.GAME_EVENT);
+                for (var event : registry.listElements().toList()) {
+                    frequencies.addProperty(event.key().identifier().toString(),
+                        net.minecraft.world.level.gameevent.vibrations.VibrationSystem.getGameEventFrequency(event));
+                }
+
+                input.add("vibrationFrequencies", frequencies);
+
+                var sensor = (net.minecraft.world.level.block.entity.CalibratedSculkSensorBlockEntity)
+                    level.getBlockEntity(target);
+                for (var calibration : input.getAsJsonArray("calibration")) {
+                    var sample = calibration.getAsJsonObject();
+                    var wire = Blocks.REDSTONE_WIRE.defaultBlockState()
+                        .setValue(net.minecraft.world.level.block.RedstoneWireBlock.POWER,
+                            sample.get("filter").getAsInt())
+                        .setValue(net.minecraft.world.level.block.RedstoneWireBlock.NORTH,
+                            net.minecraft.world.level.block.state.properties.RedstoneSide.SIDE);
+                    level.setBlock(target.south(), wire, QuietFlags);
+                    var event = registry.get(Identifier.parse(sample.get("event").getAsString())).orElseThrow();
+                    sample.addProperty("accepts", sensor.getVibrationUser().canReceiveVibration(
+                        level, target.east(), event, GameEvent.Context.of((Entity)null)));
+                }
+
+                level.setBlock(target.south(), Blocks.AIR.defaultBlockState(), QuietFlags);
+            }
             if (input.has("checkSign")) {
                 var clicked = target.offset(position(input.getAsJsonArray("clicked")));
                 var sign = (SignBlockEntity) level.getBlockEntity(clicked);
@@ -327,12 +376,111 @@ public final class BlockUseFixtures {
                 runBlockEvents(level);
                 input.add("periodicCloseEvents", strings(gameEvents));
             }
+
+            recordHeldItems(level, user, target, input, heard, gameEvents);
         }
 
         clear(level, target);
         players(server.getPlayerList()).remove(bystander);
         level.players().remove(bystander);
         System.out.println("Used " + root.getAsJsonArray("cases").size() + " blocks");
+    }
+
+    // Loads a setup placement's block entity data, SNBT without the id and position, as a chunk load would: quietly,
+    // telling no comparator.
+    private static void loadData(ServerLevel level, BlockPos pos, String snbt) throws Exception {
+        var tag = net.minecraft.nbt.TagParser.parseCompoundFully(snbt);
+        var input = net.minecraft.world.level.storage.TagValueInput.create(
+            net.minecraft.util.ProblemReporter.DISCARDING, level.registryAccess(), tag);
+        level.getBlockEntity(pos).loadWithComponents(input);
+    }
+
+    // What the optional checks of items held by blocks record, after everything else: the clicked block entity's
+    // saved data, a comparator's output once its pending tick ran, and what breaking the clicked block afterwards does.
+    private static void recordHeldItems(ServerLevel level, ProbePlayer user, BlockPos target, JsonObject input,
+        List<Packet<?>> heard, List<String> gameEvents) throws Exception {
+        var clicked = target.offset(position(input.getAsJsonArray("clicked")));
+        if (input.has("checkBlockEntity"))
+            input.add("blockEntity", savedData(level, clicked));
+
+        if (input.has("comparator")) {
+            var pos = target.offset(position(input.getAsJsonArray("comparator")));
+            var state = level.getBlockState(pos);
+            if (level.getBlockTicks().hasScheduledTick(pos, state.getBlock()))
+                state.tick(level, pos, level.getRandom());
+
+            var comparator = (net.minecraft.world.level.block.entity.ComparatorBlockEntity) level.getBlockEntity(pos);
+            input.addProperty("comparatorSignal", comparator.getOutputSignal());
+        }
+
+        if (input.has("breakAfterUse")) {
+            var before = snapshot(level, target);
+            heard.clear();
+            gameEvents.clear();
+            user.awarded.clear();
+            user.gameMode.destroyBlock(clicked);
+            runBlockEvents(level);
+
+            var broken = new JsonObject();
+            broken.addProperty("changes", changes(level, target, before));
+            broken.add("entities", detailedEntities(level, target));
+            record(broken, heard, gameEvents);
+            broken.add("stats", strings(user.awarded));
+            input.add("broken", broken);
+        }
+    }
+
+    // A block entity's saved data as a chunk saves it, without its position, as vanilla's SNBT; null without one.
+    private static com.google.gson.JsonElement savedData(ServerLevel level, BlockPos pos) {
+        var blockEntity = level.getBlockEntity(pos);
+        if (blockEntity == null)
+            return com.google.gson.JsonNull.INSTANCE;
+
+        var saved = blockEntity.saveWithFullMetadata(level.registryAccess());
+        saved.remove("x");
+        saved.remove("y");
+        saved.remove("z");
+        return new com.google.gson.JsonPrimitive(saved.toString());
+    }
+
+    // Like entities, with each item's components.
+    private static JsonArray detailedEntities(ServerLevel level, BlockPos target) {
+        var found = new JsonArray();
+        for (var entity : level.getEntities((Entity)null, area(target, Reach + 1), entity -> true)) {
+            if (entity instanceof ItemEntity item) {
+                found.add("item " + detailedStack(level, item.getItem()));
+            } else {
+                found.add(BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).toString());
+            }
+        }
+
+        return found;
+    }
+
+    // Like stack, followed by the components the stack changes from its item's as SNBT, when there are any. A
+    // lodestone tracker's target is written relative to the target, like every other position the fixture records.
+    private static String detailedStack(ServerLevel level, ItemStack stack) {
+        var text = stack(stack);
+        var patch = stack.getComponentsPatch();
+        if (stack.isEmpty() || patch.isEmpty())
+            return text;
+
+        var ops = level.registryAccess().createSerializationContext(net.minecraft.nbt.NbtOps.INSTANCE);
+        var encoded = (net.minecraft.nbt.CompoundTag) net.minecraft.core.component.DataComponentPatch.CODEC
+            .encodeStart(ops, patch)
+            .getOrThrow();
+        encoded.getCompound("minecraft:lodestone_tracker")
+            .flatMap(tracker -> tracker.getCompound("target"))
+            .ifPresent(BlockUseFixtures::relativePosition);
+        return text + " " + encoded;
+    }
+
+    private static void relativePosition(net.minecraft.nbt.CompoundTag target) {
+        target.getIntArray("pos").ifPresent(pos -> target.putIntArray("pos", new int[] {
+            pos[0] - origin.getX(),
+            pos[1] - origin.getY(),
+            pos[2] - origin.getZ()
+        }));
     }
 
     private static GameProfile profile(String name) {
@@ -349,7 +497,7 @@ public final class BlockUseFixtures {
         // The fixture lists location terms directly; 26.3 encodes that conjunction as an all_of predicate.
         for (var criterion : criteria.entrySet()) {
             var conditions = criterion.getValue().getAsJsonObject().getAsJsonObject("conditions");
-            if (!conditions.has("location"))
+            if (!conditions.has("location") || !conditions.get("location").isJsonArray())
                 continue;
 
             var conjunction = new JsonObject();

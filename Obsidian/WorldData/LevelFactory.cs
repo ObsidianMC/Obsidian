@@ -44,7 +44,10 @@ public sealed class LevelFactory(IServiceScopeFactory serviceScopeFactory) : ILe
 
         var world = this.worldFactory.Invoke(serviceProviderScope.ServiceProvider, [generator, name, seed]);
         if (serviceProviderScope.ServiceProvider.GetService<IServer>() is Server server)
+        {
             world.RecipeSource = () => server.RecipeRegistry.Current;
+            world.OwningServer = server;
+        }
 
         return world;
     }

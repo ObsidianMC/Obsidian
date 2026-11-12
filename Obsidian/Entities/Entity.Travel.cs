@@ -16,7 +16,7 @@ public partial class Entity
 {
     /// <summary>Transfers the existing instance, including its state, instead of spawning a replacement.</summary>
     public virtual async ValueTask TeleportAsync(
-        ILevel level, VectorD position, Angle? yaw = null, Angle? pitch = null)
+        ILevel level, VectorD position, float? yaw = null, float? pitch = null)
     {
         ValidateTravel(level, position, yaw, pitch);
         this.CancelEntityPortalTravel();
@@ -32,8 +32,8 @@ public partial class Entity
         {
             Entity[] riders;
             VectorD from;
-            Angle fromYaw;
-            Angle fromPitch;
+            float fromYaw;
+            float fromPitch;
             using (TransferLockOf(source).Enter())
             {
                 this.ValidateTravelResident(source);
@@ -99,13 +99,13 @@ public partial class Entity
     /// passengers, and seats them again. A passenger that can't follow, such as one removed meanwhile, stays behind.
     /// </summary>
     private protected async ValueTask CarryPassengersAsync(
-        Entity[] riders, VectorD from, Angle fromYaw, Angle fromPitch)
+        Entity[] riders, VectorD from, float fromYaw, float fromPitch)
     {
         foreach (var rider in riders)
         {
             // Vanilla's passenger transition: the same offset from the vehicle, turned as much as the vehicle turned.
-            var riderYaw = this.Yaw.Degrees + (rider.Yaw.Degrees - fromYaw.Degrees);
-            var riderPitch = this.Pitch.Degrees + (rider.Pitch.Degrees - fromPitch.Degrees);
+            var riderYaw = this.Yaw + (rider.Yaw - fromYaw);
+            var riderPitch = this.Pitch + (rider.Pitch - fromPitch);
             try
             {
                 await rider.TeleportAsync(this.Level, this.Position + (rider.Position - from), riderYaw, riderPitch);
@@ -134,7 +134,7 @@ public partial class Entity
     // Membership is authoritative for ordinary removal and unloading saves; item pickup and mob death may mark
     // removal before their dictionary entry is taken out, and a player's leave before its leave event takes it out.
     // Read and revalidate under the level's transfer lock.
-    private protected bool IsTravelResident(ILevel level)
+    internal bool IsTravelResident(ILevel level)
     {
         using (TransferLockOf(level).Enter())
         {
@@ -186,7 +186,7 @@ public partial class Entity
     /// way, or a transfer lock is held.
     /// </exception>
     private protected void CommitTravel(
-        ILevel source, ILevel destination, VectorD position, Angle? yaw, Angle? pitch)
+        ILevel source, ILevel destination, VectorD position, float? yaw, float? pitch)
     {
         if (source == destination)
         {
@@ -259,7 +259,7 @@ public partial class Entity
         }
     }
 
-    private void RelocateWithinLevel(ILevel level, VectorD position, Angle? yaw, Angle? pitch)
+    private void RelocateWithinLevel(ILevel level, VectorD position, float? yaw, float? pitch)
     {
         using (TransferLockOf(level).Enter())
         {
@@ -286,7 +286,7 @@ public partial class Entity
     /// loaded until the entity is settled, so that it can go back or be kept there.
     /// </summary>
     internal readonly record struct Departure(
-        AbstractLevel Level, VectorD Position, Angle Yaw, Angle Pitch, TravelPin Pin);
+        AbstractLevel Level, VectorD Position, float Yaw, float Pitch, TravelPin Pin);
 
     private enum Arrival
     {
@@ -297,7 +297,7 @@ public partial class Entity
 
     // The source's half of a handoff, under its transfer lock: the entity leaves its regions, players and riding
     // links, takes its new place, and names the destination as its level, which owns it from then on.
-    private Departure Depart(ILevel source, ILevel destination, VectorD position, Angle? yaw, Angle? pitch)
+    private Departure Depart(ILevel source, ILevel destination, VectorD position, float? yaw, float? pitch)
     {
         var origin = (AbstractLevel)source;
         Departure departure;
@@ -322,7 +322,7 @@ public partial class Entity
     // What leaving a level for another, or for a new place in the same one, changes, under the source's transfer lock:
     // the entity leaves its regions (and, between levels, its players), takes its new place, and names the destination
     // as its level, which owns it from then on.
-    private void Leave(ILevel source, ILevel destination, VectorD from, VectorD position, Angle yaw, Angle pitch)
+    private void Leave(ILevel source, ILevel destination, VectorD from, VectorD position, float yaw, float pitch)
     {
         if (source is AbstractLevel origin)
             origin.RemoveEntity(this, transferring: true);
@@ -372,7 +372,7 @@ public partial class Entity
     /// entities.
     /// </returns>
     /// <exception cref="InvalidOperationException">A transfer lock is held.</exception>
-    private protected bool CommitRespawn(ILevel destination, VectorD position, Angle yaw, Angle pitch)
+    private protected bool CommitRespawn(ILevel destination, VectorD position, float yaw, float pitch)
     {
         RefuseNestedTravel();
         ILevel source;
@@ -436,7 +436,7 @@ public partial class Entity
     /// it in a region without taking it in: never among the level's players, and refused by every later retry.
     /// </remarks>
     /// <returns>Whether the entity was waiting and has moved; when it wasn't, the caller moves it as usual.</returns>
-    private protected bool TryMoveWhileArriving(ILevel level, VectorD position, Angle? yaw, Angle? pitch)
+    private protected bool TryMoveWhileArriving(ILevel level, VectorD position, float? yaw, float? pitch)
     {
         using (TransferLockOf(level).Enter())
         {
@@ -570,7 +570,7 @@ public partial class Entity
         return true;
     }
 
-    private void Place(VectorD from, VectorD position, Angle yaw, Angle pitch)
+    private void Place(VectorD from, VectorD position, float yaw, float pitch)
     {
         this.LastPosition = from;
         this.Position = position;
@@ -579,15 +579,15 @@ public partial class Entity
         this.BoundingBox = this.Dimension.CreateBBFromPosition(position);
     }
 
-    internal static void ValidateTravel(ILevel level, VectorD position, Angle? yaw, Angle? pitch)
+    internal static void ValidateTravel(ILevel level, VectorD position, float? yaw, float? pitch)
     {
         ArgumentNullException.ThrowIfNull(level);
         if (!double.IsFinite(position.X) || !double.IsFinite(position.Y) || !double.IsFinite(position.Z)
             || Math.Abs(position.X) >= LevelPortals.WorldBorderLimit
             || Math.Abs(position.Z) >= LevelPortals.WorldBorderLimit
             || position.Y <= int.MinValue || position.Y >= int.MaxValue
-            || yaw is Angle y && !float.IsFinite(y.Degrees)
-            || pitch is Angle p && !float.IsFinite(p.Degrees))
+            || yaw is float y && !float.IsFinite(y)
+            || pitch is float p && !float.IsFinite(p))
         {
             throw new ArgumentOutOfRangeException(
                 nameof(position), "Travel requires finite coordinates inside the global coordinate limits.");

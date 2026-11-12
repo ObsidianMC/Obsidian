@@ -228,6 +228,22 @@ internal static class CombatItems
         item.GetComponent<SimpleDataComponent<int>>(DataComponentType.MaxDamage)?.Value ?? item.Holder.MaxDamage;
 
     /// <summary>
+    /// Whether <paramref name="item"/> has a <c>tool</c> component, which vanilla's <c>Item.mineBlock</c> asks: such an
+    /// item counts as used for every block a player mines with it, worn or not. Item classes that override
+    /// <c>mineBlock</c> (shears) aren't modelled.
+    /// </summary>
+    internal static bool IsTool(ItemStack? item)
+    {
+        if (item is not { Count: > 0 } || item.RemoveComponents.Contains(DataComponentType.Tool))
+            return false;
+
+        if (item.GetComponent<ToolDataComponent>(DataComponentType.Tool) is not null)
+            return true;
+
+        return Component(item, "tool").ValueKind == JsonValueKind.Object;
+    }
+
+    /// <summary>
     /// How much breaking <paramref name="block"/> wears <paramref name="tool"/>, like vanilla's <c>Item.mineBlock</c>:
     /// its tool component's damage per block, or 0 for a block that breaks instantly or an item that isn't a tool.
     /// </summary>
@@ -300,5 +316,5 @@ internal static class CombatItems
 internal enum CombatDamageKind
 {
     Melee, Projectile, Fall, Fire, Explosion, Magic, Starvation, Void, SonicBoom, Suffocation, Freezing,
-    FireContact, Thorns, Drowning, FallingStalactite
+    FireContact, HotFloor, Thorns, Drowning, FallingStalactite, SweetBerryBush, Lightning, Cactus, Campfire
 }

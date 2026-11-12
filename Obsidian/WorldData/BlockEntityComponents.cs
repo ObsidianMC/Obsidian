@@ -16,7 +16,8 @@ namespace Obsidian.WorldData;
 /// <remarks>
 /// Covers the components of the types the server models: containers' <c>custom_name</c>, <c>lock</c>,
 /// <c>container_loot</c> and a shulker box's <c>container</c> (and its <c>contents</c> dynamic drop); decorated pots'
-/// <c>pot_decorations</c> (and their <c>sherds</c> dynamic drop); and the <c>custom_name</c> of other named block
+/// <c>pot_decorations</c> (and their <c>sherds</c> dynamic drop) and item; and the <c>custom_name</c> of other named
+/// block
 /// entities kept as data. Banner patterns, bees and skull profiles aren't modelled yet. A plugin's block entity adds
 /// what its <see cref="BlockEntity.CollectComponents"/> sets, and reads it back in
 /// <see cref="BlockEntity.ApplyComponents"/>.
@@ -155,36 +156,15 @@ internal sealed partial class BlockEntityComponents : IAsyncDisposable
                 data.Set(dataName.ToNbt("CustomName"));
             }
 
-            if (data.Id == "minecraft:decorated_pot")
-            {
-                var decorations = item.GetComponent<SimpleDataComponent<ImmutableArray<ItemStack>>>(
-                    DataComponentType.PotDecorations);
-                if (decorations is not null)
-                {
-                    var sherds = new NbtCompound("sherds");
-                    for (var i = 0; i < PotFaces; i++)
-                    {
-                        var face = i < decorations.Value.Length ? decorations.Value[i] : null;
-                        var template = (face ?? new ItemStack(ItemsRegistry.Brick)).ToNbt(PotFaceNames[i]);
-                        template.Remove("count");
-                        sherds.Add(template);
-                    }
-
-                    data.Set(sherds);
-                }
-
-                var potItems = item.GetComponent<SimpleDataComponent<ImmutableArray<ItemStack>>>(
-                    DataComponentType.Container);
-                if (potItems is not null && potItems.Value.FirstOrDefault() is ItemStack first && !first.IsAir)
-                    data.Set(first.ToNbt("item"));
-            }
-
             data.SendUpdate();
             return;
         }
 
         if (entity is ContainerBlockEntity container)
             ApplyContainer(container, item);
+
+        if (entity is DecoratedPotBlockEntity pot)
+            ApplyPot(pot, item);
 
         if (entity.Owner is PluginContainer plugin)
             ApplyPlugin(entity, plugin, item, logger);
@@ -215,7 +195,7 @@ internal sealed partial class BlockEntityComponents : IAsyncDisposable
                 for (var slot = 0; slot < inventory.Size && slot < contents.Value.Length; slot++)
                 {
                     var stack = contents.Value[slot];
-                    inventory.SetItem(slot, stack.IsAir || stack.Count <= 0 ? null : new ItemStack(stack, stack.Count));
+                    inventory[slot] = stack.IsAir || stack.Count <= 0 ? null : new ItemStack(stack, stack.Count);
                 }
             }
 
@@ -236,6 +216,29 @@ internal sealed partial class BlockEntityComponents : IAsyncDisposable
 
         container.SetChanged();
         container.SendUpdate();
+    }
+
+    // Vanilla's DecoratedPotBlockEntity.applyImplicitComponents: the faces' sherds, bricks where a face has none. Its
+    // item came from the container component with the other containers'.
+    private static void ApplyPot(DecoratedPotBlockEntity pot, ItemStack item)
+    {
+        var decorations = item.GetComponent<SimpleDataComponent<ImmutableArray<ItemStack>>>(
+            DataComponentType.PotDecorations);
+        if (decorations is null)
+            return;
+
+        var sherds = new NbtCompound("sherds");
+        for (var i = 0; i < PotFaces; i++)
+        {
+            var face = i < decorations.Value.Length ? decorations.Value[i] : null;
+            var template = (face ?? new ItemStack(ItemsRegistry.Brick)).ToNbt(PotFaceNames[i]);
+            template.Remove("count");
+            sherds.Add(template);
+        }
+
+        pot.Sherds = sherds;
+        pot.SetChanged();
+        pot.SendUpdate();
     }
 
     // Like vanilla's BlockItem.updateBlockEntityComponents, the block entity is saved after it read its item.
@@ -315,6 +318,15 @@ internal sealed partial class BlockEntityComponents : IAsyncDisposable
                         components.Add(ComponentBuilder.ContainerLoot with { Value = loot });
                     }
                 }
+
+                // Vanilla's DecoratedPotBlockEntity decorations and DecoratedPotBlock's sherds dynamic drop. Its item
+                // drops as it's removed, so the loot copies only the decorations.
+                if (container is DecoratedPotBlockEntity pot)
+                {
+                    var faces = PotFacesOf(pot.Sherds);
+                    components.Add(ComponentBuilder.PotDecorations with { Value = faces });
+                    dynamic["minecraft:sherds"] = [.. faces];
+                }
             }
         }
         catch
@@ -347,37 +359,40 @@ internal sealed partial class BlockEntityComponents : IAsyncDisposable
         return [.. items];
     }
 
-    // The components of the types kept as data: vanilla's DecoratedPotBlockEntity's decorations and
-    // DecoratedPotBlock's sherds dynamic drop, and the names of nameable ones.
+    // The components of the types kept as data: the names of nameable ones.
     private static BlockEntityComponents CaptureData(DataBlockEntity blockEntity)
     {
         var data = blockEntity.SnapshotData();
         var components = new List<DataComponent>();
-        var dynamic = new Dictionary<string, List<ItemStack>>();
 
         if (data.TryGetTag("CustomName", out var customName) && customName.TextFromNbt() is ChatMessage name)
             components.Add(ComponentBuilder.CustomName with { Value = name });
 
-        if (blockEntity.Id == "minecraft:decorated_pot")
-        {
-            var sherds = data.TryGetTag<NbtCompound>("sherds", out var decorations)
-                ? PotFaceNames.Select(face => decorations.TryGetTag<NbtCompound>(face, out var item)
-                    ? item.ItemFromNbt() : null).ToList()
-                : data.TryGetTag<NbtList>("sherds", out var list)
-                    ? list.OfType<NbtTag<string>>().Select(sherd => new ItemStack(ItemsRegistry.Get(sherd.Value!))).ToList()
-                    : [];
-
-            var faces = Enumerable.Range(0, PotFaces)
-                .Select(face => face < sherds.Count && sherds[face] is ItemStack item && !item.IsAir
-                    ? item : new ItemStack(ItemsRegistry.Brick))
-                .ToImmutableArray();
-
-            components.Add(ComponentBuilder.PotDecorations with { Value = faces });
-            dynamic["minecraft:sherds"] = [.. faces];
-        }
-
-        return components.Count == 0 && dynamic.Count == 0 ? None : new BlockEntityComponents(components, dynamic);
+        return components.Count == 0 ? None : new BlockEntityComponents(components, []);
     }
+
+    // A pot's four faces from its saved sherds, bricks where a face has none: vanilla's compound of faces, or the list
+    // of item ids older worlds saved.
+    private static ImmutableArray<ItemStack> PotFacesOf(INbtTag? saved)
+    {
+        List<ItemStack?> sherds = saved switch
+        {
+            NbtCompound decorations => [.. PotFaceNames.Select(face => SherdOf(decorations, face))],
+            NbtList list => [.. list.OfType<NbtTag<string>>().Select(SherdOf)],
+            _ => []
+        };
+
+        var faces = Enumerable.Range(0, PotFaces)
+            .Select(face => face < sherds.Count && sherds[face] is ItemStack item && !item.IsAir
+                ? item
+                : new ItemStack(ItemsRegistry.Brick));
+        return [.. faces];
+    }
+
+    private static ItemStack? SherdOf(NbtCompound decorations, string face) =>
+        decorations.TryGetTag<NbtCompound>(face, out var item) ? item.ItemFromNbt() : null;
+
+    private static ItemStack? SherdOf(NbtTag<string> id) => new(ItemsRegistry.Get(id.Value!));
 
     private void Drop(string name, Action<ItemStack> output)
     {

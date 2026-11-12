@@ -292,7 +292,7 @@ public class MenuContainer : BaseContainer
         var binding = this.slots[slot];
 
         if (binding.Container is BaseContainer container)
-            container.SetItem(binding.Index, item);
+            container[binding.Index] = item;
         else if (binding.Items is IItemAccess items)
             this.Stage(slot, items, binding.Index, item);
         else

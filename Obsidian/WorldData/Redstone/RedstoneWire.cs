@@ -1,3 +1,4 @@
+using Obsidian.API.Blocks;
 using Obsidian.API.World.Features.Trees;
 using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.Features;
@@ -14,7 +15,8 @@ namespace Obsidian.WorldData.Redstone;
 /// budget also apply to wires. A wire's power change notifies its neighbors, which recalculate in turn, the same chain vanilla
 /// follows.
 /// </remarks>
-internal sealed class RedstoneWire(RedstoneEngine engine) : IRedstoneBehavior, INeighborChangedBehavior, IPlacementBehavior
+internal sealed class RedstoneWire(IRedstoneLevel level, RedstoneEngine engine)
+    : IRedstoneBehavior, INeighborChangedBehavior, IPlacementBehavior
 {
     public const string BlockClass = "RedstoneWireBlock";
 
@@ -23,9 +25,10 @@ internal sealed class RedstoneWire(RedstoneEngine engine) : IRedstoneBehavior, I
     /// <summary>
     /// Registers the wire's output and its neighbor reaction.
     /// </summary>
-    public static void Register(RedstoneBehaviors redstone, NeighborBehaviors neighbors, RedstoneEngine engine)
+    public static void Register(
+        IRedstoneLevel level, RedstoneBehaviors redstone, NeighborBehaviors neighbors, RedstoneEngine engine)
     {
-        var wire = new RedstoneWire(engine);
+        var wire = new RedstoneWire(level, engine);
         redstone.Register(BlockClass, wire);
         neighbors.Register(BlockIds.RedstoneWire, wire);
         neighbors.RegisterPlaced(BlockIds.RedstoneWire, wire);
@@ -79,6 +82,10 @@ internal sealed class RedstoneWire(RedstoneEngine engine) : IRedstoneBehavior, I
             state = shaped;
         }
 
+        // A template can place unsupported wire: shape validation has already removed it.
+        if (!state.Is(BlockIds.RedstoneWire))
+            return;
+
         await this.UpdatePowerAsync(change.Position, state, world);
     }
 
@@ -92,7 +99,8 @@ internal sealed class RedstoneWire(RedstoneEngine engine) : IRedstoneBehavior, I
         if (target == Power(state))
             return;
 
-        await world.SetBlockAsync(position, state.WithProperty("power", target));
+        // Vanilla writes with flag 2 before explicitly notifying both rings of neighbours.
+        await level.WriteAsync(position, PropertyHandles.Power.With(state, target), BlockUpdateFlags.Clients);
         await world.NotifyNeighborsAsync(position);
         foreach (var face in RedstoneEngine.Directions)
             await world.NotifyNeighborsAsync(position.Offset(face));
@@ -137,5 +145,5 @@ internal sealed class RedstoneWire(RedstoneEngine engine) : IRedstoneBehavior, I
     private static int WirePower(IBlockChangeWorld world, Vector position) =>
         world.GetLoadedBlock(position) is IBlock state && state.BlockClass() == BlockClass ? Power(state) : 0;
 
-    private static int Power(IBlock state) => int.Parse(state.GetProperty("power"));
+    private static int Power(IBlock state) => PropertyHandles.Power.Get(state);
 }
