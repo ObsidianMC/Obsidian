@@ -37,8 +37,15 @@ public interface IChunk : Data.IAttachmentHolder
 
     public BiomeCodec GetBiome(int x, int y, int z);
 
+    /// <inheritdoc cref="SetBiome(int, int, int, BiomeCodec)"/>
     public void SetBiome(Vector position, BiomeCodec biome) => this.SetBiome(position.X, position.Y, position.Z, biome);
 
+    /// <summary>
+    /// Sets the biome of the quart (the 4x4x4 block cell biomes are stored in) the block at <paramref name="x"/>,
+    /// <paramref name="y"/>, <paramref name="z"/> is in. The chunk saves it, but players who have the chunk don't see
+    /// it until they're sent the chunk again: to change biomes players can see, use
+    /// <see cref="World.ILevel.FillBiomes"/>, which sends them the change.
+    /// </summary>
     public void SetBiome(int x, int y, int z, BiomeCodec biome);
 
     public void SetBlock(Vector position, IBlock block) => this.SetBlock(position.X, position.Y, position.Z, block);

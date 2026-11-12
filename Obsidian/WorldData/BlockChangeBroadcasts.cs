@@ -9,7 +9,8 @@ namespace Obsidian.WorldData;
 /// Collects the blocks a level changed for its players, and sends them once a tick per chunk section, like vanilla's
 /// <c>ChunkHolder</c>: a block update for a section with one changed block, or a section update listing the current
 /// state of each changed block. Prediction acknowledgements go out behind them, after the tick's block events (see
-/// <see cref="Acknowledge"/>).
+/// <see cref="Acknowledge"/>). Chunks whose biomes changed are resent alongside, ahead of the block changes, each
+/// player getting one packet with all of theirs (see <see cref="BiomesChanged"/>).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -31,6 +32,9 @@ internal sealed class BlockChangeBroadcasts(AbstractLevel level)
 
     // The chunks with changes, in the order they first changed since the last flush took them.
     private OrderedDictionary<long, ChangedChunk> pending = [];
+
+    // The chunks whose biomes changed, in the order they first changed since the last flush took them.
+    private OrderedDictionary<long, (int X, int Z)> pendingBiomes = [];
 
     // Each player's acknowledgement from finished handlers, waiting for a flush to send their changes.
     private Dictionary<PlayerBase, BlockAcknowledgement> acknowledgements = [];
@@ -67,6 +71,17 @@ internal sealed class BlockChangeBroadcasts(AbstractLevel level)
     }
 
     /// <summary>
+    /// Records that biomes of the chunk at <paramref name="chunkX"/>, <paramref name="chunkZ"/> changed, for the next
+    /// flush, which resends all its biomes to the players who have it.
+    /// </summary>
+    public void BiomesChanged(int chunkX, int chunkZ)
+    {
+        var key = NumericsHelper.IntsToLong(chunkX, chunkZ);
+        lock (this.pendingLock)
+            this.pendingBiomes.TryAdd(key, (chunkX, chunkZ));
+    }
+
+    /// <summary>
     /// Acknowledges a finished handler's sequence to <paramref name="player"/> once the next flush has sent its block
     /// changes, at the next <see cref="SendAcknowledgements"/>. Vanilla acknowledges from its connection tick, after
     /// the levels' ticks, so a client sees a tick's block changes, then its block events, then the acknowledgement.
@@ -84,9 +99,10 @@ internal sealed class BlockChangeBroadcasts(AbstractLevel level)
     }
 
     /// <summary>
-    /// Sends the changes recorded since the last flush to the players who have their chunks, per chunk its sections
-    /// from the bottom up. Changes in chunks that are no longer loaded are dropped, as vanilla drops them. The
-    /// acknowledgements recorded before it are sent at the next <see cref="SendAcknowledgements"/>.
+    /// Sends the changes recorded since the last flush to the players who have their chunks: first the chunks whose
+    /// biomes changed (see <see cref="SendBiomes"/>), then per chunk its changed sections from the bottom up. Changes
+    /// in chunks that are no longer loaded are dropped, as vanilla drops them. The acknowledgements recorded before it
+    /// are sent at the next <see cref="SendAcknowledgements"/>.
     /// </summary>
     /// <remarks>
     /// A flush sends what was recorded when it began, once: what's recorded while it sends waits for the next flush,
@@ -99,6 +115,7 @@ internal sealed class BlockChangeBroadcasts(AbstractLevel level)
     public void Flush()
     {
         OrderedDictionary<long, ChangedChunk>? changed;
+        OrderedDictionary<long, (int X, int Z)>? biomes;
         Dictionary<PlayerBase, BlockAcknowledgement>? acknowledged;
         lock (this.pendingLock)
         {
@@ -107,9 +124,13 @@ internal sealed class BlockChangeBroadcasts(AbstractLevel level)
 
             this.flushing = true;
             changed = this.pending.Count > 0 ? this.pending : null;
+            biomes = this.pendingBiomes.Count > 0 ? this.pendingBiomes : null;
             acknowledged = this.acknowledgements.Count > 0 ? this.acknowledgements : null;
             if (changed is not null)
                 this.pending = [];
+
+            if (biomes is not null)
+                this.pendingBiomes = [];
 
             if (acknowledged is not null)
                 this.acknowledgements = [];
@@ -117,6 +138,10 @@ internal sealed class BlockChangeBroadcasts(AbstractLevel level)
 
         try
         {
+            // Vanilla's /fillbiome sends its biomes at once, so ahead of the block changes the next tick sends.
+            if (biomes is not null)
+                this.SendBiomes(biomes);
+
             if (changed is not null)
                 this.Send(changed);
         }
@@ -126,7 +151,7 @@ internal sealed class BlockChangeBroadcasts(AbstractLevel level)
             // correction a player gets twice does no harm.
             lock (this.pendingLock)
             {
-                this.Restore(changed, acknowledged);
+                this.Restore(changed, biomes, acknowledged);
                 this.flushing = false;
             }
 
@@ -148,8 +173,18 @@ internal sealed class BlockChangeBroadcasts(AbstractLevel level)
 
     // Called under pendingLock: puts what a failed flush took back ahead of what was recorded since.
     private void Restore(
-        OrderedDictionary<long, ChangedChunk>? changed, Dictionary<PlayerBase, BlockAcknowledgement>? acknowledged)
+        OrderedDictionary<long, ChangedChunk>? changed,
+        OrderedDictionary<long, (int X, int Z)>? biomes,
+        Dictionary<PlayerBase, BlockAcknowledgement>? acknowledged)
     {
+        if (biomes is not null)
+        {
+            foreach (var (key, position) in this.pendingBiomes)
+                biomes.TryAdd(key, position);
+
+            this.pendingBiomes = biomes;
+        }
+
         if (changed is not null)
         {
             foreach (var (key, chunk) in this.pending)
@@ -208,6 +243,52 @@ internal sealed class BlockChangeBroadcasts(AbstractLevel level)
                 foreach (var recipient in players)
                     Send(recipient, shared);
             }
+        }
+    }
+
+    // Like vanilla's ChunkMap.resendBiomesForChunks: each player that has any of the chunks gets one packet listing
+    // those it has, in the order they changed, with all of each chunk's biomes as they are now.
+    private void SendBiomes(OrderedDictionary<long, (int X, int Z)> biomes)
+    {
+        var packets = new Dictionary<IPlayer, (Recipient Recipient, List<ChunkBiome> Chunks)>();
+        foreach (var (key, (chunkX, chunkZ)) in biomes)
+        {
+            var players = this.PlayersWithChunk(key);
+            if (players.Count == 0 || this.ReadBiomes(chunkX, chunkZ) is not ChunkBiome data)
+                continue;
+
+            foreach (var recipient in players)
+            {
+                if (!packets.TryGetValue(recipient.Player, out var packet))
+                {
+                    // The packet names no level either, so it's sent under the epoch read with the player's first
+                    // chunk, if they're still in this level then. A chunk they dropped meanwhile the client ignores.
+                    var player = recipient.Player;
+                    bool InLevel() => ReferenceEquals(player.Level, level);
+                    packet = (recipient with { Wanted = InLevel }, []);
+                    packets.Add(player, packet);
+                }
+
+                packet.Chunks.Add(data);
+            }
+        }
+
+        foreach (var (_, (recipient, chunks)) in packets)
+            Send(recipient, new SharedPacketBodies(new ChunksBiomesPacket { ChunkBiomes = chunks }));
+    }
+
+    // The chunk's biomes, read under the tick lock, which biome fills hold, and the chunk's block lock, which its chunk
+    // packets are written under. Null once the chunk is no longer loaded.
+    private ChunkBiome? ReadBiomes(int chunkX, int chunkZ)
+    {
+        lock (level.Fluids.TickLock)
+        {
+            var chunk = level.GetLoadedChunk(chunkX, chunkZ);
+            if (chunk is not Chunk concrete)
+                return chunk is null ? null : ChunkBiome.Read(chunk);
+
+            lock (concrete.BlockLock)
+                return ChunkBiome.Read(concrete);
         }
     }
 

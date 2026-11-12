@@ -1,5 +1,6 @@
 ﻿using Obsidian.API.ChunkData;
 using Obsidian.API.Entities;
+using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.Registry.Codecs.Dimensions;
 using System.Collections.Concurrent;
 using System.Threading;
@@ -107,6 +108,28 @@ public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
     /// </remarks>
     public IBlockEntity? GetLoadedBlockEntity(Vector position) =>
         throw new NotSupportedException("This level doesn't support loaded block entity lookups.");
+
+    /// <summary>
+    /// Sets the biome of the quarts (the 4x4x4 block cells biomes are stored in) between <paramref name="from"/> and
+    /// <paramref name="to"/>, like vanilla's <c>/fillbiome</c>: each corner is rounded down to its quart's, and the
+    /// quarts whose lowest corner lies in the box between them are filled, where <paramref name="filter"/> (if any)
+    /// accepts their current biome. Only loaded, generated chunks change; quarts elsewhere are left alone. The players
+    /// who have a changed chunk are sent its biomes at the level's next tick, each one packet for all of theirs.
+    /// </summary>
+    /// <remarks>
+    /// Unlike <see cref="IChunk.SetBiome(int, int, int, BiomeCodec)"/>, which changes a chunk's stored biomes without
+    /// telling clients, this is how a plugin changes biomes players can see. Safe to call from any thread: it holds
+    /// the level's tick lock while it fills, so it waits for the block updates running at the time, and runs
+    /// <paramref name="filter"/> under it. Don't call it while holding a lock block hooks may wait on, such as a
+    /// window's.
+    /// </remarks>
+    /// <returns>How many quarts changed biome. Zero sends nothing.</returns>
+    public int FillBiomes(
+        Vector from,
+        Vector to,
+        BiomeCodec biome,
+        Func<BiomeCodec, bool>? filter = null) =>
+        throw new NotSupportedException("This level doesn't support biome fills.");
 
     /// <summary>
     /// Gets the load's live instance, reading its file lazily. World scope shares across dimensions. Access plugin

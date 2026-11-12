@@ -858,18 +858,26 @@ replaces only what vanilla produced.
   fall, where vanilla's float.
   The replay runs every scenario in one test server's world, each in its own box with a player high above it, spawns
   the same entities, runs each event before its tick and compares the blocks and the entities' positions every tick.
-- `block_change_packets.json` (`VanillaBlockChangePackets`) records the block packets a vanilla client receives, in
-  order: block updates, section updates (with their body's bytes), block events and prediction acknowledgements. It
-  comes from `ScenarioPacketCaptures.cs` (`CaptureFixtures=block_change_packets`). A headless client
-  (`ScenarioClient.cs`) logs in to the scenario server, which runs frozen and steps a tick at a time. A case lists
-  quiet fills, a held item, its actions (a live `/setblock`, or the client using an item on a block or starting to
-  break one, with the prediction sequence the action names) and how many ticks it runs. A segment records what the
-  client received after each step and after each tick's actions, up to the next server tick. The client marks ticks
-  with acknowledged item uses whose sequences start at 1000000; these aren't recorded. The cases are a dust line
-  toggled, a piston push, a note block, a place and a break, and water spreading in two sections in one tick. The
-  replay pauses Obsidian's server, the analog of a frozen game, and drives a paused turn of the tick loop after each
-  step and action. Re-record with
-  `dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=block_change_packets`.
+- `block_change_packets.json` (`VanillaBlockChangePackets`) records the block and biome packets a vanilla client
+  receives, in order: block updates, section updates (with their body's bytes), block events, chunk biome updates
+  (`chunks_biomes`, with each chunk's position and biome data bytes) and prediction acknowledgements. It comes from
+  `ScenarioPacketCaptures.cs` (`CaptureFixtures=block_change_packets`). A headless client (`ScenarioClient.cs`) logs
+  in to the scenario server, which runs frozen and steps a tick at a time. A case lists quiet fills, a held item, its
+  actions (a live `/setblock` or `/fillbiome`, or the client using an item on a block or starting to break one, with
+  the prediction sequence the action names) and how many ticks it runs. A segment records what the client received
+  after each step and after each tick's actions, up to the next server tick, and an actions segment with a
+  `/fillbiome` also records what the command said back (`feedback`). The client marks ticks with acknowledged item
+  uses whose sequences start at 1000000; these aren't recorded. The cases are a dust line toggled, a piston push, a
+  note block, a place and a break, water spreading in two sections in one tick, and `/fillbiome` filling one chunk,
+  filling four chunks across their borders, replacing by a biome tag and by a biome (and changing nothing), and
+  failing on a volume too big, an unloaded position and one out of the world. Biome changes stay in the world for
+  the later cases, so the `fillbiome_*` cases are recorded together, in order. The replay pauses Obsidian's server,
+  the analog of a frozen game, gives its chunks the void world's biomes (each section's palette plains, then
+  the_void), runs `/fillbiome` through Obsidian's command, and drives a paused turn of the tick loop after each step
+  and action. Re-record with
+  `dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=block_change_packets`, or
+  only the biome cases with
+  `-p:CaptureCases=fillbiome_one_chunk+fillbiome_across_chunks+fillbiome_replace+fillbiome_failures`.
 
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.

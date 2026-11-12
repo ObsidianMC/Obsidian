@@ -57,13 +57,11 @@ public partial class LevelChunkWithLightPacket(IChunk chunk)
         foreach (var section in Chunk.Sections)
         {
             if (section.BlockStateContainer.IsEmpty)
-            {
-                WriteUnsetSection(sections, section.BiomeContainer);
-                continue;
-            }
+                WriteUnsetBlocks(sections);
+            else
+                section.BlockStateContainer.WriteTo(sections);
 
-            section.BlockStateContainer.WriteTo(sections);
-            section.BiomeContainer.WriteTo(sections);
+            WriteBiomes(sections, section.BiomeContainer);
         }
 
         // Like vanilla's, the heightmaps clients use, those the chunk has.
@@ -127,16 +125,23 @@ public partial class LevelChunkWithLightPacket(IChunk chunk)
     }
 
     /// <summary>
-    /// Writes a section no block was set in as air, like vanilla's empty sections, in its biomes, or vanilla's default
-    /// biome, plains, where none were set either.
+    /// Writes a section no block was set in as air, like vanilla's empty sections: no blocks, no fluids, and a single
+    /// value palette of air. Its biomes follow (see <see cref="WriteBiomes"/>).
     /// </summary>
-    private static void WriteUnsetSection(NetworkBuffer writer, DataContainer<BiomeCodec> biomes)
+    private static void WriteUnsetBlocks(NetworkBuffer writer)
     {
         writer.WriteShort(0);
         writer.WriteShort(0);
         writer.WriteByte(0);
         writer.WriteVarInt(BlocksRegistry.Air.GetHashCode());
+    }
 
+    /// <summary>
+    /// Writes a section's biomes as clients read them, in this packet and in <see cref="ChunksBiomesPacket"/>: its
+    /// biome container, or vanilla's default biome, plains, where no biome was set in it.
+    /// </summary>
+    internal static void WriteBiomes(INetStreamWriter writer, DataContainer<BiomeCodec> biomes)
+    {
         if (biomes.Palette is SingleValuePalette<BiomeCodec> { IsFull: false })
         {
             writer.WriteByte(0);

@@ -1186,8 +1186,318 @@
      ]
     }
    ]
+  },
+  {
+   "name": "fillbiome_one_chunk",
+   "fills": [],
+   "actions": [
+    {
+     "tick": 0,
+     "fillbiome": {
+      "from": [
+       1,
+       60,
+       1
+      ],
+      "to": [
+       6,
+       66,
+       6
+      ],
+      "biome": "minecraft:desert"
+     }
+    }
+   ],
+   "ticks": 1,
+   "segments": [
+    {
+     "tick": 0,
+     "after": "actions",
+     "packets": [
+      {
+       "type": "chunks_biomes",
+       "chunks": [
+        {
+         "pos": [
+          0,
+          0
+         ],
+         "bytes": "0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff02033b290f000000000000000000000a0a0000000002030f293baaaaaaaaaaaaa0a0aaaaaaaaaaaaaaaa0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff"
+        }
+       ]
+      }
+     ],
+     "feedback": [
+      "8 biome entry/entries set between 0, 60, 0 and 4, 64, 4"
+     ]
+    },
+    {
+     "tick": 1,
+     "after": "tick",
+     "packets": []
+    }
+   ]
+  },
+  {
+   "name": "fillbiome_across_chunks",
+   "fills": [],
+   "actions": [
+    {
+     "tick": 0,
+     "fillbiome": {
+      "from": [
+       13,
+       70,
+       13
+      ],
+      "to": [
+       19,
+       71,
+       18
+      ],
+      "biome": "minecraft:jungle"
+     }
+    }
+   ],
+   "ticks": 1,
+   "segments": [
+    {
+     "tick": 0,
+     "after": "actions",
+     "packets": [
+      {
+       "type": "chunks_biomes",
+       "chunks": [
+        {
+         "pos": [
+          0,
+          0
+         ],
+         "bytes": "0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff01023b0f003300000000000002030f3b1d955555555555505055555555555555550102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff"
+        },
+        {
+         "pos": [
+          1,
+          0
+         ],
+         "bytes": "0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff02033b291d020000000000000000000000000000000102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff"
+        },
+        {
+         "pos": [
+          0,
+          1
+         ],
+         "bytes": "0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff02033b291d000000800000000000000000000000000102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff"
+        },
+        {
+         "pos": [
+          1,
+          1
+         ],
+         "bytes": "0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff02033b291d000000020000000000000000000000000102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff"
+        }
+       ]
+      }
+     ],
+     "feedback": [
+      "4 biome entry/entries set between 12, 68, 12 and 16, 68, 16"
+     ]
+    },
+    {
+     "tick": 1,
+     "after": "tick",
+     "packets": []
+    }
+   ]
+  },
+  {
+   "name": "fillbiome_replace",
+   "fills": [],
+   "actions": [
+    {
+     "tick": 0,
+     "fillbiome": {
+      "from": [
+       0,
+       56,
+       0
+      ],
+      "to": [
+       15,
+       67,
+       15
+      ],
+      "biome": "minecraft:badlands",
+      "filter": "#minecraft:is_overworld"
+     }
+    },
+    {
+     "tick": 1,
+     "fillbiome": {
+      "from": [
+       0,
+       56,
+       0
+      ],
+      "to": [
+       15,
+       67,
+       15
+      ],
+      "biome": "minecraft:badlands",
+      "filter": "#minecraft:is_overworld"
+     }
+    },
+    {
+     "tick": 2,
+     "fillbiome": {
+      "from": [
+       0,
+       60,
+       0
+      ],
+      "to": [
+       3,
+       63,
+       3
+      ],
+      "biome": "minecraft:savanna",
+      "filter": "minecraft:badlands"
+     }
+    }
+   ],
+   "ticks": 2,
+   "segments": [
+    {
+     "tick": 0,
+     "after": "actions",
+     "packets": [
+      {
+       "type": "chunks_biomes",
+       "chunks": [
+        {
+         "pos": [
+          0,
+          0
+         ],
+         "bytes": "0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff01023b0000330000000000000204000f3b1deaaaaaaaaaaaa0a0aaaaaaaaaaaaaaaa0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff"
+        }
+       ]
+      }
+     ],
+     "feedback": [
+      "8 biome entry/entries set between 0, 56, 0 and 12, 64, 12"
+     ]
+    },
+    {
+     "tick": 1,
+     "after": "tick",
+     "packets": []
+    },
+    {
+     "tick": 1,
+     "after": "actions",
+     "packets": [],
+     "feedback": [
+      "No biome entries were changed"
+     ]
+    },
+    {
+     "tick": 2,
+     "after": "tick",
+     "packets": []
+    },
+    {
+     "tick": 2,
+     "after": "actions",
+     "packets": [
+      {
+       "type": "chunks_biomes",
+       "chunks": [
+        {
+         "pos": [
+          0,
+          0
+         ],
+         "bytes": "0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff02033b2b00000000000000000000000a09000000000203003b1d955555555555505055555555555555550102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff0102293bffffffffffffffff"
+        }
+       ]
+      }
+     ],
+     "feedback": [
+      "1 biome entry/entries set between 0, 60, 0 and 0, 60, 0"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "fillbiome_failures",
+   "fills": [],
+   "actions": [
+    {
+     "tick": 0,
+     "fillbiome": {
+      "from": [
+       -16,
+       -64,
+       -16
+      ],
+      "to": [
+       31,
+       319,
+       31
+      ],
+      "biome": "minecraft:desert"
+     }
+    },
+    {
+     "tick": 0,
+     "fillbiome": {
+      "from": [
+       4000,
+       64,
+       4000
+      ],
+      "to": [
+       4004,
+       64,
+       4004
+      ],
+      "biome": "minecraft:desert"
+     }
+    },
+    {
+     "tick": 0,
+     "fillbiome": {
+      "from": [
+       0,
+       400,
+       0
+      ],
+      "to": [
+       4,
+       400,
+       4
+      ],
+      "biome": "minecraft:desert"
+     }
+    }
+   ],
+   "ticks": 0,
+   "segments": [
+    {
+     "tick": 0,
+     "after": "actions",
+     "packets": [],
+     "feedback": [
+      "Too many blocks in the specified volume (maximum 32768, but specified 771525)",
+      "That position is not loaded",
+      "That position is out of this world!"
+     ]
+    }
+   ]
   }
  ],
- "_notes": "The block change packets a vanilla player receives, in the order received, recorded by the asset generator's capture-scenarios (ScenarioPacketCaptures.cs, ScenarioClient.cs): a headless client logged in to a headless vanilla server in a void world, standing at `player` in creative mode, with random ticks, mob spawning and weather off and `chunks` force-loaded and sent to it. The game is frozen and stepped one tick at a time; a frozen server still ticks, and each of its ticks sends the block changes made since the last (vanilla's chunk broadcast) and then the prediction acknowledgements. Setup fills place blocks without updates (/fill strict), and `hand` is put in the player's main hand. Each tick t from 0 to `ticks`: for t > 0, the game steps one tick; then the tick's actions run: a live /setblock (with updates), or the client using its main hand's item on a block's face (clicking the face's centre) or starting to break a block, each with the prediction sequence it names; the client's own sequences for waiting on ticks start at 1000000 and aren't recorded. Segments hold what the client received after each step (`after: tick`) and after each tick's actions (`after: actions`), up to the first server tick after it: block updates, section updates (with their body's bytes), block events, and acknowledgements. States are full states with every property, sorted by name; coordinates are absolute.",
+ "_notes": "The block change packets a vanilla player receives, in the order received, recorded by the asset generator's capture-scenarios (ScenarioPacketCaptures.cs, ScenarioClient.cs): a headless client logged in to a headless vanilla server in a void world, standing at `player` in creative mode, with random ticks, mob spawning and weather off and `chunks` force-loaded and sent to it. The game is frozen and stepped one tick at a time; a frozen server still ticks, and each of its ticks sends the block changes made since the last (vanilla's chunk broadcast) and then the prediction acknowledgements. Setup fills place blocks without updates (/fill strict), and `hand` is put in the player's main hand. Each tick t from 0 to `ticks`: for t > 0, the game steps one tick; then the tick's actions run: a live /setblock (with updates), a live /fillbiome (from, to, biome and an optional replace filter), or the client using its main hand's item on a block's face (clicking the face's centre) or starting to break a block, each with the prediction sequence it names; the client's own sequences for waiting on ticks start at 1000000 and aren't recorded. Segments hold what the client received after each step (`after: tick`) and after each tick's actions (`after: actions`), up to the first server tick after it: block updates, section updates (with their body's bytes), block events, chunk biome updates (each chunk's position and biome data bytes) and acknowledgements; an actions segment with a /fillbiome also holds the command's `feedback`, in order. States are full states with every property, sorted by name; coordinates are absolute. Biome changes stay in the world for the later cases.",
  "version": "26.3"
 }
