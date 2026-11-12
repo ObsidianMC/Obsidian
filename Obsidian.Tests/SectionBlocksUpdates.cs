@@ -677,7 +677,8 @@ public sealed class SectionBlocksUpdates
         await entered.Task;
 
         // The paused turn waits for the gate, and with it for the tick's acknowledgement.
-        var turn = Task.Run(context.Server.RunTickTurnAsync);
+        var turn = context.Server.RunTickTurnAsync();
+        Assert.False(turn.IsCompleted, "The paused turn didn't wait for the tick gate.");
         release.SetResult();
         await tick;
         tickGate.Release();
