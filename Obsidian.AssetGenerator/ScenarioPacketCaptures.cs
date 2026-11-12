@@ -67,7 +67,8 @@ internal static class ScenarioPacketCaptures
         await vanilla.RunAsync($"gamemode creative {PlayerName}");
 
         var player = root["player"]!.AsArray().Select(value => value!.GetValue<double>()).ToArray();
-        await vanilla.RunAsync($"tp {PlayerName} {player[0]} {player[1]} {player[2]}");
+        // Invariant: under a locale like de-DE, 8.5 would be written 8,5 and the teleport would fail.
+        await vanilla.RunAsync(FormattableString.Invariant($"tp {PlayerName} {player[0]} {player[1]} {player[2]}"));
         await client.WaitForPositionAsync(player[0], player[1], player[2]);
 
         var chunks = root["chunks"]!.AsArray()
