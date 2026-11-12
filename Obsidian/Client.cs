@@ -1145,6 +1145,24 @@ public sealed partial class Client : IClient
         }
     }
 
+    /// <summary>
+    /// Whether the code running now is part of a join still admitting a player named <paramref name="username"/> whose
+    /// leave was asked for meanwhile (a join handler kicked them). That leave starts only once the join ends, so the
+    /// join must not wait for it.
+    /// </summary>
+    internal static bool IsAdmittingWithDeferredLeaveOf(string username)
+    {
+        if (admitting.Value is not Client client)
+            return false;
+
+        lock (client.leavingLock)
+        {
+            return client.joinStage == JoinStage.Joining
+                && client.leaveDeferred
+                && string.Equals(client.Player?.Username, username, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     // Ends the join, and starts the leave asked for while it ran.
     private void EndJoin()
     {

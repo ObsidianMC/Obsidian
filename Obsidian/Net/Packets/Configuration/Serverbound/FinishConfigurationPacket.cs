@@ -11,19 +11,33 @@ public sealed partial class FinishConfigurationPacket
     public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
     {
         var client = player.Client;
+        var host = (Server)server;
 
         client.SetState(ClientState.Play);
-        await player.LoadAsync();
-
-        // An integrated server opened to LAN forces its game mode on players who join.
-        if (((Server)server).Integrated?.GetForcedGameMode(player.Level.LevelData) is GameMode forcedGameMode)
-            player.GameMode = forcedGameMode;
-
-        if (!server.AddPlayer(player))
+        while (true)
         {
-            await player.DisconnectAsync("Unable to complete login due to a server error. Please try again or contact an administrator.");
-            Log.AddPlayerFailed(client.Logger, player.Username);
-            return;
+            // Like the login, the join waits for a player with the name who's still leaving (a server-side player a
+            // plugin removed meanwhile, say), so that it loads what the leave saved.
+            await host.WaitForLeavesAsync(player.Username);
+            await player.LoadAsync();
+
+            // An integrated server opened to LAN forces its game mode on players who join.
+            if (host.Integrated?.GetForcedGameMode(player.Level.LevelData) is GameMode forcedGameMode)
+                player.GameMode = forcedGameMode;
+
+            host.PlayerLoadedForJoin?.Invoke(player);
+            if (host.AddPlayerUnlessLeaving(player, out var leaving))
+                break;
+
+            if (leaving is null)
+            {
+                await player.DisconnectAsync("Unable to complete login due to a server error. Please try again or contact an administrator.");
+                Log.AddPlayerFailed(client.Logger, player.Username);
+                return;
+            }
+
+            // A player with the name started leaving while this one loaded: wait for that leave too and load again.
+            // Loading replaces what the last load read (see PlayerBase.ReadNbt).
         }
 
         // The connection may close at any point of the join. One that closed first admits nothing, so the player is

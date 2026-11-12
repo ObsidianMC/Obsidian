@@ -232,6 +232,84 @@ public sealed class JoinAndLeaveRaces
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task ANetworkPlayerJoiningUnderANameBeingFreedWaitsForItsLeave()
+    {
+        await using var context = TestServerFactory.CreateServer($"join-races-{Guid.NewGuid():N}");
+        var server = context.Server;
+        var departing = await server.AddServerPlayerAsync(Guid.NewGuid(), "Alice", context.World);
+        var joining = CreateConfiguringPlayer(context, "Alice");
+
+        // Holds the server-side Alice's leave in its event.
+        var finishLeave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        context.EventDispatcher.RegisterEvent(null, (Func<PlayerLeaveEventArgs, ValueTask>)(async args =>
+        {
+            if (args.Player.Uuid == departing.Uuid)
+                await finishLeave.Task;
+        }));
+
+        // A plugin removes her once the network Alice has loaded, before she registers. The removal frees the name and
+        // runs until its leave is held, all on this flow (loading a player with nothing saved doesn't wait), which then
+        // goes on to the network Alice's registration.
+        Task<bool>? removal = null;
+        var loads = 0;
+        server.PlayerLoadedForJoin = player =>
+        {
+            if (!ReferenceEquals(player, joining))
+                return;
+
+            loads++;
+            if (loads == 1)
+                removal = server.RemoveServerPlayerAsync(departing);
+        };
+
+        var registeredWhileLeaving = false;
+        server.PlayerRegistered = player =>
+        {
+            if (ReferenceEquals(player, joining))
+                registeredWhileLeaving = !server.WaitForLeavesAsync("Alice").IsCompleted;
+        };
+
+        var join = new FinishConfigurationPacket().HandleAsync(server, joining).AsTask();
+        Assert.NotNull(removal);
+
+        finishLeave.SetResult();
+        Assert.True(await removal);
+        await join;
+
+        Assert.False(registeredWhileLeaving);
+        Assert.Equal(2, loads);
+        Assert.Same(joining, server.GetPlayer("Alice"));
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task AJoinHandlerCannotWaitToReplaceThePlayerItKickedUnderTheirName()
+    {
+        await using var context = TestServerFactory.CreateServer($"join-races-{Guid.NewGuid():N}");
+        var server = context.Server;
+        var joining = CreateConfiguringPlayer(context, "Alice");
+
+        // A plugin turns her away from its join handler and adds a server-side player under her name. Her leave starts
+        // only once her join ends, so its join would wait for the handler.
+        var attempt = new TaskCompletionSource<Exception?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        context.EventDispatcher.RegisterEvent(null, (Func<PlayerJoinEventArgs, ValueTask>)(async args =>
+        {
+            if (args.Player.Uuid != joining.Uuid)
+                return;
+
+            await args.Player.KickAsync("Replaced");
+            var failure = await Record.ExceptionAsync(
+                () => server.AddServerPlayerAsync(Guid.NewGuid(), "Alice", context.World));
+            attempt.SetResult(failure);
+        }));
+
+        await new FinishConfigurationPacket().HandleAsync(server, joining);
+        await server.WaitForLeavesAsync("Alice");
+
+        Assert.IsType<InvalidOperationException>(await attempt.Task);
+        AssertOutOfTheLevel(context, joining);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
     public async Task AServerPlayerJoiningUnderANameBeingFreedWaitsForItsLeave()
     {
         await using var context = TestServerFactory.CreateServer($"join-races-{Guid.NewGuid():N}");
@@ -251,7 +329,7 @@ public sealed class JoinAndLeaveRaces
         // runs until its leave is held, all on this flow, which then goes on to the new Alice's registration.
         Task<bool>? removal = null;
         var loads = 0;
-        server.ServerPlayerLoaded = player =>
+        server.PlayerLoadedForJoin = player =>
         {
             if (player.Uuid != newUuid)
                 return;
