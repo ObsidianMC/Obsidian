@@ -268,6 +268,10 @@ public partial class Arrow : Entity
     {
         foreach (var part in dragon.Parts)
         {
+            // Pierced parts are recorded by their own id, so the dragon's other parts can still be hit.
+            if (piercedEntities.Contains(part.EntityId))
+                continue;
+
             if (MobTerrain.RayIntersection(part.BoundingBox, Position, Motion) is double partHit && partHit < fraction)
             {
                 fraction = partHit;
