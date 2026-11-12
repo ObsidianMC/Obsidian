@@ -310,15 +310,15 @@ internal sealed class LevelFluids : IFluidLevelAccess
 
     /// <inheritdoc/>
     /// <remarks>
-    /// Players see the change with <see cref="BlockUpdateFlags.Clients"/>, and portals check their frames around it
-    /// with <see cref="BlockUpdateFlags.Neighbors"/>.
+    /// Players see the change with <see cref="BlockUpdateFlags.Clients"/>, at the level's next flush of block changes,
+    /// and portals check their frames around it with <see cref="BlockUpdateFlags.Neighbors"/>.
     /// </remarks>
     public void OnBlockStored(Vector position, IBlock block, BlockUpdateFlags flags)
     {
         this.BlockStored?.Invoke(position, block, flags);
 
         if ((flags & BlockUpdateFlags.Clients) != 0)
-            this.level.BroadcastBlockChange(block, position);
+            this.level.BlockChanged(position);
 
         if ((flags & BlockUpdateFlags.Neighbors) != 0)
             this.level.Portals.OnBlockChanged(position);

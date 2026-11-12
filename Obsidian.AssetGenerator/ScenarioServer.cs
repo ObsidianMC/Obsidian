@@ -47,7 +47,11 @@ internal sealed class ScenarioServer : IAsyncDisposable
         this.blocks = blocks;
         this.seed = seed;
         this.rconPort = FreePort();
+        this.GamePort = FreePort();
     }
+
+    /// <summary>The port players connect to (see <see cref="ScenarioClient"/>).</summary>
+    public int GamePort { get; }
 
     /// <summary>The block ids, in the block states report's order.</summary>
     public IEnumerable<string> BlockIds => this.blocks.Keys;
@@ -217,7 +221,7 @@ internal sealed class ScenarioServer : IAsyncDisposable
             "enable-rcon=true",
             $"rcon.port={this.rconPort}",
             $"rcon.password={this.password}",
-            $"server-port={FreePort()}",
+            $"server-port={this.GamePort}",
             "online-mode=false",
             "white-list=false",
             "level-type=minecraft\\:flat",

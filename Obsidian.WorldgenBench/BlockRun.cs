@@ -4,9 +4,12 @@ using Obsidian.API.Registries;
 using Obsidian.API.Registry.Codecs.Biomes;
 using Obsidian.API.World.Features;
 using Obsidian.API.World.Generator.RandomSources;
+using Obsidian.Net;
+using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
 using Obsidian.Tests;
 using Obsidian.Tests.Fakes;
+using Obsidian.Utilities;
 using Obsidian.WorldData;
 using Obsidian.WorldData.BlockNotifications;
 using Obsidian.WorldData.Features;
@@ -124,6 +127,7 @@ internal static class BlockRun
 
         BlockEntityPass();
         EntityContacts();
+        DustPackets();
 
         GC.KeepAlive(result);
         GC.KeepAlive(flag);
@@ -361,6 +365,93 @@ internal static class BlockRun
 
         if (world.BlockNotifications.DroppedWork != 0)
             throw new InvalidOperationException("Live dust benchmark exceeded the pipeline work limit.");
+    }
+
+    // What one player who has the chunks receives while a 15-dust line on stone is toggled once a tick: the block
+    // change packets (block and section updates) and their bytes (id and body, before framing and compression) per
+    // tick, averaged over as many ticks turning the line on as off. Each toggle is followed by a whole level tick.
+    private static void DustPackets()
+    {
+        var context = TestServerFactory.CreateServer($"block-packet-probe-{Guid.NewGuid():N}");
+        try
+        {
+            MeasureDustPackets(context).GetAwaiter().GetResult();
+        }
+        finally
+        {
+            context.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        }
+    }
+
+    private static async System.Threading.Tasks.Task MeasureDustPackets(RealServerContext context)
+    {
+        const int Ticks = 40;
+        var world = context.World;
+        world.LevelData.GameRules["random_tick_speed"] = "0";
+        world.LevelData.GameRules["spawn_mobs"] = "false";
+
+        var standing = new VectorD(0.5, 64, 0.5);
+        var viewer = TestServerFactory.CreateConnectedPlayer(context.Server, world, "Viewer", standing);
+        if (!world.TryAddPlayer(viewer))
+            throw new InvalidOperationException("The probe couldn't add its player.");
+
+        for (var chunkX = -1; chunkX <= 1; chunkX++)
+        {
+            for (var chunkZ = -1; chunkZ <= 1; chunkZ++)
+            {
+                var chunk = new Chunk(chunkX, chunkZ);
+                chunk.SetChunkStatus(ChunkGenStage.full);
+                world.LoadRegionByChunk(chunkX, chunkZ).SetChunk(chunk);
+                await world.GetChunkAsync(chunkX, chunkZ, scheduleGeneration: false);
+                viewer.LoadedChunks.Add(NumericsHelper.IntsToLong(chunkX, chunkZ));
+            }
+        }
+
+        for (var x = -10; x <= 6; x++)
+            SetQuietly(world, new Vector(x, 63, -8), BlocksRegistry.Stone);
+
+        for (var x = -9; x <= 5; x++)
+            await world.SetBlockUntrackedAsync(x, 64, -8, BlocksRegistry.RedstoneWire, BlockUpdateFlags.All);
+
+        await world.DoWorldTickAsync();
+        var client = (TestClient)viewer.Client;
+        client.ClearPackets();
+
+        var powered = false;
+        var packets = 0;
+        var bytes = 0L;
+        for (var tick = 0; tick < Ticks; tick++)
+        {
+            powered = !powered;
+            var block = powered ? BlocksRegistry.RedstoneBlock : BlocksRegistry.Air;
+            await world.SetBlockUntrackedAsync(-10, 64, -8, block, BlockUpdateFlags.All);
+            await world.DoWorldTickAsync();
+
+            foreach (var packet in client.SentPackets)
+            {
+                if (packet is not (BlockUpdatePacket or SectionBlocksUpdatePacket))
+                    continue;
+
+                packets++;
+                bytes += SerializedLength(packet);
+            }
+
+            client.ClearPackets();
+        }
+
+        Console.WriteLine("operation,ticks,packets/tick,bytes/tick");
+        var row = FormattableString.Invariant(
+            $"Packets/toggle-15-dust,{Ticks},{packets / (double)Ticks:F2},{bytes / (double)Ticks:F2}");
+        Console.WriteLine(row);
+    }
+
+    // A packet's id and body, as its frame holds them before compression.
+    private static int SerializedLength(IClientboundPacket packet)
+    {
+        using var buffer = new NetworkBuffer();
+        buffer.WriteVarInt(packet.Id);
+        packet.Serialize(buffer);
+        return buffer.Size;
     }
 
     // A block stored without updates, as a case's setup.

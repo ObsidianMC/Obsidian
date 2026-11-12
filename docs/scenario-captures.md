@@ -831,6 +831,18 @@ replaces only what vanilla produced.
   fall, where vanilla's float.
   The replay runs every scenario in one test server's world, each in its own box with a player high above it, spawns
   the same entities, runs each event before its tick and compares the blocks and the entities' positions every tick.
+- `block_change_packets.json` (`VanillaBlockChangePackets`) records the block packets a vanilla client receives, in
+  order: block updates, section updates (with their body's bytes), block events and prediction acknowledgements. It
+  comes from `ScenarioPacketCaptures.cs` (`CaptureFixtures=block_change_packets`). A headless client
+  (`ScenarioClient.cs`) logs in to the scenario server, which runs frozen and steps a tick at a time. A case lists
+  quiet fills, a held item, its actions (a live `/setblock`, or the client using an item on a block or starting to
+  break one, with the prediction sequence the action names) and how many ticks it runs. A segment records what the
+  client received after each step and after each tick's actions, up to the next server tick. The client marks ticks
+  with acknowledged item uses whose sequences start at 1000000; these aren't recorded. The cases are a dust line
+  toggled, a piston push, a note block, a place and a break, and water spreading in two sections in one tick. The
+  replay pauses Obsidian's server, the analog of a frozen game, and drives the connection pass after each step and
+  action. Re-record with
+  `dotnet build Obsidian.AssetGenerator -t:CaptureVanillaScenarios -p:CaptureFixtures=block_change_packets`.
 
 Each file's `_notes` describes exactly how it was recorded, and `version` names the vanilla version; the tests check it
 against the version Obsidian implements.

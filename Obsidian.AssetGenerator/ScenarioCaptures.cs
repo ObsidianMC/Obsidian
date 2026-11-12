@@ -148,6 +148,22 @@ internal static class ScenarioCaptures
             fixtures = [.. fixtures.Where(fixture => fixture != ScenarioContactCaptures.Fixture)];
         }
 
+        // The block change packets a player receives (CaptureFixtures=block_change_packets), with or without cases.
+        if (fixtures.Contains(ScenarioPacketCaptures.Fixture))
+        {
+            if (cases is not null && fixtures.Count != 1)
+            {
+                throw new ArgumentException(
+                    "Case selection for block_change_packets requires CaptureFixtures=block_change_packets.");
+            }
+
+            await ScenarioPacketCaptures.RunAsync(server, assetsDirectory, cases);
+            if (fixtures.Count == 1)
+                return;
+
+            fixtures = [.. fixtures.Where(fixture => fixture != ScenarioPacketCaptures.Fixture)];
+        }
+
         if (cases is not null && (fixtures.Count != 1 || !SelectableCases.Any(fixtures.Contains)))
         {
             throw new ArgumentException(

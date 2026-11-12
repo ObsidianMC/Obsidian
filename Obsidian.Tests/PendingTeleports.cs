@@ -74,7 +74,9 @@ public sealed partial class PendingTeleports
             && corrected == support);
         Assert.Contains(client.SentPackets, packet => packet is BlockUpdatePacket { Position: var corrected }
             && corrected == support + Vector.Up);
-        await context.Server.TickConnectionsAsync(sendKeepAlive: false);
+
+        // The acknowledgement goes out behind the next world tick's block changes.
+        await context.Server.TickWorldsOnceAsync();
         Assert.Equal(use.Sequence, Assert.Single(client.SentPackets.OfType<BlockChangedAckPacket>()).SequenceID);
 
         // The 26.3 confirmation's reported position is applied from the server destination, with cleared flags.
@@ -529,7 +531,9 @@ public sealed partial class PendingTeleports
         Assert.Equal(2, client.SentPackets.OfType<BlockUpdatePacket>().Count());
         Assert.Contains(client.SentPackets, packet => packet is ContainerSetSlotPacket);
         Assert.DoesNotContain(client.SentPackets, packet => packet is BlockChangedAckPacket);
-        await context.Server.TickConnectionsAsync(sendKeepAlive: false);
+
+        // The acknowledgement goes out behind the next world tick's block changes.
+        await context.Server.TickWorldsOnceAsync();
         Assert.Equal(71, Assert.Single(client.SentPackets.OfType<BlockChangedAckPacket>()).SequenceID);
     }
 

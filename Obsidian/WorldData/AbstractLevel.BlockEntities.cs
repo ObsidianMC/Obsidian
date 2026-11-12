@@ -500,6 +500,11 @@ public abstract partial class AbstractLevel
             if (!this.RefreshBlockEntitySnapshot(blockEntity))
                 continue;
 
+            // Like vanilla's, a moving piston has no update packet: its block isn't sent either, and the client moves
+            // the blocks from the piston's block event. Chunk packets still carry its data.
+            if (blockEntity is Pistons.MovingPistonBlockEntity)
+                continue;
+
             var data = blockEntity.ClientData;
             var type = BlockEntityTypesRegistry.NetworkId(blockEntity.Id);
             if (data is null || type < 0)

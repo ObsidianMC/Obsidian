@@ -1183,6 +1183,15 @@ public sealed class BlockUpdates : IDisposable
         hopper.Inventory.SetItem(0, new ItemStack(ItemsRegistry.Get("minecraft:stone"), 64));
     }
 
+    // The blocks a client was sent, by block updates and section updates alike, in the order sent.
+    internal static IEnumerable<(Vector Position, int StateId)> SentBlocks(TestClient client) =>
+        client.SentPackets.SelectMany(packet => packet switch
+        {
+            BlockUpdatePacket update => [(update.Position, update.BlockId)],
+            SectionBlocksUpdatePacket section => section.Blocks(),
+            _ => Enumerable.Empty<(Vector, int)>(),
+        });
+
     // A player using their main hand on the face of the block at position, at cursor on that block (0 to 1 on each
     // axis), or else at the middle of its top.
     internal static UseItemOnPacket UseOn(Vector position, BlockFace face, VectorF? cursor = null,

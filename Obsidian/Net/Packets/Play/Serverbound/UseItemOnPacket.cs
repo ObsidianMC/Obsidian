@@ -59,8 +59,20 @@ public partial class UseItemOnPacket
         this.Sequence = reader.ReadVarInt();
     }
 
-    public async override ValueTask HandleAsync(IServer server, IClientPlayer player) =>
-        await this.UseAsync(server, player);
+    public async override ValueTask HandleAsync(IServer server, IClientPlayer player)
+    {
+        // The acknowledgement follows the block changes the use makes, which go out with the next world tick.
+        var acknowledging = player as PlayerBase;
+        acknowledging?.BeginBlockAcknowledgementHold();
+        try
+        {
+            await this.UseAsync(server, player);
+        }
+        finally
+        {
+            acknowledging?.EndBlockAcknowledgementHold();
+        }
+    }
 
     /// <summary>Handles the click and returns how it went, or null when it was refused before any use.</summary>
     internal async ValueTask<UseResult?> UseAsync(IServer server, IClientPlayer player)

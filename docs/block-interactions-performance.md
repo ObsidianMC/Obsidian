@@ -246,7 +246,53 @@ Rides with: plan phases 4 and 5, for the components each batch touches.
 
 ### 5. Send block changes to clients once per tick per section
 
-*From the code. Changes packet timing to vanilla's, so it needs a check on a real client. Approved 2026-11-09.*
+*Done (branch `perf/section-block-updates`). Matches a vanilla capture of the packets a client receives; still needs
+a check on a real 26.3 client: pistons, note blocks, and placing and breaking with prediction.*
+
+What landed:
+
+- `SectionBlocksUpdatePacket` is hand-written: section coordinates packed into a long, then each change as a var-long
+  of state id and position in the section. Its bytes match vanilla's capture.
+- `BlockChangeBroadcasts` (`Obsidian/WorldData/BlockChangeBroadcasts.cs`) collects each level's changed positions
+  per chunk section. A section's positions come out in the order of vanilla's `ShortOpenHashSet`, which the client
+  applies in turn. The level's tick flushes them after block and fluid ticks and before block events, like vanilla's
+  chunk broadcast: one block update for a section with one change, otherwise one section update, each with the
+  block's state at the flush. A change made outside the tick (a plugin, a command, a packet handler) goes out at the
+  next flush. Only players who have the chunk get it.
+- Prediction acknowledgements wait for the world tick that sends their block changes:
+  - The server counts world ticks begun and finished, and sends acknowledgements at the end of each world tick,
+    behind its flushes.
+  - An acknowledgement waits for a world tick that began after its handler finished. No acknowledgement is sent while
+    a handler that may queue one is still running.
+  - The 50 ms connection pass sends what's due. While the server is paused (vanilla's frozen game still flushes), it
+    flushes every level's block changes first and then sends acknowledgements at once.
+- Block events go out as the tick dispatches them. The block changes they make go out at the next tick's flush, as
+  in vanilla.
+- Vanilla doesn't send a moving piston's block or its block-entity data. Obsidian sent both from the block-entity
+  pass, and no longer does.
+- Breaking a block no longer sends the breaker an extra air update before the flush's, which vanilla doesn't send.
+
+`block_change_packets.json` (`VanillaBlockChangePackets`) replays vanilla's packets in order: a dust line toggled,
+a piston push, a note block, a place and a break with acknowledgements, and water spreading in two sections in one
+tick. The block probe's `Packets/toggle-15-dust` case counts block update and section update packets, and their
+bytes, sent to one player per toggle of a 15-dust line spanning two chunks. Each case uses the same harness
+(.NET 11.0.0, Windows 11, x64, Release), measured on 2026-11-11.
+
+| Toggle 15 dust | Before | After |
+|---|---:|---:|
+| Packets per tick | 40.50 | 2.00 |
+| Bytes per tick (id and body, before compression) | 445.00 | 83.00 |
+
+What's left:
+
+- Block-entity data still goes out at the end of the block-entity pass rather than with the block change in the
+  flush, and light updates at the end of the tick rather than with the chunk broadcast.
+- Vanilla's chunks broadcast in hash-map order. Obsidian's go in the order of each chunk's first change.
+- A handler that finishes while a world tick runs may miss that tick's flush, so its acknowledgement waits for the
+  next tick. Vanilla handles packets between ticks and never waits.
+- Corrections (refused uses, buckets, aborted breaks) still go out at once, as in vanilla.
+
+The proposal as written:
 
 `LevelFluids.OnBlockStored` broadcasts a `BlockUpdatePacket` for every block write as it happens, and
 `PlayersWithChunk` walks every player in the level for each one. Vanilla collects changed positions per chunk

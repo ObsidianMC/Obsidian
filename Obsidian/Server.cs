@@ -1225,16 +1225,26 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
 
     /// <summary>
     /// One pass of the independent 50 ms connection loop. Play-state prediction acknowledgements must not depend
-    /// on world ticks succeeding, simulation being unpaused, or a travelling player belonging to a level.
+    /// on world ticks succeeding, simulation being unpaused, or a travelling player belonging to a level: an
+    /// acknowledgement waits for the world tick that sends its block changes (see
+    /// <see cref="PlayerBase.FlushBlockAcknowledgement"/>), and while the server is paused, this pass sends the levels'
+    /// block changes itself, then the acknowledgements, like vanilla's paused (frozen) server.
     /// </summary>
-    internal Task TickConnectionsAsync(bool sendKeepAlive)
+    internal async Task TickConnectionsAsync(bool sendKeepAlive)
     {
-        return this.ForEachConnectionAsync(client =>
+        var paused = this.Paused;
+        if (paused)
+        {
+            foreach (var level in this.Levels())
+                level.FlushBlockChanges();
+        }
+
+        await this.ForEachConnectionAsync(client =>
         {
             if (client.Connected && client.State == ClientState.Play && client.Player is Player player)
             {
                 player.TickTeleportClock();
-                player.FlushBlockAcknowledgement();
+                player.FlushBlockAcknowledgement(waitForWorldTick: !paused);
             }
 
             return sendKeepAlive ? SendKeepAliveAsync(client) : ValueTask.CompletedTask;
@@ -1343,9 +1353,7 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
     /// </summary>
     private void ReportTickStats()
     {
-        var levels = this.WorldManager.GetAvailableWorlds()
-            .OfType<World>()
-            .SelectMany(world => world.dimensions.Values.OfType<AbstractLevel>().Prepend(world))
+        var levels = this.Levels()
             .Select(level => (Level: level, Times: level.TickTimes.Take()))
             .ToArray();
         var worldTicks = this.worldTickTimes.Take();
@@ -1381,10 +1389,8 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
     }
 
     // Each level's tick stage, e.g. "overworld: ticking entities, the_nether: waiting for simulation gate".
-    private string DescribeLevelTicks() => string.Join(", ", this.WorldManager.GetAvailableWorlds()
-        .OfType<World>()
-        .SelectMany(world => world.dimensions.Values.OfType<AbstractLevel>().Prepend(world))
-        .Select(level => $"{level.Name}: {level.TickStage}"));
+    private string DescribeLevelTicks() =>
+        string.Join(", ", this.Levels().Select(level => $"{level.Name}: {level.TickStage}"));
 
     /// <summary>
     /// The mean time the last 100 world ticks took to run, in milliseconds, like vanilla's smoothed tick time (the busy
@@ -1415,19 +1421,30 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
 
     /// <summary>
     /// Ticks the worlds once and records how long it took. A failing tick is reported rather than thrown, so the loop
-    /// goes on.
+    /// goes on. Internal for tests, which drive the tick loop's ticks without its timer.
     /// </summary>
-    private async Task TickWorldsOnceAsync()
+    internal async Task TickWorldsOnceAsync()
     {
         TickStage = "ticking worlds";
         this.EndIdleSession();
         var tickStart = Stopwatch.GetTimestamp();
         Volatile.Write(ref this.tickStarted, tickStart);
+        Interlocked.Increment(ref this.worldTicksStarted);
         try
         {
             // Connections are flushed once the tick is done, rather than for each packet it sends.
             using var output = OutputBatch.Begin();
-            await this.WorldManager.TickWorldsAsync();
+            try
+            {
+                await this.WorldManager.TickWorldsAsync();
+            }
+            finally
+            {
+                // Like vanilla's connection tick after the levels': the acknowledgements whose block changes the
+                // levels have now sent go out behind them, failed tick or not.
+                Interlocked.Increment(ref this.worldTicksCompleted);
+                await this.ForEachConnectionAsync(SendBlockAcknowledgement, this.keepAliveFailures);
+            }
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !cancelTokenSource.IsCancellationRequested)
         {
@@ -1443,6 +1460,30 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
             this.worldTickTimes.Record(elapsed.TotalMilliseconds);
         }
     }
+
+    // Counts of the world ticks begun and finished, which hold back prediction acknowledgements until the tick that
+    // sends their block changes is done (see PlayerBase.FlushBlockAcknowledgement).
+    private long worldTicksStarted;
+    private long worldTicksCompleted;
+
+    /// <summary>How many world ticks have begun.</summary>
+    internal long WorldTicksStarted => Interlocked.Read(ref this.worldTicksStarted);
+
+    /// <summary>How many world ticks have finished, whether or not they failed.</summary>
+    internal long WorldTicksCompleted => Interlocked.Read(ref this.worldTicksCompleted);
+
+    private static ValueTask SendBlockAcknowledgement(IClient client)
+    {
+        if (client.Connected && client.State == ClientState.Play && client.Player is Player player)
+            player.FlushBlockAcknowledgement(waitForWorldTick: true);
+
+        return ValueTask.CompletedTask;
+    }
+
+    // Every level of every world: each world's own and its dimensions.
+    private IEnumerable<AbstractLevel> Levels() => this.WorldManager.GetAvailableWorlds()
+        .OfType<World>()
+        .SelectMany(world => world.dimensions.Values.OfType<AbstractLevel>().Prepend(world));
 
     private async Task LoopAsync()
     {

@@ -83,12 +83,17 @@ public sealed class BlockEvents
         world.BlockNotifications.EnqueueNeighbor(piston, power);
         await world.BlockNotifications.DrainAsync();
         await world.DoWorldTickAsync();
+
+        // The piston extends in the tick's block events, after its flush: its change goes out at the next flush.
+        world.FlushBlockChanges();
         context.Broadcaster.FlushRangePackets();
 
         var packets = client.SentPackets.ToList();
         var noteEvent = packets.FindIndex(packet => packet is BlockEventPacket blockEvent
             && blockEvent.BlockType == BlockIds.NoteBlock && blockEvent.Position == note);
-        var pistonWrite = packets.FindIndex(packet => packet is BlockUpdatePacket update && update.Position == note);
+        var extended = BlocksRegistry.Piston.WithProperty("facing", "east").WithProperty("extended", "true");
+        var pistonWrite = packets.FindIndex(packet => packet is BlockUpdatePacket update && update.Position == piston
+            && update.BlockId == extended.GetHashCode());
         Assert.True(noteEvent >= 0, "The client did not receive the note event.");
         Assert.True(pistonWrite >= 0, "The client did not receive the piston block update.");
         Assert.True(noteEvent < pistonWrite, "The piston block update overtook the note event.");
