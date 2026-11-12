@@ -1040,35 +1040,6 @@ public sealed partial class Client : IClient
         this.StartConfiguration();
     }
 
-    /// <summary>
-    /// Replaces the player who finished configuring with a fresh one, for a join that loads them again (a player with
-    /// the name left while they loaded): loading into the same player would keep what the first load read and the
-    /// second doesn't set. Like reconfiguration's fresh player, it keeps what the login and configuration gave the
-    /// player (their skin and client information) and starts in the default world, as the login does.
-    /// </summary>
-    /// <returns>
-    /// The fresh player, or <see langword="null"/> if the connection closed or the player started leaving.
-    /// </returns>
-    internal Player? RenewJoiningPlayer()
-    {
-        if (this.Player is not Player current)
-            return null;
-
-        var fresh = this.CreatePlayer(current.Uuid, current.Username, this.HostServer.DefaultWorld);
-        fresh.SkinProperties = current.SkinProperties;
-        fresh.ClientInformation = current.ClientInformation;
-
-        lock (this.leavingLock)
-        {
-            if (this.connectionClosed || this.leaving is not null)
-                return null;
-
-            this.Player = fresh;
-        }
-
-        return fresh;
-    }
-
     private Player CreatePlayer(Guid uuid, string username, IWorld world) => new(uuid, username, this, world)
     {
         Server = this.serviceProvider.GetRequiredService<IServer>(),
@@ -1089,15 +1060,28 @@ public sealed partial class Client : IClient
     /// </summary>
     private Task LeaveAsync()
     {
-        if (raisingLeave.Value?.Client == this)
-            return Task.CompletedTask;
-
         Player player;
         bool cannotWait;
         TaskCompletionSource leave;
         lock (this.leavingLock)
         {
+            // Only the handler of this pending leave skips waiting for itself. Work from an earlier reconfiguration
+            // leave may outlive it, and must still start or wait for the rejoined player's leave.
+            if (raisingLeave.Value is RaisedLeave mark
+                && mark.Client == this
+                && this.leaving is TaskCompletionSource pending
+                && ReferenceEquals(mark.Leave, pending.Task)
+                && !pending.Task.IsCompleted)
+            {
+                return Task.CompletedTask;
+            }
+
             if (this.Player is not Player current)
+                return Task.CompletedTask;
+
+            // A rejected join has nothing to leave or save. In particular, its stale load must not overwrite what a
+            // same-name departure saved while it was configuring or loading.
+            if (this.joinStage == JoinStage.None)
                 return Task.CompletedTask;
 
             player = current;
@@ -1108,7 +1092,8 @@ public sealed partial class Client : IClient
             var joining = this.joinStage == JoinStage.Joining;
             cannotWait = player.IsInOwnTick
                 || WorldData.AbstractLevel.MustNotWaitForGates
-                || (joining && admitting.Value is { } mark && mark.Client == this && mark.IsUnderWay);
+                || (joining && admitting.Value is { } admissionMark
+                    && admissionMark.Client == this && admissionMark.IsUnderWay);
 
             if (this.leaving is TaskCompletionSource started)
                 return cannotWait ? Task.CompletedTask : started.Task;

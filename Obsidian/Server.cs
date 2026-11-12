@@ -849,8 +849,8 @@ public sealed partial class Server : IServer, IPluginScopedServer, IPlayerListOr
 
     /// <summary>
     /// Registers a joining player like <see cref="AddPlayer"/>, unless a player with the name started leaving since
-    /// the join last waited for such leaves: then nothing is registered, and <paramref name="leaving"/> is that leave,
-    /// which the join waits for before it loads the player again and retries, so that it loads what the leave saved.
+    /// the join last waited for such leaves: then nothing is registered, and <paramref name="leaving"/> is that leave.
+    /// Server-side joins wait, reload and retry; network joins disconnect instead of retrying after configuration.
     /// </summary>
     /// <returns>Whether the player was registered.</returns>
     internal bool AddPlayerUnlessLeaving(IPlayer player, out Task? leaving) =>

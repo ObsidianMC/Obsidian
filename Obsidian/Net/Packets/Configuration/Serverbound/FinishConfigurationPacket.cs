@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Obsidian.API.Events;
 using Obsidian.Net.Packets.Common;
 using Obsidian.Net.Packets.Play.Clientbound;
@@ -14,38 +14,23 @@ public sealed partial class FinishConfigurationPacket
         var host = (Server)server;
 
         client.SetState(ClientState.Play);
-        while (true)
+        // Like the login, wait for pending same-name leaves before loading what they saved.
+        await host.WaitForLeavesAsync(player.Username);
+        await player.LoadAsync();
+
+        // An integrated server opened to LAN forces its game mode on players who join.
+        if (host.Integrated?.GetForcedGameMode(player.Level.LevelData) is GameMode forcedGameMode)
+            player.GameMode = forcedGameMode;
+
+        host.PlayerLoadedForJoin?.Invoke(player);
+        // A same-name leave may have started while loading. Reject this join: retrying with a fresh player would
+        // discard state set by configuration handlers that isn't saved, such as movement ability grants.
+        if (!host.AddPlayerUnlessLeaving(player, out _))
         {
-            // Like the login, the join waits for a player with the name who's still leaving (a server-side player a
-            // plugin removed meanwhile, say), so that it loads what the leave saved.
-            await host.WaitForLeavesAsync(player.Username);
-            await player.LoadAsync();
-
-            // An integrated server opened to LAN forces its game mode on players who join.
-            if (host.Integrated?.GetForcedGameMode(player.Level.LevelData) is GameMode forcedGameMode)
-                player.GameMode = forcedGameMode;
-
-            host.PlayerLoadedForJoin?.Invoke(player);
-            if (host.AddPlayerUnlessLeaving(player, out var leaving))
-                break;
-
-            if (leaving is null)
-            {
-                await player.DisconnectAsync("Unable to complete login due to a server error. Please try again or contact an administrator.");
-                Log.AddPlayerFailed(client.Logger, player.Username);
-                return;
-            }
-
-            // A player with the name started leaving while this one loaded: wait for that leave too and load again,
-            // into a fresh player, so that nothing the first load read outlives what the leave saved. A connection that
-            // closed meanwhile admits nothing. (Tests' stand-in clients can't renew their player and load it again.)
-            if (client is Client renewing)
-            {
-                if (renewing.RenewJoiningPlayer() is not Entities.Player fresh)
-                    return;
-
-                player = fresh;
-            }
+            await player.DisconnectAsync(
+                "Unable to complete login due to a server error. Please try again or contact an administrator.");
+            Log.AddPlayerFailed(client.Logger, player.Username);
+            return;
         }
 
         // The connection may close at any point of the join. One that closed first admits nothing, so the player is
