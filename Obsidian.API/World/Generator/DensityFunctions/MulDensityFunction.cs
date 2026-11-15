@@ -42,9 +42,7 @@ public sealed class MulDensityFunction : IDensityFunction
         return value == 0.0 ? 0.0 : value * this.Argument2.GetValue(x, y, z);
     }
 
-    /// <summary>
-    /// Maps child functions and noises with the visitor, then applies it to the rebuilt function.
-    /// </summary>
+    /// <inheritdoc/>
     public IDensityFunction MapAll(IDensityFunctionVisitor visitor) => visitor.Apply(new MulDensityFunction
     {
         Argument1 = visitor.Map(this.Argument1),

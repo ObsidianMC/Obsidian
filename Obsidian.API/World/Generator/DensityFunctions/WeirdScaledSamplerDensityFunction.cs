@@ -50,9 +50,7 @@ public sealed class WeirdScaledSamplerDensityFunction : IDensityFunction
         return rarity * Math.Abs(this.Noise.GetValue(x / rarity, y / rarity, z / rarity));
     }
 
-    /// <summary>
-    /// Maps child functions and noises with the visitor, then applies it to the rebuilt function.
-    /// </summary>
+    /// <inheritdoc/>
     public IDensityFunction MapAll(IDensityFunctionVisitor visitor) => visitor.Apply(new WeirdScaledSamplerDensityFunction
     {
         Input = visitor.Map(this.Input),

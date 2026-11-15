@@ -34,9 +34,7 @@ public sealed class AbsDensityFunction : IDensityFunction
     /// </summary>
     public double GetValue(double x, double y, double z) => Math.Abs(this.Argument.GetValue(x, y, z));
 
-    /// <summary>
-    /// Maps child functions and noises with the visitor, then applies it to the rebuilt function.
-    /// </summary>
+    /// <inheritdoc/>
     public IDensityFunction MapAll(IDensityFunctionVisitor visitor) =>
         visitor.Apply(new AbsDensityFunction { Argument = visitor.Map(this.Argument) });
 }

@@ -58,9 +58,7 @@ public sealed class ShiftedNoiseDensityFunction : IDensityFunction
         y * this.YScale + this.ShiftY.GetValue(x, y, z),
         z * this.XzScale + this.ShiftZ.GetValue(x, y, z));
 
-    /// <summary>
-    /// Maps child functions and noises with the visitor, then applies it to the rebuilt function.
-    /// </summary>
+    /// <inheritdoc/>
     public IDensityFunction MapAll(IDensityFunctionVisitor visitor) => visitor.Apply(new ShiftedNoiseDensityFunction
     {
         Noise = visitor.VisitNoise(this.Noise),

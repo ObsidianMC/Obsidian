@@ -35,9 +35,7 @@ public sealed class FlatCacheDensityFunction : IDensityFunction
     /// </summary>
     public double GetValue(double x, double y, double z) => this.Argument.GetValue(x, y, z);
 
-    /// <summary>
-    /// Maps child functions and noises with the visitor, then applies it to the rebuilt function.
-    /// </summary>
+    /// <inheritdoc/>
     public IDensityFunction MapAll(IDensityFunctionVisitor visitor) =>
         visitor.Apply(new FlatCacheDensityFunction { Argument = visitor.Map(this.Argument) });
 }

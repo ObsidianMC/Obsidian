@@ -5,8 +5,9 @@
 public interface IPalette<T>
 {
     /// <summary>
-    /// Gets the number of values held by this palette.
+    /// Gets the number of values held by this palette when supported; global block state palettes do not expose a count.
     /// </summary>
+    /// <exception cref="NotSupportedException">The palette is a global block state palette.</exception>
     public int Count { get; }
     /// <summary>
     /// Gets the number of bits needed for a stored palette index.

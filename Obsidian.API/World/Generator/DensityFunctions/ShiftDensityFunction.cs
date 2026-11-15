@@ -31,9 +31,7 @@ public sealed class ShiftDensityFunction : IDensityFunction
     /// </summary>
     public double GetValue(double x, double y, double z) => this.Argument.GetValue(x * 0.25, y * 0.25, z * 0.25) * 4.0;
 
-    /// <summary>
-    /// Maps child functions and noises with the visitor, then applies it to the rebuilt function.
-    /// </summary>
+    /// <inheritdoc/>
     public IDensityFunction MapAll(IDensityFunctionVisitor visitor) =>
         visitor.Apply(new ShiftDensityFunction { Argument = visitor.VisitNoise(this.Argument) });
 }

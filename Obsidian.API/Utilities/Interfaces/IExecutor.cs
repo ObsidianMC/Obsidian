@@ -19,6 +19,8 @@ public interface IExecutor
     /// <summary>
     /// Tests whether the supplied arguments match this executor's expected parameter count.
     /// </summary>
+    /// <remarks>Delegate event executors do not support this operation.</remarks>
+    /// <exception cref="NotImplementedException">The executor is a delegate event executor.</exception>
     public bool MatchParams(object[] args);
 
     /// <summary>
@@ -33,7 +35,7 @@ public interface IExecutor
 public interface IExecutor<TArg>
 {
     /// <summary>
-    /// Returns reflection metadata for the underlying handler's declared parameters.
+    /// Returns handler parameter metadata; delegate command executors omit their first context parameter.
     /// </summary>
     public ParameterInfo[] GetParameters();
     /// <summary>

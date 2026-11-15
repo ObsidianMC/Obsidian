@@ -58,9 +58,7 @@ public sealed class RangeChoiceDensityFunction : IDensityFunction
         return this.WhenOutOfRange.GetValue(x, y, z);
     }
 
-    /// <summary>
-    /// Maps child functions and noises with the visitor, then applies it to the rebuilt function.
-    /// </summary>
+    /// <inheritdoc/>
     public IDensityFunction MapAll(IDensityFunctionVisitor visitor) => visitor.Apply(new RangeChoiceDensityFunction
     {
         Input = visitor.Map(this.Input),

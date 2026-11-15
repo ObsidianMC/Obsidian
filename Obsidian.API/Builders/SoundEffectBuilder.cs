@@ -26,9 +26,7 @@ public sealed class SoundEffectBuilder : BaseSoundEffectBuilder
         SoundCategory = soundCategory
     };
 
-    /// <summary>
-    /// Creates a sound effect containing the configured settings.
-    /// </summary>
+    /// <inheritdoc/>
     public override ISoundEffect Build() => new SoundEffect
     {
         SoundId = this.SoundLocation,

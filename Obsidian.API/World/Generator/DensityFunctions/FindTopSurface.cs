@@ -60,9 +60,7 @@ public sealed class FindTopSurface : IDensityFunction
         return this.LowerBound;
     }
 
-    /// <summary>
-    /// Maps child functions and noises with the visitor, then applies it to the rebuilt function.
-    /// </summary>
+    /// <inheritdoc/>
     public IDensityFunction MapAll(IDensityFunctionVisitor visitor) => visitor.Apply(new FindTopSurface
     {
         Density = visitor.Map(this.Density),

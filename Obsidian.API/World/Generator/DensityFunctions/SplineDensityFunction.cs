@@ -32,9 +32,7 @@ public sealed class SplineDensityFunction : IDensityFunction
     /// </summary>
     public double GetValue(double x, double y, double z) => this.Spline.Apply(x, y, z);
 
-    /// <summary>
-    /// Maps child functions and noises with the visitor, then applies it to the rebuilt function.
-    /// </summary>
+    /// <inheritdoc/>
     public IDensityFunction MapAll(IDensityFunctionVisitor visitor) =>
         visitor.Apply(new SplineDensityFunction { Spline = this.Spline.MapAll(visitor) });
 }

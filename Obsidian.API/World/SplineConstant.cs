@@ -10,18 +10,12 @@ public readonly record struct SplineConstant : ISpline
     public double Value { get; init; }
 
     // Vanilla stores spline constants as floats.
-    /// <summary>
-    /// Gets the lower bound reported for this spline's output.
-    /// </summary>
+    /// <inheritdoc/>
     public double MinValue => (float)this.Value;
 
-    /// <summary>
-    /// Gets the upper bound reported for this spline's output.
-    /// </summary>
+    /// <inheritdoc/>
     public double MaxValue => (float)this.Value;
 
-    /// <summary>
-    /// Evaluates the spline at world block coordinates, returning a single-precision result widened to double.
-    /// </summary>
+    /// <inheritdoc/>
     public double Apply(double x, double y, double z) => (float)this.Value;
 }

@@ -246,8 +246,12 @@ public partial class Extensions
     }
 
     /// <summary>
-    /// Decodes a click action and its action-specific value field, falling back to the legacy <c>value</c> field.
+    /// Decodes a click action; page changes read the integer <c>page</c> field, while other actions fall back to
+    /// the legacy <c>value</c> field when their action-specific string field is absent.
     /// </summary>
+    /// <exception cref="Obsidian.Nbt.Exceptions.TagNotFoundException">
+    /// A page-change action has no integer <c>page</c> field.
+    /// </exception>
     public static ClickComponent ToClickComponent(this NbtCompound compound)
     {
         var action = SavedEnum<ClickAction>(compound.GetString("action")!);

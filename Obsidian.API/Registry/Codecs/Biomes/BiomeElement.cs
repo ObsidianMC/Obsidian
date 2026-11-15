@@ -96,13 +96,15 @@ public sealed class SpawnerMob
     public IIntProvider? Count { get; init; }
 
     /// <summary>
-    /// Gets the upper spawn group size bound, read from <c>maxCount</c>.
+    /// Gets the upper bound of the 26.3 <c>count</c> provider; biome-modifier compatibility data may supply
+    /// <c>maxCount</c> instead.
     /// </summary>
     [JsonPropertyName("maxCount")]
     public required int MaxCount { get; init; }
 
     /// <summary>
-    /// Gets the lower spawn group size bound, read from <c>minCount</c>.
+    /// Gets the lower bound of the 26.3 <c>count</c> provider; biome-modifier compatibility data may supply
+    /// <c>minCount</c> instead.
     /// </summary>
     [JsonPropertyName("minCount")]
     public required int MinCount { get; init; }

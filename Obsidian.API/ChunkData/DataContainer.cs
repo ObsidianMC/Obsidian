@@ -93,8 +93,12 @@ public abstract class DataContainer<T>(byte minBitsPerEntry, byte maxBitsPerEntr
     }
 
     /// <summary>
-    /// Converts container-local coordinates to a packed storage index using the current bit width.
+    /// Converts container-local coordinates to a linear storage index using the container's coordinate layout.
     /// </summary>
+    /// <remarks>
+    /// The base implementation shifts by <see cref="BitsPerEntry"/>; block and biome containers override it with
+    /// fixed four-bit and two-bit axis layouts, respectively.
+    /// </remarks>
     public virtual int GetIndex(int x, int y, int z) => (y << this.BitsPerEntry | z) << this.BitsPerEntry | x;
 
     /// <summary>
@@ -184,8 +188,9 @@ public abstract class DataContainer<T>(byte minBitsPerEntry, byte maxBitsPerEntr
     }
 
     /// <summary>
-    /// Reads a value at container-local coordinates under the data lock.
+    /// Reads a value at container-local coordinates; this base implementation takes the data lock.
     /// </summary>
+    /// <remarks>Concrete block and biome containers may read lock-free and use this method as a fallback.</remarks>
     public virtual T Get(int x, int y, int z)
     {
         lock (this.dataLock)

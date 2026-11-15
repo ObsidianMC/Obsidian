@@ -40,9 +40,7 @@ public sealed class ClampDensityFunction : IDensityFunction
     /// </summary>
     public double GetValue(double x, double y, double z) => Math.Clamp(this.Input.GetValue(x, y, z), this.Min, this.Max);
 
-    /// <summary>
-    /// Maps child functions and noises with the visitor, then applies it to the rebuilt function.
-    /// </summary>
+    /// <inheritdoc/>
     public IDensityFunction MapAll(IDensityFunctionVisitor visitor) =>
         visitor.Apply(new ClampDensityFunction { Input = visitor.Map(this.Input), Min = this.Min, Max = this.Max });
 }

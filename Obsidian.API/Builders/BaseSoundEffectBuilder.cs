@@ -54,9 +54,7 @@ public abstract class BaseSoundEffectBuilder : ISoundEffectBuilder, ISoundEffect
     /// </summary>
     protected int? EntityId { get; set; }
 
-    /// <summary>
-    /// Sets the sound's fixed audible range in blocks and returns this builder.
-    /// </summary>
+    /// <inheritdoc/>
     public virtual IRangedSoundEffectBuilder WithFixedRange(float range)
     {
         this.FixedRange = range;
@@ -65,9 +63,7 @@ public abstract class BaseSoundEffectBuilder : ISoundEffectBuilder, ISoundEffect
     }
 
 
-    /// <summary>
-    /// Sets the pitch multiplier, capped at 2, and returns this builder.
-    /// </summary>
+    /// <inheritdoc/>
     public virtual ISoundEffectBaseBuilder WithPitch(float pitch)
     {
         this.Pitch = Math.Min(pitch, MinPitch);
@@ -75,9 +71,7 @@ public abstract class BaseSoundEffectBuilder : ISoundEffectBuilder, ISoundEffect
         return this;
     }
 
-    /// <summary>
-    /// Sets the client sound-variation seed and returns this builder.
-    /// </summary>
+    /// <inheritdoc/>
     public virtual ISoundEffectBaseBuilder WithSeed(long seed)
     {
         this.Seed = seed;
@@ -85,9 +79,7 @@ public abstract class BaseSoundEffectBuilder : ISoundEffectBuilder, ISoundEffect
         return this;
     }
 
-    /// <summary>
-    /// Sets the sound's playback position and returns this builder.
-    /// </summary>
+    /// <inheritdoc/>
     public virtual ISoundEffectBaseBuilder WithSoundPosition(SoundPosition soundPosition)
     {
         this.SoundPosition = soundPosition;
@@ -95,9 +87,7 @@ public abstract class BaseSoundEffectBuilder : ISoundEffectBuilder, ISoundEffect
         return this;
     }
 
-    /// <summary>
-    /// Sets the entity to which playback is attached and returns this builder.
-    /// </summary>
+    /// <inheritdoc/>
     public virtual ISoundEffectBaseBuilder WithEntityId(int entityId)
     {
         this.EntityId = entityId;
@@ -105,9 +95,7 @@ public abstract class BaseSoundEffectBuilder : ISoundEffectBuilder, ISoundEffect
         return this;
     }
 
-    /// <summary>
-    /// Sets the volume, capped at 1, and returns this builder.
-    /// </summary>
+    /// <inheritdoc/>
     public virtual ISoundEffectBaseBuilder WithVolume(float volume)
     {
         this.Volume = Math.Min(volume, MinVolume);
@@ -115,8 +103,6 @@ public abstract class BaseSoundEffectBuilder : ISoundEffectBuilder, ISoundEffect
         return this;
     }
 
-    /// <summary>
-    /// Creates a sound effect with the configured playback settings.
-    /// </summary>
+    /// <inheritdoc/>
     public abstract ISoundEffect Build();
 }

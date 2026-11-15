@@ -19,21 +19,15 @@ public class Spline : ISpline
     /// </summary>
     public required ImmutableArray<SplinePoint> Points { get; init; }
 
-    /// <summary>
-    /// Gets the lower bound reported for this spline's output.
-    /// </summary>
+    /// <inheritdoc/>
     public double MinValue => this.State.MinValue;
 
-    /// <summary>
-    /// Gets the upper bound reported for this spline's output.
-    /// </summary>
+    /// <inheritdoc/>
     public double MaxValue => this.State.MaxValue;
 
     private SplineState State => field ??= SplineState.Create(this.Coordinate, this.Points);
 
-    /// <summary>
-    /// Evaluates the spline at world block coordinates, returning a single-precision result widened to double.
-    /// </summary>
+    /// <inheritdoc/>
     public double Apply(double x, double y, double z) => this.ApplyFloat(x, y, z);
 
     private float ApplyFloat(double x, double y, double z)

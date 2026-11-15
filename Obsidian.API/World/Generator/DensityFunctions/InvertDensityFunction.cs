@@ -36,9 +36,7 @@ public sealed class InvertDensityFunction : IDensityFunction
     /// </summary>
     public double GetValue(double x, double y, double z) => 1.0 / this.Argument.GetValue(x, y, z);
 
-    /// <summary>
-    /// Maps child functions and noises with the visitor, then applies it to the rebuilt function.
-    /// </summary>
+    /// <inheritdoc/>
     public IDensityFunction MapAll(IDensityFunctionVisitor visitor) =>
         visitor.Apply(new InvertDensityFunction { Argument = visitor.Map(this.Argument) });
 }

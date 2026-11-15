@@ -31,9 +31,7 @@ public sealed class ShiftBDensityFunction : IDensityFunction
     /// </summary>
     public double GetValue(double x, double y, double z) => this.Argument.GetValue(z * 0.25, x * 0.25, 0.0) * 4.0;
 
-    /// <summary>
-    /// Maps child functions and noises with the visitor, then applies it to the rebuilt function.
-    /// </summary>
+    /// <inheritdoc/>
     public IDensityFunction MapAll(IDensityFunctionVisitor visitor) =>
         visitor.Apply(new ShiftBDensityFunction { Argument = visitor.VisitNoise(this.Argument) });
 }

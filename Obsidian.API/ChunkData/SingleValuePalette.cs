@@ -39,9 +39,7 @@ public abstract class SingleValuePalette<T> : IPalette<T>
     /// </summary>
     public bool ShouldGrow { get; private set; }
 
-    /// <summary>
-    /// Creates a copy of this single-value palette.
-    /// </summary>
+    /// <inheritdoc/>
     public abstract IPalette<T> Clone();
 
     /// <summary>

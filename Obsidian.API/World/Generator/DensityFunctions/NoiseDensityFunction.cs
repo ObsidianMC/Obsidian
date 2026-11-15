@@ -41,9 +41,7 @@ public sealed class NoiseDensityFunction : IDensityFunction
     /// </summary>
     public double GetValue(double x, double y, double z) => this.Noise.GetValue(x * this.XzScale, y * this.YScale, z * this.XzScale);
 
-    /// <summary>
-    /// Maps child functions and noises with the visitor, then applies it to the rebuilt function.
-    /// </summary>
+    /// <inheritdoc/>
     public IDensityFunction MapAll(IDensityFunctionVisitor visitor) => visitor.Apply(new NoiseDensityFunction
     {
         Noise = visitor.VisitNoise(this.Noise),

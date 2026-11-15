@@ -151,7 +151,7 @@ public sealed class ServerConfiguration
     public int PregenerateChunkRange { get; set; } = 15; // by default, pregenerate range from -15 to 15;
 
     /// <summary>
-    /// Gets or sets the configured player-information mode for server list responses.
+    /// Gets or sets the player-information mode, which the current status response does not apply.
     /// </summary>
     public ServerListQuery ServerListQuery { get; set; } = ServerListQuery.Full;
 
@@ -208,21 +208,23 @@ public sealed class ServerWorld
 }
 
 /// <summary>
-/// Specifies the configured player-information mode for server list responses.
+/// Specifies player-information modes that the current status response does not apply.
 /// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum ServerListQuery
 {
     /// <summary>
-    /// Selects full player information for the server list response.
+    /// Requests full player information; the current status response ignores this setting.
     /// </summary>
     Full,
     /// <summary>
-    /// Selects anonymized player information for the server list response.
+    /// Requests anonymized player information; the default status response still includes listed players' names
+    /// and UUIDs.
     /// </summary>
     Anonymized,
     /// <summary>
-    /// Selects omission of player information from the server list response.
+    /// Requests omission of player information; the default status response still includes listed players' names
+    /// and UUIDs.
     /// </summary>
     Disabled
 }

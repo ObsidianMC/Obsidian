@@ -42,9 +42,7 @@ public sealed class MaxDensityFunction : IDensityFunction
         return value > this.Argument2Bounds.Max ? value : Math.Max(value, this.Argument2.GetValue(x, y, z));
     }
 
-    /// <summary>
-    /// Maps child functions and noises with the visitor, then applies it to the rebuilt function.
-    /// </summary>
+    /// <inheritdoc/>
     public IDensityFunction MapAll(IDensityFunctionVisitor visitor) => visitor.Apply(new MaxDensityFunction
     {
         Argument1 = visitor.Map(this.Argument1),

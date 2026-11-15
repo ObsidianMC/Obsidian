@@ -36,9 +36,7 @@ public sealed class AddDensityFunction : IDensityFunction
     /// </summary>
     public double GetValue(double x, double y, double z) => this.Argument1.GetValue(x, y, z) + this.Argument2.GetValue(x, y, z);
 
-    /// <summary>
-    /// Maps child functions and noises with the visitor, then applies it to the rebuilt function.
-    /// </summary>
+    /// <inheritdoc/>
     public IDensityFunction MapAll(IDensityFunctionVisitor visitor) => visitor.Apply(new AddDensityFunction
     {
         Argument1 = visitor.Map(this.Argument1),

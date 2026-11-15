@@ -15,7 +15,7 @@ public interface IGoalController
     public bool IsExecuting { get; }
 
     /// <summary>
-    /// Registers a goal for selection, ignoring an instance already registered.
+    /// Registers a goal for selection; plain <see cref="IGoal"/> instances are wrapped and are not deduplicated.
     /// </summary>
     public void AddGoal(IGoal goal);
     /// <summary>
