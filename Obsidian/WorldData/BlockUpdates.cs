@@ -1,8 +1,10 @@
 using Microsoft.Extensions.Logging;
 using Obsidian.API.Blocks;
+using Obsidian.API.World.Features.Trees;
 using Obsidian.API.World.Generator.RandomSources;
 using Obsidian.Plugins;
 using Obsidian.WorldData.BlockTicks;
+using Obsidian.WorldData.Features;
 using Obsidian.WorldData.Fluids;
 using Obsidian.WorldData.Redstone;
 using System.Diagnostics.CodeAnalysis;
@@ -298,7 +300,35 @@ internal sealed partial class LevelBlockUpdates(AbstractLevel level, LevelFluids
         BlockUpdateFlags flags,
         int updateLimit)
     {
-        // No block in the notification pipeline has an indirect shape reaction: vanilla's rails and redstone blocks don't.
+        // Only vanilla's redstone dust reshapes past its direct neighbors.
+        if (state.Is(BlockIds.RedstoneWire))
+            this.UpdateDiagonalWires(position, state, flags, updateLimit);
+    }
+
+    // Vanilla RedStoneWireBlock.updateIndirectNeighbourShapes: on each side the dust runs to that isn't dust itself,
+    // the dust one block below and then one above that side gets a shape update from the block beside it, the one
+    // straight above or below this dust. That lets dust climbing a step and dust on top of it find each other.
+    private void UpdateDiagonalWires(Vector position, IBlock state, BlockUpdateFlags flags, int updateLimit)
+    {
+        foreach (var direction in horizontal)
+        {
+            if (state.GetProperty(direction.PropertyName()) == "none")
+                continue;
+
+            var beside = position.Offset(direction);
+            if (this.GetBlock(beside).Is(BlockIds.RedstoneWire))
+                continue;
+
+            var back = direction.Opposite();
+            this.UpdateDiagonalWire(beside + Vector.Down, back, flags, updateLimit);
+            this.UpdateDiagonalWire(beside + Vector.Up, back, flags, updateLimit);
+        }
+    }
+
+    private void UpdateDiagonalWire(Vector position, BlockFace towardOrigin, BlockUpdateFlags flags, int updateLimit)
+    {
+        if (this.GetBlock(position).Is(BlockIds.RedstoneWire))
+            this.ShapeUpdateAt(position, towardOrigin, flags, updateLimit);
     }
 
     // Vanilla's falling blocks and suspicious sand and gravel; plugins' blocks never fall on their own.
