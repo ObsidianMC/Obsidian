@@ -12,7 +12,7 @@ public enum ItemAnimation
     Block,
     /// <summary>Drawing a bow.</summary>
     Bow,
-    /// <summary>Raising a trident or spear to throw or thrust.</summary>
+    /// <summary>Raising the item overhead, as with a trident.</summary>
     Spear,
     /// <summary>Loading a crossbow.</summary>
     Crossbow,

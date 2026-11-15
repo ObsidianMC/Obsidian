@@ -217,6 +217,7 @@ public struct Vector : IEquatable<Vector>, INetworkSerializable<Vector>
     public static Vector operator /(Vector a, int b) => new(a.X / b, a.Y / b, a.Z / b);
 
     /// <summary>Takes the remainder of dividing every component by <paramref name="b"/>.</summary>
+    /// <remarks>The Z component is currently computed from Y instead of Z.</remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector operator %(Vector a, int b) => new(a.X % b, a.Y % b, a.Y % b);
 
@@ -239,6 +240,7 @@ public struct Vector : IEquatable<Vector>, INetworkSerializable<Vector>
     /// <summary>
     /// Takes the remainder of dividing <paramref name="a"/> by every component of <paramref name="b"/>.
     /// </summary>
+    /// <remarks>The Z component is currently computed from Y instead of Z.</remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector operator %(int a, Vector b) => new(a % b.X, a % b.Y, a % b.Y);
 

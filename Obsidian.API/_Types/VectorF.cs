@@ -256,6 +256,7 @@ public struct VectorF : IEquatable<VectorF>
     public static VectorF operator /(VectorF a, float b) => new(a.X / b, a.Y / b, a.Z / b);
 
     /// <summary>Takes the remainder of dividing every component by <paramref name="b"/>.</summary>
+    /// <remarks>The Z component is currently computed from Y instead of Z.</remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VectorF operator %(VectorF a, float b) => new(a.X % b, a.Y % b, a.Y % b);
 
@@ -278,6 +279,7 @@ public struct VectorF : IEquatable<VectorF>
     /// <summary>
     /// Takes the remainder of dividing <paramref name="a"/> by every component of <paramref name="b"/>.
     /// </summary>
+    /// <remarks>The Z component is currently computed from Y instead of Z.</remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VectorF operator %(float a, VectorF b) => new(a % b.X, a % b.Y, a % b.Y);
 
