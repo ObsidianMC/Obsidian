@@ -179,14 +179,16 @@ public interface IEntity : Data.IAttachmentHolder
     public ValueTask DamageAsync(IEntity source, float amount = 1.0f);
 
     /// <summary>
-    /// Kills the entity, crediting <paramref name="source"/>. What dying does depends on the entity: a mob dies and drops
-    /// its loot, a vehicle is removed.
+    /// Kills a mob with enabled AI, crediting <paramref name="source"/>, or removes a vehicle. The server's base entity
+    /// implementation does nothing, including for players; use <see cref="KillAsync(IEntity, ChatMessage)"/> for
+    /// players.
     /// </summary>
     /// <param name="source">The entity responsible for the death.</param>
     public ValueTask KillAsync(IEntity source);
     /// <summary>
-    /// Kills the entity with a death message, crediting <paramref name="source"/>. A player dies and is shown
-    /// <paramref name="message"/>.
+    /// Kills a player with <paramref name="message"/>, crediting <paramref name="source"/>, or removes a vehicle.
+    /// The server's base entity implementation does nothing, including for mobs; use <see cref="KillAsync(IEntity)"/>
+    /// for mobs with enabled AI.
     /// </summary>
     /// <param name="source">The entity responsible for the death.</param>
     /// <param name="message">The death message.</param>

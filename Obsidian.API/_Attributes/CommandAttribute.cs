@@ -1,8 +1,8 @@
 ﻿namespace Obsidian.API;
 
 /// <summary>
-/// Marks a method of a <see cref="Commands.CommandModuleBase"/> as a command. Methods with the same command name are
-/// overloads of one command.
+/// Marks a method of a <see cref="Commands.CommandModuleBase"/> as a command. Further overloads must have the same
+/// C# method name and be marked with <see cref="CommandOverloadAttribute"/>.
 /// </summary>
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
 public sealed class CommandAttribute : Attribute

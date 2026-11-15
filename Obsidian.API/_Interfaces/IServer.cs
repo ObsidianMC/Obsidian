@@ -145,7 +145,7 @@ public interface IServer : IDisposable
     /// <returns>The player, or <see langword="null"/> if none is online.</returns>
     public IPlayer? GetPlayer(Guid uuid);
     /// <summary>
-    /// Gets the online player with <paramref name="entityId"/> who has a client connection.
+    /// Gets the online player with <paramref name="entityId"/>, including server-side players.
     /// </summary>
     /// <param name="entityId">The player's entity id.</param>
     /// <returns>The player, or <see langword="null"/> if none is found.</returns>
@@ -216,7 +216,10 @@ public interface IServer : IDisposable
     /// Registers <paramref name="player"/> as online, by UUID and username.
     /// </summary>
     /// <param name="player">The player to register.</param>
-    /// <returns><see langword="true"/> if the player was added; <see langword="false"/> if one with the UUID is online.</returns>
+    /// <returns>
+    /// <see langword="true"/> if the player was added; <see langword="false"/> if the UUID or username is already
+    /// registered.
+    /// </returns>
     public bool AddPlayer(IPlayer player);
     /// <summary>
     /// Unregisters <paramref name="player"/> and removes them from their level.

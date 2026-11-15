@@ -546,21 +546,27 @@ public interface IPlayer : ILiving
     public ValueTask SpawnParticleAsync(ParticleData data);
 
     /// <summary>
-    /// Grants the player a permission node, like <c>myplugin.home.set</c>, and saves their permissions. Raises
+    /// Adds an explicit permission path, like <c>myplugin.home.set</c>, and saves the player's permissions. Raises
     /// <see cref="Events.PermissionGrantedEventArgs"/> if it was new.
     /// </summary>
     /// <param name="permission">The permission node, with parts separated by dots; case is ignored.</param>
-    /// <returns><see langword="true"/> if the player didn't have the permission; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    /// <see langword="true"/> if the explicit permission path was added, even if a wildcard already granted access;
+    /// otherwise, <see langword="false"/>.
+    /// </returns>
     public Task<bool> GrantPermissionAsync(string permission);
     /// <summary>
-    /// Removes a permission node from the player, with every permission under it, and saves their permissions. Raises
-    /// <see cref="Events.PermissionRevokedEventArgs"/>.
+    /// Removes an explicit permission node, with every node under it, and saves the player's permissions. Raises
+    /// <see cref="Events.PermissionRevokedEventArgs"/> if the node existed.
     /// </summary>
     /// <param name="permission">The permission node, with parts separated by dots; case is ignored.</param>
-    /// <returns><see langword="true"/> if the player had the permission; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    /// <see langword="true"/> if the explicit node was removed; otherwise, <see langword="false"/>. A wildcard may
+    /// still grant access after removal.
+    /// </returns>
     public Task<bool> RevokePermissionAsync(string permission);
     /// <summary>
-    /// Returns whether the player has a permission node, directly or through a parent or a <c>*</c> wildcard.
+    /// Returns whether the permission's full path is granted, or a <c>*</c> wildcard on that path grants it.
     /// </summary>
     /// <param name="permission">The permission node, with parts separated by dots; case is ignored.</param>
     public bool HasPermission(string permission);

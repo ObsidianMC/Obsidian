@@ -95,8 +95,9 @@ public readonly record struct PluginDependency
     }
 
     /// <summary>
-    /// Whether this plugin loads before or after the dependency. A dependency that is present always loads first
-    /// unless this says <see cref="PluginDependencyOrdering.Before"/>.
+    /// Gets the load order relative to a required or optional dependency in the same load batch; already-loaded
+    /// plugins aren't reordered. Ignored for incompatible and discouraged dependencies. A required dependency with
+    /// <see cref="PluginDependencyOrdering.Before"/> rejects this plugin.
     /// </summary>
     public PluginDependencyOrdering Ordering { get; init; }
 
@@ -135,18 +136,24 @@ public enum PluginDependencyType
 /// <summary>
 /// The load order a plugin asks for relative to one of its dependencies.
 /// </summary>
+/// <remarks>
+/// Ordering applies only to required and optional dependencies in the same load batch. Incompatible and discouraged
+/// dependencies ignore it, and already-loaded plugins aren't reordered.
+/// </remarks>
 public enum PluginDependencyOrdering
 {
     /// <summary>
-    /// No order is given: a present dependency loads first, unless that contradicts other orderings.
+    /// Required dependencies load first. Optional dependencies in the same load batch load first unless that
+    /// contradicts other orderings.
     /// </summary>
     None,
     /// <summary>
-    /// The plugin loads before the dependency.
+    /// The plugin loads before an optional dependency in the same load batch. With a required dependency, this
+    /// rejects the plugin.
     /// </summary>
     Before,
     /// <summary>
-    /// The plugin loads after the dependency.
+    /// The plugin loads after a required or optional dependency in the same load batch.
     /// </summary>
     After
 }

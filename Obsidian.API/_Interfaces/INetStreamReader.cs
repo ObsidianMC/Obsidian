@@ -3,8 +3,7 @@ using Obsidian.API.Inventory.DataComponents;
 
 namespace Obsidian.API;
 /// <summary>
-/// Reads packet data in Minecraft's protocol formats, advancing <see cref="INetStream.Offset"/>. Reads past the end
-/// of the data throw.
+/// Reads packet data in Minecraft's protocol formats, advancing <see cref="INetStream.Offset"/>.
 /// </summary>
 public interface INetStreamReader : INetStream
 {

@@ -63,13 +63,14 @@ public abstract class PluginBase : IDisposable, IAsyncDisposable
     public override sealed string ToString() => Info?.Name ?? GetType().Name;
 
     /// <summary>
-    /// Releases the plugin's resources. The server calls <see cref="DisposeAsync"/>, which calls this by default, after
-    /// <see cref="OnUnloadingAsync"/> when the plugin unloads.
+    /// Releases the plugin's resources. The default <see cref="DisposeAsync"/> calls this when the server releases
+    /// the plugin, also after a failed load. For a loaded plugin, <see cref="OnUnloadingAsync"/> runs first.
     /// </summary>
     public virtual void Dispose() { }
     /// <summary>
-    /// Releases the plugin's resources asynchronously. The server calls it after <see cref="OnUnloadingAsync"/> when the
-    /// plugin unloads; by default it calls <see cref="Dispose"/>.
+    /// Releases the plugin's resources asynchronously. The server calls this when it releases the plugin, also after
+    /// a failed load. For a loaded plugin, <see cref="OnUnloadingAsync"/> runs first. By default, this calls
+    /// <see cref="Dispose"/>.
     /// </summary>
     public virtual ValueTask DisposeAsync()
     {

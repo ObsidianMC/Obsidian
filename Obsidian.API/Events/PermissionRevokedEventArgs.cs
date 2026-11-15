@@ -1,8 +1,8 @@
 ﻿namespace Obsidian.API.Events;
 
 /// <summary>
-/// A permission revoked from a player, raised after it and the permissions under it are removed and saved. It isn't
-/// raised when the player didn't have the permission.
+/// An explicit permission node revoked from a player, raised after it and the nodes under it are removed and saved.
+/// It isn't raised if the node didn't exist. A wildcard may still grant access after this event.
 /// </summary>
 public class PermissionRevokedEventArgs : PlayerEventArgs
 {

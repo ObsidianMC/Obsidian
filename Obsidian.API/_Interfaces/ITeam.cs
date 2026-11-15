@@ -16,7 +16,7 @@ public interface ITeam
     public ChatMessage DisplayName { get; set; }
 
     /// <summary>
-    /// Gets or sets whose name tags the team's members see.
+    /// Gets or sets who can see the team's members' name tags.
     /// </summary>
     public NameTagVisibility NameTagVisibility { get; set; }
 

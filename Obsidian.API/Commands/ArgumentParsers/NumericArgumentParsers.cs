@@ -3,7 +3,8 @@
 namespace Obsidian.API.Commands.ArgumentParsers;
 
 /// <summary>
-/// The base class for parsers of numeric command arguments, which tell the client the argument's bounds.
+/// The base class for parsers of numeric command arguments. Bounds are sent to the client only for
+/// <see cref="int"/>, <see cref="long"/>, <see cref="float"/> and <see cref="double"/>.
 /// </summary>
 /// <typeparam name="TNumber">The numeric type parsed.</typeparam>
 public abstract partial class NumericArgumentParser<TNumber> : BaseArgumentParser<TNumber> where TNumber : struct,
@@ -13,27 +14,30 @@ public abstract partial class NumericArgumentParser<TNumber> : BaseArgumentParse
 {
     private static Type NumberType => typeof(TNumber);
     /// <summary>
-    /// Gets which of <see cref="Min"/> and <see cref="Max"/> differ from the type's limits and are sent to the client.
+    /// Gets which of <see cref="Min"/> and <see cref="Max"/> differ from the type's limits. These flags are sent to the
+    /// client even for types whose bound values aren't written; see <see cref="Write"/>.
     /// </summary>
     public NumberFlags Flags { get; private set; }
 
     /// <summary>
-    /// Gets the smallest value the client accepts.
+    /// Gets the stored lower bound, sent to the client only for <see cref="int"/>, <see cref="long"/>,
+    /// <see cref="float"/> and <see cref="double"/>.
     /// </summary>
-    /// <remarks>The server's parsing doesn't check it: any value of the type parses.</remarks>
+    /// <remarks>Server parsing checks the numeric type's range, not this bound.</remarks>
     public TNumber Min { get; }
 
     /// <summary>
-    /// Gets the largest value the client accepts.
+    /// Gets the stored upper bound, sent to the client only for <see cref="int"/>, <see cref="long"/>,
+    /// <see cref="float"/> and <see cref="double"/>.
     /// </summary>
-    /// <remarks>The server's parsing doesn't check it: any value of the type parses.</remarks>
+    /// <remarks>Server parsing checks the numeric type's range, not this bound.</remarks>
     public TNumber Max { get; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="NumericArgumentParser{TNumber}"/> class with the given bounds.
     /// </summary>
-    /// <param name="min">The smallest value the client accepts.</param>
-    /// <param name="max">The largest value the client accepts.</param>
+    /// <param name="min">The lower bound to store; see <see cref="Min"/> for client support.</param>
+    /// <param name="max">The upper bound to store; see <see cref="Max"/> for client support.</param>
     protected NumericArgumentParser(TNumber min, TNumber max)
     {
         this.Min = min;
@@ -46,7 +50,9 @@ public abstract partial class NumericArgumentParser<TNumber> : BaseArgumentParse
     }
 
     /// <summary>
-    /// Writes the parser's id, <see cref="Flags"/> and the bounds it sets, as the client's command tree expects.
+    /// Writes the parser's id and <see cref="Flags"/>. Bound values are written only for <see cref="int"/>,
+    /// <see cref="long"/>, <see cref="float"/> and <see cref="double"/>. Other types with non-default bounds set the
+    /// flags without writing the values, so their bounds aren't sent correctly to clients.
     /// </summary>
     /// <param name="writer">The stream to write to.</param>
     public override void Write(INetStreamWriter writer)
@@ -104,10 +110,14 @@ public sealed partial class UnsignedByteArgumentParser : NumericArgumentParser<b
     /// </summary>
     public UnsignedByteArgumentParser() : base(byte.MinValue, byte.MaxValue) { }
     /// <summary>
-    /// Initializes a new instance of the <see cref="UnsignedByteArgumentParser"/> class with bounds the client enforces.
+    /// Initializes a new instance of the <see cref="UnsignedByteArgumentParser"/> class with stored bounds.
     /// </summary>
-    /// <param name="min">The smallest value the client accepts.</param>
-    /// <param name="max">The largest value the client accepts.</param>
+    /// <remarks>
+    /// Non-default bounds set the flags without writing their values, so the bounds aren't sent correctly to clients.
+    /// Server parsing checks only the numeric type's range, not these bounds.
+    /// </remarks>
+    /// <param name="min">The lower bound to store.</param>
+    /// <param name="max">The upper bound to store.</param>
     public UnsignedByteArgumentParser(byte min, byte max) : base(min, max) { }
 
     /// <inheritdoc />
@@ -126,10 +136,14 @@ public sealed partial class SignedByteArgumentParser : NumericArgumentParser<sby
     /// </summary>
     public SignedByteArgumentParser() : base(sbyte.MinValue, sbyte.MaxValue) { }
     /// <summary>
-    /// Initializes a new instance of the <see cref="SignedByteArgumentParser"/> class with bounds the client enforces.
+    /// Initializes a new instance of the <see cref="SignedByteArgumentParser"/> class with stored bounds.
     /// </summary>
-    /// <param name="min">The smallest value the client accepts.</param>
-    /// <param name="max">The largest value the client accepts.</param>
+    /// <remarks>
+    /// Non-default bounds set the flags without writing their values, so the bounds aren't sent correctly to clients.
+    /// Server parsing checks only the numeric type's range, not these bounds.
+    /// </remarks>
+    /// <param name="min">The lower bound to store.</param>
+    /// <param name="max">The upper bound to store.</param>
     public SignedByteArgumentParser(sbyte min, sbyte max) : base(min, max) { }
 
     /// <inheritdoc />
@@ -148,10 +162,14 @@ public sealed partial class SignedShortArgumentParser : NumericArgumentParser<sh
     /// </summary>
     public SignedShortArgumentParser() : base(short.MinValue, short.MaxValue) { }
     /// <summary>
-    /// Initializes a new instance of the <see cref="SignedShortArgumentParser"/> class with bounds the client enforces.
+    /// Initializes a new instance of the <see cref="SignedShortArgumentParser"/> class with stored bounds.
     /// </summary>
-    /// <param name="min">The smallest value the client accepts.</param>
-    /// <param name="max">The largest value the client accepts.</param>
+    /// <remarks>
+    /// Non-default bounds set the flags without writing their values, so the bounds aren't sent correctly to clients.
+    /// Server parsing checks only the numeric type's range, not these bounds.
+    /// </remarks>
+    /// <param name="min">The lower bound to store.</param>
+    /// <param name="max">The upper bound to store.</param>
     public SignedShortArgumentParser(short min, short max) : base(min, max) { }
 
     /// <inheritdoc />
@@ -170,10 +188,14 @@ public sealed partial class UnsignedShortArgumentParser : NumericArgumentParser<
     /// </summary>
     public UnsignedShortArgumentParser() : base(ushort.MinValue, ushort.MaxValue) { }
     /// <summary>
-    /// Initializes a new instance of the <see cref="UnsignedShortArgumentParser"/> class with bounds the client enforces.
+    /// Initializes a new instance of the <see cref="UnsignedShortArgumentParser"/> class with stored bounds.
     /// </summary>
-    /// <param name="min">The smallest value the client accepts.</param>
-    /// <param name="max">The largest value the client accepts.</param>
+    /// <remarks>
+    /// Non-default bounds set the flags without writing their values, so the bounds aren't sent correctly to clients.
+    /// Server parsing checks only the numeric type's range, not these bounds.
+    /// </remarks>
+    /// <param name="min">The lower bound to store.</param>
+    /// <param name="max">The upper bound to store.</param>
     public UnsignedShortArgumentParser(ushort min, ushort max) : base(min, max) { }
 
     /// <inheritdoc />
@@ -192,10 +214,14 @@ public sealed partial class UnsignedIntArgumentParser : NumericArgumentParser<ui
     /// </summary>
     public UnsignedIntArgumentParser() : base(uint.MinValue, uint.MaxValue) { }
     /// <summary>
-    /// Initializes a new instance of the <see cref="UnsignedIntArgumentParser"/> class with bounds the client enforces.
+    /// Initializes a new instance of the <see cref="UnsignedIntArgumentParser"/> class with stored bounds.
     /// </summary>
-    /// <param name="min">The smallest value the client accepts.</param>
-    /// <param name="max">The largest value the client accepts.</param>
+    /// <remarks>
+    /// Non-default bounds set the flags without writing their values, so the bounds aren't sent correctly to clients.
+    /// Server parsing checks only the numeric type's range, not these bounds.
+    /// </remarks>
+    /// <param name="min">The lower bound to store.</param>
+    /// <param name="max">The upper bound to store.</param>
     public UnsignedIntArgumentParser(uint min, uint max) : base(min, max) { }
 
     /// <inheritdoc />
@@ -236,10 +262,14 @@ public sealed partial class UnsignedLongArgumentParser : NumericArgumentParser<u
     /// </summary>
     public UnsignedLongArgumentParser() : base(ulong.MinValue, ulong.MaxValue) { }
     /// <summary>
-    /// Initializes a new instance of the <see cref="UnsignedLongArgumentParser"/> class with bounds the client enforces.
+    /// Initializes a new instance of the <see cref="UnsignedLongArgumentParser"/> class with stored bounds.
     /// </summary>
-    /// <param name="min">The smallest value the client accepts.</param>
-    /// <param name="max">The largest value the client accepts.</param>
+    /// <remarks>
+    /// Non-default bounds set the flags without writing their values, so the bounds aren't sent correctly to clients.
+    /// Server parsing checks only the numeric type's range, not these bounds.
+    /// </remarks>
+    /// <param name="min">The lower bound to store.</param>
+    /// <param name="max">The upper bound to store.</param>
     public UnsignedLongArgumentParser(ulong min, ulong max) : base(min, max) { }
 
     /// <inheritdoc />
@@ -302,10 +332,14 @@ public sealed partial class DecimalArgumentParser : NumericArgumentParser<decima
     /// </summary>
     public DecimalArgumentParser() : base(decimal.MinValue, decimal.MaxValue) { }
     /// <summary>
-    /// Initializes a new instance of the <see cref="DecimalArgumentParser"/> class with bounds the client enforces.
+    /// Initializes a new instance of the <see cref="DecimalArgumentParser"/> class with stored bounds.
     /// </summary>
-    /// <param name="min">The smallest value the client accepts.</param>
-    /// <param name="max">The largest value the client accepts.</param>
+    /// <remarks>
+    /// Non-default bounds set the flags without writing their values, so the bounds aren't sent correctly to clients.
+    /// Server parsing checks only the numeric type's range, not these bounds.
+    /// </remarks>
+    /// <param name="min">The lower bound to store.</param>
+    /// <param name="max">The upper bound to store.</param>
     public DecimalArgumentParser(decimal min, decimal max) : base(min, max) { }
 
     /// <inheritdoc />
@@ -314,7 +348,8 @@ public sealed partial class DecimalArgumentParser : NumericArgumentParser<decima
 }
 
 /// <summary>
-/// Which bounds a numeric command argument sends to the client.
+/// Which stored bounds differ from a numeric type's limits. See <see cref="NumericArgumentParser{TNumber}.Write"/>
+/// for which types send the bound values to the client.
 /// </summary>
 [Flags]
 public enum NumberFlags : byte

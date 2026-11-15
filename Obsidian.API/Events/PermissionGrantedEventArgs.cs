@@ -1,8 +1,8 @@
 ﻿namespace Obsidian.API.Events;
 
 /// <summary>
-/// A permission granted to a player, raised after it is added and saved. It isn't raised when the player already had
-/// the permission.
+/// An explicit permission path added to a player, raised after it is added and saved. It isn't raised if the path
+/// already exists. A wildcard may already have granted access before this event.
 /// </summary>
 public class PermissionGrantedEventArgs : PlayerEventArgs
 {

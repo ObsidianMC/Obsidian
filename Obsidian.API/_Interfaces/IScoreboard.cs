@@ -48,7 +48,7 @@ public interface IScoreboard
     /// </summary>
     /// <param name="name">The team's unique name.</param>
     /// <param name="displayName">The name shown for the team.</param>
-    /// <param name="nameTagVisibility">Whose name tags the team's members see.</param>
+    /// <param name="nameTagVisibility">Who can see the team's members' name tags.</param>
     /// <param name="collisionRule">Which entities the team's members push.</param>
     /// <param name="color">The color of the team's members' names.</param>
     /// <param name="entities">The team's members: players' usernames, or other entities' UUIDs.</param>
@@ -62,7 +62,7 @@ public interface IScoreboard
     /// </summary>
     /// <param name="name">The team's unique name.</param>
     /// <param name="displayName">The name shown for the team.</param>
-    /// <param name="nameTagVisibility">Whose name tags the team's members see.</param>
+    /// <param name="nameTagVisibility">Who can see the team's members' name tags.</param>
     /// <param name="collisionRule">Which entities the team's members push.</param>
     /// <param name="color">The color of the team's members' names.</param>
     /// <param name="prefix">The text shown before members' names.</param>

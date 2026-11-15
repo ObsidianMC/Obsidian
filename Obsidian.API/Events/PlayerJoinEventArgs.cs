@@ -1,7 +1,8 @@
 ﻿namespace Obsidian.API.Events;
 
 /// <summary>
-/// A player joining the server, raised once they finish configuration and enter the game.
+/// Raised when a player joins the game. Connected players have finished configuration; server-side players raise
+/// it too, without a configuration phase.
 /// </summary>
 public class PlayerJoinEventArgs : PlayerEventArgs
 {

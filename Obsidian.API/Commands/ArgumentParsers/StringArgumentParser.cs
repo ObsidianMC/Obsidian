@@ -1,8 +1,9 @@
 ﻿namespace Obsidian.API.Commands.ArgumentParsers;
 
 /// <summary>
-/// Reads a string argument. The server passes the argument's words through as they were typed; <see cref="Type"/>
-/// tells the client how much of the line to take.
+/// Reads a string argument after the server's tokenization removes quotes and resolves backslash escapes.
+/// A trailing parameter marked with <see cref="RemainingAttribute"/> receives the remaining words joined with spaces.
+/// <see cref="Type"/> tells the client how much of the line to take.
 /// </summary>
 [ArgumentParser("brigadier:string")]
 public sealed partial class StringArgumentParser(StringType type) : BaseArgumentParser<string>

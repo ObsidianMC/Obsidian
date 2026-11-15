@@ -9,7 +9,8 @@ using Obsidian.API.World.Features;
 namespace Obsidian.API.Plugins;
 /// <summary>
 /// Registers a plugin's commands, events and content with the server. A plugin gets one in
-/// <see cref="PluginBase.ConfigureRegistry(IPluginRegistry)"/>, and what it registers is removed when it unloads.
+/// <see cref="PluginBase.ConfigureRegistry(IPluginRegistry)"/>. Unloading removes the plugin's handlers and behaviour.
+/// Some content stays registered until the server stops; see each registration method.
 /// </summary>
 public interface IPluginRegistry
 {
