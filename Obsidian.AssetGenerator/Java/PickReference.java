@@ -7,7 +7,7 @@ import com.google.gson.*;
 import java.nio.file.*;
 
 // Records default-state clone results from the pinned vanilla server jar and its existing libraries.
-// Run with Java 25: java -cp <server-26.3.jar;cached library jars> PickReference.java <output.json>
+// Re-record with CaptureVanillaScenarios and CaptureFixtures=pick_blocks.
 // The LevelReader supplies registries only; these cases do not depend on block-entity contents.
 class PickReference {
     private static final String[] BLOCKS = {

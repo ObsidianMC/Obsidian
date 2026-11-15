@@ -14,6 +14,10 @@ internal static class FixtureDumper
             "-cp", string.Join(Path.PathSeparator, server.ClassPath), Source("InvisibilityFixtures.java"), fixture);
     }
 
+    internal static Task DumpPickBlocksAsync(VanillaServer server, string fixture) =>
+        VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
+            Source("PickReference.java"), fixture);
+
     internal static Task DumpCopperWeatheringAsync(VanillaServer server, string fixture) =>
         VanillaServer.RunJavaAsync(server.ScratchDirectory, "-cp", string.Join(Path.PathSeparator, server.ClassPath),
             Source("CopperWeatheringFixtures.java"), fixture);

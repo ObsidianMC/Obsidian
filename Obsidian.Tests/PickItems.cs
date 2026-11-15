@@ -24,7 +24,7 @@ using Xunit;
 
 namespace Obsidian.Tests;
 
-public sealed class PickItems
+public sealed partial class PickItems
 {
     private static readonly Vector Target = new(8, 65, 8);
     private static readonly VectorD Start = new(8.5, 64, 8.5);
@@ -400,8 +400,19 @@ public sealed class PickItems
         return packet.HandleAsync(server, player);
     }
 
-    private static IClientboundPacket[] Delivered(TestClient client) => client.SentPackets
-        .SelectMany(packet => packet is BundledPacket bundle ? bundle.Packets.Cast<IClientboundPacket>() : new[] { packet }).ToArray();
+    private static IClientboundPacket[] Delivered(TestClient client)
+    {
+        var delivered = new List<IClientboundPacket>();
+        foreach (var packet in client.SentPackets)
+        {
+            if (packet is BundledPacket bundle)
+                delivered.AddRange(bundle.Packets);
+            else
+                delivered.Add(packet);
+        }
+
+        return delivered.ToArray();
+    }
 
     private static void AssertSlot(IClientboundPacket packet, int slot, Item? item, int count, int state)
     {

@@ -35,6 +35,7 @@
 		                             Java\FireFixtures.java;Java\BlockUseFixtures.java;
 		                             Java\MeltingWeatherFixtures.java" />
 		<VanillaDumperInput Remove="Java\TickingBlockFixtures.java" />
+		<VanillaDumperInput Remove="Java\PickReference.java" />
 		<VanillaDumperInput Remove="Java\BlockUseInstrumentation.java" />
 		<VanillaDumperInput Remove="Java\BlockContactFixtures.java" />
 		<VanillaDumperInput Remove="Java\ProjectileHitFixtures.java" />
@@ -62,6 +63,7 @@
 
 		<None Update="@(VanillaDumperInput)" CopyToOutputDirectory="PreserveNewest" />
 		<!-- Gameplay probes run only through their requested CaptureFixtures entry. -->
+		<None Update="Java\PickReference.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\JigsawBlockFixtures.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\JigsawBlockInstrumentation.java" CopyToOutputDirectory="PreserveNewest" />
 		<None Update="Java\MoreBlockFixtures.java" CopyToOutputDirectory="PreserveNewest" />

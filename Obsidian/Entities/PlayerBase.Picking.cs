@@ -1,4 +1,7 @@
 using Obsidian.API.Inventory;
+using Obsidian.API.BlockEntities;
+using Obsidian.Nbt;
+using System.Text.Json;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.Net;
 using Obsidian.Net.Packets;
@@ -11,46 +14,94 @@ public partial class PlayerBase
 {
     internal async ValueTask PickBlockAsync(Vector position, bool includeData)
     {
-        var min = (VectorD)position;
-        if (!this.CanPick(new BoundingBox(min, min + new VectorD(1)), BlockInteractionRange(this) + 1))
+        if (this.Level is not AbstractLevel level)
             return;
 
-        // Picking must never generate a chunk in response to an untrusted client position.
-        if (this.Level is not AbstractLevel level || level.GetLoadedChunk(position.X >> 4, position.Z >> 4) is null)
+        IBlock block;
+        BlockEntity? entity;
+        // The tick lock guards block/entity publication; transfer pins the player's level in the same snapshot.
+        lock (level.Fluids.TickLock)
+        {
+            using var ownership = level.TransferLock.Enter();
+            var min = (VectorD)position;
+            if (!ReferenceEquals(this.Level, level)
+                || !this.CanPick(new BoundingBox(min, min + new VectorD(1)), BlockInteractionRange(this) + 1)
+                || level.GetLoadedChunk(position.X >> 4, position.Z >> 4) is not Chunk chunk
+                || level.IsOutsideBuildHeight(position.Y))
+            {
+                return;
+            }
+
+            lock (chunk.BlockLock)
+            {
+                block = chunk.GetBlock(position.X, position.Y, position.Z);
+                entity = block.HasBlockEntity()
+                    ? chunk.GetBlockEntity(position.X, position.Y, position.Z) as BlockEntity : null;
+            }
+        }
+
+        if (block.IsAir)
             return;
 
-        var block = await level.GetBlockAsync(position);
-        if (block is null || block.IsAir)
-            return;
-
+        // Serialization may take inventory locks. Keep it outside block/transfer locks, using only captured identities.
+        var data = entity is null ? null : BlockEntityNbt.Save(entity);
         var withData = includeData && this.GameMode == GameMode.Creative;
-        var item = await this.ClonePickedBlockAsync(block, position, withData);
+        var item = await ClonePickedBlockAsync(level, block, entity, data, withData);
         if (item is { IsAir: false, Count: > 0 })
             await this.SelectPickedItemAsync(item);
     }
 
     internal async ValueTask PickEntityAsync(int entityId)
     {
-        var range = this.HasAttribute("minecraft:entity_interaction_range")
-            ? this.GetAttributeValue("minecraft:entity_interaction_range") : 3;
-        if (this.GameMode == GameMode.Creative)
-            range += 2;
-
-        // Resolve by id before testing the target box, including large entities and dragon parts.
-        var nearby = this.Level.GetEntitiesInRange(this.Position, float.MaxValue).OfType<Entity>().ToArray();
-        var entity = nearby.FirstOrDefault(candidate => candidate.EntityId == entityId)
-            ?? nearby.OfType<EnderDragon>().SelectMany(dragon => dragon.Parts)
-                .FirstOrDefault(part => part.EntityId == entityId);
-        if (entity is null
-            || entity is Mob { IsRemoved: true } or VehicleEntity { IsRemoved: true }
-            || !this.CanPick(entity.CurrentBox, range + 3))
-        {
+        if (this.Level is not AbstractLevel level)
             return;
+
+        ItemStack? item;
+        using (level.TransferLock.Enter())
+        {
+            if (!ReferenceEquals(this.Level, level))
+                return;
+
+            var entity = FindPickedEntity(level, entityId);
+            var member = entity is EnderDragonPart part ? part.Parent : entity;
+            var range = this.GetInteractionRange("minecraft:entity_interaction_range",
+                this.GameMode == GameMode.Creative ? 2 : 0, 3);
+            if (entity is null || member is null
+                || !ReferenceEquals(member.Level, level) || !member.IsMemberOf(level)
+                || member is ArmorStand { IsRemoved: true } or Mob { IsRemoved: true }
+                    or VehicleEntity { IsRemoved: true }
+                || !this.CanPick(entity.CurrentBox, range + 3))
+            {
+                return;
+            }
+
+            item = ClonePickedEntity(member);
         }
 
-        if (entity is EnderDragonPart part)
-            entity = part.Parent;
+        if (item is { IsAir: false, Count: > 0 })
+            await this.SelectPickedItemAsync(item);
+    }
 
+    private static Entity? FindPickedEntity(AbstractLevel level, int entityId)
+    {
+        foreach (var (_, region) in level.Regions)
+        {
+            if (region.Entities.TryGetValue(entityId, out var found))
+                return found as Entity;
+
+            // Vanilla assigns the dragon's eight part ids immediately after its own id.
+            for (var offset = 1; offset <= 8; offset++)
+            {
+                if (region.Entities.TryGetValue(entityId - offset, out var parent) && parent is EnderDragon dragon)
+                    return dragon.Parts.FirstOrDefault(part => part.EntityId == entityId);
+            }
+        }
+
+        return null;
+    }
+
+    private static ItemStack? ClonePickedEntity(Entity entity)
+    {
         ItemStack? item = entity switch
         {
             VehicleEntity vehicle => new ItemStack(vehicle.PickItem),
@@ -75,8 +126,7 @@ public partial class PlayerBase
             item[DataComponentType.CustomName] = ComponentBuilder.CustomName with { Value = customName };
         }
 
-        if (item is { IsAir: false, Count: > 0 })
-            await this.SelectPickedItemAsync(item);
+        return item;
     }
 
     private bool CanPick(BoundingBox box, double range)
@@ -90,6 +140,7 @@ public partial class PlayerBase
 
     private async ValueTask SelectPickedItemAsync(ItemStack requested)
     {
+        var defaults = PickDefaults(requested.Holder);
         var changes = new List<ClientboundPacket>();
         ClickWindowState state;
         SetHeldSlotPacket held;
@@ -98,7 +149,8 @@ public partial class PlayerBase
             // Vanilla searches hotbar 0..8 before main inventory 9..35, ignoring count and equipment slots.
             var slots = Enumerable.Range(36, 9).Concat(Enumerable.Range(9, 27)).ToArray();
             var matching = slots.FirstOrDefault(slot =>
-                this.Inventory.GetItem(slot) is { IsAir: false, Count: > 0 } stack && stack.Equals(requested), -1);
+                this.Inventory.GetItem(slot) is { IsAir: false, Count: > 0 } stack
+                && stack.HasSameEffectiveComponents(requested, defaults), -1);
             var changed = new SortedSet<int>();
             if (matching >= 36)
             {
@@ -159,6 +211,28 @@ public partial class PlayerBase
 
         // Uses the same ordered delivery and stale-snapshot recovery as inventory clicks and pickups.
         await this.WindowSnapshots.SendChangeAsync(this, state, changes, lead: held);
+    }
+
+    private static readonly Lazy<Dictionary<string, JsonElement>> pickDefaults = new(() =>
+    {
+        using var stream = typeof(PlayerBase).Assembly.GetManifestResourceStream("Obsidian.Assets.item_components.json")!;
+        using var document = JsonDocument.Parse(stream);
+        return document.RootElement.EnumerateObject().ToDictionary(
+            item => item.Name, item => item.Value.GetProperty("components").Clone());
+    });
+
+    private static readonly ConcurrentDictionary<string, ItemStack> pickDefaultStacks = new();
+
+    private static ItemStack PickDefaults(Item item)
+    {
+        if (!pickDefaults.Value.TryGetValue(item.UnlocalizedName, out var components))
+            return new ItemStack(item);
+
+        return pickDefaultStacks.GetOrAdd(item.UnlocalizedName, _ => new NbtCompound
+        {
+            new NbtTag<string>("id", item.UnlocalizedName),
+            JsonNbt.ToNbt("components", components)
+        }.ItemFromNbt()!);
     }
 
     private static bool Empty(ItemStack? item) => item is null || item.IsAir || item.Count <= 0;

@@ -40,9 +40,12 @@ public partial class PlayerBase
     internal static double BlockInteractionRange(IPlayer player)
     {
         const string attribute = "minecraft:block_interaction_range";
-        var range = player.HasAttribute(attribute) ? player.GetAttributeValue(attribute) : 4.5;
+        var addition = player.GameMode == GameMode.Creative ? 0.5 : 0;
+        if (player is Entity entity)
+            return entity.GetInteractionRange(attribute, addition, 4.5);
 
-        return player.GameMode == GameMode.Creative ? range + 0.5 : range;
+        var range = player.HasAttribute(attribute) ? player.GetAttributeValue(attribute) : 4.5;
+        return range + addition;
     }
 
     /// <summary>

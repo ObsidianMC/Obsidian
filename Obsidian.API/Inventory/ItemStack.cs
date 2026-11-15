@@ -290,6 +290,35 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
         return true;
     }
 
+    /// <summary>Compares effective component maps, resolving item defaults before applying patches and removals.</summary>
+    internal bool HasSameEffectiveComponents(ItemStack other, ItemStack defaults) =>
+        this.Holder.Equals(other.Holder)
+        && this.ResolveForComparison(defaults).Equals(other.ResolveForComparison(defaults));
+
+    private ItemStack ResolveForComparison(ItemStack defaults)
+    {
+        var saved = ComponentCopies.Nbt(defaults.UnmodeledComponents) ?? new NbtCompound();
+        foreach (var (name, value) in ComponentCopies.Nbt(this.UnmodeledComponents) ?? [])
+        {
+            saved.Remove(name);
+            saved.Add(name, value);
+        }
+
+        foreach (var type in this.RemoveComponents)
+            saved.Remove(OpaqueDataComponent.GetIdentifier(type));
+
+        var resolved = new ItemStack(this) { UnmodeledComponents = saved.Count == 0 ? null : saved };
+        resolved.InternalStorage.Clear();
+        resolved.Placeholders.Clear();
+        foreach (var component in defaults.Holder.DefaultComponents.Concat(defaults.Patch).Concat(this.Patch))
+            resolved.InternalStorage[component.Type] = component;
+
+        foreach (var type in this.RemoveComponents)
+            resolved.InternalStorage.Remove(type);
+
+        return resolved;
+    }
+
     private bool ProjectedComponentsEqual(ItemStack other) =>
         this.ProjectComponents(this.InternalStorage.Values).OrderBy(value => value.Type)
             .SequenceEqual(other.ProjectComponents(other.InternalStorage.Values).OrderBy(value => value.Type))

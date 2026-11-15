@@ -71,6 +71,18 @@ public partial class Entity
         }
     }
 
+    /// <summary>Computes an interaction range with its creative addition before multiplication and clamping.</summary>
+    internal double GetInteractionRange(string attribute, double addition, double fallback)
+    {
+        var name = this.ResolveAttributeName(attribute);
+        var baseValue = this.Attributes.TryGetValue(name, out var value) ? value : fallback;
+        lock (this.attributeLock)
+        {
+            var modifiers = this.attributeModifiers?.GetValueOrDefault(name);
+            return Compute(VanillaName(name), baseValue + addition, modifiers?.Values);
+        }
+    }
+
     public bool SetAttributeModifier(string attribute, string id, double amount, AttributeOperation operation)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(id);

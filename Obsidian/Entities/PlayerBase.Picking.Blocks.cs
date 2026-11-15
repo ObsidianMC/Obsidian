@@ -9,7 +9,8 @@ namespace Obsidian.Entities;
 
 public partial class PlayerBase
 {
-    private async ValueTask<ItemStack?> ClonePickedBlockAsync(IBlock block, Vector position, bool includeData)
+    private static async ValueTask<ItemStack?> ClonePickedBlockAsync(
+        AbstractLevel level, IBlock block, BlockEntity? entity, NbtCompound? data, bool includeData)
     {
         var name = block.UnlocalizedName;
         var itemName = name switch
@@ -79,9 +80,8 @@ public partial class PlayerBase
         var pot = name == "minecraft:decorated_pot";
         if (includeData || banner || pot || statue)
         {
-            if (await this.Level.GetBlockEntityAsync(position) is BlockEntity entity)
+            if (entity is not null)
             {
-                var data = BlockEntityNbt.Save(entity);
                 if (data is not null)
                 {
                     foreach (var field in new[] { "id", "x", "y", "z", "keepPacked", "obsidian:container" })
@@ -102,7 +102,7 @@ public partial class PlayerBase
                     }
                 }
 
-                if (includeData && entity.Owner is PluginContainer plugin && this.Level is AbstractLevel level)
+                if (includeData && entity.Owner is PluginContainer plugin)
                 {
                     foreach (var component in await level.CollectPluginComponentsAsync(entity, plugin, holder))
                         item[component.Type] = component;
@@ -157,14 +157,18 @@ public partial class PlayerBase
         if (!includeData)
             return;
 
-        if (entity is ContainerBlockEntity || entity.Id is "minecraft:beacon" or "minecraft:enchanting_table"
-            or "minecraft:command_block")
-        {
+        // These are vanilla's collecting block-entity types; Obsidian also models lecterns as containers.
+        var container = entity.Id is "minecraft:chest" or "minecraft:trapped_chest" or "minecraft:barrel"
+            or "minecraft:furnace" or "minecraft:blast_furnace" or "minecraft:smoker"
+            or "minecraft:brewing_stand" or "minecraft:hopper" or "minecraft:dispenser" or "minecraft:dropper"
+            or "minecraft:shulker_box" or "minecraft:crafter";
+        if (container || entity.Id is "minecraft:beacon" or "minecraft:enchanting_table" or "minecraft:command_block")
             Move("CustomName", "minecraft:custom_name");
+
+        if (container || entity.Id == "minecraft:beacon")
             Move("lock", "minecraft:lock");
-        }
-        if (entity is ContainerBlockEntity || entity.Id is "minecraft:campfire" or "minecraft:chiseled_bookshelf"
-            or "minecraft:shelf")
+
+        if (container || entity.Id is "minecraft:campfire" or "minecraft:chiseled_bookshelf" or "minecraft:shelf")
         {
             var contents = new NbtList(NbtTagType.Compound, "minecraft:container");
             if (data.TryGetTag<NbtList>("Items", out var items))
@@ -184,7 +188,7 @@ public partial class PlayerBase
             data.Remove("Items");
             SetPickedTag(components, "minecraft:container", contents);
         }
-        if (data.TryGetTagValue<string>("LootTable", out var table))
+        if ((container || pot) && data.TryGetTagValue<string>("LootTable", out var table))
         {
             var loot = new NbtCompound
             {
