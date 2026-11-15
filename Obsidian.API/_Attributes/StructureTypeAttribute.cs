@@ -7,5 +7,8 @@ namespace Obsidian.API;
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
 public sealed class StructureTypeAttribute(string identifier) : Attribute
 {
+    /// <summary>
+    /// Gets the type's identifier.
+    /// </summary>
     public string Identifier { get; } = identifier;
 }

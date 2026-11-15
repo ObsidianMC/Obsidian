@@ -1,5 +1,8 @@
 ﻿namespace Obsidian.API.Events;
 
+/// <summary>
+/// A packet a player's client sent in the configuration or play state, raised before the server handles it.
+/// </summary>
 public sealed class PacketReceivedEventArgs : PlayerEventArgs, ICancellable
 {
     /// <summary>

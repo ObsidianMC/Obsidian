@@ -5,5 +5,8 @@ namespace Obsidian.API;
 /// </summary>
 public interface IClientPlayer : IPlayer
 {
+    /// <summary>
+    /// Gets the player's connection.
+    /// </summary>
     public IClient Client { get; }
 }

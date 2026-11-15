@@ -7,6 +7,7 @@ namespace Obsidian.API.Commands.ArgumentParsers;
 [ArgumentParser("minecraft:game_profile")]
 public sealed partial class PlayerArgumentParser : BaseArgumentParser<IPlayer>
 {
+    /// <inheritdoc />
     public override bool TryParseArgument(string input, CommandContext context, out IPlayer result)
     {
         var server = context.Server;

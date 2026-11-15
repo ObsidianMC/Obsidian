@@ -10,5 +10,10 @@
 /// </remarks>
 public abstract class BaseExecutionCheckAttribute : Attribute
 {
+    /// <summary>
+    /// Returns whether the sender in <paramref name="context"/> may run the command.
+    /// </summary>
+    /// <param name="context">The context of the command, with its sender.</param>
+    /// <returns><see langword="true"/> if the command may run; otherwise, <see langword="false"/>.</returns>
     public abstract Task<bool> RunChecksAsync(CommandContext context);
 }

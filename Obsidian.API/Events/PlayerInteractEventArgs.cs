@@ -24,6 +24,9 @@ public sealed class PlayerInteractEventArgs : PlayerEventArgs, ICancellable
     /// </summary>
     public Vector? BlockLocation { get; init; }
 
+    /// <summary>
+    /// Gets the hand the player interacted with.
+    /// </summary>
     public InteractionHand Hand { get; init; }
 
     /// <summary>An insertion asks plugins for permission without requesting the block's menu.</summary>
@@ -32,6 +35,11 @@ public sealed class PlayerInteractEventArgs : PlayerEventArgs, ICancellable
     /// <inheritdoc />
     public bool IsCancelled { get; private set; }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PlayerInteractEventArgs"/> class.
+    /// </summary>
+    /// <param name="player">The player who interacted.</param>
+    /// <param name="server">The server the event takes place in.</param>
     public PlayerInteractEventArgs(IPlayer player, IServer server) : base(player, server) { }
 
     /// <inheritdoc />

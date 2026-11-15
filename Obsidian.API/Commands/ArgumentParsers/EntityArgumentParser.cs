@@ -7,10 +7,18 @@ namespace Obsidian.API.Commands.ArgumentParsers;
 [ArgumentParser("minecraft:entity")]
 public sealed partial class EntityArgumentParser(EntityFilter mask) : BaseArgumentParser<IEntity>
 {
+    /// <summary>
+    /// Gets or sets what the client lets the argument select, sent with the command tree.
+    /// </summary>
     public EntityFilter Mask { get; set; } = mask;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="EntityArgumentParser"/> class that tells the client to accept one
+    /// entity of any type.
+    /// </summary>
     public EntityArgumentParser() : this(EntityFilter.SingleEntityOrPlayer) { }
 
+    /// <inheritdoc />
     public override bool TryParseArgument(string input, CommandContext ctx, out IEntity result)
     {
         result = null!;
@@ -25,6 +33,7 @@ public sealed partial class EntityArgumentParser(EntityFilter mask) : BaseArgume
         return true;
     }
 
+    /// <inheritdoc />
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
@@ -42,6 +51,7 @@ public sealed partial class EntityArgumentParser(EntityFilter mask) : BaseArgume
 [ArgumentParser("minecraft:entity")]
 public sealed partial class EntitiesArgumentParser : BaseArgumentParser<IEntity[]>
 {
+    /// <inheritdoc />
     public override bool TryParseArgument(string input, CommandContext ctx, out IEntity[] result)
     {
         result = [];
@@ -53,6 +63,7 @@ public sealed partial class EntitiesArgumentParser : BaseArgumentParser<IEntity[
         return true;
     }
 
+    /// <inheritdoc />
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
@@ -68,6 +79,7 @@ public sealed partial class EntitiesArgumentParser : BaseArgumentParser<IEntity[
 [ArgumentParser("minecraft:entity")]
 public sealed partial class PlayersArgumentParser : BaseArgumentParser<IPlayer[]>
 {
+    /// <inheritdoc />
     public override bool TryParseArgument(string input, CommandContext ctx, out IPlayer[] result)
     {
         result = [];
@@ -79,6 +91,7 @@ public sealed partial class PlayersArgumentParser : BaseArgumentParser<IPlayer[]
         return true;
     }
 
+    /// <inheritdoc />
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);

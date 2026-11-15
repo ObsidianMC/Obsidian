@@ -11,8 +11,17 @@ namespace Obsidian.API;
 [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false)]
 public sealed class ClientSuggestionsAttribute(string provider) : Attribute
 {
+    /// <summary>
+    /// The client's provider of every sound it knows.
+    /// </summary>
     public const string AvailableSounds = "minecraft:available_sounds";
+    /// <summary>
+    /// The client's provider of the entity types that can be summoned.
+    /// </summary>
     public const string SummonableEntities = "minecraft:summonable_entities";
 
+    /// <summary>
+    /// Gets the identifier of the client's suggestion provider.
+    /// </summary>
     public string Provider { get; } = provider;
 }

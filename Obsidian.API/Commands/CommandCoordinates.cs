@@ -12,10 +12,14 @@ public static class CommandCoordinates
     /// Reads three coordinates separated by spaces, relative to <paramref name="context"/>'s
     /// <see cref="CommandContext.Origin"/> and <see cref="CommandContext.Rotation"/>.
     /// </summary>
+    /// <param name="input">The three coordinates, separated by spaces.</param>
+    /// <param name="context">The context of the command, whose origin and rotation relative coordinates use.</param>
     /// <param name="centerBlocks">
     /// Whether absolute whole numbers of x and z name the block's center, as vanilla's <c>vec3</c> arguments do.
     /// </param>
     /// <param name="wholeNumbers">Whether absolute numbers must be whole, as in a block position.</param>
+    /// <param name="result">The position read, or the default value if the input is invalid.</param>
+    /// <returns><see langword="true"/> if the input held three valid coordinates; otherwise, <see langword="false"/>.</returns>
     public static bool TryParse(string input, CommandContext context, bool centerBlocks, bool wholeNumbers, out VectorD result)
     {
         result = default;

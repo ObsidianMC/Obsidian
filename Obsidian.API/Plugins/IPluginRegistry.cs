@@ -7,6 +7,11 @@ using Obsidian.API.Networking;
 using Obsidian.API.World.Features;
 
 namespace Obsidian.API.Plugins;
+/// <summary>
+/// Registers a plugin's commands, events and content with the server. A plugin gets one in
+/// <see cref="PluginBase.ConfigureRegistry(IPluginRegistry)"/>. Unloading removes the plugin's handlers and behaviour.
+/// Some content stays registered until the server stops; see each registration method.
+/// </summary>
 public interface IPluginRegistry
 {
     /// <summary>Registers a synced custom statistic in the plugin's namespace during ConfigureRegistry.</summary>
@@ -55,10 +60,37 @@ public interface IPluginRegistry
     public RecipeType<TRecipe> RegisterRecipeType<TRecipe>(string identifier, IRecipeSerializer<TRecipe> serializer)
         where TRecipe : class => throw new NotSupportedException("This side doesn't support server recipe types.");
 
+    /// <summary>
+    /// Adds a parser for command parameters of type <typeparamref name="T"/>. It is ignored if a parser for
+    /// <typeparamref name="T"/> is already registered.
+    /// </summary>
+    /// <param name="parser">The parser to add.</param>
+    /// <returns>This registry, for chaining.</returns>
+    /// <exception cref="InvalidOperationException">The plugin is unloading.</exception>
     public IPluginRegistry RegisterCommandArgumentHandler<T>(BaseArgumentParser<T> parser);
 
+    /// <summary>
+    /// Registers every top-level <see cref="Commands.CommandModuleBase"/> class in the plugin's assembly as a command, with its
+    /// nested groups as subcommands.
+    /// </summary>
+    /// <returns>This registry, for chaining.</returns>
     public IPluginRegistry MapCommands();
+    /// <summary>
+    /// Registers a command that runs <paramref name="contextDelegate"/>, whose parameters are parsed from the command's
+    /// arguments. Attributes on the delegate's method, like <see cref="CommandInfoAttribute"/> and execution checks,
+    /// apply to the command.
+    /// </summary>
+    /// <param name="name">The command's name, typed after the slash.</param>
+    /// <param name="contextDelegate">The method to run.</param>
+    /// <returns>This registry, for chaining.</returns>
     public IPluginRegistry MapCommand(string name, Delegate contextDelegate);
+    /// <summary>
+    /// Registers a command that runs <paramref name="contextDelegate"/> with the command's context and takes no parsed
+    /// arguments.
+    /// </summary>
+    /// <param name="name">The command's name, typed after the slash.</param>
+    /// <param name="contextDelegate">The method to run.</param>
+    /// <returns>This registry, for chaining.</returns>
     public IPluginRegistry MapCommand(string name, ValueTaskContextDelegate<CommandContext> contextDelegate);
 
     /// <summary>Registers a handler for an event.</summary>
@@ -452,4 +484,9 @@ public interface IPluginRegistry
 
 
 //TODO better name maybe??
+/// <summary>
+/// An asynchronous handler that takes a context, such as an event's arguments or a command's context.
+/// </summary>
+/// <typeparam name="TContext">The type of the context.</typeparam>
+/// <param name="context">The context the handler runs with.</param>
 public delegate ValueTask ValueTaskContextDelegate<TContext>(TContext context);

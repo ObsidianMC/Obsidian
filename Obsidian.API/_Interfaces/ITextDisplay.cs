@@ -9,6 +9,9 @@ public interface ITextDisplay : IEntity
     /// <summary>The text shown. It can't be <c>null</c>.</summary>
     public ChatMessage Text { get; set; }
 
+    /// <summary>
+    /// Gets or sets which axes the text turns on to face the viewer.
+    /// </summary>
     public TextDisplayBillboard Billboard { get; set; }
 
     /// <summary>The background colour as ARGB.</summary>
@@ -20,10 +23,19 @@ public interface ITextDisplay : IEntity
     /// <summary>The text's opacity from 0 to 255.</summary>
     public byte TextOpacity { get; set; }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether the text has a shadow.
+    /// </summary>
     public bool Shadow { get; set; }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether the text is visible through blocks.
+    /// </summary>
     public bool SeeThrough { get; set; }
 
+    /// <summary>
+    /// Gets or sets how lines of the text are aligned.
+    /// </summary>
     public TextDisplayAlignment Alignment { get; set; }
 
     /// <summary>The distance multiplier at which the display stops being shown.</summary>
@@ -32,6 +44,9 @@ public interface ITextDisplay : IEntity
     /// <summary>The offset of the text from the entity's position, in blocks.</summary>
     public VectorF Translation { get; set; }
 
+    /// <summary>
+    /// Gets or sets the text's scale on each axis.
+    /// </summary>
     public VectorF Scale { get; set; }
 
     /// <summary>

@@ -8,5 +8,8 @@
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
 public sealed class EventPriorityAttribute : Attribute
 {
+    /// <summary>
+    /// Gets or sets the handler's priority. Handlers with a lower priority run first.
+    /// </summary>
     public Priority Priority { get; set; }
 }

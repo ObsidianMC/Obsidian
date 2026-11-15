@@ -13,6 +13,9 @@ public interface ICancellable
     /// <summary>
     /// Sets a flag which prevents default (vanilla) behavior from executing.
     /// </summary>
-    /// <remarks>This flag only affects vanilla behavior. If you wish to prevent other handlers from running, see <see cref="AsyncEventArgs.Handled"/>.</remarks>
+    /// <remarks>
+    /// This flag only affects vanilla behavior: other handlers still run. To tell them the event was dealt with,
+    /// see <see cref="AsyncEventArgs.SetHandled"/>.
+    /// </remarks>
     public void Cancel();
 }

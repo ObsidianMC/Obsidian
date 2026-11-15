@@ -2,19 +2,44 @@
 
 namespace Obsidian.API;
 
+/// <summary>
+/// A living entity: one with health and potion effects, like a player or a mob.
+/// </summary>
 public interface ILiving : IEntity
 {
+    /// <summary>
+    /// Gets or sets the living entity flags sent in its metadata, such as whether it is using an item.
+    /// </summary>
     public LivingBitMask LivingBitMask { get; set; }
 
+    /// <summary>
+    /// Gets the color of the entity's potion effect particles.
+    /// </summary>
     public uint ActiveEffectColor { get; }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether the entity's potion effects are ambient (from a beacon), which makes their
+    /// particles fainter.
+    /// </summary>
     public bool AmbientPotionEffect { get; set; }
+    /// <summary>
+    /// Gets a value indicating whether the entity's health is above zero.
+    /// </summary>
     public bool Alive { get; }
 
+    /// <summary>
+    /// Gets or sets the number of arrows shown stuck in the entity.
+    /// </summary>
     public int AbsorbedArrows { get; set; }
 
+    /// <summary>
+    /// Gets or sets the entity's absorption health, in half-hearts. Negative values are set as 0.
+    /// </summary>
     public int AbsorbtionAmount { get; set; }
 
+    /// <summary>
+    /// Gets or sets the position of the bed the entity is sleeping in, or <see langword="null"/> if it isn't sleeping.
+    /// </summary>
     public Vector? BedBlockPosition { get; set; }
 
     /// <summary>

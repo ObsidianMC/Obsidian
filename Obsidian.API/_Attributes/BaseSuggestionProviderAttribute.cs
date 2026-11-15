@@ -10,6 +10,7 @@ namespace Obsidian.API;
 [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false)]
 public abstract class BaseSuggestionProviderAttribute : Attribute, ISuggestionProvider
 {
+    /// <inheritdoc />
     public abstract ValueTask<IEnumerable<CommandSuggestion>> GetSuggestionsAsync(CommandContext context);
 }
 
@@ -17,8 +18,12 @@ public abstract class BaseSuggestionProviderAttribute : Attribute, ISuggestionPr
 /// <example><c>public Task SetTime([Suggestions("day", "night")] string value)</c></example>
 public sealed class SuggestionsAttribute(params string[] values) : BaseSuggestionProviderAttribute
 {
+    /// <summary>
+    /// Gets the values suggested, in order.
+    /// </summary>
     public IReadOnlyList<string> Values { get; } = values;
 
+    /// <inheritdoc />
     public override ValueTask<IEnumerable<CommandSuggestion>> GetSuggestionsAsync(CommandContext context) =>
         ValueTask.FromResult(this.Values.Select(value => new CommandSuggestion(value)));
 }
