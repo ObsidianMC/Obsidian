@@ -44,6 +44,9 @@ public sealed class Panel : ScreenPart
     [Parameter]
     public uint? Color { get; set; }
 
+    /// <summary>
+    /// Gets or sets the parts the panel holds, from the markup between its tags.
+    /// </summary>
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
 }
@@ -54,6 +57,9 @@ public sealed class Panel : ScreenPart
 /// </summary>
 public sealed class Label : ScreenPart
 {
+    /// <summary>
+    /// Gets or sets the text, drawn as it is; empty by default.
+    /// </summary>
     [Parameter]
     public string Text { get; set; } = string.Empty;
 
@@ -63,6 +69,9 @@ public sealed class Label : ScreenPart
     [Parameter]
     public uint Color { get; set; } = 0xFF404040;
 
+    /// <summary>
+    /// Gets or sets whether the text has vanilla's drop shadow, which container labels don't have.
+    /// </summary>
     [Parameter]
     public bool Shadow { get; set; }
 
@@ -78,6 +87,9 @@ public sealed class Label : ScreenPart
 /// </summary>
 public sealed class Image : ScreenPart
 {
+    /// <summary>
+    /// Gets or sets the image, drawn at the part's size; null draws nothing.
+    /// </summary>
     [Parameter, EditorRequired]
     public GuiImage? Source { get; set; }
 }
@@ -87,6 +99,9 @@ public sealed class Image : ScreenPart
 /// </summary>
 public sealed class ProgressBar : ScreenPart
 {
+    /// <summary>
+    /// Gets or sets the full bar's image, drawn at the part's size and cut to its <see cref="Progress"/>.
+    /// </summary>
     [Parameter, EditorRequired]
     public GuiImage? Source { get; set; }
 

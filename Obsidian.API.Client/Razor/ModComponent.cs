@@ -32,6 +32,9 @@ public abstract class ModComponent : IComponent, IHandleEvent, IHandleAfterRende
     private bool renderQueued;
     private bool afterRendered;
 
+    /// <summary>
+    /// Creates the component; Blazor creates a mod's markup components through their base class's constructor.
+    /// </summary>
     protected ModComponent() => this.renderFragment = this.Render;
 
     // What the client runs the component's code inside, set as it creates the component; null where nothing guards

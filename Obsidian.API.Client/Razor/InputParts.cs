@@ -7,6 +7,9 @@ namespace Obsidian.API.Client.Razor;
 /// </summary>
 public sealed class Button : ScreenPart
 {
+    /// <summary>
+    /// Gets or sets the button's text.
+    /// </summary>
     [Parameter]
     public string Text { get; set; } = string.Empty;
 
@@ -29,6 +32,9 @@ public sealed class Button : ScreenPart
 /// </summary>
 public sealed class TextField : ScreenPart
 {
+    /// <summary>
+    /// Gets or sets the field's text, which the player edits; <see cref="ValueChanged"/> raises as they type.
+    /// </summary>
     [Parameter]
     public string Value { get; set; } = string.Empty;
 
@@ -38,6 +44,9 @@ public sealed class TextField : ScreenPart
     [Parameter]
     public EventCallback<string> ValueChanged { get; set; }
 
+    /// <summary>
+    /// Gets or sets how many characters the player can type; 32 by default.
+    /// </summary>
     [Parameter]
     public int MaxLength { get; set; } = 32;
 
@@ -86,6 +95,9 @@ public sealed class ScrollBar : ScreenPart
     [Parameter]
     public string Handle { get; set; } = "container/creative_inventory/scroller";
 
+    /// <summary>
+    /// Gets or sets the handle's height in pixels; the handle is as wide as the bar. 15 by default.
+    /// </summary>
     [Parameter]
     public int HandleHeight { get; set; } = 15;
 }

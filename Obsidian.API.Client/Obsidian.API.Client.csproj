@@ -21,7 +21,7 @@
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<AssemblyVersion>1.0.0</AssemblyVersion>
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-		<NoWarn>1591</NoWarn>
+		<WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
 		<Title>Obsidian Client Mod API</Title>
 		<PackageIcon>icon.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>

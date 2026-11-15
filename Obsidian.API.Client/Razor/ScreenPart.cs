@@ -57,6 +57,10 @@ public abstract class ScreenPart : ComponentBase
     // parts draw nothing.
     internal static Type? View { get; set; }
 
+    /// <summary>
+    /// Renders the part through the client's view, which draws it with the part as its <c>Part</c> parameter. Without a
+    /// view, as on a server, the part draws nothing.
+    /// </summary>
     protected sealed override void BuildRenderTree(RenderTreeBuilder builder)
     {
         if (View is not Type view)
@@ -95,9 +99,18 @@ public enum PanelFlow
 /// </summary>
 public enum PanelAlign
 {
+    /// <summary>
+    /// At the start of the stack's cross axis: the left of a column, the top of a row, or a label's left.
+    /// </summary>
     Start,
 
+    /// <summary>
+    /// Centred across the stack's cross axis, or in a label's width.
+    /// </summary>
     Center,
 
+    /// <summary>
+    /// At the end of the stack's cross axis: the right of a column, the bottom of a row, or a label's right.
+    /// </summary>
     End
 }
