@@ -156,7 +156,7 @@ public partial class PlayerBase
             var slots = Enumerable.Range(36, 9).Concat(Enumerable.Range(9, 27)).ToArray();
             var matching = slots.FirstOrDefault(slot =>
                 this.Inventory.GetItem(slot) is { IsAir: false, Count: > 0 } stack
-                && stack.HasSameEffectiveComponents(requested, defaults, PickDefaults), -1);
+                && stack.HasSameEffectiveComponents(requested, defaults), -1);
             var changed = new SortedSet<int>();
             if (matching >= 36)
             {

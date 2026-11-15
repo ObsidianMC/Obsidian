@@ -3,6 +3,7 @@ using Obsidian.API;
 using Obsidian.API.Inventory;
 using Obsidian.API.Inventory.DataComponents;
 using Obsidian.API.Registries;
+using Obsidian.API.Utilities;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
@@ -195,14 +196,15 @@ public sealed partial class PickItems
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task PickMatchesNestedDefaultsButPreservesNestedCountsAndRemovals()
+    public async Task PickPreservesDecodedNestedPatchesWhenMatchingVanillaTemplates()
     {
-        await using var context = TestServerFactory.CreateServer($"pick-nested-defaults-{Guid.NewGuid():N}");
+        await using var context = TestServerFactory.CreateServer($"pick-nested-patches-{Guid.NewGuid():N}");
         LoadChunk(context.World);
         await context.World.SetBlockAsync(Target, BlocksRegistry.Chest);
         var chest = Assert.IsAssignableFrom<ContainerBlockEntity>(await context.World.GetBlockEntityAsync(Target));
-        var requestedInner = new ItemStack(ItemsRegistry.Chest, 3,
+        var requestedTemplate = new ItemStack(ItemsRegistry.Chest, 3,
             ComponentBuilder.Container with { Value = [] });
+        var requestedInner = requestedTemplate.ToNbt().ItemFromNbt()!;
         chest.Inventory.SetItem(0, requestedInner);
         var existing = new ItemStack(ItemsRegistry.Chest, 7,
             ComponentBuilder.Container with { Value = [new ItemStack(ItemsRegistry.Chest, 3)] });
@@ -212,36 +214,29 @@ public sealed partial class PickItems
         var client = (TestClient)player.Client;
         client.ClearPackets();
 
+        // Vanilla ItemStackTemplate equality retains the decoded inner item's explicit component patch.
         await PickBlockAsync(context.Server, player, Target, true);
 
-        Assert.Equal(3, Assert.IsType<SetHeldSlotPacket>(Assert.Single(Delivered(client))).Slot);
-        Assert.Same(existing, player.GetHeldItem());
-        Assert.Null(player.Inventory.GetItem(36));
-
-        // A nested count change must still create a distinct creative item.
-        requestedInner.Count = 4;
-        client.ClearPackets();
-        await PickBlockAsync(context.Server, player, Target, true);
-        Assert.Contains(Delivered(client), packet => packet is ContainerSetSlotPacket);
-        Assert.NotSame(existing, player.GetHeldItem());
+        Assert.Collection(Delivered(client),
+            packet => Assert.Equal(0, Assert.IsType<SetHeldSlotPacket>(packet).Slot),
+            packet => AssertSlot(packet, 36, ItemsRegistry.Chest, 1, 1));
+        var picked = player.GetHeldItem()!;
+        Assert.NotSame(existing, picked);
+        Assert.Same(existing, player.Inventory.GetItem(39));
         Assert.Equal(7, existing.Count);
-        Assert.Equal(4, player.GetHeldItem()!.GetComponent<SimpleDataComponent<ImmutableArray<ItemStack>>>(
-            DataComponentType.Container)!.Value[0].Count);
+        var pickedInner = picked.GetComponent<SimpleDataComponent<ImmutableArray<ItemStack>>>(
+            DataComponentType.Container)!.Value[0];
+        Assert.Equal(3, pickedInner.Count);
+        Assert.True(pickedInner.ContainsKey(DataComponentType.Container));
 
-        // Removing the inner chest's default container component is distinct from an explicit empty default.
-        requestedInner.Count = 3;
-        var removedInner = new ItemStack(ItemsRegistry.Chest, 3);
-        removedInner.Remove(DataComponentType.Container);
-        var removed = new ItemStack(ItemsRegistry.Chest, 7,
-            ComponentBuilder.Container with { Value = [removedInner] });
-        player.Inventory.SetItem(39, removed);
-        player.Inventory.SetItem(40, null);
+        // Repeating the pick selects the matching template without creating another item.
         player.CurrentHeldItemSlot = 3;
         client.ClearPackets();
         await PickBlockAsync(context.Server, player, Target, true);
-        Assert.Contains(Delivered(client), packet => packet is ContainerSetSlotPacket);
-        Assert.NotSame(removed, player.GetHeldItem());
-        Assert.Same(removed, player.Inventory.GetItem(39));
+        Assert.Equal(0, Assert.IsType<SetHeldSlotPacket>(Assert.Single(Delivered(client))).Slot);
+        Assert.Same(picked, player.GetHeldItem());
+        Assert.Equal(1, picked.Count);
+        Assert.Same(existing, player.Inventory.GetItem(39));
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
