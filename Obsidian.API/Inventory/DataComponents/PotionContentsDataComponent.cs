@@ -1,6 +1,9 @@
 ﻿
 namespace Obsidian.API.Inventory.DataComponents;
 
+/// <summary>
+/// The potion and effects of a potion, tipped arrow or similar item (<c>minecraft:potion_contents</c>).
+/// </summary>
 public sealed record class PotionContentsDataComponent : DataComponent
 {
     private ComponentValueKey Comparison => new(new object?[]
@@ -11,14 +14,18 @@ public sealed record class PotionContentsDataComponent : DataComponent
         this.customName
     });
 
+    /// <inheritdoc/>
     public bool Equals(PotionContentsDataComponent? other) => ReferenceEquals(this, other)
         || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
 
+    /// <inheritdoc/>
     public override int GetHashCode() =>
         HashCode.Combine(base.GetHashCode(), this.Comparison);
 
+    /// <inheritdoc/>
     public override DataComponentType Type => DataComponentType.PotionContents;
 
+    /// <inheritdoc/>
     public override string Identifier => "minecraft:potion_contents";
 
     /// <summary>
@@ -26,6 +33,9 @@ public sealed record class PotionContentsDataComponent : DataComponent
     /// </summary>
     private Potion? potion;
 
+    /// <summary>
+    /// Gets the potion whose effects the item has, if any.
+    /// </summary>
     public Potion? Potion
     {
         get => this.potion;
@@ -34,6 +44,9 @@ public sealed record class PotionContentsDataComponent : DataComponent
 
     private int? customColor;
 
+    /// <summary>
+    /// Gets an RGB color that replaces the color of the effects, or null for that color.
+    /// </summary>
     public int? CustomColor
     {
         get => this.customColor;
@@ -45,6 +58,9 @@ public sealed record class PotionContentsDataComponent : DataComponent
     /// </summary>
     private ImmutableArray<PotionEffectData> customEffects = [];
 
+    /// <summary>
+    /// Gets effects on top of the potion's own.
+    /// </summary>
     public ImmutableArray<PotionEffectData> CustomEffects
     {
         get => this.customEffects;
@@ -56,12 +72,16 @@ public sealed record class PotionContentsDataComponent : DataComponent
     /// </summary>
     private string? customName;
 
+    /// <summary>
+    /// Gets a name that replaces the potion's in the item name, like <c>water</c> for "Water Bottle".
+    /// </summary>
     public string? CustomName
     {
         get => this.customName;
         init => this.customName = value;
     }
 
+    /// <inheritdoc/>
     protected override void ReadCore(INetStreamReader reader)
     {
         this.potion = reader.ReadBoolean() ? (Potion)reader.ReadVarInt() : null;
@@ -71,6 +91,7 @@ public sealed record class PotionContentsDataComponent : DataComponent
         this.customName = reader.ReadOptionalString();
     }
 
+    /// <inheritdoc/>
     public override void Write(INetStreamWriter writer)
     {
         writer.WriteBoolean(this.Potion is not null);

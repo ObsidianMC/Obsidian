@@ -6,12 +6,17 @@ public sealed record InstrumentDataComponent() : SimpleDataComponent<InstrumentD
 {
     private int? registryId;
 
+    /// <summary>
+    /// Gets the instrument's id in the client's instrument registry, or null when the instrument is sent inline from
+    /// <see cref="SimpleDataComponent{TValue}.Value"/>.
+    /// </summary>
     public int? RegistryId
     {
         get => this.registryId;
         init => this.registryId = value;
     }
 
+    /// <inheritdoc/>
     protected override void ReadCore(INetStreamReader reader)
     {
         this.registryId = null;
@@ -30,6 +35,7 @@ public sealed record InstrumentDataComponent() : SimpleDataComponent<InstrumentD
         };
     }
 
+    /// <inheritdoc/>
     public override void Write(INetStreamWriter writer)
     {
         var id = this.RegistryId ?? (this.Value.Identifier is string name

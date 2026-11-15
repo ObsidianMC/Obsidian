@@ -12,16 +12,24 @@ public sealed record EntityDataComponent(DataComponentType ComponentType) : Data
         this.data
     });
 
+    /// <inheritdoc/>
     public bool Equals(EntityDataComponent? other) => ReferenceEquals(this, other)
         || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
 
+    /// <inheritdoc/>
     public override int GetHashCode() =>
         HashCode.Combine(base.GetHashCode(), this.Comparison);
 
+    /// <inheritdoc/>
     public override DataComponentType Type => this.ComponentType;
+    /// <inheritdoc/>
     public override string Identifier => OpaqueDataComponent.GetIdentifier(this.Type);
     private int registryId;
 
+    /// <summary>
+    /// Gets the type's id in the client's entity type registry, or its block entity type registry for
+    /// <c>minecraft:block_entity_data</c>.
+    /// </summary>
     public int RegistryId
     {
         get => this.registryId;
@@ -30,6 +38,9 @@ public sealed record EntityDataComponent(DataComponentType ComponentType) : Data
 
     private NbtCompound data = new();
 
+    /// <summary>
+    /// Gets the entity's or block entity's saved data, without its id; a copy on each get and set.
+    /// </summary>
     public NbtCompound Data
     {
         get => ComponentCopies.Nbt(this.data)!;
@@ -41,12 +52,14 @@ public sealed record EntityDataComponent(DataComponentType ComponentType) : Data
         ? ComponentValueCodecs.BlockEntityTypes
         : ComponentValueCodecs.EntityTypes;
 
+    /// <inheritdoc/>
     protected override void ReadCore(INetStreamReader reader)
     {
         this.registryId = reader.ReadRegistryId(this.Registry);
         this.data = reader.ReadNbtCompound();
     }
 
+    /// <inheritdoc/>
     public override void Write(INetStreamWriter writer)
     {
         writer.WriteRegistryId(this.Registry, this.RegistryId);
@@ -54,6 +67,9 @@ public sealed record EntityDataComponent(DataComponentType ComponentType) : Data
     }
 }
 
+/// <summary>
+/// The bees inside a beehive or bee nest item (<c>minecraft:bees</c>).
+/// </summary>
 public sealed record BeesDataComponent : DataComponent
 {
     private ComponentValueKey Comparison => new(new object?[]
@@ -61,22 +77,30 @@ public sealed record BeesDataComponent : DataComponent
         ComponentValueKey.Sequence(this.occupants)
     });
 
+    /// <inheritdoc/>
     public bool Equals(BeesDataComponent? other) => ReferenceEquals(this, other)
         || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
 
+    /// <inheritdoc/>
     public override int GetHashCode() =>
         HashCode.Combine(base.GetHashCode(), this.Comparison);
 
+    /// <inheritdoc/>
     public override DataComponentType Type => DataComponentType.Bees;
+    /// <inheritdoc/>
     public override string Identifier => "minecraft:bees";
     private ImmutableArray<(EntityDataComponent Entity, int TicksInHive, int MinTicksInHive)> occupants = [];
 
+    /// <summary>
+    /// Gets each bee's data with how long it has been in the hive and the least time it stays there, in ticks.
+    /// </summary>
     public ImmutableArray<(EntityDataComponent Entity, int TicksInHive, int MinTicksInHive)> Occupants
     {
         get => this.occupants;
         init => this.occupants = value;
     }
 
+    /// <inheritdoc/>
     protected override void ReadCore(INetStreamReader reader) => this.occupants = reader.ReadLengthPrefixedArray(() =>
     {
         var entity = new EntityDataComponent(DataComponentType.EntityData);
@@ -84,6 +108,7 @@ public sealed record BeesDataComponent : DataComponent
         return (entity, reader.ReadVarInt(), reader.ReadVarInt());
     }).ToImmutableArray();
 
+    /// <inheritdoc/>
     public override void Write(INetStreamWriter writer) => writer.WriteLengthPrefixedArray(occupant =>
     {
         occupant.Entity.Write(writer);

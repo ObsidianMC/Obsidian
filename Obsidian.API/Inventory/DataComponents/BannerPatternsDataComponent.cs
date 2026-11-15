@@ -9,20 +9,27 @@ public sealed record BannerPatternsDataComponent() : SimpleDataComponent<Immutab
         ComponentValueKey.Sequence(this.registryIds)
     });
 
+    /// <inheritdoc/>
     public bool Equals(BannerPatternsDataComponent? other) => ReferenceEquals(this, other)
         || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
 
+    /// <inheritdoc/>
     public override int GetHashCode() =>
         HashCode.Combine(base.GetHashCode(), this.Comparison);
 
     private ImmutableArray<int?> registryIds = [];
 
+    /// <summary>
+    /// Gets each layer's pattern id in the client's banner pattern registry, by its index in
+    /// <see cref="SimpleDataComponent{TValue}.Value"/>; null for a layer sent with its pattern inline.
+    /// </summary>
     public ImmutableArray<int?> RegistryIds
     {
         get => this.registryIds;
         init => this.registryIds = value;
     }
 
+    /// <inheritdoc/>
     protected override void ReadCore(INetStreamReader reader)
     {
         var entries = reader.ReadLengthPrefixedArray(() =>
@@ -39,6 +46,7 @@ public sealed record BannerPatternsDataComponent() : SimpleDataComponent<Immutab
         this.registryIds = entries.Select(entry => entry.id).ToImmutableArray();
     }
 
+    /// <inheritdoc/>
     public override void Write(INetStreamWriter writer)
     {
         writer.WriteVarInt(this.Value.Length);

@@ -3,6 +3,10 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Inventory.DataComponents;
 
+/// <summary>
+/// How an item is consumed (<c>minecraft:consumable</c>): how long it takes, its animation and sound, and the effects
+/// it gives once consumed.
+/// </summary>
 public sealed record class ConsumableDataComponent : DataComponent
 {
     private ComponentValueKey Comparison => new(new object?[]
@@ -14,18 +18,25 @@ public sealed record class ConsumableDataComponent : DataComponent
         ComponentValueKey.Sequence(this.effects)
     });
 
+    /// <inheritdoc/>
     public bool Equals(ConsumableDataComponent? other) => ReferenceEquals(this, other)
         || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
 
+    /// <inheritdoc/>
     public override int GetHashCode() =>
         HashCode.Combine(base.GetHashCode(), this.Comparison);
 
+    /// <inheritdoc/>
     public override DataComponentType Type => DataComponentType.Consumable;
 
+    /// <inheritdoc/>
     public override string Identifier => "minecraft:consumable";
 
     private float consumeSeconds;
 
+    /// <summary>
+    /// Gets how long consuming the item takes, in seconds.
+    /// </summary>
     public required float ConsumeSeconds
     {
         get => this.consumeSeconds;
@@ -34,6 +45,9 @@ public sealed record class ConsumableDataComponent : DataComponent
 
     private ItemAnimation animation;
 
+    /// <summary>
+    /// Gets the animation the consumer plays.
+    /// </summary>
     public required ItemAnimation Animation
     {
         get => this.animation;
@@ -42,6 +56,9 @@ public sealed record class ConsumableDataComponent : DataComponent
 
     private SoundEvent sound;
 
+    /// <summary>
+    /// Gets the sound played while the item is consumed.
+    /// </summary>
     public required SoundEvent Sound
     {
         get => this.sound;
@@ -50,6 +67,9 @@ public sealed record class ConsumableDataComponent : DataComponent
 
     private bool hasConsumeParticles;
 
+    /// <summary>
+    /// Gets whether particles of the item show while it's consumed.
+    /// </summary>
     public bool HasConsumeParticles
     {
         get => this.hasConsumeParticles;
@@ -58,6 +78,9 @@ public sealed record class ConsumableDataComponent : DataComponent
 
     private ImmutableArray<ConsumeEffect> effects = [];
 
+    /// <summary>
+    /// Gets the effects applied once the item is consumed.
+    /// </summary>
     public ImmutableArray<ConsumeEffect> Effects
     {
         get => this.effects;
@@ -67,6 +90,7 @@ public sealed record class ConsumableDataComponent : DataComponent
     [SetsRequiredMembers]
     internal ConsumableDataComponent() { }
 
+    /// <inheritdoc/>
     protected override void ReadCore(INetStreamReader reader)
     {
         this.consumeSeconds = reader.ReadSingle();
@@ -80,6 +104,7 @@ public sealed record class ConsumableDataComponent : DataComponent
         }).ToImmutableArray();
     }
 
+    /// <inheritdoc/>
     public override void Write(INetStreamWriter writer)
     {
         writer.WriteSingle(this.ConsumeSeconds);

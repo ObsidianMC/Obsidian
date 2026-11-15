@@ -3,6 +3,9 @@ namespace Obsidian.API.Inventory.DataComponents;
 public static partial class ComponentBuilder
 {
     // Key by generated registry enum, never by position in a hand-maintained array.
+    /// <summary>
+    /// Creates a new component of <paramref name="type"/>, like the matching property; null for a type without one.
+    /// </summary>
     public static DataComponent? Create(DataComponentType type) => type switch
     {
         DataComponentType.MaxStackSize => MaxStackSize,

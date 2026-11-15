@@ -1,5 +1,8 @@
 namespace Obsidian.API.Inventory.DataComponents;
 
+/// <summary>
+/// Values resource packs' item models can select on (<c>minecraft:custom_model_data</c>).
+/// </summary>
 public sealed record CustomModelDataComponent : DataComponent
 {
     private ComponentValueKey Comparison => new(new object?[]
@@ -10,16 +13,23 @@ public sealed record CustomModelDataComponent : DataComponent
         ComponentValueKey.Sequence(this.colors)
     });
 
+    /// <inheritdoc/>
     public bool Equals(CustomModelDataComponent? other) => ReferenceEquals(this, other)
         || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
 
+    /// <inheritdoc/>
     public override int GetHashCode() =>
         HashCode.Combine(base.GetHashCode(), this.Comparison);
 
+    /// <inheritdoc/>
     public override DataComponentType Type => DataComponentType.CustomModelData;
+    /// <inheritdoc/>
     public override string Identifier => "minecraft:custom_model_data";
     private ImmutableArray<float> floats = [];
 
+    /// <summary>
+    /// Gets the float values.
+    /// </summary>
     public ImmutableArray<float> Floats
     {
         get => this.floats;
@@ -28,6 +38,9 @@ public sealed record CustomModelDataComponent : DataComponent
 
     private ImmutableArray<bool> flags = [];
 
+    /// <summary>
+    /// Gets the boolean values.
+    /// </summary>
     public ImmutableArray<bool> Flags
     {
         get => this.flags;
@@ -36,6 +49,9 @@ public sealed record CustomModelDataComponent : DataComponent
 
     private ImmutableArray<string> strings = [];
 
+    /// <summary>
+    /// Gets the string values.
+    /// </summary>
     public ImmutableArray<string> Strings
     {
         get => this.strings;
@@ -44,12 +60,16 @@ public sealed record CustomModelDataComponent : DataComponent
 
     private ImmutableArray<int> colors = [];
 
+    /// <summary>
+    /// Gets the RGB color values.
+    /// </summary>
     public ImmutableArray<int> Colors
     {
         get => this.colors;
         init => this.colors = value;
     }
 
+    /// <inheritdoc/>
     protected override void ReadCore(INetStreamReader reader)
     {
         this.floats = reader.ReadLengthPrefixedArray(reader.ReadSingle).ToImmutableArray();
@@ -58,6 +78,7 @@ public sealed record CustomModelDataComponent : DataComponent
         this.colors = reader.ReadLengthPrefixedArray(reader.ReadInt).ToImmutableArray();
     }
 
+    /// <inheritdoc/>
     public override void Write(INetStreamWriter writer)
     {
         writer.WriteLengthPrefixedArray(writer.WriteSingle, this.Floats.AsSpan());
