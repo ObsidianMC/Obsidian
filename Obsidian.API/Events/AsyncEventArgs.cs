@@ -11,7 +11,7 @@ public abstract class AsyncEventArgs : EventArgs
     public bool Handled { get; private set; }
 
     /// <summary>
-    /// Marks an event as handled. Setting this flag will prevent remaining handlers from running.
+    /// Marks an event as handled. The remaining handlers still run and can check <see cref="Handled"/>.
     /// </summary>
     public void SetHandled()
     {

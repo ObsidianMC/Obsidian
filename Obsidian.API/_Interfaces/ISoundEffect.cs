@@ -1,6 +1,12 @@
 ﻿namespace Obsidian.API;
+/// <summary>
+/// A sound to play, at a position or from an entity.
+/// </summary>
 public interface ISoundEffect
 {
+    /// <summary>
+    /// Gets the sound event's identifier, like <c>minecraft:block.note_block.harp</c>.
+    /// </summary>
     public string SoundId { get; init; }
 
     /// <summary>

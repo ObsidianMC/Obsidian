@@ -10,10 +10,19 @@ namespace Obsidian.API;
 /// </remarks>
 public interface ISurfaceContext
 {
+    /// <summary>
+    /// Gets the x coordinate of the block being evaluated.
+    /// </summary>
     public int BlockX { get; }
 
+    /// <summary>
+    /// Gets the y coordinate of the block being evaluated.
+    /// </summary>
     public int BlockY { get; }
 
+    /// <summary>
+    /// Gets the z coordinate of the block being evaluated.
+    /// </summary>
     public int BlockZ { get; }
 
     /// <summary>

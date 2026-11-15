@@ -3,17 +3,32 @@ using Obsidian.API.Networking;
 using System.ComponentModel;
 
 namespace Obsidian.API;
+/// <summary>
+/// A connection to a Minecraft client, through the login, configuration and play states.
+/// </summary>
 public interface IClient : IDisposable
 {
+    /// <summary>
+    /// Gets the entity id of the client's player, which the packet broadcaster addresses the client by.
+    /// </summary>
     public int Id { get; }
     /// <summary>
     /// The client brand. This is the name that the client used to identify itself (Fabric, Forge, Quilt, etc.)
     /// </summary>
     public string? Brand { get; set; }
+    /// <summary>
+    /// Gets the client's IP address, or <see langword="null"/> if it isn't known.
+    /// </summary>
     public string? Ip { get; }
 
+    /// <summary>
+    /// Gets a value indicating whether the client's socket is still connected.
+    /// </summary>
     public bool Connected { get; }
 
+    /// <summary>
+    /// Gets or sets the id of the last keep-alive sent that the client hasn't answered yet, or <see langword="null"/>.
+    /// </summary>
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     public long? LastKeepAliveId { get; set; }
 
@@ -24,10 +39,19 @@ public interface IClient : IDisposable
     /// </summary>
     public IServer Server { get; }
 
+    /// <summary>
+    /// Gets the protocol state the connection is in.
+    /// </summary>
     public ClientState State { get; }
 
+    /// <summary>
+    /// Gets or sets the chat signing key the client sent, or <see langword="null"/> if it sent none.
+    /// </summary>
     public SignatureData? SignatureData { get; set; }
 
+    /// <summary>
+    /// Gets or sets the client's round-trip time in milliseconds, measured with keep-alives.
+    /// </summary>
     public int Ping { get; set; }
 
     /// <summary>
@@ -40,6 +64,9 @@ public interface IClient : IDisposable
     /// </summary>
     public IPlayer? Player { get; }
 
+    /// <summary>
+    /// Gets the logger for the connection.
+    /// </summary>
     public ILogger Logger { get; }
 
     /// <summary>
@@ -49,8 +76,20 @@ public interface IClient : IDisposable
     /// <returns>Whether the packet was sent or is on its way.</returns>
     public bool SendPacket(IClientboundPacket packet);
 
+    /// <summary>
+    /// Decrypts and keeps the shared secret the client sent in its encryption response, which enables encryption, and
+    /// decrypts the verify token it echoed.
+    /// </summary>
+    /// <param name="sharedKey">The encrypted shared secret.</param>
+    /// <param name="verifyToken">The encrypted verify token.</param>
+    /// <returns>The decrypted verify token, to compare with <see cref="RandomToken"/>.</returns>
     public ReadOnlySpan<byte> SetSharedKeyAndDecodeVerifyToken(ReadOnlySpan<byte> sharedKey, ReadOnlySpan<byte> verifyToken);
 
+    /// <summary>
+    /// Sends <paramref name="reason"/> to the client and closes the connection once the packets queued before it are
+    /// sent, or after a timeout. A player who joined leaves the server.
+    /// </summary>
+    /// <param name="reason">The message the client shows.</param>
     public ValueTask DisconnectAsync(ChatMessage reason);
 
     /// <summary>
@@ -59,9 +98,17 @@ public interface IClient : IDisposable
     /// </summary>
     public ValueTask QueuePacketAsync(IClientboundPacket packet);
 
+    /// <summary>
+    /// Moves the connection to <paramref name="state"/>, which decides how the following packets are read.
+    /// </summary>
+    /// <param name="state">The new state.</param>
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     public void SetState(ClientState state);
 
+    /// <summary>
+    /// Checks with Mojang's session server that the player owns their account, and disconnects the client if not.
+    /// </summary>
+    /// <returns><see langword="true"/> if the profile was verified; otherwise, <see langword="false"/>.</returns>
     public ValueTask<bool> VerifyProfileAsync();
 
     /// <summary>

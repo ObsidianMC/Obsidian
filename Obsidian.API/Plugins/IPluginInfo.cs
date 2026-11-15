@@ -1,5 +1,8 @@
 namespace Obsidian.API.Plugins;
 
+/// <summary>
+/// A plugin's metadata, read from its archive.
+/// </summary>
 public interface IPluginInfo
 {
     /// <summary>
@@ -8,10 +11,25 @@ public interface IPluginInfo
     /// </summary>
     public string Id { get; }
 
+    /// <summary>
+    /// Gets the plugin's display name.
+    /// </summary>
     public string Name { get; }
+    /// <summary>
+    /// Gets the plugin's version, which other plugins' dependency version ranges are checked against.
+    /// </summary>
     public Version Version { get; }
+    /// <summary>
+    /// Gets a short description of the plugin.
+    /// </summary>
     public string Description { get; }
+    /// <summary>
+    /// Gets the names of the plugin's authors.
+    /// </summary>
     public ImmutableArray<string> Authors { get; }
+    /// <summary>
+    /// Gets the plugin's project page.
+    /// </summary>
     public Uri ProjectUrl { get; }
 
     /// <summary>
@@ -39,6 +57,9 @@ public interface IPluginInfo
     /// </summary>
     public PluginSide Side { get; }
 
+    /// <summary>
+    /// Gets the other plugins this plugin depends on, is incompatible with, or orders itself against.
+    /// </summary>
     public ImmutableArray<PluginDependency> Dependencies { get; }
 }
 
@@ -47,6 +68,9 @@ public interface IPluginInfo
 /// </summary>
 public readonly record struct PluginDependency
 {
+    /// <summary>
+    /// Gets the <see cref="IPluginInfo.Id"/> of the plugin depended on.
+    /// </summary>
     public required string Id { get; init; }
 
     /// <summary>
@@ -55,6 +79,9 @@ public readonly record struct PluginDependency
     /// </summary>
     public required string Version { get; init; }
 
+    /// <summary>
+    /// Gets how the plugin relates to the dependency. Defaults to <see cref="PluginDependencyType.Required"/>.
+    /// </summary>
     public PluginDependencyType Type { get; init; }
 
     /// <summary>
@@ -105,10 +132,22 @@ public enum PluginDependencyType
     Discouraged
 }
 
+/// <summary>
+/// The load order a plugin asks for relative to one of its dependencies.
+/// </summary>
 public enum PluginDependencyOrdering
 {
+    /// <summary>
+    /// No order is given: a present dependency loads first, unless that contradicts other orderings.
+    /// </summary>
     None,
+    /// <summary>
+    /// The plugin loads before the dependency.
+    /// </summary>
     Before,
+    /// <summary>
+    /// The plugin loads after the dependency.
+    /// </summary>
     After
 }
 
@@ -117,7 +156,16 @@ public enum PluginDependencyOrdering
 /// </summary>
 public enum PluginSide
 {
+    /// <summary>
+    /// Applies on both servers and clients.
+    /// </summary>
     Both,
+    /// <summary>
+    /// Applies only on servers.
+    /// </summary>
     Server,
+    /// <summary>
+    /// Applies only on clients.
+    /// </summary>
     Client
 }

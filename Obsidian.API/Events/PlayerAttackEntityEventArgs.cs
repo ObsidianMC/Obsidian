@@ -1,5 +1,8 @@
 ﻿namespace Obsidian.API.Events;
 
+/// <summary>
+/// A player attacking an entity. Cancelling it keeps the attack from dealing damage or knockback.
+/// </summary>
 public class PlayerAttackEntityEventArgs : EntityEventArgs
 {
     internal Inventory.ItemStack? Weapon { get; init; }
@@ -13,8 +16,14 @@ public class PlayerAttackEntityEventArgs : EntityEventArgs
     /// </summary>
     public IPlayer Attacker { get; }
 
+    /// <summary>
+    /// Gets the damage the server worked out for the attack when the event was raised, in half-hearts.
+    /// </summary>
     public float Damage { get; internal set; }
 
+    /// <summary>
+    /// Gets a value indicating whether the attack is a critical hit.
+    /// </summary>
     public bool IsCrit { get; internal set; }
 
     /// <summary>
@@ -22,6 +31,13 @@ public class PlayerAttackEntityEventArgs : EntityEventArgs
     /// </summary>
     public bool Sneaking { get; }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PlayerAttackEntityEventArgs"/> class.
+    /// </summary>
+    /// <param name="attacker">The attacking player.</param>
+    /// <param name="entity">The entity being attacked.</param>
+    /// <param name="server">The server the event takes place in.</param>
+    /// <param name="sneaking">Whether the attacker was sneaking.</param>
     public PlayerAttackEntityEventArgs(IPlayer attacker, IEntity entity, IServer server, bool sneaking) : base(entity, server)
     {
         this.Attacker = attacker;

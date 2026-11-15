@@ -14,5 +14,10 @@ namespace Obsidian.API;
 /// </remarks>
 public interface ISuggestionProvider
 {
+    /// <summary>
+    /// Gets the suggestions for the argument being typed.
+    /// </summary>
+    /// <param name="context">The context of the command being typed, with its sender.</param>
+    /// <returns>The candidates; the command handler filters them by what has been typed.</returns>
     public ValueTask<IEnumerable<CommandSuggestion>> GetSuggestionsAsync(CommandContext context);
 }

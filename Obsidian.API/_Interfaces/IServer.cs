@@ -7,6 +7,14 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API;
 
+/// <summary>
+/// The Minecraft server: its players, worlds, configuration and services.
+/// </summary>
+/// <remarks>
+/// During a plugin's calls, like its event handlers and commands, the server a plugin gets is its own view of this
+/// one, whose scoreboards, boss bars and recipes are removed when the plugin unloads (see
+/// <see cref="Events.BaseMinecraftEventArgs.Server"/>).
+/// </remarks>
 public interface IServer : IDisposable
 {
     /// <summary>
@@ -15,15 +23,46 @@ public interface IServer : IDisposable
     public Data.SavedData<TValue> GetSavedData<TValue>(Data.SavedDataType<TValue> type, Func<TValue> create) =>
         this.DefaultWorld.GetSavedData(type, create, Data.SavedDataScope.World);
 
+    /// <summary>
+    /// Gets the server's version.
+    /// </summary>
     public string Version { get; }
+    /// <summary>
+    /// Gets the port the server listens on: the configured one until it starts, then the one it bound.
+    /// </summary>
     public int Port { get; }
+    /// <summary>
+    /// Gets the measured number of ticks per second; 20 when the server keeps up.
+    /// </summary>
     public int Tps { get; }
+    /// <summary>
+    /// Gets when the server started.
+    /// </summary>
     public DateTimeOffset StartTime { get; }
+    /// <summary>
+    /// Gets the Minecraft protocol version the server speaks.
+    /// </summary>
     public ProtocolVersion Protocol { get; }
+    /// <summary>
+    /// Gets the server's operators.
+    /// </summary>
     public IOperatorList Operators { get; }
+    /// <summary>
+    /// Gets the world players join into.
+    /// </summary>
     public IWorld DefaultWorld { get; }
+    /// <summary>
+    /// Gets the server's configuration.
+    /// </summary>
     public ServerConfiguration Configuration { get; }
+    /// <summary>
+    /// Gets the online players by UUID. Use <see cref="AddPlayer"/> and <see cref="RemovePlayer"/> rather than changing
+    /// it directly.
+    /// </summary>
     public ConcurrentDictionary<Guid, IPlayer> OnlinePlayers { get; }
+    /// <summary>
+    /// Gets the open client connections by their player's entity id.
+    /// </summary>
     public ConcurrentDictionary<int, IClient> Connections { get; }
     /// <summary>
     /// No longer filled: which channels a connection may use is per connection, see <see cref="IClient.HasChannel"/>.
@@ -31,13 +70,31 @@ public interface IServer : IDisposable
     [Obsolete("Channels are per connection; use IClient.HasChannel.")]
     public HashSet<string> RegisteredChannels { get; }
 
+    /// <summary>
+    /// Gets the server's brand as the <c>minecraft:brand</c> payload sends it: a length-prefixed string.
+    /// </summary>
     public ReadOnlyMemory<byte> BrandData { get; }
 
+    /// <summary>
+    /// Gets the server's command handler.
+    /// </summary>
     public ICommandHandler CommandHandler { get; }
+    /// <summary>
+    /// Gets the server's scoreboard manager.
+    /// </summary>
     public IScoreboardManager ScoreboardManager { get; }
+    /// <summary>
+    /// Gets the dispatcher that raises the server's events.
+    /// </summary>
     public IEventDispatcher EventDispatcher { get; }
+    /// <summary>
+    /// Gets the server's world manager.
+    /// </summary>
     public IWorldManager WorldManager { get; }
 
+    /// <summary>
+    /// Starts the server and runs it until it stops. The server calls it at startup; plugins shouldn't.
+    /// </summary>
     public Task RunAsync();
 
     /// <summary>
@@ -54,7 +111,15 @@ public interface IServer : IDisposable
     /// <returns>True if the player is online.</returns>
     public bool IsPlayerOnline(Guid uuid);
 
+    /// <summary>
+    /// Returns whether a player with <paramref name="username"/> is on the whitelist, ignoring case.
+    /// </summary>
+    /// <param name="username">The player's username.</param>
     public bool IsWhitelisted(string username);
+    /// <summary>
+    /// Returns whether the player with <paramref name="uuid"/> is on the whitelist.
+    /// </summary>
+    /// <param name="uuid">The player's UUID.</param>
     public bool IsWhitelisted(Guid uuid);
 
     /// <summary>
@@ -67,8 +132,23 @@ public interface IServer : IDisposable
     /// </summary>
     public void BroadcastMessage(IWorld world, ChatMessage message);
 
+    /// <summary>
+    /// Gets the online player with <paramref name="username"/>.
+    /// </summary>
+    /// <param name="username">The player's username.</param>
+    /// <returns>The player, or <see langword="null"/> if none is online.</returns>
     public IPlayer? GetPlayer(string username);
+    /// <summary>
+    /// Gets the online player with <paramref name="uuid"/>.
+    /// </summary>
+    /// <param name="uuid">The player's UUID.</param>
+    /// <returns>The player, or <see langword="null"/> if none is online.</returns>
     public IPlayer? GetPlayer(Guid uuid);
+    /// <summary>
+    /// Gets the online player with <paramref name="entityId"/> who has a client connection.
+    /// </summary>
+    /// <param name="entityId">The player's entity id.</param>
+    /// <returns>The player, or <see langword="null"/> if none is found.</returns>
     public IPlayer? GetPlayer(int entityId);
 
     /// <summary>
@@ -132,7 +212,17 @@ public interface IServer : IDisposable
     public IReadOnlyList<TRecipe> GetRecipes<TRecipe>(RecipeType<TRecipe> type)
         where TRecipe : class => [];
 
+    /// <summary>
+    /// Registers <paramref name="player"/> as online, by UUID and username.
+    /// </summary>
+    /// <param name="player">The player to register.</param>
+    /// <returns><see langword="true"/> if the player was added; <see langword="false"/> if one with the UUID is online.</returns>
     public bool AddPlayer(IPlayer player);
+    /// <summary>
+    /// Unregisters <paramref name="player"/> and removes them from their level.
+    /// </summary>
+    /// <param name="player">The player to remove; only the registered instance is removed.</param>
+    /// <returns><see langword="true"/> if the player was removed; otherwise, <see langword="false"/>.</returns>
     public bool RemovePlayer(IPlayer player);
 
     /// <summary>
@@ -158,5 +248,14 @@ public interface IServer : IDisposable
     /// </returns>
     public Task<bool> RemoveServerPlayerAsync(IPlayer player);
 
+    /// <summary>
+    /// Creates a boss bar, shown to no one until players are added to it.
+    /// </summary>
+    /// <param name="title">The text shown above the bar.</param>
+    /// <param name="health">How full the bar is, from 0 to 1.</param>
+    /// <param name="color">The bar's color.</param>
+    /// <param name="divisionType">How many notches the bar is divided into.</param>
+    /// <param name="flags">The bar's flags, like darkening the sky.</param>
+    /// <returns>The new boss bar.</returns>
     public IBossBar CreateBossBar(ChatMessage title, float health, BossBarColor color, BossBarDivisionType divisionType, BossBarFlags flags);
 }

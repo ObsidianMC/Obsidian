@@ -13,6 +13,7 @@ namespace Obsidian.API.Commands.ArgumentParsers;
 [ArgumentParser("minecraft:item_stack")]
 public sealed partial class ItemArgumentParser : BaseArgumentParser<Item>
 {
+    /// <inheritdoc />
     public override bool TryParseArgument(string input, CommandContext ctx, out Item result)
     {
         result = null!;
@@ -37,6 +38,7 @@ public sealed partial class ItemArgumentParser : BaseArgumentParser<Item>
 [ArgumentParser("minecraft:block_state")]
 public sealed partial class BlockStateArgumentParser : BaseArgumentParser<BlockStateArgument>
 {
+    /// <inheritdoc />
     public override bool TryParseArgument(string input, CommandContext ctx, out BlockStateArgument result)
     {
         result = null!;
@@ -76,6 +78,7 @@ public sealed partial class BlockStateArgumentParser : BaseArgumentParser<BlockS
 [ArgumentParser("minecraft:resource_location")]
 public sealed partial class ResourceLocationArgumentParser : BaseArgumentParser<ResourceLocation>
 {
+    /// <inheritdoc />
     public override bool TryParseArgument(string input, CommandContext ctx, out ResourceLocation result)
     {
         var parsed = ResourceLocation.TryParse(input, out var location);
@@ -91,9 +94,11 @@ public sealed partial class ResourceLocationArgumentParser : BaseArgumentParser<
 [ArgumentParser("minecraft:resource")]
 public sealed partial class EntityTypeArgumentParser : BaseArgumentParser<EntityType>
 {
+    /// <inheritdoc />
     public override bool TryParseArgument(string input, CommandContext ctx, out EntityType result) =>
         RegistryNames.TryParseEnum(input, out result);
 
+    /// <inheritdoc />
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
@@ -109,9 +114,11 @@ public sealed partial class EntityTypeArgumentParser : BaseArgumentParser<Entity
 [ArgumentParser("minecraft:resource")]
 public sealed partial class PotionEffectArgumentParser : BaseArgumentParser<PotionEffect>
 {
+    /// <inheritdoc />
     public override bool TryParseArgument(string input, CommandContext ctx, out PotionEffect result) =>
         RegistryNames.TryParseEnum(input, out result);
 
+    /// <inheritdoc />
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
@@ -127,6 +134,7 @@ public sealed partial class PotionEffectArgumentParser : BaseArgumentParser<Poti
 [ArgumentParser("minecraft:resource")]
 public sealed partial class EnchantmentArgumentParser : BaseArgumentParser<EnchantmentDefinition>
 {
+    /// <inheritdoc />
     public override bool TryParseArgument(string input, CommandContext ctx, out EnchantmentDefinition result)
     {
         result = null!;
@@ -143,6 +151,7 @@ public sealed partial class EnchantmentArgumentParser : BaseArgumentParser<Encha
         return true;
     }
 
+    /// <inheritdoc />
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
@@ -158,6 +167,7 @@ public sealed partial class EnchantmentArgumentParser : BaseArgumentParser<Encha
 [ArgumentParser("minecraft:resource")]
 public sealed partial class BiomeArgumentParser : BaseArgumentParser<BiomeCodec>
 {
+    /// <inheritdoc />
     public override bool TryParseArgument(string input, CommandContext ctx, out BiomeCodec result)
     {
         result = null!;
@@ -172,6 +182,7 @@ public sealed partial class BiomeArgumentParser : BaseArgumentParser<BiomeCodec>
         return true;
     }
 
+    /// <inheritdoc />
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
@@ -187,6 +198,7 @@ public sealed partial class BiomeArgumentParser : BaseArgumentParser<BiomeCodec>
 [ArgumentParser("minecraft:resource_or_tag")]
 public sealed partial class BiomeSetArgumentParser : BaseArgumentParser<BiomeSet>
 {
+    /// <inheritdoc />
     public override bool TryParseArgument(string input, CommandContext ctx, out BiomeSet result)
     {
         result = null!;
@@ -213,6 +225,7 @@ public sealed partial class BiomeSetArgumentParser : BaseArgumentParser<BiomeSet
         return true;
     }
 
+    /// <inheritdoc />
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);
@@ -243,6 +256,7 @@ public sealed partial class BiomeSetArgumentParser : BaseArgumentParser<BiomeSet
 [ArgumentParser("minecraft:particle")]
 public sealed partial class ParticleTypeArgumentParser : BaseArgumentParser<ParticleType>
 {
+    /// <inheritdoc />
     public override bool TryParseArgument(string input, CommandContext ctx, out ParticleType result)
     {
         var end = input.IndexOfAny(['[', '{']);
@@ -286,6 +300,7 @@ internal static class RegistryNames
 [ArgumentParser("minecraft:score_holder")]
 public sealed partial class ScoreHolderArgumentParser : BaseArgumentParser<ScoreHolderArgument>
 {
+    /// <inheritdoc />
     public override bool TryParseArgument(string input, CommandContext ctx, out ScoreHolderArgument result)
     {
         result = null!;
@@ -306,6 +321,7 @@ public sealed partial class ScoreHolderArgumentParser : BaseArgumentParser<Score
         return true;
     }
 
+    /// <inheritdoc />
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);

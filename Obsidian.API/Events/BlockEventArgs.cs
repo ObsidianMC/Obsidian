@@ -1,5 +1,8 @@
 ﻿namespace Obsidian.API.Events;
 
+/// <summary>
+/// The base class for events about a single block in a level.
+/// </summary>
 public abstract class BlockEventArgs(IServer server, IBlock block, Vector location, ILevel level) : BaseMinecraftEventArgs(server)
 {
     /// <summary>
@@ -18,5 +21,9 @@ public abstract class BlockEventArgs(IServer server, IBlock block, Vector locati
     public ILevel Level { get; } = level;
 
 
+    /// <summary>
+    /// Gets the client's block-change sequence number for the action that raised the event, which the server
+    /// acknowledges once it has handled the change.
+    /// </summary>
     public int Sequence { get; init; }
 }

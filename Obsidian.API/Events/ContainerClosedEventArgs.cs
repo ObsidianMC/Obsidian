@@ -6,6 +6,10 @@ namespace Obsidian.API.Events;
 /// </summary>
 public sealed class ContainerClosedEventArgs : ContainerEventArgs, ICancellable
 {
+    /// <inheritdoc />
+    /// <remarks>
+    /// A cancelled close skips the server's handling, such as returning items left in a crafting grid to the player.
+    /// </remarks>
     public bool IsCancelled { get; private set; }
 
     /// <summary>
@@ -19,5 +23,6 @@ public sealed class ContainerClosedEventArgs : ContainerEventArgs, ICancellable
         this.WindowId = windowId;
     }
 
+    /// <inheritdoc />
     public void Cancel() => this.IsCancelled = true;
 }

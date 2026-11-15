@@ -1,10 +1,18 @@
 namespace Obsidian.API.Commands.ArgumentParsers;
 
+/// <summary>
+/// Reads a duration like vanilla's <c>time</c> arguments: a whole number followed by <c>d</c> for days, <c>s</c> for
+/// seconds or <c>t</c> for ticks. A number without a unit is read as days.
+/// </summary>
 [ArgumentParser("minecraft:time")]
 public sealed partial class MinecraftTimeArgumentParser : BaseArgumentParser<MinecraftTime>
 {
+    /// <summary>
+    /// Gets or sets the shortest duration accepted, in ticks. The client is told it too.
+    /// </summary>
     public int Min { get; set; }
 
+    /// <inheritdoc />
     public override bool TryParseArgument(string input, CommandContext ctx, out MinecraftTime result)
     {
         var lastChar = input.LastOrDefault();
@@ -46,6 +54,10 @@ public sealed partial class MinecraftTimeArgumentParser : BaseArgumentParser<Min
         return isSuccess;
     }
 
+    /// <summary>
+    /// Writes the parser's id and <see cref="Min"/>.
+    /// </summary>
+    /// <param name="writer">The stream to write to.</param>
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);

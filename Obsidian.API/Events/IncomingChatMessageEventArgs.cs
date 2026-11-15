@@ -1,5 +1,9 @@
 ﻿namespace Obsidian.API.Events;
 
+/// <summary>
+/// A chat message a player sent. The server broadcasts <see cref="Message"/> to every player after the handlers run,
+/// unless the event is cancelled.
+/// </summary>
 public class IncomingChatMessageEventArgs : PlayerEventArgs, ICancellable
 {
     /// <summary>

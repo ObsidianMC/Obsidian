@@ -7,8 +7,10 @@
 [ArgumentParser("minecraft:vec3")]
 public sealed partial class LocationArgumentParser : BaseArgumentParser<VectorD>
 {
+    /// <inheritdoc />
     public override int WordCount => 3;
 
+    /// <inheritdoc />
     public override bool TryParseArgument(string input, CommandContext context, out VectorD result) =>
         CommandCoordinates.TryParse(input, context, centerBlocks: true, wholeNumbers: false, out result);
 }
@@ -20,8 +22,10 @@ public sealed partial class LocationArgumentParser : BaseArgumentParser<VectorD>
 [ArgumentParser("minecraft:block_pos")]
 public sealed partial class BlockPositionArgumentParser : BaseArgumentParser<Vector>
 {
+    /// <inheritdoc />
     public override int WordCount => 3;
 
+    /// <inheritdoc />
     public override bool TryParseArgument(string input, CommandContext context, out Vector result)
     {
         if (!CommandCoordinates.TryParse(input, context, centerBlocks: false, wholeNumbers: true, out var position))

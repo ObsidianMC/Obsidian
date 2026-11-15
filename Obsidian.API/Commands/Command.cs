@@ -7,25 +7,66 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace Obsidian.API.Commands;
+/// <summary>
+/// A registered command or command group, with its overloads and the checks that decide who may run it.
+/// </summary>
 public sealed class Command
 {
+    /// <summary>
+    /// Gets the kinds of sender that may run the command, set with <see cref="IssuerScopeAttribute"/>. A command's
+    /// groups must allow the sender too.
+    /// </summary>
     public CommandIssuers AllowedIssuers { get; init; }
 
+    /// <summary>
+    /// Gets the command handler the command is registered with.
+    /// </summary>
     public required ICommandHandler CommandHandler { get; init; }
+    /// <summary>
+    /// Gets the plugin that registered the command, or <see langword="null"/> for the server's own commands.
+    /// </summary>
     public required IPluginContainer? PluginContainer { get; init; }
+    /// <summary>
+    /// Gets the command's name, typed after the slash (or after its group's name for a subcommand).
+    /// </summary>
     public required string Name { get; init; }
 
+    /// <summary>
+    /// Gets other names the command can be typed as.
+    /// </summary>
     public ImmutableArray<string> Aliases { get; init; } = [];
+    /// <summary>
+    /// Gets the description set with <see cref="CommandInfoAttribute"/>, or <see langword="null"/>.
+    /// </summary>
     public string? Description { get; init; }
+    /// <summary>
+    /// Gets the usage text set with <see cref="CommandInfoAttribute"/>, shown to a sender whose arguments match no
+    /// overload.
+    /// </summary>
     public string? Usage { get; init; }
 
+    /// <summary>
+    /// Gets the methods that can run the command, tried in order until one's parameters accept the arguments.
+    /// </summary>
     public List<IExecutor<CommandContext>> Overloads { get; init; } = [];
+    /// <summary>
+    /// Gets the checks every sender must pass to run the command or, for a group, any of its subcommands.
+    /// </summary>
     public ImmutableArray<BaseExecutionCheckAttribute> ExecutionChecks { get; init; } = [];
 
+    /// <summary>
+    /// Gets the group the command belongs to, or <see langword="null"/> for a top-level command.
+    /// </summary>
     public Command? Parent { get; init; }
 
     internal Command() { }
 
+    /// <summary>
+    /// Returns whether the first word of <paramref name="input"/> is this command's name or one of its aliases, and the
+    /// command belongs to <paramref name="parent"/>.
+    /// </summary>
+    /// <param name="input">The words of the command line, starting at the word to match.</param>
+    /// <param name="parent">The group the command must belong to, or <see langword="null"/> for a top-level command.</param>
     public bool CheckCommand(string[] input, Command? parent)
     {
         return Parent == parent && input.Length > 0 && (Name == input[0] || Aliases.Contains(input[0]));
@@ -139,6 +180,8 @@ public sealed class Command
             : 1);
 
     /// <inheritdoc cref="BindArguments(ParameterInfo[], string[])"/>
+    /// <param name="parameters">The parameters to bind the words to.</param>
+    /// <param name="args">The words the command was issued with.</param>
     /// <param name="wordCount">How many words an argument of a type takes.</param>
     internal static string[]? BindArguments(ParameterInfo[] parameters, IReadOnlyList<string> args, Func<Type, int> wordCount)
     {
@@ -245,5 +288,8 @@ public sealed class Command
             yield return command;
     }
 
+    /// <summary>
+    /// Returns the command's full name with the command prefix, like <c>/team add</c>.
+    /// </summary>
     public override string ToString() => $"{CommandHelpers.DefaultPrefix}{GetQualifiedName()}";
 }

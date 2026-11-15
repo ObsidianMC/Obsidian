@@ -45,6 +45,10 @@ public sealed class ContainerClickEventArgs : ContainerEventArgs, ICancellable
     /// </summary>
     internal ItemStack? SlotItem => this.ClickedSlot >= 0 ? this.Container.GetItem(this.ClickedSlot) : null;
 
+    /// <summary>
+    /// Gets a value indicating whether the click was in the player's own inventory (window id 0) rather than an opened
+    /// container.
+    /// </summary>
     public bool IsPlayerInventory => this.ContainerId == 0;
 
     /// <summary>
@@ -71,8 +75,14 @@ public sealed class ContainerClickEventArgs : ContainerEventArgs, ICancellable
     /// </summary>
     public required sbyte Button { get; init; }
 
+    /// <summary>
+    /// Gets the window state id the client sent with the click, the last one the server sent it for this window.
+    /// </summary>
     public required int StateId { get; init; }
 
+    /// <summary>
+    /// Gets the kind of click, which together with <see cref="Button"/> decides how the server moves items.
+    /// </summary>
     public required ClickType ClickType { get; init; }
 
     /// <inheritdoc />

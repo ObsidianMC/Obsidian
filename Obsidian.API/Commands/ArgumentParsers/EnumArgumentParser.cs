@@ -18,8 +18,16 @@ public sealed partial class EnumArgumentParser : BaseArgumentParser, ISuggestion
     private readonly FrozenDictionary<string, object> valuesByName;
     private readonly CommandSuggestion[] suggestions;
 
+    /// <summary>
+    /// Gets the enum type whose members the parser reads.
+    /// </summary>
     public Type EnumType { get; }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="EnumArgumentParser"/> class for <paramref name="enumType"/>.
+    /// </summary>
+    /// <param name="enumType">The enum type to read members of.</param>
+    /// <exception cref="ArgumentException"><paramref name="enumType"/> is not an enum.</exception>
     public EnumArgumentParser(Type enumType)
     {
         if (!enumType.IsEnum)
@@ -38,9 +46,18 @@ public sealed partial class EnumArgumentParser : BaseArgumentParser, ISuggestion
         this.suggestions = [.. names.Select(name => new CommandSuggestion(name.ToSnakeCase()))];
     }
 
+    /// <summary>
+    /// Suggests every member of <see cref="EnumType"/> in snake_case.
+    /// </summary>
+    /// <param name="context">The context of the command being typed.</param>
+    /// <returns>The suggestions.</returns>
     public ValueTask<IEnumerable<CommandSuggestion>> GetSuggestionsAsync(CommandContext context) =>
         ValueTask.FromResult<IEnumerable<CommandSuggestion>>(this.suggestions);
 
+    /// <summary>
+    /// Writes the parser as a single-word <c>brigadier:string</c> argument.
+    /// </summary>
+    /// <param name="writer">The stream to write to.</param>
     public override void Write(INetStreamWriter writer)
     {
         base.Write(writer);

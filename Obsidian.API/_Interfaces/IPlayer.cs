@@ -6,6 +6,10 @@ using System.Text.Json;
 
 namespace Obsidian.API;
 
+/// <summary>
+/// A player on the server, connected through a client or added by the server (see
+/// <see cref="IServer.AddServerPlayerAsync"/>).
+/// </summary>
 public interface IPlayer : ILiving
 {
     /// <summary>
@@ -13,24 +17,67 @@ public interface IPlayer : ILiving
     /// drops increments, so that gameplay counting them works for any player.
     /// </summary>
     public Progress.IStatistics Statistics => Progress.NoStatistics.Instance;
+    /// <summary>
+    /// Gets the player's advancements.
+    /// </summary>
+    /// <exception cref="NotSupportedException">The player keeps no advancements.</exception>
     public Advancements.IAdvancements Advancements =>
         throw new NotSupportedException("Player advancements are unavailable.");
 
+    /// <summary>
+    /// Gets the server the player is on.
+    /// </summary>
     public IServer Server { get; }
+    /// <summary>
+    /// Gets the player's logger.
+    /// </summary>
     public ILogger Logger { get; }
 
+    /// <summary>
+    /// Shows <paramref name="dialog"/> on the player's screen. The player's choices arrive as
+    /// <see cref="Events.DialogActionEventArgs"/>.
+    /// </summary>
+    /// <param name="dialog">The dialog to show.</param>
+    /// <exception cref="ArgumentException">The dialog is invalid, such as an unknown dialog type.</exception>
     public ValueTask ShowDialogAsync(Registry.Codecs.Dialogs.DialogElement dialog);
+    /// <summary>
+    /// Closes the dialog the player is shown, if any.
+    /// </summary>
     public ValueTask ClearDialogAsync();
 
+    /// <summary>
+    /// Gets the window id of the container the player has open, from 1 to 255; it moves on with each container opened.
+    /// </summary>
     public byte CurrentContainerId { get; }
+    /// <summary>
+    /// Gets or sets the scoreboard shown to the player. Setting it adds the player to the new scoreboard and removes them
+    /// from the old one.
+    /// </summary>
     public IScoreboard? CurrentScoreboard { get; set; }
 
+    /// <summary>
+    /// Gets or sets the movement keys the player's client last reported held.
+    /// </summary>
     public PlayerInput Input { get; set; }
 
+    /// <summary>
+    /// Gets the chunks the player should have loaded around them, as packed chunk coordinates.
+    /// </summary>
     public ConcurrentHashSet<long> LoadedChunks { get; }
 
+    /// <summary>
+    /// Gets the player's inventory, numbered like vanilla's player window: crafting 0 to 4, armor 5 to 8, main 9 to 35,
+    /// hotbar 36 to 44 and off hand 45.
+    /// </summary>
     public Container Inventory { get; }
+    /// <summary>
+    /// Gets the player's ender chest.
+    /// </summary>
     public Container EnderInventory { get; }
+    /// <summary>
+    /// Gets or sets the container the player has open, or <see langword="null"/> if none. Use
+    /// <see cref="OpenInventoryAsync"/> to open one on the player's screen.
+    /// </summary>
     public BaseContainer? OpenedContainer { get; set; }
 
     /// <summary>
@@ -38,18 +85,44 @@ public interface IPlayer : ILiving
     /// </summary>
     public ItemStack? CarriedItem { get; set; }
 
+    /// <summary>
+    /// Gets the slots the player has dragged items across, while <see cref="IsDragging"/>.
+    /// </summary>
     public List<short> DraggedSlots { get; }
+    /// <summary>
+    /// Gets or sets the player's profile properties, such as their signed skin texture.
+    /// </summary>
     public List<SkinProperty> SkinProperties { get; set; }
 
+    /// <summary>
+    /// Gets or sets the settings the player's client sent, like its language and view distance.
+    /// </summary>
     public ClientInformation ClientInformation { get; set; }
 
+    /// <summary>
+    /// Gets the player's username.
+    /// </summary>
     public string Username { get; }
 
+    /// <summary>
+    /// Gets or sets where the player last died, or <see langword="null"/> if they haven't.
+    /// </summary>
     public Vector? LastDeathLocation { get; set; }
 
+    /// <summary>
+    /// Gets the IP address of the player's client, or <see langword="null"/> for a player without one.
+    /// </summary>
     public string? ClientIP { get; }
+    /// <summary>
+    /// Gets or sets the player's game mode, which also sets their <see cref="Abilities"/>. Setting it doesn't tell the
+    /// player's client; use <see cref="SetGamemodeAsync"/> for that.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The game mode set is unknown.</exception>
     public GameMode GameMode { get; set; }
 
+    /// <summary>
+    /// Gets or sets the player's abilities, like flying and invulnerability.
+    /// </summary>
     public PlayerAbility Abilities { get; set; }
 
     /// <summary>
@@ -74,6 +147,9 @@ public interface IPlayer : ILiving
     /// <returns>Whether there was one.</returns>
     public bool RemoveMovementAbilities(string id) => false;
 
+    /// <summary>
+    /// Gets or sets a value indicating whether the player is dragging items across slots.
+    /// </summary>
     public bool IsDragging { get; set; }
 
     /// <summary>
@@ -83,20 +159,61 @@ public interface IPlayer : ILiving
     /// </summary>
     public DraggingState DragStart { get; set; }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether the player is in a bed.
+    /// </summary>
     public bool Sleeping { get; set; }
+    /// <summary>
+    /// Gets or sets a value indicating whether the player has a horse's inventory open.
+    /// </summary>
     public bool InHorseInventory { get; set; }
 
+    /// <summary>
+    /// Gets or sets the player's attack timer, in ticks.
+    /// </summary>
     public short AttackTime { get; set; }
+    /// <summary>
+    /// Gets or sets the ticks since the player died.
+    /// </summary>
     public short DeathTime { get; set; }
+    /// <summary>
+    /// Gets or sets the ticks left of the player's hurt animation.
+    /// </summary>
     public short HurtTime { get; set; }
+    /// <summary>
+    /// Gets or sets the ticks the player has been in bed.
+    /// </summary>
     public short SleepTimer { get; set; }
+    /// <summary>
+    /// Gets or sets the player's selected hotbar slot. Set it to a hotbar index from 0 to 8; it reads back as the
+    /// <see cref="Inventory"/> slot, from 36 to 44.
+    /// </summary>
+    /// <exception cref="IndexOutOfRangeException">The value set is outside 0 to 8.</exception>
     public short CurrentHeldItemSlot { get; set; }
 
+    /// <summary>
+    /// Gets or sets the id of the last teleport sent to the player's client, which it confirms.
+    /// </summary>
     public int TeleportId { get; set; }
+    /// <summary>
+    /// Gets the player's round-trip time in milliseconds.
+    /// </summary>
     public int Ping { get; }
+    /// <summary>
+    /// Gets or sets the player's food level, from 0 to 20.
+    /// </summary>
     public int FoodLevel { get; set; }
+    /// <summary>
+    /// Gets or sets the ticks counted towards the player's next healing or starving from their food level.
+    /// </summary>
     public int FoodTickTimer { get; set; }
+    /// <summary>
+    /// Gets or sets the player's experience level.
+    /// </summary>
     public int XpLevel { get; set; }
+    /// <summary>
+    /// Gets or sets the player's total experience points.
+    /// </summary>
     public int XpTotal { get; set; }
 
     /// <summary>
@@ -109,11 +226,26 @@ public interface IPlayer : ILiving
     /// </summary>
     public bool Respawning { get; }
 
+    /// <summary>
+    /// Gets the y coordinate of the player's eyes.
+    /// </summary>
     public double HeadY { get; }
 
+    /// <summary>
+    /// Gets or sets the player's absorption health, in half-hearts.
+    /// </summary>
     public float Absorption { get; set; }
+    /// <summary>
+    /// Gets or sets how far the player has fallen since last on the ground, in blocks.
+    /// </summary>
     public float FallDistance { get; set; }
+    /// <summary>
+    /// Gets or sets the player's food exhaustion, which uses up saturation and food as it grows.
+    /// </summary>
     public float FoodExhaustionLevel { get; set; }
+    /// <summary>
+    /// Gets or sets the player's food saturation, used up before their food level.
+    /// </summary>
     public float FoodSaturationLevel { get; set; }
 
     /// <summary>
@@ -130,6 +262,10 @@ public interface IPlayer : ILiving
     /// </exception>
     public Task SaveAsync();
 
+    /// <summary>
+    /// Loads the player's saved data, statistics and advancements.
+    /// </summary>
+    /// <param name="loadFromPersistentWorld">Whether to put the player in the world they were saved in.</param>
     public Task LoadAsync(bool loadFromPersistentWorld = true);
 
     /// <summary>
@@ -290,15 +426,39 @@ public interface IPlayer : ILiving
     /// level's tick, or any player's tick, grant or save, the leave finishes after the ticks, without being waited for.
     /// </summary>
     public ValueTask DisconnectAsync(ChatMessage reason);
+    /// <summary>
+    /// Sends <paramref name="message"/> to the player's chat as a system message.
+    /// </summary>
+    /// <param name="message">The message to send.</param>
     public ValueTask SendMessageAsync(ChatMessage message);
+    /// <summary>
+    /// Sends <paramref name="message"/> as a signed chat message from another player. Not implemented for connected
+    /// players: it throws <see cref="NotImplementedException"/>.
+    /// </summary>
+    /// <param name="message">The message to send.</param>
+    /// <param name="sender">The UUID of the message's sender.</param>
+    /// <param name="messageSignature">The message's signature.</param>
     public ValueTask SendMessageAsync(ChatMessage message, Guid sender, SecureMessageSignature messageSignature);
+    /// <summary>
+    /// Shows <paramref name="message"/> above the player's hotbar.
+    /// </summary>
+    /// <param name="message">The message to show.</param>
     public ValueTask SetActionBarTextAsync(ChatMessage message);
+    /// <summary>
+    /// Plays a sound to the player only, at the effect's position or from its entity.
+    /// </summary>
+    /// <param name="soundEffect">The sound to play.</param>
     public ValueTask SendSoundAsync(ISoundEffect soundEffect);
     /// <summary>Kicks the player; it waits for their leave like <see cref="DisconnectAsync"/>.</summary>
     public ValueTask KickAsync(ChatMessage reason);
 
     /// <inheritdoc cref="KickAsync(ChatMessage)"/>
     public ValueTask KickAsync(string reason);
+    /// <summary>
+    /// Opens <paramref name="container"/> on the player's screen, closing the container they have open. Does nothing
+    /// for a dead player.
+    /// </summary>
+    /// <param name="container">The container to open.</param>
     public ValueTask OpenInventoryAsync(BaseContainer container);
     /// <summary>
     /// Shows <paramref name="scoreboard"/>'s objective and scores to the player in <paramref name="position"/>. The
@@ -311,13 +471,30 @@ public interface IPlayer : ILiving
     /// </remarks>
     public ValueTask DisplayScoreboardAsync(IScoreboard scoreboard, DisplaySlot position);
 
+    /// <summary>
+    /// Sends the player the tab list entries of every online player, and their own abilities.
+    /// </summary>
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     public ValueTask UpdatePlayerInfoAsync();
 
+    /// <summary>
+    /// Sends the player their inventory, their own entity data and their selected hotbar slot.
+    /// </summary>
     [EditorBrowsable(EditorBrowsableState.Advanced)]
     public ValueTask SendPlayerInfoAsync();
 
+    /// <summary>
+    /// Sends the player's client the chunks around them and unloads those out of view. A player without a client has
+    /// none to update.
+    /// </summary>
+    /// <param name="unloadAll">Whether the client starts over without chunks, as after changing level.</param>
+    /// <param name="distance">The view distance to use, or 0 for the client's.</param>
+    /// <returns><see langword="true"/> if every chunk in view has been sent.</returns>
     public Task<bool> UpdateChunksAsync(bool unloadAll = false, int distance = 0);
+    /// <summary>
+    /// Respawns the player after they die, once their death has finished.
+    /// </summary>
+    /// <param name="dataKept">What the client keeps across the respawn.</param>
     public Task RespawnAsync(DataKept dataKept = DataKept.Metadata);
 
     /// <summary>
@@ -361,17 +538,61 @@ public interface IPlayer : ILiving
     /// <param name="text">The text of the action bar.</param>
     public ValueTask SendActionBarAsync(string text);
 
+    /// <summary>
+    /// Shows a particle effect to the player. Not implemented for connected players: it throws
+    /// <see cref="NotImplementedException"/>.
+    /// </summary>
+    /// <param name="data">The particle to show.</param>
     public ValueTask SpawnParticleAsync(ParticleData data);
 
+    /// <summary>
+    /// Grants the player a permission node, like <c>myplugin.home.set</c>, and saves their permissions. Raises
+    /// <see cref="Events.PermissionGrantedEventArgs"/> if it was new.
+    /// </summary>
+    /// <param name="permission">The permission node, with parts separated by dots; case is ignored.</param>
+    /// <returns><see langword="true"/> if the player didn't have the permission; otherwise, <see langword="false"/>.</returns>
     public Task<bool> GrantPermissionAsync(string permission);
+    /// <summary>
+    /// Removes a permission node from the player, with every permission under it, and saves their permissions. Raises
+    /// <see cref="Events.PermissionRevokedEventArgs"/>.
+    /// </summary>
+    /// <param name="permission">The permission node, with parts separated by dots; case is ignored.</param>
+    /// <returns><see langword="true"/> if the player had the permission; otherwise, <see langword="false"/>.</returns>
     public Task<bool> RevokePermissionAsync(string permission);
+    /// <summary>
+    /// Returns whether the player has a permission node, directly or through a parent or a <c>*</c> wildcard.
+    /// </summary>
+    /// <param name="permission">The permission node, with parts separated by dots; case is ignored.</param>
     public bool HasPermission(string permission);
+    /// <summary>
+    /// Returns whether the player has at least one of <paramref name="permissions"/> (see <see cref="HasPermission"/>).
+    /// </summary>
+    /// <param name="permissions">The permission nodes to check.</param>
     public bool HasAnyPermission(IEnumerable<string> permissions);
+    /// <summary>
+    /// Returns whether the player has every one of <paramref name="permissions"/> (see <see cref="HasPermission"/>).
+    /// </summary>
+    /// <param name="permissions">The permission nodes to check.</param>
     public bool HasAllPermissions(IEnumerable<string> permissions);
+    /// <summary>
+    /// Sets the player's game mode and tells their client and the players in their level.
+    /// </summary>
+    /// <param name="gamemode">The new game mode.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="gamemode"/> is unknown.</exception>
     public ValueTask SetGamemodeAsync(GameMode gamemode);
 
+    /// <summary>
+    /// Sets the player's custom name and the name shown for them in the tab list of players in their level.
+    /// </summary>
+    /// <param name="newDisplayName">The new name.</param>
     public ValueTask UpdateDisplayNameAsync(string newDisplayName);
 
+    /// <summary>
+    /// Gets the item in the player's selected hotbar slot.
+    /// </summary>
     public ItemStack? GetHeldItem();
+    /// <summary>
+    /// Gets the item in the player's off hand.
+    /// </summary>
     public ItemStack? GetOffHandItem();
 }
