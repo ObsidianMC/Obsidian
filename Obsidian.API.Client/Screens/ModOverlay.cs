@@ -67,14 +67,49 @@ public abstract class ModOverlay : WidgetGroup
 /// </summary>
 public enum OverlayAnchor
 {
+    /// <summary>
+    /// The top-left corner of the screen.
+    /// </summary>
     TopLeft,
+
+    /// <summary>
+    /// The middle of the top edge.
+    /// </summary>
     Top,
+
+    /// <summary>
+    /// The top-right corner of the screen.
+    /// </summary>
     TopRight,
+
+    /// <summary>
+    /// The middle of the left edge.
+    /// </summary>
     Left,
+
+    /// <summary>
+    /// The centre of the screen.
+    /// </summary>
     Center,
+
+    /// <summary>
+    /// The middle of the right edge.
+    /// </summary>
     Right,
+
+    /// <summary>
+    /// The bottom-left corner of the screen.
+    /// </summary>
     BottomLeft,
+
+    /// <summary>
+    /// The middle of the bottom edge.
+    /// </summary>
     Bottom,
+
+    /// <summary>
+    /// The bottom-right corner of the screen.
+    /// </summary>
     BottomRight
 }
 

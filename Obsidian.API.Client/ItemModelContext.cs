@@ -7,15 +7,54 @@ namespace Obsidian.API.Client;
 /// </summary>
 public enum ItemDisplayContext
 {
+    /// <summary>
+    /// No particular place, the default when a context doesn't set one.
+    /// </summary>
     None,
+
+    /// <summary>
+    /// In a holder's left hand, as seen from outside the holder.
+    /// </summary>
     ThirdPersonLeftHand,
+
+    /// <summary>
+    /// In a holder's right hand, as seen from outside the holder.
+    /// </summary>
     ThirdPersonRightHand,
+
+    /// <summary>
+    /// In the player's left hand, in the first-person view.
+    /// </summary>
     FirstPersonLeftHand,
+
+    /// <summary>
+    /// In the player's right hand, in the first-person view.
+    /// </summary>
     FirstPersonRightHand,
+
+    /// <summary>
+    /// Worn on the head.
+    /// </summary>
     Head,
+
+    /// <summary>
+    /// As an icon in a menu or an inventory slot.
+    /// </summary>
     Gui,
+
+    /// <summary>
+    /// As a dropped item on the ground.
+    /// </summary>
     Ground,
+
+    /// <summary>
+    /// In an item frame.
+    /// </summary>
     Fixed,
+
+    /// <summary>
+    /// On a shelf block.
+    /// </summary>
     OnShelf
 }
 

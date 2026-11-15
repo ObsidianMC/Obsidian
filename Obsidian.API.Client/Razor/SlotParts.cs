@@ -12,12 +12,22 @@ namespace Obsidian.API.Client.Razor;
 /// </summary>
 public sealed class SlotGrid : ScreenPart
 {
+    /// <summary>
+    /// Gets or sets the menu's slot in the grid's top left: the menu's own slots count from 0, then the player's
+    /// inventory follows.
+    /// </summary>
     [Parameter]
     public int FirstSlot { get; set; }
 
+    /// <summary>
+    /// Gets or sets how many slots each row has; 1 by default.
+    /// </summary>
     [Parameter]
     public int Columns { get; set; } = 1;
 
+    /// <summary>
+    /// Gets or sets how many rows there are, 1 by default; the slots are numbered row by row.
+    /// </summary>
     [Parameter]
     public int Rows { get; set; } = 1;
 }
@@ -35,9 +45,15 @@ public sealed class ItemGrid : ScreenPart
     [Parameter]
     public IReadOnlyList<ItemStack?> Items { get; set; } = [];
 
+    /// <summary>
+    /// Gets or sets how many cells each row has; 9 by default.
+    /// </summary>
     [Parameter]
     public int Columns { get; set; } = 9;
 
+    /// <summary>
+    /// Gets or sets how many rows are shown; 1 by default.
+    /// </summary>
     [Parameter]
     public int Rows { get; set; } = 1;
 

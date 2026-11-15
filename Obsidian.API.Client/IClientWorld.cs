@@ -70,8 +70,10 @@ public interface IClientWorld
 /// </summary>
 public interface IClientEntity
 {
+    /// <summary>Gets the entity's id, as <see cref="IClientWorld.GetEntity"/> takes it.</summary>
     public int Id { get; }
 
+    /// <summary>Gets the entity's UUID, which the server sends when the entity spawns.</summary>
     public Guid Uuid { get; }
 
     /// <summary>The client's entity type id, including registered plugin types.</summary>

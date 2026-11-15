@@ -6,6 +6,9 @@ namespace Obsidian.API.Client.Screens;
 /// </summary>
 public sealed class Button : Widget
 {
+    /// <summary>
+    /// Creates a button, 200 by 20 pixels unless its size is changed.
+    /// </summary>
     public Button()
     {
         this.Width = 200;
@@ -37,6 +40,9 @@ public sealed class Button : Widget
 /// </summary>
 public sealed class TextField : Widget
 {
+    /// <summary>
+    /// Creates an edit box, 200 by 20 pixels unless its size is changed.
+    /// </summary>
     public TextField()
     {
         this.Width = 200;
@@ -88,6 +94,9 @@ public sealed class ScrollBar : Widget
     private int row;
     private int maxRow;
 
+    /// <summary>
+    /// Creates a scroll bar, 12 pixels wide unless its size is changed.
+    /// </summary>
     public ScrollBar() => this.Width = 12;
 
     /// <summary>

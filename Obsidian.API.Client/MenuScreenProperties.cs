@@ -3,8 +3,8 @@ namespace Obsidian.API.Client;
 /// <summary>
 /// How the Obsidian client shows a mod's menu type, like a NeoForge mod's container screen: a background texture
 /// from the mod's assets with the menu's slots and the player's inventory on it. Register it with
-/// <see cref="IClientRegistry.RegisterMenuScreen"/>; without one, the menu shows like a chest, with its rows of slots
-/// centred.
+/// <see cref="IClientRegistry.RegisterMenuScreen(string, MenuScreenProperties)"/>; without one, the menu shows like a
+/// chest, with its rows of slots centred.
 /// </summary>
 /// <remarks>
 /// Positions are in the GUI's pixels from the background's top left, and a slot's is where its item's top left goes
