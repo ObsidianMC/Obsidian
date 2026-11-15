@@ -19,6 +19,7 @@ public partial class PlayerBase
 
         IBlock block;
         BlockEntity? entity;
+        NbtCompound? data = null;
         // The tick lock guards block/entity publication; transfer pins the player's level in the same snapshot.
         lock (level.Fluids.TickLock)
         {
@@ -38,13 +39,18 @@ public partial class PlayerBase
                 entity = block.HasBlockEntity()
                     ? chunk.GetBlockEntity(position.X, position.Y, position.Z) as BlockEntity : null;
             }
+
+            // This sealed type only copies NBT under its data lock; it never takes an inventory lock.
+            if (entity is DataBlockEntity)
+                data = BlockEntityNbt.Save(entity);
         }
 
         if (block.IsAir)
             return;
 
-        // Serialization may take inventory locks. Keep it outside block/transfer locks, using only captured identities.
-        var data = entity is null ? null : BlockEntityNbt.Save(entity);
+        // Other Save paths can take inventory locks. Their remaining snapshot limit is documented in known-gaps.
+        if (entity is not null && entity is not DataBlockEntity)
+            data = BlockEntityNbt.Save(entity);
         var withData = includeData && this.GameMode == GameMode.Creative;
         var item = await ClonePickedBlockAsync(level, block, entity, data, withData);
         if (item is { IsAir: false, Count: > 0 })
@@ -150,7 +156,7 @@ public partial class PlayerBase
             var slots = Enumerable.Range(36, 9).Concat(Enumerable.Range(9, 27)).ToArray();
             var matching = slots.FirstOrDefault(slot =>
                 this.Inventory.GetItem(slot) is { IsAir: false, Count: > 0 } stack
-                && stack.HasSameEffectiveComponents(requested, defaults), -1);
+                && stack.HasSameEffectiveComponents(requested, defaults, PickDefaults), -1);
             var changed = new SortedSet<int>();
             if (matching >= 36)
             {

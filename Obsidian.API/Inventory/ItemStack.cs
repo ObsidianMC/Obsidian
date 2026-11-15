@@ -291,9 +291,68 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
     }
 
     /// <summary>Compares effective component maps, resolving item defaults before applying patches and removals.</summary>
-    internal bool HasSameEffectiveComponents(ItemStack other, ItemStack defaults) =>
-        this.Holder.Equals(other.Holder)
-        && this.ResolveForComparison(defaults).Equals(other.ResolveForComparison(defaults));
+    internal bool HasSameEffectiveComponents(
+        ItemStack other, ItemStack defaults, Func<Item, ItemStack> nestedDefaults)
+    {
+        if (!this.Holder.Equals(other.Holder))
+            return false;
+
+        var left = this.ResolveForComparison(defaults);
+        var right = other.ResolveForComparison(defaults);
+        foreach (var (type, component) in left.InternalStorage.ToArray())
+        {
+            if (!right.InternalStorage.TryGetValue(type, out var peer))
+                return false;
+
+            bool? nestedEqual = (component, peer) switch
+            {
+                (SimpleDataComponent<ImmutableArray<ItemStack>> first,
+                    SimpleDataComponent<ImmutableArray<ItemStack>> second) =>
+                    SameNestedStacks(first.StoredValue, second.StoredValue, nestedDefaults),
+                (SimpleDataComponent<ItemStack?> first, SimpleDataComponent<ItemStack?> second) =>
+                    SameNestedStack(first.StoredValue, second.StoredValue, nestedDefaults),
+                _ => null
+            };
+            if (nestedEqual is false)
+                return false;
+
+            if (nestedEqual is true)
+            {
+                if (component.Identifier != peer.Identifier)
+                    return false;
+
+                left.InternalStorage.Remove(type);
+                right.InternalStorage.Remove(type);
+            }
+        }
+
+        return left.Equals(right);
+    }
+
+    private static bool SameNestedStacks(
+        ImmutableArray<ItemStack> left, ImmutableArray<ItemStack> right, Func<Item, ItemStack> defaults)
+    {
+        var leftCount = left.IsDefault ? 0 : left.Length;
+        var rightCount = right.IsDefault ? 0 : right.Length;
+        if (leftCount != rightCount)
+            return false;
+
+        for (var index = 0; index < leftCount; index++)
+        {
+            if (!SameNestedStack(left[index], right[index], defaults))
+                return false;
+        }
+
+        return true;
+    }
+
+    private static bool SameNestedStack(ItemStack? left, ItemStack? right, Func<Item, ItemStack> defaults)
+    {
+        if (left is null || right is null)
+            return left is null && right is null;
+
+        return left.Count == right.Count && left.HasSameEffectiveComponents(right, defaults(left.Holder), defaults);
+    }
 
     private ItemStack ResolveForComparison(ItemStack defaults)
     {

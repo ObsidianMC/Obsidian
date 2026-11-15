@@ -6,6 +6,10 @@ using Obsidian.API.Registries;
 using Obsidian.Entities;
 using Obsidian.Net.Packets.Play.Clientbound;
 using Obsidian.Registries;
+using Obsidian.Nbt;
+using Obsidian.WorldData;
+using Obsidian.API.BlockEntities;
+using System.Collections.Immutable;
 using Obsidian.Tests.Fakes;
 using System;
 using System.Linq;
@@ -100,33 +104,58 @@ public sealed partial class PickItems
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task PickBlockSnapshotWaitsForBlockMutationAndKeepsEntityWithItsBlock()
+    public async Task PickBlockSnapshotCapturesHiveStateAndOccupantsTogether()
     {
-        await using var context = TestServerFactory.CreateServer($"pick-block-snapshot-{Guid.NewGuid():N}");
+        await using var context = TestServerFactory.CreateServer($"pick-hive-snapshot-{Guid.NewGuid():N}");
         var chunk = LoadChunk(context.World);
-        await context.World.SetBlockAsync(Target, BlocksRegistry.Chest);
+        var fullHive = BlocksRegistry.Beehive.WithProperty("honey_level", 5);
+        await context.World.SetBlockAsync(Target, fullHive);
+        var hive = Assert.IsType<DataBlockEntity>(await context.World.GetBlockEntityAsync(Target));
+        hive.Set(new NbtList(NbtTagType.Compound, "bees"));
         var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Picker", Start);
         await player.SetGamemodeAsync(GameMode.Creative);
         var client = (TestClient)player.Client;
         client.ClearPackets();
         Task pending;
 
-        // Pause a block mutation between changing its state and retiring its old block entity.
-        lock (context.World.Fluids.TickLock)
+        // Stop Save at the data read. A harvest may proceed only if the picker released the tick lock too soon.
+        lock (hive.Data)
         {
-            chunk.SetBlock(Target.X, Target.Y, Target.Z, BlocksRegistry.Stone);
             pending = StartPickThread(() => PickBlockAsync(context.Server, player, Target, true));
-            chunk.RemoveBlockEntity(Target.X, Target.Y, Target.Z);
+            Assert.False(pending.IsCompleted);
+            if (context.World.Fluids.TickLock.TryEnter())
+            {
+                try
+                {
+                    chunk.SetBlock(Target.X, Target.Y, Target.Z, fullHive.WithProperty("honey_level", 0));
+                    hive.Set(new NbtList(NbtTagType.Compound, "bees")
+                    {
+                        new NbtCompound
+                        {
+                            new NbtCompound("entity_data") { new NbtTag<string>("id", "minecraft:bee") },
+                            new NbtTag<int>("ticks_in_hive", 0),
+                            new NbtTag<int>("min_ticks_in_hive", 600)
+                        }
+                    });
+                }
+                finally
+                {
+                    context.World.Fluids.TickLock.Exit();
+                }
+            }
         }
 
         await pending;
         Assert.Contains(Delivered(client), packet => packet is ContainerSetSlotPacket);
-        Assert.True(player.GetHeldItem()!.Is(ItemsRegistry.Stone));
-        Assert.False(player.GetHeldItem()!.ContainsKey(DataComponentType.Container));
+        var picked = player.GetHeldItem()!;
+        var state = picked.GetComponent<SimpleDataComponent<ImmutableArray<BlockStateProperty>>>(
+            DataComponentType.BlockState)!;
+        Assert.Equal("5", Assert.Single(state.Value).Value);
+        Assert.Empty(picked.GetComponent<BeesDataComponent>(DataComponentType.Bees)!.Occupants);
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
-    public async Task PickEntityCaptureRejectsRemovalWhileWaitingForOwnership()
+    public async Task PickEntityRejectsRemovedButStillRegisteredArmorStand()
     {
         await using var context = TestServerFactory.CreateServer($"pick-entity-snapshot-{Guid.NewGuid():N}");
         LoadChunk(context.World);
@@ -136,18 +165,21 @@ public sealed partial class PickItems
         Assert.True(context.World.TryAddEntity(stand));
         var client = (TestClient)player.Client;
         client.ClearPackets();
-        Task pending;
+        Task removal;
+        ValueTask pick;
 
-        ValueTask removal;
         using (context.World.TransferLock.Enter())
         {
-            pending = StartPickThread(() => PickEntityAsync(context.Server, player, stand.EntityId));
-            removal = stand.RemoveAsync();
-            Assert.True(removal.IsCompletedSuccessfully);
+            // RemoveAsync sets IsRemoved before entering the transfer lock. Keep eviction blocked deliberately.
+            removal = StartPickThread(() => stand.RemoveAsync());
+            Assert.True(stand.IsRemoved);
+            Assert.True(stand.IsMemberOf(context.World));
+            pick = PickEntityAsync(context.Server, player, stand.EntityId);
+            Assert.True(pick.IsCompletedSuccessfully);
         }
 
+        await pick;
         await removal;
-        await pending;
         Assert.Empty(Delivered(client));
         Assert.Null(player.GetHeldItem());
 
@@ -160,6 +192,56 @@ public sealed partial class PickItems
         Assert.True(context.World.TryAddEntity(replacement));
         await PickEntityAsync(context.Server, player, replacement.EntityId);
         Assert.Contains(Delivered(client), packet => packet is ContainerSetSlotPacket);
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task PickMatchesNestedDefaultsButPreservesNestedCountsAndRemovals()
+    {
+        await using var context = TestServerFactory.CreateServer($"pick-nested-defaults-{Guid.NewGuid():N}");
+        LoadChunk(context.World);
+        await context.World.SetBlockAsync(Target, BlocksRegistry.Chest);
+        var chest = Assert.IsAssignableFrom<ContainerBlockEntity>(await context.World.GetBlockEntityAsync(Target));
+        var requestedInner = new ItemStack(ItemsRegistry.Chest, 3,
+            ComponentBuilder.Container with { Value = [] });
+        chest.Inventory.SetItem(0, requestedInner);
+        var existing = new ItemStack(ItemsRegistry.Chest, 7,
+            ComponentBuilder.Container with { Value = [new ItemStack(ItemsRegistry.Chest, 3)] });
+        var player = TestServerFactory.CreateConnectedPlayer(context.Server, context.World, "Picker", Start);
+        await player.SetGamemodeAsync(GameMode.Creative);
+        player.Inventory.SetItem(39, existing);
+        var client = (TestClient)player.Client;
+        client.ClearPackets();
+
+        await PickBlockAsync(context.Server, player, Target, true);
+
+        Assert.Equal(3, Assert.IsType<SetHeldSlotPacket>(Assert.Single(Delivered(client))).Slot);
+        Assert.Same(existing, player.GetHeldItem());
+        Assert.Null(player.Inventory.GetItem(36));
+
+        // A nested count change must still create a distinct creative item.
+        requestedInner.Count = 4;
+        client.ClearPackets();
+        await PickBlockAsync(context.Server, player, Target, true);
+        Assert.Contains(Delivered(client), packet => packet is ContainerSetSlotPacket);
+        Assert.NotSame(existing, player.GetHeldItem());
+        Assert.Equal(7, existing.Count);
+        Assert.Equal(4, player.GetHeldItem()!.GetComponent<SimpleDataComponent<ImmutableArray<ItemStack>>>(
+            DataComponentType.Container)!.Value[0].Count);
+
+        // Removing the inner chest's default container component is distinct from an explicit empty default.
+        requestedInner.Count = 3;
+        var removedInner = new ItemStack(ItemsRegistry.Chest, 3);
+        removedInner.Remove(DataComponentType.Container);
+        var removed = new ItemStack(ItemsRegistry.Chest, 7,
+            ComponentBuilder.Container with { Value = [removedInner] });
+        player.Inventory.SetItem(39, removed);
+        player.Inventory.SetItem(40, null);
+        player.CurrentHeldItemSlot = 3;
+        client.ClearPackets();
+        await PickBlockAsync(context.Server, player, Target, true);
+        Assert.Contains(Delivered(client), packet => packet is ContainerSetSlotPacket);
+        Assert.NotSame(removed, player.GetHeldItem());
+        Assert.Same(removed, player.Inventory.GetItem(39));
     }
 
     [Fact(Timeout = TestServerFactory.TestTimeout)]
