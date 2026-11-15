@@ -7,9 +7,9 @@ public enum PotionEffect : int
     Speed = 1,
     /// <summary>The entity moves slower.</summary>
     Slowness,
-    /// <summary>The entity mines and attacks faster.</summary>
+    /// <summary>The entity mines faster and swings its arm faster.</summary>
     Haste,
-    /// <summary>The entity mines and attacks slower.</summary>
+    /// <summary>The entity mines slower and swings its arm slower.</summary>
     MiningFatigue,
     /// <summary>The entity deals more melee damage.</summary>
     Strength,
@@ -43,19 +43,31 @@ public enum PotionEffect : int
     Poison,
     /// <summary>The entity takes damage over time and can die from it.</summary>
     Wither,
-    /// <summary>The entity has more maximum health.</summary>
+    /// <summary>
+    /// In vanilla, raises the entity's maximum health. Obsidian does not apply this yet: the effect adds no
+    /// maximum health.
+    /// </summary>
     HealthBoost,
     /// <summary>Gives the entity extra health that is lost before its normal health.</summary>
     Absorption,
-    /// <summary>Restores the player's hunger.</summary>
+    /// <summary>
+    /// In vanilla, restores the player's hunger and saturation. Obsidian does not apply this yet: the effect
+    /// restores nothing.
+    /// </summary>
     Saturation,
     /// <summary>The entity has an outline visible through blocks.</summary>
     Glowing,
     /// <summary>The entity floats upward.</summary>
     Levitation,
-    /// <summary>Improves the entity's loot table rolls.</summary>
+    /// <summary>
+    /// In vanilla, raises the entity's luck, which improves loot. Obsidian does not apply this yet: loot reads the
+    /// <c>minecraft:luck</c> attribute, and the effect doesn't change it.
+    /// </summary>
     Luck,
-    /// <summary>Worsens the entity's loot table rolls.</summary>
+    /// <summary>
+    /// In vanilla, lowers the entity's luck, which worsens loot. Obsidian does not apply this yet: loot reads the
+    /// <c>minecraft:luck</c> attribute, and the effect doesn't change it.
+    /// </summary>
     BadLuck,
     /// <summary>The entity falls slowly and takes no fall damage.</summary>
     SlowFalling,
@@ -71,7 +83,10 @@ public enum PotionEffect : int
     Darkness,
     /// <summary>Turns trial spawners near the player ominous.</summary>
     TrialOmen,
-    /// <summary>Starts a raid where the player is when the effect ends.</summary>
+    /// <summary>
+    /// Starts a raid when it ends, at the village recorded when <see cref="BadOmen"/> turned into it. Applying it
+    /// directly records no village, so no raid follows.
+    /// </summary>
     RaidOmen,
     /// <summary>The entity bursts like a wind charge on death.</summary>
     WindCharged,
@@ -81,6 +96,9 @@ public enum PotionEffect : int
     Oozing,
     /// <summary>The entity sometimes releases silverfish when hurt.</summary>
     Infested,
-    /// <summary>The entity does not lose air underwater.</summary>
+    /// <summary>
+    /// In vanilla, the entity does not lose air underwater. Obsidian applies this only to mobs: players still lose
+    /// air.
+    /// </summary>
     BreathOfTheNautilus
 }

@@ -27,7 +27,9 @@ public sealed record class HoverItemContent : IHoverContent
 }
 
 /// <summary>
-/// Hover content that shows an entity's name, type and UUID, for <see cref="HoverAction.ShowEntity"/>.
+/// Hover content for <see cref="HoverAction.ShowEntity"/>, which would show an entity's name, type and UUID.
+/// The current NBT serializers can't write it: sending or storing a component that holds it throws
+/// <see cref="NotSupportedException"/>.
 /// </summary>
 public sealed record class HoverEntityComponent : IHoverContent
 {

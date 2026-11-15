@@ -19,7 +19,7 @@ public readonly record struct MinecraftTime
         Tick = day * 24000
     };
 
-    /// <summary>Creates a time from a number of seconds; <see cref="Day"/> is rounded down.</summary>
+    /// <summary>Creates a time from a number of seconds; <see cref="Day"/> is truncated toward zero.</summary>
     public static MinecraftTime FromSecond(int second) => new()
     {
         Second = second,
@@ -28,7 +28,7 @@ public readonly record struct MinecraftTime
     };
 
     /// <summary>
-    /// Creates a time from a number of ticks; <see cref="Second"/> and <see cref="Day"/> are rounded down.
+    /// Creates a time from a number of ticks; <see cref="Second"/> and <see cref="Day"/> are truncated toward zero.
     /// </summary>
     public static MinecraftTime FromTick(int tick) => new()
     { 

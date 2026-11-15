@@ -3,7 +3,10 @@ using System.ComponentModel;
 
 namespace Obsidian.API;
 
-/// <summary>Minecraft protocol version numbers, one per supported game version.</summary>
+/// <summary>
+/// Minecraft protocol version numbers by game version. Listing a version doesn't mean the server supports it:
+/// clients must use the server's own protocol to log in.
+/// </summary>
 public enum ProtocolVersion
 {
     /// <summary>Minecraft 1.13.</summary>

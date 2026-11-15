@@ -190,7 +190,8 @@ public sealed record class ChatMessage : INetworkSerializable<ChatMessage>
     }
 
     /// <summary>
-    /// Converts all formatting codes which are using '&amp;' to their respective '§' formatting code.
+    /// Replaces <c>&amp;</c> with <c>§</c> where it comes before one of the lowercase codes <c>0</c>-<c>9</c>,
+    /// <c>a</c>-<c>e</c>, <c>k</c>-<c>o</c> or <c>r</c>. <c>&amp;f</c> and uppercase codes are left as they are.
     /// </summary>
     /// <param name="originalText">The text to be reformatted.</param>
     /// <returns>The formatted text.</returns>

@@ -21,7 +21,7 @@ public enum Pose : int
     /// <summary>Crouching.</summary>
     Sneaking,
 
-    /// <summary>A goat's ramming leap.</summary>
+    /// <summary>A long jump, as a breeze takes.</summary>
     LongJumper,
     
     /// <summary>Dying.</summary>

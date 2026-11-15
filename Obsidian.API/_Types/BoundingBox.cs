@@ -1,6 +1,9 @@
 ﻿namespace Obsidian.API;
 
-/// <summary>An axis-aligned box in world space, given by its lowest and highest corners.</summary>
+/// <summary>
+/// An axis-aligned box, given by its lowest and highest corners. Its coordinate space depends on the API using it:
+/// entity hitboxes are in world space, while block shapes are block-local, inside the unit cube.
+/// </summary>
 public readonly struct BoundingBox : IEquatable<BoundingBox>
 {
     /// <summary>

@@ -1,6 +1,9 @@
 ﻿namespace Obsidian.API;
 
-/// <summary>The kinds of vanilla world a new world can be generated as.</summary>
+/// <summary>
+/// The kinds of vanilla world. Obsidian can generate only <see cref="Default"/> and <see cref="Flat"/>; creating
+/// another kind throws <see cref="NotSupportedException"/>.
+/// </summary>
 public enum WorldType
 {
     /// <summary>The normal world.</summary>

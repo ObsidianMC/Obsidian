@@ -103,19 +103,23 @@ public readonly record struct ChatColor
     // 0-9
     /// <summary>The black color.</summary>
     public static readonly ChatColor Black = new('0', "black", Color.FromArgb(0, 0, 0), System.ConsoleColor.Black);
-    /// <summary>The dark blue color.</summary>
+    /// <summary>The dark blue color. Its <see cref="Color"/> is (0, 0, 42), where vanilla uses (0, 0, 170).</summary>
     public static readonly ChatColor DarkBlue = new('1', "dark_blue", Color.FromArgb(0, 0, 42), System.ConsoleColor.DarkBlue);
-    /// <summary>The dark green color.</summary>
+    /// <summary>The dark green color. Its <see cref="Color"/> is (0, 42, 0), where vanilla uses (0, 170, 0).</summary>
     public static readonly ChatColor DarkGreen = new('2', "dark_green", Color.FromArgb(0, 42, 0), System.ConsoleColor.DarkGreen);
-    /// <summary>The dark aqua color.</summary>
+    /// <summary>
+    /// The dark aqua color. Its <see cref="Color"/> is (0, 42, 42), where vanilla uses (0, 170, 170).
+    /// </summary>
     public static readonly ChatColor DarkCyan = new('3', "dark_aqua", Color.FromArgb(0, 42, 42), System.ConsoleColor.DarkCyan);
-    /// <summary>The dark red color.</summary>
+    /// <summary>The dark red color. Its <see cref="Color"/> is (42, 0, 0), where vanilla uses (170, 0, 0).</summary>
     public static readonly ChatColor DarkRed = new('4', "dark_red", Color.FromArgb(42, 0, 0), System.ConsoleColor.DarkRed);
-    /// <summary>The dark purple color.</summary>
+    /// <summary>
+    /// The dark purple color. Its <see cref="Color"/> is (42, 0, 42), where vanilla uses (170, 0, 170).
+    /// </summary>
     public static readonly ChatColor Purple = new('5', "dark_purple", Color.FromArgb(42, 0, 42), System.ConsoleColor.DarkMagenta);
-    /// <summary>The gold color.</summary>
+    /// <summary>The gold color. Its <see cref="Color"/> is (42, 42, 0), where vanilla uses (255, 170, 0).</summary>
     public static readonly ChatColor Gold = new('6', "gold", Color.FromArgb(42, 42, 0), System.ConsoleColor.DarkYellow);
-    /// <summary>The gray color.</summary>
+    /// <summary>The gray color. Its <see cref="Color"/> is (42, 42, 42), where vanilla uses (170, 170, 170).</summary>
     public static readonly ChatColor Gray = new('7', "gray", Color.FromArgb(42, 42, 42), System.ConsoleColor.Gray);
     /// <summary>The dark gray color.</summary>
     public static readonly ChatColor DarkGray = new('8', "dark_gray", Color.FromArgb(85, 85, 85), System.ConsoleColor.DarkGray);

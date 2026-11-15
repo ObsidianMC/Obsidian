@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
 namespace Obsidian.API;
-/// <summary>A page of a book and quill or written book.</summary>
+/// <summary>A page of a book and quill. Written books store their pages as chat components instead.</summary>
 public sealed record class Page : INetworkSerializable<Page>
 {
     /// <summary>Gets the page's text as written, up to 1024 characters.</summary>

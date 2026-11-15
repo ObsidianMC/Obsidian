@@ -7,9 +7,9 @@ public sealed class SoundEffect : ISoundEffect
     /// <inheritdoc/>
     public required SoundCategory SoundCategory { get; init; }
 
-    /// <summary>Gets the volume, from 0 to 1.</summary>
+    /// <summary>Gets the volume. The builder caps it at 1 but sets no lower bound.</summary>
     public required float Volume { get; init; }
-    /// <summary>Gets the pitch multiplier, from 0.5 to 2.</summary>
+    /// <summary>Gets the pitch multiplier. The builder caps it at 2 but sets no lower bound.</summary>
     public required float Pitch { get; init; }
     /// <inheritdoc/>
     public required long Seed { get; init; }

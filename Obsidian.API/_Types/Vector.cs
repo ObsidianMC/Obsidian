@@ -244,7 +244,10 @@ public struct Vector : IEquatable<Vector>, INetworkSerializable<Vector>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector operator %(int a, Vector b) => new(a % b.X, a % b.Y, a % b.Y);
 
-    /// <summary>Converts a block position to a <see cref="VectorF"/> with the same components.</summary>
+    /// <summary>
+    /// Converts a block position to a <see cref="VectorF"/>, casting each component to <see cref="float"/>. Values
+    /// beyond 16,777,216 in size may lose precision.
+    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator VectorF(Vector position)
     {

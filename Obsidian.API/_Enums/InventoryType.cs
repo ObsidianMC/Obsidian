@@ -33,7 +33,10 @@ public enum InventoryType
     /// <summary>A furnace.</summary>
     Furnace,
 
-    /// <summary>A chest-style grid of rows of 9 slots.</summary>
+    /// <summary>
+    /// A chest-style grid of rows of 9 slots. A 5-slot container opens as a hopper screen instead, and a 9-slot
+    /// dispenser or dropper container as a 3x3 grid.
+    /// </summary>
     Generic,
 
     /// <summary>A grindstone.</summary>
