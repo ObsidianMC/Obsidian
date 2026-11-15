@@ -11,6 +11,9 @@ namespace Obsidian.API.World.Structures;
 /// <remarks>Instances come from processor-list data and are shared between threads; keep them stateless.</remarks>
 public abstract class StructureProcessor
 {
+    /// <summary>
+    /// Gets the registered codec type identifier for this world generation component.
+    /// </summary>
     public string Type { get; init; } = string.Empty;
 
     /// <summary>

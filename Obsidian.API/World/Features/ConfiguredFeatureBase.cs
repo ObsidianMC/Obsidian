@@ -9,6 +9,9 @@
 /// </remarks>
 public abstract class ConfiguredFeatureBase : IWorldFeature
 {
+    /// <summary>
+    /// Gets the registered codec type identifier for this world generation component.
+    /// </summary>
     public abstract string Type { get; }
 
     /// <summary>

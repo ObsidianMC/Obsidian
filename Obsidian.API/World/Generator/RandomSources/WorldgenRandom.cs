@@ -9,15 +9,27 @@ public sealed class WorldgenRandom : LegacyRandomSource
 {
     private readonly IRandomSource randomSource;
 
+    /// <summary>
+    /// Wraps a random source to track bit draws and provide world generation seeding helpers.
+    /// </summary>
     public WorldgenRandom(IRandomSource randomSource) : base(0L) => this.randomSource = randomSource;
 
     /// <summary>Number of times <see cref="Next"/> has been called.</summary>
     public int Count { get; private set; }
 
+    /// <summary>
+    /// Creates a random source seeded by drawing from this source.
+    /// </summary>
     public override IRandomSource Fork() => this.randomSource.Fork();
 
+    /// <summary>
+    /// Creates a positional random factory seeded by drawing from this source.
+    /// </summary>
     public override IPositionalRandomFactory ForkPositional() => this.randomSource.ForkPositional();
 
+    /// <summary>
+    /// Returns the requested number of random bits in the low bits of the result.
+    /// </summary>
     public override int Next(int bits)
     {
         this.Count++;

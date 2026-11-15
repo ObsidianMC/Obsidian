@@ -8,10 +8,19 @@ namespace Obsidian.API.World.Features.Trees;
 /// </summary>
 public abstract class FoliagePlacer
 {
+    /// <summary>
+    /// Gets the registered codec type identifier for this world generation component.
+    /// </summary>
     public string Type { get; init; } = string.Empty;
 
+    /// <summary>
+    /// Gets the provider used to sample the foliage radius in blocks.
+    /// </summary>
     public required IIntProvider Radius { get; init; }
 
+    /// <summary>
+    /// Gets the provider used to sample the vertical foliage offset in blocks.
+    /// </summary>
     public required IIntProvider Offset { get; init; }
 
     /// <summary>Places foliage at one attachment; samples <see cref="Offset"/> once per call, like vanilla.</summary>
@@ -29,8 +38,14 @@ public abstract class FoliagePlacer
     /// <summary>Height of the foliage, used to compute the trunk length before the foliage radius is sampled.</summary>
     public abstract int GetFoliageHeight(IRandomSource random, int treeHeight);
 
+    /// <summary>
+    /// Samples the foliage radius in blocks for the supplied trunk height.
+    /// </summary>
     public virtual int GetFoliageRadius(IRandomSource random, int trunkHeight) => this.Radius.Sample(random);
 
+    /// <summary>
+    /// Places foliage at the attachment using the sampled dimensions and vertical offset in blocks.
+    /// </summary>
     protected abstract void CreateFoliage(
         TreeContext tree,
         int freeTreeHeight,

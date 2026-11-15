@@ -57,8 +57,14 @@ public static partial class ItemsRegistry
     /// </summary>
     internal static bool AnyTicksInInventory => anyTicksInInventory;
 
+    /// <summary>
+    /// Reads a variable-length item registry ID and resolves it, returning air for an unknown ID.
+    /// </summary>
     public static Item Get(INetStreamReader reader) => Get(reader.ReadVarInt());
 
+    /// <summary>
+    /// Gets an item by numeric registry ID, returning air for an unknown ID.
+    /// </summary>
     public static Item Get(int id)
     {
         var items = table.ById;
@@ -77,6 +83,9 @@ public static partial class ItemsRegistry
         return item is not null;
     }
 
+    /// <summary>
+    /// Gets an item by case-insensitive identifier, returning air when the identifier is unknown.
+    /// </summary>
     public static Item Get(string unlocalizedName) => TryGet(unlocalizedName, out var item) ? item : Air;
 
     /// <summary>
@@ -134,6 +143,9 @@ public static partial class ItemsRegistry
     /// Gives an item its properties and its plugin's behaviour, unless the plugin started unloading: then its items
     /// were released already, and binding one now would keep the plugin loaded.
     /// </summary>
+    /// <param name="item">The registered item receiving the binding.</param>
+    /// <param name="properties">The default components and behavior to bind.</param>
+    /// <param name="plugin">The plugin owning the behavior.</param>
     /// <param name="closing">Whether the plugin started unloading.</param>
     /// <returns>Whether the item was bound.</returns>
     internal static bool TryBind(Item item, ItemProperties properties, IPluginContainer plugin, Func<bool> closing)
@@ -189,6 +201,9 @@ public static partial class ItemsRegistry
             byId.ToFrozenDictionary(item => item.UnlocalizedName, StringComparer.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// Creates a stack with the requested count and components, resolving an unknown item identifier to air.
+    /// </summary>
     public static ItemStack Get(string unlocalizedName, short count, params List<DataComponent> components) =>
         new(Get(unlocalizedName), count, components);
 
@@ -197,8 +212,15 @@ public static partial class ItemsRegistry
     /// </summary>
     public static ItemStack GetSingleItem(Item item, params List<DataComponent> components) => new(item, 1, components);
 
+    /// <summary>
+    /// Creates a stack of one item resolved by identifier, returning an air stack for an unknown identifier.
+    /// </summary>
     public static ItemStack GetSingleItem(string unlocalizedName, params List<DataComponent> components) => new(Get(unlocalizedName), 1, components);
 
+    /// <summary>
+    /// Creates an ingredient containing the requested count of every item in the named vanilla item tag.
+    /// </summary>
+    /// <exception cref="NullReferenceException">The named vanilla item tag does not exist.</exception>
     public static Ingredient GetIngredientFromTag(string tag, short count)
     {
         var ingredient = new Ingredient();
@@ -214,6 +236,9 @@ public static partial class ItemsRegistry
         return ingredient;
     }
 
+    /// <summary>
+    /// Creates an ingredient containing a stack of the named item with the requested count.
+    /// </summary>
     public static Ingredient GetIngredientFromName(string name, short count) =>
     [
         Get(name, count)

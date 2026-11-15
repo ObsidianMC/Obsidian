@@ -16,10 +16,20 @@ public sealed class BiomeSet
     // The ids and the tag revision they were resolved at, replaced together.
     private Resolved? resolved;
 
+    /// <summary>
+    /// Creates a set from biome identifiers and <c>#</c>-prefixed biome tag identifiers.
+    /// </summary>
     public BiomeSet(params string[] entries) => this.entries = entries;
 
+    /// <summary>
+    /// Gets the unresolved biome and tag identifiers supplied to this set.
+    /// </summary>
     public IReadOnlyList<string> Entries => this.entries;
 
+    /// <summary>
+    /// Tests membership by biome registry ID, resolving tags again when the tag revision changes.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">A biome or tag identifier in this set cannot be resolved.</exception>
     public bool Contains(BiomeCodec biome) => this.Ids().Contains(biome.Id);
 
     // Plugins' biomes are registered before their tags are applied, so the tag revision covers their ids too. The

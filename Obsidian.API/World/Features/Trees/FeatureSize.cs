@@ -9,6 +9,9 @@ public abstract class FeatureSize
     /// <summary>Marks <see cref="MinClippedHeight"/> as absent (vanilla's empty <c>OptionalInt</c>).</summary>
     public const int NoMinClippedHeight = -1;
 
+    /// <summary>
+    /// Gets the registered codec type identifier for this world generation component.
+    /// </summary>
     public string Type { get; init; } = string.Empty;
 
     /// <summary>

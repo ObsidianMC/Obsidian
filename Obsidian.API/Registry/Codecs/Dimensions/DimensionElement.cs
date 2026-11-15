@@ -173,16 +173,34 @@ public sealed record class DimensionElement : INbtSerializable
 /// </remarks>
 public sealed record class MonsterSpawnLightLevel
 {
+    /// <summary>
+    /// Gets or sets the light provider definition, or <c>null</c> when a constant is supplied.
+    /// </summary>
     public MonsterSpawnLightLevelValue? Value { get; set; }
 
+    /// <summary>
+    /// Gets or sets the constant spawn light level, or <c>null</c> when a provider is supplied.
+    /// </summary>
     public int? IntValue { get; set; }
 }
 
+/// <summary>
+/// Describes a monster spawn light provider by its type and inclusive light bounds.
+/// </summary>
 public record struct MonsterSpawnLightLevelValue
 {
+    /// <summary>
+    /// Gets or sets the inclusive maximum light level of the provider.
+    /// </summary>
     public int MaxInclusive { get; set; }
 
+    /// <summary>
+    /// Gets or sets the inclusive minimum light level of the provider.
+    /// </summary>
     public int MinInclusive { get; set; }
 
+    /// <summary>
+    /// Gets or sets the provider type identifier; a missing type is serialized as <c>minecraft:uniform</c>.
+    /// </summary>
     public string? Type { get; set; }
 }

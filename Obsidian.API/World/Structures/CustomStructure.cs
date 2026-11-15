@@ -117,8 +117,14 @@ public abstract class StructureStartContext
     {
     }
 
+    /// <summary>
+    /// Gets the starting chunk's X coordinate in chunks.
+    /// </summary>
     public abstract int ChunkX { get; }
 
+    /// <summary>
+    /// Gets the starting chunk's Z coordinate in chunks.
+    /// </summary>
     public abstract int ChunkZ { get; }
 
     /// <summary>
@@ -141,6 +147,9 @@ public abstract class StructureStartContext
     /// </summary>
     public abstract int Height { get; }
 
+    /// <summary>
+    /// Gets the sea surface's world Y in blocks.
+    /// </summary>
     public abstract int SeaLevel { get; }
 
     /// <summary>
@@ -231,8 +240,20 @@ public readonly record struct BlockArea(Vector Min, Vector Max)
 /// </summary>
 public enum PieceRotation
 {
+    /// <summary>
+    /// Leaves the pool element unrotated.
+    /// </summary>
     None,
+    /// <summary>
+    /// Rotates the pool element 90 degrees clockwise when viewed from above.
+    /// </summary>
     Clockwise90,
+    /// <summary>
+    /// Rotates the pool element 180 degrees when viewed from above.
+    /// </summary>
     Clockwise180,
+    /// <summary>
+    /// Rotates the pool element 90 degrees counterclockwise when viewed from above.
+    /// </summary>
     CounterClockwise90
 }

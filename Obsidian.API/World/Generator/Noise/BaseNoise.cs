@@ -17,6 +17,9 @@ public partial class BaseNoise : INoise
     // samples instead of its own parameters; null for a noise of these parameters.
     private readonly INoise? seeded;
 
+    /// <summary>
+    /// Initializes unbound noise parameters to be supplied by the caller.
+    /// </summary>
     public BaseNoise()
     {
     }
@@ -31,6 +34,9 @@ public partial class BaseNoise : INoise
         this.seeded = seeded;
     }
 
+    /// <summary>
+    /// Gets the type identifier for registry-backed base noise.
+    /// </summary>
     public string Type => "minecraft:base_noise";
 
     /// <summary>
@@ -38,12 +44,24 @@ public partial class BaseNoise : INoise
     /// </summary>
     public required string Key { get; init; }
 
+    /// <summary>
+    /// Gets the amplitude of each successive octave, read from <c>amplitudes</c>.
+    /// </summary>
     public required ImmutableArray<double> Amplitudes { get; init; }
 
+    /// <summary>
+    /// Gets the initial octave index, read from <c>firstOctave</c> and converted to an integer when binding.
+    /// </summary>
     public required double FirstOctave { get; init; }
 
+    /// <summary>
+    /// Gets the negative of the reported maximum noise value.
+    /// </summary>
     public double MinValue => -this.MaxValue;
 
+    /// <summary>
+    /// Gets the upper bound of the bound noise.
+    /// </summary>
     public double MaxValue => this.seeded?.MaxValue ?? this.Noise.MaxValue;
 
     private NormalNoise? noise;
@@ -93,6 +111,9 @@ public partial class BaseNoise : INoise
     public BaseNoise Bind(IPositionalRandomFactory worldRandom) =>
         this.seeded is not null ? this : this.Bind(worldRandom.FromHashOf(this.Key));
 
+    /// <summary>
+    /// Binds uninitialized noise using world seed zero and its registry key; does nothing if already bound.
+    /// </summary>
     public void Create()
     {
         if (this.seeded is not null || this.noise is not null)
@@ -102,6 +123,9 @@ public partial class BaseNoise : INoise
         this.noise = NormalNoise.Create(random, (int)this.FirstOctave, this.Amplitudes.AsSpan());
     }
 
+    /// <summary>
+    /// Samples the bound noise at the supplied coordinates, binding with world seed zero if necessary.
+    /// </summary>
     public double GetValue(double x, double y, double z) =>
         this.seeded is null ? this.Noise.GetValue(x, y, z) : this.seeded.GetValue(x, y, z);
 

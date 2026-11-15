@@ -45,6 +45,9 @@ public static class Mth
         return value < truncated ? unchecked(truncated - 1L) : truncated;
     }
 
+    /// <summary>
+    /// Returns the product of a value with itself.
+    /// </summary>
     public static double Square(double value) => value * value;
 
     /// <summary>Java's <c>Math.floorDiv</c>: division rounding towards negative infinity.</summary>
@@ -57,11 +60,20 @@ public static class Mth
     /// <summary>Java's <c>Math.floorMod</c>: the remainder with the divisor's sign.</summary>
     public static int FloorMod(int value, int divisor) => value - FloorDiv(value, divisor) * divisor;
 
+    /// <summary>
+    /// Interpolates from start to end using delta without clamping it.
+    /// </summary>
     public static double Lerp(double delta, double start, double end) => start + delta * (end - start);
 
+    /// <summary>
+    /// Interpolates bilinearly between four corner values using the supplied X and Y fractions.
+    /// </summary>
     public static double Lerp2(double deltaX, double deltaY, double x0y0, double x1y0, double x0y1, double x1y1) =>
         Lerp(deltaY, Lerp(deltaX, x0y0, x1y0), Lerp(deltaX, x0y1, x1y1));
 
+    /// <summary>
+    /// Interpolates trilinearly between eight corner values using the supplied X, Y and Z fractions.
+    /// </summary>
     public static double Lerp3(
         double deltaX, double deltaY, double deltaZ,
         double x0y0z0, double x1y0z0, double x0y1z0, double x1y1z0,
@@ -77,6 +89,9 @@ public static class Mth
     /// <summary>Quintic smoothstep <c>6t^5 - 15t^4 + 10t^3</c> used by Perlin noise.</summary>
     public static double Smoothstep(double t) => t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
 
+    /// <summary>
+    /// Returns the derivative of the quintic smoothstep polynomial.
+    /// </summary>
     public static double SmoothstepDerivative(double t) => 30.0 * t * t * (t - 1.0) * (t - 1.0);
 
     /// <summary>Vanilla per-position seed hash (<c>Mth.getSeed</c>), used by positional random factories.</summary>

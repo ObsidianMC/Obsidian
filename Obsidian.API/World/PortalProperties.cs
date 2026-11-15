@@ -14,18 +14,57 @@ namespace Obsidian.API.World;
 /// </remarks>
 public sealed record PortalProperties
 {
+    /// <summary>
+    /// Gets the predicate accepting block states as portal frame material.
+    /// </summary>
     public required Func<IBlock, bool> IsFrame { get; init; }
+    /// <summary>
+    /// Gets the block state used when building an exit portal's frame.
+    /// </summary>
     public required IBlock FrameBlock { get; init; }
+    /// <summary>
+    /// Gets the portal interior state, whose axis property must accept <c>x</c> and <c>z</c>.
+    /// </summary>
     public required IBlock PortalBlock { get; init; }
+    /// <summary>
+    /// Gets the destination resolver; a <c>null</c> result disables lighting and travel in the source level.
+    /// </summary>
     public required Func<ILevel, ILevel?> ResolveTarget { get; init; }
+    /// <summary>
+    /// Gets the optional item accepted for lighting the frame.
+    /// </summary>
     public Item? Igniter { get; init; }
+    /// <summary>
+    /// Gets whether fire can light this portal type.
+    /// </summary>
     public bool IgnitesFromFire { get; init; }
+    /// <summary>
+    /// Gets the minimum interior width in blocks.
+    /// </summary>
     public int MinWidth { get; init; } = 2;
+    /// <summary>
+    /// Gets the maximum interior width in blocks.
+    /// </summary>
     public int MaxWidth { get; init; } = 21;
+    /// <summary>
+    /// Gets the minimum interior height in blocks.
+    /// </summary>
     public int MinHeight { get; init; } = 3;
+    /// <summary>
+    /// Gets the maximum interior height in blocks.
+    /// </summary>
     public int MaxHeight { get; init; } = 21;
+    /// <summary>
+    /// Gets the portal exposure time in ticks required for a noncreative player to travel.
+    /// </summary>
     public int WaitTicks { get; init; } = 80;
+    /// <summary>
+    /// Gets the portal exposure time in ticks required for a creative player to travel.
+    /// </summary>
     public int CreativeWaitTicks { get; init; } = 1;
+    /// <summary>
+    /// Gets the portal exposure time in ticks required for a nonplayer entity to travel.
+    /// </summary>
     public int EntityWaitTicks { get; init; }
 
     /// <summary>Source/target dimension coordinate scale by default; override for a portal's own mapping.</summary>
@@ -42,6 +81,9 @@ public sealed record PortalProperties
 public sealed class PortalType
 {
     internal PortalType(string identifier) => this.Identifier = identifier;
+    /// <summary>
+    /// Gets the portal type's persistent namespaced identifier.
+    /// </summary>
     public string Identifier { get; }
     internal int Generation { get; set; }
 }

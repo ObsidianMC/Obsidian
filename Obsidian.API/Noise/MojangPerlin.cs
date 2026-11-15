@@ -3,6 +3,9 @@ using SharpNoise.Modules;
 
 namespace Obsidian.API.Noise;
 
+/// <summary>
+/// Combines amplitude-weighted SharpNoise gradient samples across successively scaled octaves.
+/// </summary>
 public class MojangPerlin : Module
 {
     /// <summary>
@@ -15,6 +18,9 @@ public class MojangPerlin : Module
     /// </summary>
     public int firstOctave { get; set; } = 1;
 
+    /// <summary>
+    /// The base seed combined with the octave index for gradient noise sampling.
+    /// </summary>
     public required int seed;
 
     /// <summary>
@@ -25,6 +31,9 @@ public class MojangPerlin : Module
 
     }
 
+    /// <summary>
+    /// Samples and combines the configured octaves at the supplied noise coordinates.
+    /// </summary>
     public override double GetValue(double x, double y, double z)
     {
 /*        x += 0.5;

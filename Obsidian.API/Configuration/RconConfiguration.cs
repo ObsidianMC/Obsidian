@@ -1,5 +1,8 @@
 namespace Obsidian.API.Configuration;
 
+/// <summary>
+/// Configures authentication, listening and operator broadcasts for remote console connections.
+/// </summary>
 public sealed record class RconConfiguration
 {
     /// <summary>

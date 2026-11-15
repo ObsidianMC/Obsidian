@@ -14,10 +14,19 @@ public sealed class ImprovedNoise
 
     private readonly byte[] p = new byte[256];
 
+    /// <summary>
+    /// Gets the random X offset drawn at construction, in [0, 256).
+    /// </summary>
     public double Xo { get; }
 
+    /// <summary>
+    /// Gets the random Y offset drawn at construction, in [0, 256).
+    /// </summary>
     public double Yo { get; }
 
+    /// <summary>
+    /// Gets the random Z offset drawn at construction, in [0, 256).
+    /// </summary>
     public double Zo { get; }
 
     /// <summary>The permutation table, for <see cref="ImprovedNoiseLanes"/>.</summary>

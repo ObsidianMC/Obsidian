@@ -8,6 +8,9 @@ public class LegacyRandomSource : BitRandomSource
 {
     private JavaLcg state;
 
+    /// <summary>
+    /// Initializes the legacy 48-bit generator from a 64-bit seed.
+    /// </summary>
     public LegacyRandomSource(long seed) => this.state = new JavaLcg(seed);
 
     /// <summary>
@@ -16,15 +19,27 @@ public class LegacyRandomSource : BitRandomSource
     /// </summary>
     internal long State => this.state.State;
 
+    /// <summary>
+    /// Creates a random source seeded by drawing from this source.
+    /// </summary>
     public override IRandomSource Fork() => new LegacyRandomSource(this.NextLong());
 
+    /// <summary>
+    /// Creates a positional random factory seeded by drawing from this source.
+    /// </summary>
     public override IPositionalRandomFactory ForkPositional() => new LegacyPositionalRandomFactory(this.NextLong());
 
+    /// <summary>
+    /// Resets the random source from a 64-bit seed.
+    /// </summary>
     public override void SetSeed(long seed)
     {
         this.state.SetSeed(seed);
         this.ResetGaussian();
     }
 
+    /// <summary>
+    /// Returns the requested number of random bits in the low bits of the result.
+    /// </summary>
     public override int Next(int bits) => this.state.Next(bits);
 }

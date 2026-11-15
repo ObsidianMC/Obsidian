@@ -3,12 +3,21 @@ using Obsidian.Nbt.Interfaces;
 
 namespace Obsidian.API.Registry.Codecs.Dialogs;
 
+/// <summary>
+/// Represents a dialog body entry whose content is written as a typed NBT payload.
+/// </summary>
 public sealed class DialogBody : INbtSerializable
 {
     private readonly Action<INbtWriter> write;
     private DialogBody(Action<INbtWriter> write) => this.write = write;
+    /// <summary>
+    /// Writes this body entry's type and content fields to the current NBT compound.
+    /// </summary>
     public void Write(INbtWriter writer) => write(writer);
 
+    /// <summary>
+    /// Creates a plain text body entry with a width from 1 through 1,024 client pixels.
+    /// </summary>
     public static DialogBody Message(ChatMessage contents, int width = 200)
     {
         DialogValidation.Range(width, 1, 1024, nameof(width));

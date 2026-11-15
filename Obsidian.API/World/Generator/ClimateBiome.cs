@@ -5,6 +5,12 @@ namespace Obsidian.API.World.Generator;
 /// <c>biomes</c>: where a column's climate is nearest to these ranges, the biome generates.
 /// </summary>
 /// <param name="Biome">The biome's identifier, vanilla's or a plugin's.</param>
+/// <param name="Temperature">The temperature interval associated with the biome.</param>
+/// <param name="Humidity">The humidity interval associated with the biome.</param>
+/// <param name="Continentalness">The continentalness interval associated with the biome.</param>
+/// <param name="Erosion">The erosion interval associated with the biome.</param>
+/// <param name="Depth">The depth interval associated with the biome.</param>
+/// <param name="Weirdness">The weirdness interval associated with the biome.</param>
 /// <param name="Offset">Added to the distance to this entry, from 0 to 1, so that a higher offset is picked
 /// less.</param>
 public sealed record ClimateBiome(
@@ -22,5 +28,8 @@ public sealed record ClimateBiome(
 /// </summary>
 public readonly record struct ClimateRange(float Min, float Max)
 {
+    /// <summary>
+    /// Converts a climate value into an interval with identical endpoints.
+    /// </summary>
     public static implicit operator ClimateRange(float value) => new(value, value);
 }

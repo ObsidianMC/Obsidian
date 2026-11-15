@@ -12,6 +12,9 @@ public class BlockContext
     /// </summary>
     public required IBlockLevel Level { get; init; }
 
+    /// <summary>
+    /// Gets the block's world position in blocks.
+    /// </summary>
     public required Vector Position { get; init; }
 
     /// <summary>
@@ -70,6 +73,9 @@ public sealed class ShapeUpdateContext : BlockContext
     /// </summary>
     public required BlockFace Direction { get; init; }
 
+    /// <summary>
+    /// Gets the changed neighbor's world position in blocks.
+    /// </summary>
     public required Vector NeighborPosition { get; init; }
 
     /// <summary>
@@ -97,10 +103,19 @@ public sealed class SignalContext : BlockContext
 /// </summary>
 public sealed class EntityBlockContext
 {
+    /// <summary>
+    /// Gets the entity touching the block.
+    /// </summary>
     public required IEntity Entity { get; init; }
 
+    /// <summary>
+    /// Gets the level containing the block.
+    /// </summary>
     public required ILevel Level { get; init; }
 
+    /// <summary>
+    /// Gets the block's world position in blocks.
+    /// </summary>
     public required Vector Position { get; init; }
 
     /// <summary>
@@ -120,8 +135,14 @@ public sealed class BlockPlaceContext
     /// </summary>
     public required IBlockLevel Level { get; init; }
 
+    /// <summary>
+    /// Gets the player placing the block.
+    /// </summary>
     public required IPlayer Player { get; init; }
 
+    /// <summary>
+    /// Gets the interaction hand used to place the block.
+    /// </summary>
     public required InteractionHand Hand { get; init; }
 
     /// <summary>

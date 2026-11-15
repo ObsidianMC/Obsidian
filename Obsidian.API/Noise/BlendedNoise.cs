@@ -34,8 +34,14 @@ public sealed class BlendedNoise
     private ImprovedNoiseLanes?[]? minLimitLanes;
     private ImprovedNoiseLanes?[]? maxLimitLanes;
 
+    /// <summary>
+    /// Gets the negative of the reported maximum noise value.
+    /// </summary>
     public double MinValue => -this.MaxValue;
 
+    /// <summary>
+    /// Gets the upper bound calculated from the limit noise and vertical sampling scale.
+    /// </summary>
     public double MaxValue { get; }
 
     /// <summary>Creates a noise seeded from <paramref name="random"/>. Prefer <see cref="CreateUnseeded"/> + <see cref="WithNewRandom"/>.</summary>
@@ -65,6 +71,9 @@ public sealed class BlendedNoise
     public BlendedNoise WithNewRandom(IRandomSource random) =>
         new(random, this.xzScale, this.yScale, this.xzFactor, this.yFactor, this.smearScaleMultiplier);
 
+    /// <summary>
+    /// Samples blended terrain noise at world block coordinates.
+    /// </summary>
     public double Compute(int blockX, int blockY, int blockZ)
     {
         var limitX = blockX * this.xzMultiplier;

@@ -5,6 +5,9 @@ using System.Threading;
 namespace Obsidian.API.Registries;
 
 // Looking tags up by identifier, and the tags plugins made, next to vanilla's generated ones.
+/// <summary>
+/// Resolves vanilla and plugin tags and tracks revisions when plugin tag contents change.
+/// </summary>
 public static partial class TagsRegistry
 {
     private static readonly Lazy<FrozenDictionary<(string Registry, string Identifier), Tag>> vanilla = new(() => All

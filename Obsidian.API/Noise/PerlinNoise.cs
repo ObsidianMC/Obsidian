@@ -26,8 +26,14 @@ public sealed class PerlinNoise
     // The octaves sampled four positions at a time, made on first use.
     private ImprovedNoiseLanes?[]? octaveLanes;
 
+    /// <summary>
+    /// Gets the frequency exponent of the first configured octave.
+    /// </summary>
     public int FirstOctave { get; }
 
+    /// <summary>
+    /// Gets the amplitude weights of successive octaves, with zero disabling an octave.
+    /// </summary>
     public ReadOnlySpan<double> Amplitudes => this.amplitudes;
 
     /// <summary>Upper bound of <see cref="GetValue(double, double, double)"/>.</summary>
@@ -97,6 +103,9 @@ public sealed class PerlinNoise
     public static PerlinNoise CreateLegacyForLegacyNetherBiome(IRandomSource random, int firstOctave, ReadOnlySpan<double> amplitudes) =>
         new(random, firstOctave, amplitudes.ToArray(), useNewInitialization: false);
 
+    /// <summary>
+    /// Samples the amplitude-weighted octaves at the supplied noise coordinates without legacy vertical smearing.
+    /// </summary>
     public double GetValue(double x, double y, double z) => this.GetValue(x, y, z, 0.0, 0.0, false);
 
     /// <summary>

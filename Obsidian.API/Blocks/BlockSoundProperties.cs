@@ -6,12 +6,33 @@ namespace Obsidian.API.Blocks;
 /// </summary>
 public sealed record BlockSoundProperties
 {
+    /// <summary>
+    /// Gets the sound event played when the block breaks.
+    /// </summary>
     public required SoundEvent Break { get; init; }
+    /// <summary>
+    /// Gets the sound event played when an entity steps on the block.
+    /// </summary>
     public required SoundEvent Step { get; init; }
+    /// <summary>
+    /// Gets the sound event played when the block is placed.
+    /// </summary>
     public required SoundEvent Place { get; init; }
+    /// <summary>
+    /// Gets the sound event played while the block is being mined.
+    /// </summary>
     public required SoundEvent Hit { get; init; }
+    /// <summary>
+    /// Gets the sound event played when an entity lands on the block.
+    /// </summary>
     public required SoundEvent Fall { get; init; }
+    /// <summary>
+    /// Gets the base volume used by block interaction sounds.
+    /// </summary>
     public float Volume { get; init; } = 1;
+    /// <summary>
+    /// Gets the base pitch used by block interaction sounds.
+    /// </summary>
     public float Pitch { get; init; } = 1;
 
     /// <summary>The default block sounds, like vanilla's stone sound type.</summary>

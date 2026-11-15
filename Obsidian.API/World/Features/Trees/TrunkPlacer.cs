@@ -8,12 +8,24 @@ namespace Obsidian.API.World.Features.Trees;
 /// </summary>
 public abstract class TrunkPlacer
 {
+    /// <summary>
+    /// Gets the registered codec type identifier for this world generation component.
+    /// </summary>
     public string Type { get; init; } = string.Empty;
 
+    /// <summary>
+    /// Gets the constant trunk height contribution in blocks, read from <c>base_height</c>.
+    /// </summary>
     public required int BaseHeight { get; init; }
 
+    /// <summary>
+    /// Gets the inclusive upper bound of the first random height contribution in blocks.
+    /// </summary>
     public required int HeightRandA { get; init; }
 
+    /// <summary>
+    /// Gets the inclusive upper bound of the second random height contribution in blocks.
+    /// </summary>
     public required int HeightRandB { get; init; }
 
     /// <summary>Vanilla <c>getTreeHeight</c>: <c>base_height + rand(0..a) + rand(0..b)</c>.</summary>
@@ -23,7 +35,9 @@ public abstract class TrunkPlacer
     /// <summary>
     /// Places the trunk starting at <paramref name="origin"/> and returns the foliage attachment points.
     /// </summary>
+    /// <param name="tree">The tree placement context receiving the trunk blocks.</param>
     /// <param name="freeTreeHeight">Height actually available, possibly clipped below the sampled tree height.</param>
+    /// <param name="origin">The trunk base in world block coordinates.</param>
     public abstract List<FoliageAttachment> PlaceTrunk(TreeContext tree, int freeTreeHeight, Vector origin);
 
     /// <summary>Whether a trunk may grow through the position: <see cref="ValidTreePos"/> or an existing log.</summary>
@@ -53,6 +67,9 @@ public abstract class TrunkPlacer
         return true;
     }
 
+    /// <summary>
+    /// Attempts to place a log at a position accepted by the trunk's free-space test.
+    /// </summary>
     protected void PlaceLogIfFree(TreeContext tree, Vector position)
     {
         if (this.IsFree(tree.Level, position))
@@ -67,6 +84,9 @@ public abstract class TrunkPlacer
     protected static Func<IBlock, IBlock> WithAxis(string axis) =>
         block => TreeBlockRules.WithProperty(block, "axis", axis);
 
+    /// <summary>
+    /// Returns the block state axis name <c>x</c>, <c>y</c> or <c>z</c> for a face.
+    /// </summary>
     protected static string AxisOf(BlockFace face) => face switch
     {
         BlockFace.Up or BlockFace.Down => "y",

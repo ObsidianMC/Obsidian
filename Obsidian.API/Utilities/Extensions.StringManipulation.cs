@@ -31,6 +31,9 @@ public static partial class Extensions
         return null;
     }
 
+    /// <summary>
+    /// Removes nonalphanumeric separators and uppercases each word's first character, lowercasing the rest.
+    /// </summary>
     public static string ToPascalCase(this string snakeCase)
     {
         // Alternative implementation:
@@ -64,15 +67,27 @@ public static partial class Extensions
         return new string(result);
     }
 
+    /// <summary>
+    /// Parses a namespaced enchantment's path after removing underscores, ignoring case.
+    /// </summary>
     public static EnchantmentType ToEnchantType(this string source) => Enum.Parse<EnchantmentType>(source.Split(":")[1].Replace("_", ""), true);
 
 
+    /// <summary>
+    /// Tests whether the string is <c>null</c> or empty.
+    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsNullOrEmpty([NotNullWhen(false)] this string? value) => string.IsNullOrEmpty(value);
 
+    /// <summary>
+    /// Tests whether the string is <c>null</c>, empty or contains only whitespace.
+    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsNullOrWhitespace([NotNullWhen(false)] this string? value) => string.IsNullOrWhiteSpace(value);
 
+    /// <summary>
+    /// Uppercases the first character while preserving the remainder; throws for a <c>null</c> value.
+    /// </summary>
     public static string Capitalize(this string? value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -87,8 +102,14 @@ public static partial class Extensions
         });
     }
 
+    /// <summary>
+    /// Compares strings using ordinal case-insensitive equality.
+    /// </summary>
     public static bool EqualsIgnoreCase(this string a, string b) => a.Equals(b, StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Converts a name using the lowercase snake-case JSON naming policy.
+    /// </summary>
     public static string ToSnakeCase(this string str) => JsonNamingPolicy.SnakeCaseLower.ConvertName(str);
 
     /// <summary>

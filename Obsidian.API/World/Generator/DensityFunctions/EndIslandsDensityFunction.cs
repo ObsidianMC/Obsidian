@@ -14,10 +14,19 @@ public sealed class EndIslandsDensityFunction : IDensityFunction
 {
     private const float IslandThreshold = -0.9f;
 
+    /// <summary>
+    /// Gets the density function's codec type identifier.
+    /// </summary>
     public string Type => "minecraft:end_islands";
 
+    /// <summary>
+    /// Gets the lower bound reported for this function's output.
+    /// </summary>
     public double MinValue => -0.84375;
 
+    /// <summary>
+    /// Gets the upper bound reported for this function's output.
+    /// </summary>
     public double MaxValue => 0.5625;
 
     private SimplexNoise IslandNoise
@@ -31,6 +40,9 @@ public sealed class EndIslandsDensityFunction : IDensityFunction
     /// </summary>
     public static EndIslandsDensityFunction WithSeed(long seed) => new() { IslandNoise = CreateNoise(seed) };
 
+    /// <summary>
+    /// Evaluates this function at the supplied world block coordinates.
+    /// </summary>
     public double GetValue(double x, double y, double z) => (GetHeightValue(this.IslandNoise, (int)x / 8, (int)z / 8) - 8.0) / 128.0;
 
     private static SimplexNoise CreateNoise(long seed)

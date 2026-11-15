@@ -10,6 +10,9 @@ namespace Obsidian.API.Registries;
 /// </summary>
 public static class TimelinesRegistry
 {
+    /// <summary>
+    /// Identifies the <c>minecraft:timeline</c> registry on the network.
+    /// </summary>
     public const string CodecKey = "minecraft:timeline";
 
     /// <summary>

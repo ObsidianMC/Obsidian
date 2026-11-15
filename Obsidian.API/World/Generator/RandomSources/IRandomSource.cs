@@ -27,8 +27,14 @@ public interface IRandomSource
     /// <summary>Returns a value in <c>[min, max]</c> (vanilla <c>nextIntBetweenInclusive</c>).</summary>
     int NextIntBetweenInclusive(int min, int max);
 
+    /// <summary>
+    /// Returns a random 64-bit signed integer.
+    /// </summary>
     long NextLong();
 
+    /// <summary>
+    /// Returns a random Boolean value.
+    /// </summary>
     bool NextBoolean();
 
     /// <summary>Returns a value in <c>[0, 1)</c> with 24 bits of precision.</summary>

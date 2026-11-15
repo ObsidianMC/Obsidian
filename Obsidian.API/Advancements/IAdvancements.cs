@@ -5,7 +5,13 @@ namespace Obsidian.API.Advancements;
 /// <summary>Persistent criteria progress. Granting the last requirement awards the advancement's rewards.</summary>
 public interface IAdvancements
 {
+    /// <summary>
+    /// Tests whether the named advancement exists and its requirements are complete for this player.
+    /// </summary>
     bool IsDone(string identifier);
+    /// <summary>
+    /// Tests whether this player has a recorded completion date for the named criterion.
+    /// </summary>
     bool HasCriterion(string identifier, string criterion);
 
     /// <summary>
@@ -19,6 +25,9 @@ public interface IAdvancements
     /// </exception>
     ValueTask<bool> GrantAsync(string identifier, string? criterion = null);
 
+    /// <summary>
+    /// Revokes one criterion, or all criteria when <c>null</c>, returning whether progress changed.
+    /// </summary>
     bool Revoke(string identifier, string? criterion = null);
 }
 
@@ -30,12 +39,18 @@ public sealed class AdvancementTrigger<TInstance>
 {
     private readonly Func<IPlayer, Func<TInstance, bool>, ValueTask> fire;
 
+    /// <summary>
+    /// Creates a trigger handle using its namespaced identifier and player-specific firing callback.
+    /// </summary>
     public AdvancementTrigger(string identifier, Func<IPlayer, Func<TInstance, bool>, ValueTask> fire)
     {
         this.Identifier = identifier;
         this.fire = fire;
     }
 
+    /// <summary>
+    /// Gets the registered advancement trigger identifier.
+    /// </summary>
     public string Identifier { get; }
 
     /// <summary>Tests matching criteria for this player. An unloaded registration is inert.</summary>

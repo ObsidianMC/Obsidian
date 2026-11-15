@@ -10,16 +10,32 @@
 [DensityFunction("minecraft:cache_once")]
 public sealed class CacheOnceDensityFunction : IDensityFunction
 {
+    /// <summary>
+    /// Gets the density function's codec type identifier.
+    /// </summary>
     public string Type => "minecraft:cache_once";
 
+    /// <summary>
+    /// Gets the input sampled at the same position as this function.
+    /// </summary>
     public required IDensityFunction Argument { get; init; }
 
+    /// <summary>
+    /// Gets the lower bound reported for this function's output.
+    /// </summary>
     public double MinValue => this.Argument.MinValue;
 
+    /// <summary>
+    /// Gets the upper bound reported for this function's output.
+    /// </summary>
     public double MaxValue => this.Argument.MaxValue;
 
+    /// <summary>
+    /// Evaluates this function at the supplied world block coordinates.
+    /// </summary>
     public double GetValue(double x, double y, double z) => this.Argument.GetValue(x, y, z);
 
+    /// <inheritdoc/>
     public IDensityFunction MapAll(IDensityFunctionVisitor visitor) =>
         visitor.Apply(new CacheOnceDensityFunction { Argument = visitor.Map(this.Argument) });
 }

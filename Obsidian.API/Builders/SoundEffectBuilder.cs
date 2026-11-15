@@ -1,6 +1,9 @@
 ﻿using Obsidian.API.Builders.Interfaces;
 
 namespace Obsidian.API.Builders;
+/// <summary>
+/// Builds playable sound effects from sound identifiers and playback settings.
+/// </summary>
 public sealed class SoundEffectBuilder : BaseSoundEffectBuilder
 {
     internal SoundEffectBuilder() { }
@@ -14,12 +17,16 @@ public sealed class SoundEffectBuilder : BaseSoundEffectBuilder
             SoundCategory = soundCategory
         };
 
+    /// <summary>
+    /// Creates a sound builder for the supplied event identifier and client sound category.
+    /// </summary>
     public static ISoundEffectBuilder Create(string soundLocation, SoundCategory soundCategory = SoundCategory.Master) => new SoundEffectBuilder
     {
         SoundLocation = soundLocation,
         SoundCategory = soundCategory
     };
 
+    /// <inheritdoc/>
     public override ISoundEffect Build() => new SoundEffect
     {
         SoundId = this.SoundLocation,

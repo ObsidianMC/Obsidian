@@ -8,6 +8,9 @@ using System.Text.Json;
 namespace Obsidian.API.Utilities;
 public partial class Extensions
 {
+    /// <summary>
+    /// Writes text content, optional style and events, extras and translation arguments into the current NBT compound.
+    /// </summary>
     public static void WriteChatMessage(this INbtWriter writer, ChatMessage chatMessage)
     {
         if (!chatMessage.Text.IsNullOrEmpty() || chatMessage.Translate is null && chatMessage.Keybind is null)
@@ -67,6 +70,9 @@ public partial class Extensions
         }
     }
 
+    /// <summary>
+    /// Creates a named chat compound containing text or translation, optional style, events and nested components.
+    /// </summary>
     public static NbtCompound ToNbt(this ChatMessage chatMessage, string name = "")
     {
         var compound = new NbtCompound(name);
@@ -107,6 +113,10 @@ public partial class Extensions
         return compound;
     }
 
+    /// <summary>
+    /// Updates the supplied chat message from compound fields and returns it, decoding nested text and translation
+    /// arguments.
+    /// </summary>
     public static ChatMessage FromNbt(this ChatMessage chatMessage, NbtCompound root)
     {
         chatMessage.Text = root.TryGetTagValue<string>("text", out var text) ? text : null;
@@ -235,6 +245,13 @@ public partial class Extensions
         return $"{whole}.{fraction}";
     }
 
+    /// <summary>
+    /// Decodes a click action; page changes read the integer <c>page</c> field, while other actions fall back to
+    /// the legacy <c>value</c> field when their action-specific string field is absent.
+    /// </summary>
+    /// <exception cref="Obsidian.Nbt.Exceptions.TagNotFoundException">
+    /// A page-change action has no integer <c>page</c> field.
+    /// </exception>
     public static ClickComponent ToClickComponent(this NbtCompound compound)
     {
         var action = SavedEnum<ClickAction>(compound.GetString("action")!);
@@ -248,6 +265,10 @@ public partial class Extensions
         };
     }
 
+    /// <summary>
+    /// Decodes supported text and item hover data, returning <c>null</c> for missing contents and throwing for entity
+    /// hover data.
+    /// </summary>
     public static HoverComponent? ToHoverComponent(this NbtCompound compound)
     {
         var action = compound.SavedString("action");
@@ -291,6 +312,9 @@ public partial class Extensions
         };
     }
 
+    /// <summary>
+    /// Creates a <c>hover_event</c> compound for text or item content; throws for entity hover content.
+    /// </summary>
     public static NbtCompound ToNbt(this HoverComponent hoverComponent)
     {
         var compound = new NbtCompound("hover_event")
@@ -323,6 +347,9 @@ public partial class Extensions
         _ => "command"
     };
 
+    /// <summary>
+    /// Creates a <c>click_event</c> compound, writing page numbers as integers and other action values as strings.
+    /// </summary>
     public static NbtCompound ToNbt(this ClickComponent clickComponent)
     {
         var compound = new NbtCompound("click_event")
@@ -337,6 +364,9 @@ public partial class Extensions
         return compound;
     }
 
+    /// <summary>
+    /// Serializes the compound's entries as raw unnamed NBT and writes the resulting bytes to the network stream.
+    /// </summary>
     public static void WriteNbtCompound(this INetStreamWriter writer, NbtCompound compound)
     {
         using var nbtWriter = new RawNbtWriter(true);

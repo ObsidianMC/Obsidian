@@ -56,6 +56,9 @@ public sealed class NormalNoise
     public static NormalNoise CreateLegacyNetherBiome(IRandomSource random, int firstOctave, ReadOnlySpan<double> amplitudes) =>
         new(random, firstOctave, amplitudes, useModernInitialization: false);
 
+    /// <summary>
+    /// Samples the two Perlin noises at their respective coordinate scales and returns their normalized sum.
+    /// </summary>
     public double GetValue(double x, double y, double z)
     {
         var scaledX = x * InputFactor;

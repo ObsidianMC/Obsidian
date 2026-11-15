@@ -13,10 +13,19 @@ namespace Obsidian.API.Noise;
 /// </remarks>
 public class HeightNoiseMapBuilder : NoiseMapBuilder
 {
+    /// <summary>
+    /// Gets or sets the three-dimensional noise cube sampled to build the destination map.
+    /// </summary>
     public NoiseCube SourceNoiseCube { get; set; }
 
+    /// <summary>
+    /// Gets or sets the threshold a noise sample must exceed to count toward the column height.
+    /// </summary>
     public double BiasValue { get; set; }
 
+    /// <summary>
+    /// Validates positive destination dimensions and assigned source and destination, then sizes the map.
+    /// </summary>
     protected override void PrepareBuild()
     {
         if (destWidth <= 0 ||
@@ -30,6 +39,9 @@ public class HeightNoiseMapBuilder : NoiseMapBuilder
         DestNoiseMap.SetSize(destHeight, destWidth);
     }
 
+    /// <summary>
+    /// Finds each column's highest sample above the bias and maps its height to <c>2 * height / cubeHeight - 1.33</c>.
+    /// </summary>
     protected override void BuildImpl(CancellationToken cancellationToken)
     {
         NoiseCube nc = SourceNoiseCube;
