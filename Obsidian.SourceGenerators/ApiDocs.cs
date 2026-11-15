@@ -1,3 +1,4 @@
+using Microsoft.CodeAnalysis.CSharp;
 using System.Text;
 
 namespace Obsidian.SourceGenerators;
@@ -28,8 +29,6 @@ internal static class ApiDocs
         + "<see cref=\"Floats\"/> and <see cref=\"Predicates\"/>.";
 
     // Whether a hand-written part of the type in Obsidian.API already documents it, so the generated part needn't.
-    // Doc comments are only parsed when the compilation asks for them, which Obsidian.API does with
-    // GenerateDocumentationFile.
     public static bool IsDocumented(Compilation compilation, string metadataName)
     {
         var symbol = compilation.GetTypeByMetadataName(metadataName);
@@ -37,8 +36,22 @@ internal static class ApiDocs
         return symbol is not null && IsDocumented(symbol);
     }
 
+    // Reads the declarations' syntax, not the symbol's documentation, which is empty unless the compilation parses
+    // doc comments (GenerateDocumentationFile). Without that a /// comment is a single-line comment, so both count.
     public static bool IsDocumented(INamedTypeSymbol symbol) =>
-        !string.IsNullOrWhiteSpace(symbol.GetDocumentationCommentXml());
+        symbol.DeclaringSyntaxReferences.Any(reference => HasDocComment(reference.GetSyntax()));
+
+    private static bool HasDocComment(SyntaxNode declaration) =>
+        declaration.GetLeadingTrivia().Any(IsDocComment);
+
+    private static bool IsDocComment(SyntaxTrivia trivia)
+    {
+        if (trivia.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia))
+            return true;
+
+        return trivia.IsKind(SyntaxKind.SingleLineCommentTrivia)
+            && trivia.ToString().StartsWith("///", StringComparison.Ordinal);
+    }
 
     // The state struct of a block. The name is the block's own, the block name the sanitized one its types use.
     public static string BlockState(string name, string blockName) =>
@@ -55,7 +68,7 @@ internal static class ApiDocs
     public static string RegistryEnum(string registryKey) =>
         $"Every vanilla {registryKey.Replace('_', ' ')}, by name. Each value is vanilla's protocol id for it.";
 
-    // The parser's class name without its ArgumentParser suffix, such as "BlockPositionArgumentParser".
+    // The parser's full class name, such as "BlockPositionArgumentParser". The suffix is dropped from the words.
     public static string ArgumentParser(string className) =>
         $"Parses the {Words(className.Replace("ArgumentParser", string.Empty))} command argument. "
         + "<see cref=\"Identifier\"/> is the parser name that vanilla's clients use.";
