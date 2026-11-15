@@ -57,6 +57,35 @@ It remains a NuGet dependency at version 8.4.0; the packed dependency excludes r
 `Obsidian.Nbt` is still private to the API packages (`PrivateAssets="all"`), so mods using its types need a direct
 reference. Whether the API packages should declare NBT as a public dependency remains an open packaging decision.
 
+## Plugin API analyzers
+
+The `Obsidian.API` NuGet package includes compiler analyzers automatically, under `analyzers/dotnet/cs`.
+They report the following warnings for reflection-discovered plugin handlers and modules:
+
+| Rule | What it catches | How to resolve it |
+| --- | --- | --- |
+| OBSAPI001 | An event handler does not take exactly one value parameter derived from `BaseMinecraftEventArgs`. | Use the concrete event argument type as the only parameter. |
+| OBSAPI002 | An event handler returns a generic task or uses `async void`; its work is not awaited. | Return `Task` or `ValueTask`. Synchronous return values are intentionally allowed. |
+| OBSAPI003 | A command has an unsupported return type or uses `async void`. | Return `void`, `int`, `Task`, `ValueTask`, `Task<int>` or `ValueTask<int>`. |
+| OBSAPI004 | `[Remaining]` is applied before the final command parameter. | Move the parameter last. |
+| OBSAPI005 | A class instance `[Inject]` property lacks a getter or is an indexer. | Use an ordinary readable property; injection reads it before setting it. Interface declarations are ignored. |
+| OBSAPI006 | A command module has no public `[CommandContext]` property, or its sole context property cannot accept the context. | Inherit `CommandModuleBase`, or provide a non-indexed property with a setter and a compatible type. |
+| OBSAPI007 | A discovered handler module is abstract, has open type parameters or has no public constructor. | Make it concrete and closed, with a public constructor. Constructor services may come from plugin registrations. |
+| OBSAPI008 | The assembly's only `PluginBase` subclass is concrete but cannot be constructed. | Give the closed entry class a public parameterless constructor. A sole abstract subclass may belong to a helper library and is ignored. |
+
+Project references do not propagate analyzers. Plugins built against an engine checkout should also reference:
+
+```xml
+<ProjectReference Include="..\Obsidian.API.Analyzers\Obsidian.API.Analyzers.csproj"
+                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+```
+
+Rules deliberately avoid guessing registered argument parsers, available DI services, constructor selection,
+the selected entry when there are several `PluginBase` subclasses, or which of several context properties reflection
+will pick. Read-only injected properties can already hold a service; non-public setters work through reflection.
+The initial release has no code fixes or IDE completion support. Warnings can be configured by diagnostic ID in
+`.editorconfig`, like other Roslyn diagnostics.
+
 ## Metadata
 
 `obsidian.mod.json` follows the fields of NeoForge's `neoforge.mods.toml` where the two overlap, written as JSON
