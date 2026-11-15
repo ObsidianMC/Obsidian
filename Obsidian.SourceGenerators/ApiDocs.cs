@@ -28,7 +28,7 @@ internal static class ApiDocs
         "Vanilla's context-dependent number providers and predicates, each keyed by its id: <see cref=\"Ints\"/>, "
         + "<see cref=\"Floats\"/> and <see cref=\"Predicates\"/>.";
 
-    // Whether a hand-written part of the type in Obsidian.API already documents it, so the generated part needn't.
+    // Whether a hand-written part of the type in Obsidian.API already has a summary, so the generated part needn't.
     public static bool IsDocumented(Compilation compilation, string metadataName)
     {
         var symbol = compilation.GetTypeByMetadataName(metadataName);
@@ -38,19 +38,20 @@ internal static class ApiDocs
 
     // Reads the declarations' syntax, not the symbol's documentation, which is empty unless the compilation parses
     // doc comments (GenerateDocumentationFile). Without that a /// comment is a single-line comment, so both count.
+    // Only a <summary> counts: a part with just <remarks> still needs the generated summary.
     public static bool IsDocumented(INamedTypeSymbol symbol) =>
-        symbol.DeclaringSyntaxReferences.Any(reference => HasDocComment(reference.GetSyntax()));
+        symbol.DeclaringSyntaxReferences.Any(reference => HasSummary(reference.GetSyntax()));
 
-    private static bool HasDocComment(SyntaxNode declaration) =>
-        declaration.GetLeadingTrivia().Any(IsDocComment);
+    private static bool HasSummary(SyntaxNode declaration) =>
+        declaration.GetLeadingTrivia().Any(IsSummaryComment);
 
-    private static bool IsDocComment(SyntaxTrivia trivia)
+    private static bool IsSummaryComment(SyntaxTrivia trivia)
     {
-        if (trivia.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia))
-            return true;
+        var text = trivia.ToString();
+        var isDocComment = trivia.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia)
+            || (trivia.IsKind(SyntaxKind.SingleLineCommentTrivia) && text.StartsWith("///", StringComparison.Ordinal));
 
-        return trivia.IsKind(SyntaxKind.SingleLineCommentTrivia)
-            && trivia.ToString().StartsWith("///", StringComparison.Ordinal);
+        return isDocComment && text.Contains("<summary");
     }
 
     // The state struct of a block. The name is the block's own, the block name the sanitized one its types use.
