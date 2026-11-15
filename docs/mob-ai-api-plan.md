@@ -406,10 +406,11 @@ kept only if it shows.
 Vanilla 26.3 drives villagers, piglins, piglin brutes, hoglins, zoglins, axolotls, goats, camels, camel husks,
 allays, frogs, tadpoles, sniffers, breezes, armadillos, wardens, creakings, copper golems, nautiluses, zombie
 nautiluses and baby happy ghasts with brains (memories, sensors, activities); adult happy ghasts use goals.
-Obsidian runs them on approximate goals, so their timing and random draws can't match ([mob parity](mob-parity.md#ai-movement-and-targeting)). Parity needs a brain layer:
-typed memories (`MemoryKey<T>`, shaped like data components and saved to vanilla's `Brain` NBT), sensors on vanilla's
-intervals, and activities. `IMob.Memories` would also give plugins state shared across goals. This is large enough to
-need its own plan after phases 1 to 3.
+Obsidian runs them on approximate goals, so their timing and random draws can't match
+([mob parity](mob-parity.md#ai-movement-and-targeting)). Parity needs a brain layer: typed memories
+(`MemoryKey<T>`, shaped like data components and saved to vanilla's `Brain` NBT), sensors on vanilla's intervals,
+and activities. `IMob.Memories` would also give plugins state shared across goals. This is large enough to need its
+own plan after phases 1 to 3.
 
 ## Open questions
 
