@@ -12,7 +12,8 @@ public interface IPatternedRecipe
     public IPatternedRecipe WithKey(char key, params ItemStack[] items);
 
     /// <summary>
-    /// Sets the recipe's shape: up to 3 rows, each character a key or a space for an empty slot.
+    /// Adds rows to the recipe's shape, each character a key or a space for an empty slot. One call takes up to 3
+    /// rows; rows from another call are added after them, and the total isn't checked.
     /// </summary>
     public IGroupedRecipe<ShapedRecipe> WithPattern(params string[] pattern);
 }

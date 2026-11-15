@@ -32,9 +32,7 @@ public sealed class CookingRecipeBuilder : BaseRecipeBuilder<SmeltingRecipe>, II
     public static IIngredientRecipe<ICookingRecipe> Create(CookingBookCategory category, SmeltingType type) =>
         new CookingRecipeBuilder(category, type);
 
-    /// <summary>
-    /// Adds <paramref name="items"/> to the stacks the recipe cooks, any one of which works.
-    /// </summary>
+    /// <inheritdoc/>
     public ICookingRecipe WithIngredient(params ItemStack[] items)
     {
         foreach (var item in items)
@@ -43,9 +41,7 @@ public sealed class CookingRecipeBuilder : BaseRecipeBuilder<SmeltingRecipe>, II
         return this;
     }
 
-    /// <summary>
-    /// Adds <paramref name="exp"/> to the experience the cooked item gives; calling it again adds more.
-    /// </summary>
+    /// <inheritdoc/>
     public ICookingRecipe GivesExperience(float exp)
     {
         this.experience += exp;//Just add if this function gets called again
@@ -53,9 +49,7 @@ public sealed class CookingRecipeBuilder : BaseRecipeBuilder<SmeltingRecipe>, II
         return this;
     }
 
-    /// <summary>
-    /// Sets how long one item takes to cook, in ticks.
-    /// </summary>
+    /// <inheritdoc/>
     public IGroupedRecipe<SmeltingRecipe> WithCookingTime(int cookingTime)
     {
         this.cookingTime = cookingTime;

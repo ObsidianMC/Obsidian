@@ -24,9 +24,7 @@ public abstract class BaseRecipeBuilder<TRecipe> : IGroupedRecipe<TRecipe>, INam
     /// </summary>
     protected ItemStack? Result { get; set; }
 
-    /// <summary>
-    /// Sets the recipe's identifier, like <c>myplugin:ruby_block</c>.
-    /// </summary>
+    /// <inheritdoc/>
     /// <exception cref="ArgumentNullException"><paramref name="identifier"/> is null.</exception>
     public virtual IRecipeResult<TRecipe> WithIdentifier(string identifier)
     {
@@ -37,9 +35,7 @@ public abstract class BaseRecipeBuilder<TRecipe> : IGroupedRecipe<TRecipe>, INam
         return this;
     }
 
-    /// <summary>
-    /// Sets the stack the recipe crafts, with its count.
-    /// </summary>
+    /// <inheritdoc/>
     /// <exception cref="ArgumentNullException"><paramref name="result"/> is null.</exception>
     public virtual IRecipeBuilder<TRecipe> WithResult(ItemStack result)
     {
@@ -50,9 +46,7 @@ public abstract class BaseRecipeBuilder<TRecipe> : IGroupedRecipe<TRecipe>, INam
         return this;
     }
 
-    /// <summary>
-    /// Puts the recipe in a recipe book group, shown as one entry with the group's other recipes.
-    /// </summary>
+    /// <inheritdoc/>
     public virtual INamedRecipe<TRecipe> InGroup(string group)
     {
         this.Group = group;
@@ -60,14 +54,11 @@ public abstract class BaseRecipeBuilder<TRecipe> : IGroupedRecipe<TRecipe>, INam
         return this;
     }
 
-    /// <summary>
-    /// Leaves the recipe out of any recipe book group.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>It only returns this builder, so a group set earlier with <see cref="InGroup"/> stays.</remarks>
     public virtual INamedRecipe<TRecipe> HasNoGroup() => this;
 
-    /// <summary>
-    /// Creates the recipe from the steps given.
-    /// </summary>
+    /// <inheritdoc/>
     /// <exception cref="NullReferenceException">No identifier or result was given.</exception>
     /// <exception cref="InvalidOperationException">A required ingredient or pattern is missing.</exception>
     public abstract TRecipe Build();

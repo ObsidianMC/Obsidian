@@ -37,8 +37,12 @@ public readonly record struct AttributeModifier : INetworkSerializable<Attribute
     public required AttributeSlot Slot { get; init; }
 
     /// <summary>
-    /// Reads a modifier written by <see cref="Write"/>.
+    /// Reads a modifier's id, UUID, name, value, operation and slot.
     /// </summary>
+    /// <remarks>
+    /// It reads <see cref="Id"/> as a 4-byte int, but <see cref="Write"/> writes it as a VarInt, so it doesn't read
+    /// <see cref="Write"/>'s output back: the fields after the id are read from the wrong bytes.
+    /// </remarks>
     public static AttributeModifier Read(INetStreamReader reader) => new()
     {
         Id = reader.ReadInt(),
@@ -69,35 +73,35 @@ public readonly record struct AttributeModifier : INetworkSerializable<Attribute
 public enum AttributeSlot
 {
     /// <summary>
-    /// Any slot.
+    /// Applies in any slot.
     /// </summary>
     Any,
     /// <summary>
-    /// The main hand.
+    /// Applies while the item is held in the main hand.
     /// </summary>
     MainHand,
     /// <summary>
-    /// The off hand.
+    /// Applies while the item is held in the off hand.
     /// </summary>
     OffHand,
     /// <summary>
-    /// Either hand.
+    /// Applies while the item is held in either hand.
     /// </summary>
     Hand,
     /// <summary>
-    /// The feet slot.
+    /// Applies while the item is worn in the feet slot.
     /// </summary>
     Feet,
     /// <summary>
-    /// The legs slot.
+    /// Applies while the item is worn in the legs slot.
     /// </summary>
     Legs,
     /// <summary>
-    /// The chest slot.
+    /// Applies while the item is worn in the chest slot.
     /// </summary>
     Chest,
     /// <summary>
-    /// The head slot.
+    /// Applies while the item is worn in the head slot.
     /// </summary>
     Head,
     /// <summary>

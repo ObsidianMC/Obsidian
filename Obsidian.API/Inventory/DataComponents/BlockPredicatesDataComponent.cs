@@ -221,7 +221,8 @@ public readonly record struct BlockPredicate
     public bool HasBlocks => this.Blocks.HasValue || this.BlockIds.Length > 0;
 
     /// <summary>
-    /// Gets block identifiers read from a saved stack, used for saving it again when <see cref="Blocks"/> isn't set.
+    /// Gets block identifiers saved as the predicate's <c>blocks</c> when <see cref="Blocks"/> isn't set. The server
+    /// never sets them: reading a saved stack fills <see cref="Blocks"/> instead.
     /// </summary>
     public ImmutableArray<string> BlockIds { get; init; } = [];
 

@@ -23,9 +23,7 @@ public sealed class SmithingTransformRecipeBuilder : BaseRecipeBuilder<SmithingT
     /// </summary>
     public static ITemplateIngredientRecipe<SmithingTransformRecipe> Create() => new SmithingTransformRecipeBuilder();
 
-    /// <summary>
-    /// Adds <paramref name="items"/> to the smithing templates the recipe accepts.
-    /// </summary>
+    /// <inheritdoc/>
     public IBaseIngredientRecipe<SmithingTransformRecipe> WithTemplateIngredient(params ItemStack[] items)
     {
         foreach (var item in items)
@@ -34,9 +32,7 @@ public sealed class SmithingTransformRecipeBuilder : BaseRecipeBuilder<SmithingT
         return this;
     }
 
-    /// <summary>
-    /// Adds <paramref name="items"/> to the items the recipe upgrades.
-    /// </summary>
+    /// <inheritdoc/>
     public IUpgradeIngredientRecipe<SmithingTransformRecipe> WithBaseIngredient(params ItemStack[] items)
     {
         foreach (var item in items)
@@ -45,9 +41,7 @@ public sealed class SmithingTransformRecipeBuilder : BaseRecipeBuilder<SmithingT
         return this;
     }
 
-    /// <summary>
-    /// Adds <paramref name="items"/> to the materials the recipe adds, like a netherite ingot.
-    /// </summary>
+    /// <inheritdoc/>
     public INamedRecipe<SmithingTransformRecipe> WithUpgradeIngredient(params ItemStack[] items)
     {
         foreach (var item in items)

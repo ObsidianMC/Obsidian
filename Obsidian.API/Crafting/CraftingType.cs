@@ -1,7 +1,9 @@
 ﻿namespace Obsidian.API.Crafting;
 
 /// <summary>
-/// The kinds of recipe, one per vanilla recipe type (<see cref="IRecipe.Type"/>).
+/// The kinds of recipe (<see cref="IRecipe.Type"/>), named after vanilla's recipe serializers
+/// (<c>minecraft:recipe_serializer</c>), not its recipe types (<c>minecraft:recipe_type</c>). It includes legacy
+/// serializers that the current registry no longer has.
 /// </summary>
 public enum CraftingType
 {
@@ -16,7 +18,8 @@ public enum CraftingType
     CraftingShapeless,
 
     /// <summary>
-    /// Vanilla's built-in recipe dyeing leather armour (<c>minecraft:crafting_special_armordye</c>).
+    /// Vanilla's former built-in recipe dyeing leather armour (<c>minecraft:crafting_special_armordye</c>).
+    /// Legacy: the current recipe serializer registry has no such serializer, and the server doesn't use it.
     /// </summary>
     CraftingSpecialArmordye,
     /// <summary>
@@ -24,7 +27,8 @@ public enum CraftingType
     /// </summary>
     CraftingSpecialBookcloning,
     /// <summary>
-    /// Vanilla's built-in recipe copying filled maps (<c>minecraft:crafting_special_mapcloning</c>).
+    /// Vanilla's former built-in recipe copying filled maps (<c>minecraft:crafting_special_mapcloning</c>).
+    /// Legacy: the current recipe serializer registry has no such serializer, and the server doesn't use it.
     /// </summary>
     CraftingSpecialMapcloning,
     /// <summary>
@@ -45,7 +49,8 @@ public enum CraftingType
     /// </summary>
     CraftingSpecialFireworkStarFade,
     /// <summary>
-    /// Vanilla's built-in tipped arrow recipe (<c>minecraft:crafting_special_tippedarrow</c>).
+    /// Vanilla's former built-in tipped arrow recipe (<c>minecraft:crafting_special_tippedarrow</c>).
+    /// Legacy: the current recipe serializer registry has no such serializer, and the server doesn't use it.
     /// </summary>
     CraftingSpecialTippedarrow,
     /// <summary>
@@ -57,11 +62,13 @@ public enum CraftingType
     /// </summary>
     CraftingSpecialShielddecoration,
     /// <summary>
-    /// Vanilla's built-in shulker box dyeing recipe (<c>minecraft:crafting_special_shulkerboxcoloring</c>).
+    /// Vanilla's former built-in shulker box dyeing recipe (<c>minecraft:crafting_special_shulkerboxcoloring</c>).
+    /// Legacy: the current recipe serializer registry has no such serializer, and the server doesn't use it.
     /// </summary>
     CraftingSpecialShulkerboxcoloring,
     /// <summary>
-    /// Vanilla's built-in suspicious stew recipe (<c>minecraft:crafting_special_suspiciousstew</c>).
+    /// Vanilla's former built-in suspicious stew recipe (<c>minecraft:crafting_special_suspiciousstew</c>).
+    /// Legacy: the current recipe serializer registry has no such serializer, and the server doesn't use it.
     /// </summary>
     CraftingSpecialSuspiciousstew,
     /// <summary>

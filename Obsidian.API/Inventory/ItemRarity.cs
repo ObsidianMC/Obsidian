@@ -5,19 +5,19 @@
 public enum ItemRarity : int
 {
     /// <summary>
-    /// White name.
+    /// The default rarity, given to every new stack: a white name.
     /// </summary>
     Common,
     /// <summary>
-    /// Yellow name.
+    /// Shown with a yellow name.
     /// </summary>
     Uncommon,
     /// <summary>
-    /// Aqua name.
+    /// Shown with an aqua name.
     /// </summary>
     Rare,
     /// <summary>
-    /// Light purple name.
+    /// Shown with a light purple name.
     /// </summary>
     Epic
 }

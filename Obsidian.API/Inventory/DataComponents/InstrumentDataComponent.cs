@@ -7,8 +7,9 @@ public sealed record InstrumentDataComponent() : SimpleDataComponent<InstrumentD
     private int? registryId;
 
     /// <summary>
-    /// Gets the instrument's id in the client's instrument registry, or null when the instrument is sent inline from
-    /// <see cref="SimpleDataComponent{TValue}.Value"/>.
+    /// Gets the instrument's id in the server's instrument registry, translated from and to each connection's ids when
+    /// the component is read or written. When null, writing takes the id of
+    /// <see cref="SimpleDataComponent{TValue}.Value"/>'s identifier, or sends the instrument inline when it has none.
     /// </summary>
     public int? RegistryId
     {

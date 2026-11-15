@@ -40,7 +40,9 @@ public sealed record class JukeboxPlayableDataComponent : DataComponent
     private int? registryId;
 
     /// <summary>
-    /// Gets the song's id in the client's jukebox song registry, or null to send <see cref="Song"/>.
+    /// Gets the song's id in the server's jukebox song registry, translated from and to each connection's ids when the
+    /// component is read or written. When null, writing takes the id of <see cref="Song"/>'s identifier, or sends the
+    /// song inline.
     /// </summary>
     public int? RegistryId
     {

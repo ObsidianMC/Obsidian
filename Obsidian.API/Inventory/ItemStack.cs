@@ -130,9 +130,15 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
     internal int BundleSelection { get; set; } = -1;
 
     /// <summary>
-    /// Creates a stack of <paramref name="holder"/> with the item's default components plus
-    /// <paramref name="components"/>, which replace defaults of the same type.
+    /// Creates a stack of <paramref name="holder"/> with the common placeholder components (stack size, lore,
+    /// enchantments, repair cost, attribute modifiers and rarity), then <see cref="Item.DefaultComponents"/>, then
+    /// <paramref name="components"/>, each replacing earlier ones of the same type.
     /// </summary>
+    /// <remarks>
+    /// A vanilla item's <see cref="Item.DefaultComponents"/> is empty, so its other vanilla defaults aren't on the
+    /// stack: a new stack of a vanilla food has no <c>minecraft:food</c> component for
+    /// <see cref="DataComponentsStorage.GetComponent{TComponent}"/> to return.
+    /// </remarks>
     public ItemStack(Item holder, int count = 1, params IEnumerable<DataComponent> components)
     {
         this.Holder = holder;

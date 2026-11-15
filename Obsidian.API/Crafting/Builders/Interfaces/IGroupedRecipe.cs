@@ -11,7 +11,7 @@ public interface IGroupedRecipe<TRecipe>
     public INamedRecipe<TRecipe> InGroup(string group);
 
     /// <summary>
-    /// Leaves the recipe out of any recipe book group.
+    /// Skips the group step. The recipe is in no recipe book group unless one was set earlier.
     /// </summary>
     public INamedRecipe<TRecipe> HasNoGroup();
 }

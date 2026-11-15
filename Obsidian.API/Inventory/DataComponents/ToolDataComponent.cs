@@ -33,7 +33,8 @@ public sealed record class ToolDataComponent : DataComponent
     private ImmutableArray<ToolRule> rules;
 
     /// <summary>
-    /// Gets the rules, the first matching rule deciding the speed and whether drops are correct for a block.
+    /// Gets the rules, checked in order. The speed and whether drops are correct for a block are worked out
+    /// separately: for each, the first rule that matches the block and sets that value decides it.
     /// </summary>
     public required ImmutableArray<ToolRule> Rules
     {

@@ -34,14 +34,17 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     public InventoryType Type { get; }
 
     /// <summary>
-    /// Gets or sets the title shown at the top of the container's window, unless <see cref="CustomName"/> replaces it.
+    /// Gets or sets the title sent when the container's window opens, shown at its top.
     /// </summary>
     public ChatMessage Title { get; set; }
 
     /// <summary>
-    /// The name the container was given (vanilla's <c>CustomName</c>), shown as its <see cref="Title"/> instead of the
-    /// default one; <c>null</c> when it has none.
+    /// The name the container was given (vanilla's <c>CustomName</c>), saved with it; <c>null</c> when it has none.
     /// </summary>
+    /// <remarks>
+    /// Setting it doesn't change <see cref="Title"/>, which is what the window shows. When the server loads a named
+    /// container or places a named block, it sets both.
+    /// </remarks>
     public ChatMessage? CustomName { get; set; }
 
     /// <summary>
@@ -144,8 +147,8 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     }
 
     /// <summary>
-    /// Puts <paramref name="item"/> into the first slot holding the same item with fewer than 64, adding its whole
-    /// count, or else into the first empty slot.
+    /// Puts <paramref name="item"/> into the first slot, in slot order, that is empty or holds the same item with
+    /// fewer than 64, adding its whole count to a stack there. An empty slot before a matching stack wins.
     /// </summary>
     /// <remarks>
     /// Only the item is compared, not its components, and the count isn't capped, so a stack can go past 64 or its

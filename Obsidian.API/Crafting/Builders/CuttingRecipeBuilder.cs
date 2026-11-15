@@ -24,9 +24,7 @@ public sealed class CuttingRecipeBuilder : BaseRecipeBuilder<CuttingRecipe>, IIn
     /// </summary>
     public static IIngredientRecipe<IOutputCountRecipe<CuttingRecipe>> Create() => new CuttingRecipeBuilder();
 
-    /// <summary>
-    /// Adds <paramref name="items"/> to the stacks the stonecutter accepts, any one of which works.
-    /// </summary>
+    /// <inheritdoc/>
     public IOutputCountRecipe<CuttingRecipe> WithIngredient(params ItemStack[] items)
     {
         foreach (var item in items)
@@ -35,9 +33,7 @@ public sealed class CuttingRecipeBuilder : BaseRecipeBuilder<CuttingRecipe>, IIn
         return this;
     }
 
-    /// <summary>
-    /// Sets the recipe's <see cref="CuttingRecipe.Count"/>.
-    /// </summary>
+    /// <inheritdoc/>
     public IGroupedRecipe<CuttingRecipe> WithOutputCount(int count)
     {
         this.Count = count;

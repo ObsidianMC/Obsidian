@@ -47,10 +47,13 @@ public sealed class Container : BaseContainer
     /// <summary>
     /// Creates a container of <paramref name="size"/> empty slots.
     /// </summary>
-    /// <param name="size">A multiple of 9 up to 54, or 5 or 46.</param>
+    /// <param name="size">A non-negative multiple of 9 up to 54, or 5 or 46.</param>
     /// <param name="type">How the container opens: <see cref="InventoryType.Generic"/> or
     /// <see cref="InventoryType.ShulkerBox"/>.</param>
     /// <exception cref="InvalidOperationException">The type or size isn't one of those.</exception>
+    /// <exception cref="OverflowException">
+    /// <paramref name="size"/> is negative: the slots are allocated before the size is checked.
+    /// </exception>
     public Container(int size, InventoryType type = InventoryType.Generic) : base(size, type)
     {
         if (type is not (InventoryType.Generic or InventoryType.ShulkerBox))

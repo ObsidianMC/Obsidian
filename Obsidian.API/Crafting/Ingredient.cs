@@ -12,7 +12,7 @@ public class Ingredient : IEnumerable<ItemStack>
     private readonly List<ItemStack> items;
 
     /// <summary>
-    /// Gets how many different stacks the ingredient accepts.
+    /// Gets how many stacks were added to the ingredient, duplicates included.
     /// </summary>
     public int Count => this.items.Count;
 
@@ -37,6 +37,11 @@ public class Ingredient : IEnumerable<ItemStack>
     /// <summary>
     /// Returns the accepted stacks in the order they were added.
     /// </summary>
+    /// <remarks>
+    /// Only this generic enumerator works: the non-generic <see cref="IEnumerable.GetEnumerator"/> casts the
+    /// ingredient itself to <see cref="IEnumerator"/> and throws <see cref="InvalidCastException"/>, so non-generic
+    /// enumeration of an ingredient fails.
+    /// </remarks>
     public IEnumerator<ItemStack> GetEnumerator() => new IngredientEnumerator(this.items);
 
     IEnumerator IEnumerable.GetEnumerator() => (IEnumerator)this;

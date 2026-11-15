@@ -10,31 +10,31 @@ public enum ItemMaterial
     /// </summary>
     None = 1,
     /// <summary>
-    /// Wood.
+    /// The material of wooden tools.
     /// </summary>
     Wood = 2,
     /// <summary>
-    /// Stone.
+    /// The material of stone tools.
     /// </summary>
     Stone = 4,
     /// <summary>
-    /// Iron.
+    /// The material of iron tools and armour.
     /// </summary>
     Iron = 6,
     /// <summary>
-    /// Diamond.
+    /// The material of diamond tools and armour.
     /// </summary>
     Diamond = 8,
     /// <summary>
-    /// Gold.
+    /// The material of golden tools and armour.
     /// </summary>
     Gold = 12,
     /// <summary>
-    /// Leather.
+    /// The material of leather armour.
     /// </summary>
     Leather = -2,
     /// <summary>
-    /// Chainmail.
+    /// The material of chainmail armour.
     /// </summary>
     Chain = -1
 }

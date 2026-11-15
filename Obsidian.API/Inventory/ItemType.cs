@@ -6,40 +6,40 @@
 public enum ItemType
 {
     /// <summary>
-    /// A sword.
+    /// Swords.
     /// </summary>
     Sword,
     /// <summary>
-    /// A shovel.
+    /// Shovels.
     /// </summary>
     Shovel,
     /// <summary>
-    /// A pickaxe.
+    /// Pickaxes.
     /// </summary>
     PickAxe,
     /// <summary>
-    /// An axe.
+    /// Axes.
     /// </summary>
     Axe,
     /// <summary>
-    /// Any other item.
+    /// Items that aren't one of the other kinds.
     /// </summary>
     Item,
 
     /// <summary>
-    /// A helmet.
+    /// Helmets, worn in the head slot.
     /// </summary>
     Helmet,
     /// <summary>
-    /// A chestplate.
+    /// Chestplates, worn in the chest slot.
     /// </summary>
     Chestplate,
     /// <summary>
-    /// Leggings.
+    /// Leggings, worn in the legs slot.
     /// </summary>
     Leggings,
     /// <summary>
-    /// Boots.
+    /// Boots, worn in the feet slot.
     /// </summary>
     Boots
 }

@@ -39,10 +39,10 @@ public sealed class ShapedRecipeBuilder : BaseRecipeBuilder<ShapedRecipe>, IPatt
         return this;
     }
 
-    /// <summary>
-    /// Sets the recipe's shape: up to 3 rows, each character a key or a space for an empty slot.
-    /// </summary>
-    /// <exception cref="InvalidOperationException">There are more than 3 rows, or no keys were given first.</exception>
+    /// <inheritdoc/>
+    /// <exception cref="InvalidOperationException">
+    /// <paramref name="pattern"/> has more than 3 rows, or no keys were given first.
+    /// </exception>
     public IGroupedRecipe<ShapedRecipe> WithPattern(params string[] pattern)
     {
         if (pattern.Length > 3)

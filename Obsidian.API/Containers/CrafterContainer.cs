@@ -53,9 +53,12 @@ public sealed class CrafterContainer : BaseContainer
     }
 
     /// <summary>
-    /// Whether grid slot <paramref name="slot"/> is disabled, so it takes no items; false for an index outside the
-    /// grid.
+    /// Whether grid slot <paramref name="slot"/> is disabled; false for an index outside the grid.
     /// </summary>
+    /// <remarks>
+    /// Only players' clicks in the window check it: <see cref="BaseContainer.SetItem"/> and
+    /// <see cref="BaseContainer.AddItem"/> still put items in a disabled slot.
+    /// </remarks>
     public bool IsSlotDisabled(int slot) => slot is >= 0 and < GridSize && this.disabled[slot];
 
     /// <summary>

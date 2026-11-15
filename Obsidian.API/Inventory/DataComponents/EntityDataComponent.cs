@@ -27,8 +27,9 @@ public sealed record EntityDataComponent(DataComponentType ComponentType) : Data
     private int registryId;
 
     /// <summary>
-    /// Gets the type's id in the client's entity type registry, or its block entity type registry for
-    /// <c>minecraft:block_entity_data</c>.
+    /// Gets the type's id in the server's entity type registry, or its block entity type registry for
+    /// <c>minecraft:block_entity_data</c>. It's translated from and to each connection's ids when the component is
+    /// read or written.
     /// </summary>
     public int RegistryId
     {

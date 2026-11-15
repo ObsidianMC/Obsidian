@@ -20,9 +20,7 @@ public sealed class ShapelessRecipeBuilder : BaseRecipeBuilder<ShapelessRecipe>,
     /// </summary>
     public static IShapelessIngredientRecipe<ShapelessRecipe> Create(CraftingBookCategory category) => new ShapelessRecipeBuilder(category);
 
-    /// <summary>
-    /// Adds <paramref name="ingredients"/>, each one item of the recipe.
-    /// </summary>
+    /// <inheritdoc/>
     public IGroupedRecipe<ShapelessRecipe> AddIngredients(params Ingredient[] ingredients)
     {
         foreach (var ingredient in ingredients)
