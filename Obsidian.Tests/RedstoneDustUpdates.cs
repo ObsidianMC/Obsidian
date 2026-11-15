@@ -7,7 +7,6 @@ using Obsidian.Net.Packets.Play.Serverbound;
 using Obsidian.Registries;
 using Obsidian.Tests.Fakes;
 using Obsidian.Utilities;
-using Obsidian.WorldData;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -58,6 +57,31 @@ public sealed class RedstoneDustUpdates
 
         Assert.True(world.GetLoadedChunk(0, 0)!.GetBlock(Upper).IsAir);
         AssertDust(world, client, Lower, north: "side", east: "side", south: "side", west: "side");
+    }
+
+    [Fact(Timeout = TestServerFactory.TestTimeout)]
+    public async Task DustPlacedBelowAStepReshapesTheDustOnTopOfIt()
+    {
+        await using var context = TestServerFactory.CreateServer($"dust-step-{Guid.NewGuid():N}");
+        var world = context.World;
+        await BlockUpdates.AddChunksAsync(world);
+        await world.SetBlockAsync(Step, BlocksRegistry.Stone);
+        var (player, client) = Join(context);
+
+        // The dust on top of the step goes down first, as a cross.
+        await PlaceDustAsync(context, player, Step, sequence: 1);
+        world.FlushBlockChanges();
+
+        AssertDust(world, client, Upper, north: "side", east: "side", south: "side", west: "side");
+
+        // The dust beside the step climbs it, and the dust on top, reached through the dust above the step's side,
+        // becomes a line running to its edge.
+        client.ClearPackets();
+        await PlaceDustAsync(context, player, Lower + Vector.Down, sequence: 2);
+        world.FlushBlockChanges();
+
+        AssertDust(world, client, Lower, north: "none", east: "side", south: "none", west: "up");
+        AssertDust(world, client, Upper, north: "none", east: "side", south: "none", west: "side");
     }
 
     // The dust at position is stored with these sides, and the last state the client was sent for it is the stored
