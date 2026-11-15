@@ -253,38 +253,23 @@ public sealed class PluginApiAnalyzer : DiagnosticAnalyzer
                 continue;
             }
 
-            if (!methods.Any(derived => HidesMethod(derived, method)))
+            if (!methods.Any(derived => OverridesMethod(derived, method)))
                 methods.Add(method);
         }
 
         return methods;
     }
 
-    private static bool HidesMethod(IMethodSymbol derived, IMethodSymbol inherited)
+    private static bool OverridesMethod(IMethodSymbol derived, IMethodSymbol inherited)
     {
-        // Reflection hides by name and signature, including return type and generic arity. Different overloads stay.
-        if (derived.Name != inherited.Name || derived.Arity != inherited.Arity
-            || derived.IsStatic != inherited.IsStatic || derived.Parameters.Length != inherited.Parameters.Length
-            || (derived.ReturnsByRef || derived.ReturnsByRefReadonly)
-                != (inherited.ReturnsByRef || inherited.ReturnsByRefReadonly))
+        // GetMethods retains new declarations alongside base methods; only overridden virtual slots are suppressed.
+        for (var current = derived.OverriddenMethod; current is not null; current = current.OverriddenMethod)
         {
-            return false;
+            if (SymbolEqualityComparer.Default.Equals(current, inherited))
+                return true;
         }
 
-        // Method type parameter names are immaterial to a reflected signature.
-        var signature = derived.Arity == 0 ? derived : derived.Construct(inherited.TypeArguments.ToArray());
-        if (!EqualsType(signature.ReturnType, inherited.ReturnType))
-            return false;
-
-        for (var index = 0; index < signature.Parameters.Length; index++)
-        {
-            var left = signature.Parameters[index];
-            var right = inherited.Parameters[index];
-            if ((left.RefKind == RefKind.None) != (right.RefKind == RefKind.None) || !EqualsType(left.Type, right.Type))
-                return false;
-        }
-
-        return true;
+        return false;
     }
 
     private static IEnumerable<IPropertySymbol> ReflectedProperties(INamedTypeSymbol type)
@@ -380,7 +365,19 @@ public sealed class PluginApiAnalyzer : DiagnosticAnalyzer
         public INamedTypeSymbol? Plugin { get; }
 
         public bool IsCommandModule(INamedTypeSymbol type) =>
-            DerivesFrom(type, CommandModule) || HasAttribute(type, Group);
+            DerivesFrom(type, CommandModule) || IsGroup(type);
+
+        private bool IsGroup(INamedTypeSymbol type)
+        {
+            // CommandHandler.cs:181,211 uses GetCustomAttribute, which inherits CommandGroup from base classes.
+            for (var current = type; current is not null; current = current.BaseType)
+            {
+                if (HasAttribute(current, Group))
+                    return true;
+            }
+
+            return false;
+        }
 
         public bool IsCommand(IMethodSymbol method, INamedTypeSymbol module, IReadOnlyList<IMethodSymbol> methods)
         {
@@ -388,7 +385,7 @@ public sealed class PluginApiAnalyzer : DiagnosticAnalyzer
                 return false;
 
             // Commands/Framework/CommandHandler.cs:257-311 discovers commands, group handlers and named overloads.
-            if (HasAttribute(method, GroupCommand) && HasAttribute(module, Group))
+            if (HasAttribute(method, GroupCommand) && IsGroup(module))
                 return true;
 
             if (!HasAttribute(method, Overload))
