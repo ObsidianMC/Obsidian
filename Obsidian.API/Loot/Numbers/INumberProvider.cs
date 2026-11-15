@@ -6,6 +6,10 @@ namespace Obsidian.API.Loot.Numbers;
 /// </summary>
 public interface INumberProvider
 {
+    /// <summary>
+    /// Gets the provider's value in <paramref name="context"/>, drawing from <see cref="LootContext.Random"/> if it's
+    /// random.
+    /// </summary>
     public float GetFloat(LootContext context);
 
     /// <summary>

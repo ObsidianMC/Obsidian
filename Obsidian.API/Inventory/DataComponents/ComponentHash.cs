@@ -6,6 +6,9 @@ namespace Obsidian.API.Inventory.DataComponents;
 /// <summary>Vanilla HashOps value hashing: CRC32C, little-endian scalar payloads and sorted map-entry hashes.</summary>
 public static class ComponentHash
 {
+    /// <summary>
+    /// Hashes <paramref name="bytes"/> with CRC32C.
+    /// </summary>
     public static int Bytes(ReadOnlySpan<byte> bytes)
     {
         uint crc = uint.MaxValue;
@@ -19,10 +22,20 @@ public static class ComponentHash
         return unchecked((int)~crc);
     }
 
+    /// <summary>
+    /// Hashes a byte value.
+    /// </summary>
     public static int Byte(byte value) => Bytes([6, value]);
 
+    /// <summary>
+    /// Hashes a boolean value.
+    /// </summary>
     public static int Boolean(bool value) => Bytes([13, value ? (byte)1 : (byte)0]);
 
+    /// <summary>
+    /// Hashes a number given by its tag byte and its <paramref name="width"/> lowest bytes of <paramref name="bits"/>,
+    /// little-endian.
+    /// </summary>
     public static int Number(byte tag, long bits, int width)
     {
         Span<byte> bytes = stackalloc byte[9];
@@ -31,10 +44,19 @@ public static class ComponentHash
         return Bytes(bytes[..(width + 1)]);
     }
 
+    /// <summary>
+    /// Hashes an int value.
+    /// </summary>
     public static int Int(int value) => Number(8, value, 4);
 
+    /// <summary>
+    /// Hashes a float value.
+    /// </summary>
     public static int Float(float value) => Number(10, BitConverter.SingleToInt32Bits(value), 4);
 
+    /// <summary>
+    /// Hashes a string by its UTF-16 code units.
+    /// </summary>
     public static int String(string value)
     {
         var bytes = new byte[5 + value.Length * 2];
@@ -47,6 +69,9 @@ public static class ComponentHash
         return Bytes(bytes);
     }
 
+    /// <summary>
+    /// Hashes a list from its elements' hashes, in order.
+    /// </summary>
     public static int List(IEnumerable<int> values)
     {
         var hashes = values.ToArray();
@@ -59,6 +84,9 @@ public static class ComponentHash
         return Bytes(bytes);
     }
 
+    /// <summary>
+    /// Hashes a map from its entries' key and value hashes, whatever their order.
+    /// </summary>
     public static int Map(IEnumerable<(int Key, int Value)> values)
     {
         var entries = values.OrderBy(pair => unchecked((uint)pair.Key)).ThenBy(pair => unchecked((uint)pair.Value)).ToArray();
@@ -74,5 +102,8 @@ public static class ComponentHash
         return Bytes(bytes);
     }
 
+    /// <summary>
+    /// Hashes a record from its field names and their values' hashes.
+    /// </summary>
     public static int Record(params (string Key, int Value)[] values) => Map(values.Select(pair => (String(pair.Key), pair.Value)));
 }

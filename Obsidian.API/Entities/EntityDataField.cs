@@ -63,21 +63,39 @@ public sealed class EntityDataField<T> : EntityDataField
 /// </summary>
 public static class EntityDataFields
 {
+    /// <summary>
+    /// Creates a byte field (vanilla's byte serializer).
+    /// </summary>
     public static EntityDataField<byte> Byte(byte defaultValue = 0) =>
         new(EntityMetadataType.Byte, defaultValue, (writer, value) => writer.WriteByte(value));
 
+    /// <summary>
+    /// Creates an integer field, sent as a VarInt.
+    /// </summary>
     public static EntityDataField<int> Int(int defaultValue = 0) =>
         new(EntityMetadataType.VarInt, defaultValue, (writer, value) => writer.WriteVarInt(value));
 
+    /// <summary>
+    /// Creates a long field, sent as a VarLong.
+    /// </summary>
     public static EntityDataField<long> Long(long defaultValue = 0) =>
         new(EntityMetadataType.VarLong, defaultValue, (writer, value) => writer.WriteVarLong(value));
 
+    /// <summary>
+    /// Creates a float field.
+    /// </summary>
     public static EntityDataField<float> Float(float defaultValue = 0) =>
         new(EntityMetadataType.Float, defaultValue, (writer, value) => writer.WriteSingle(value));
 
+    /// <summary>
+    /// Creates a string field.
+    /// </summary>
     public static EntityDataField<string> String(string defaultValue = "") =>
         new(EntityMetadataType.String, defaultValue, (writer, value) => writer.WriteString(value));
 
+    /// <summary>
+    /// Creates a boolean field.
+    /// </summary>
     public static EntityDataField<bool> Boolean(bool defaultValue = false) =>
         new(EntityMetadataType.Boolean, defaultValue, (writer, value) => writer.WriteBoolean(value));
 
@@ -87,6 +105,9 @@ public static class EntityDataFields
     public static EntityDataField<ItemStack?> Item(ItemStack? defaultValue = null) =>
         new(EntityMetadataType.Slot, defaultValue, (writer, value) => writer.WriteItemStack(value));
 
+    /// <summary>
+    /// Creates a block position field.
+    /// </summary>
     public static EntityDataField<Vector> BlockPos(Vector defaultValue = default) =>
         new(EntityMetadataType.BlockPos, defaultValue, (writer, value) => writer.WritePosition(value));
 }

@@ -5,12 +5,33 @@ namespace Obsidian.API.Entities;
 /// </summary>
 public enum MobCategory
 {
+    /// <summary>
+    /// Hostile mobs, like zombies and skeletons.
+    /// </summary>
     Monster,
+    /// <summary>
+    /// Passive land animals, like cows and sheep.
+    /// </summary>
     Creature,
+    /// <summary>
+    /// Ambient mobs, like bats.
+    /// </summary>
     Ambient,
+    /// <summary>
+    /// Axolotls, which have their own cap.
+    /// </summary>
     Axolotls,
+    /// <summary>
+    /// Water mobs spawned underground, like glow squids.
+    /// </summary>
     UndergroundWaterCreature,
+    /// <summary>
+    /// Water animals, like squid and dolphins.
+    /// </summary>
     WaterCreature,
+    /// <summary>
+    /// Small water mobs, like fish.
+    /// </summary>
     WaterAmbient,
 
     /// <summary>

@@ -318,6 +318,9 @@ public abstract partial class BlockEntity : IBlockEntity
     /// <returns>Whether there was one.</returns>
     internal bool TakeChange() => Interlocked.Exchange(ref this.changed, 0) == 1;
 
+    /// <summary>
+    /// Returns the block entity's type id and position.
+    /// </summary>
     public override string ToString() => $"{this.Id} at {this.BlockPosition}";
 }
 

@@ -13,5 +13,8 @@ public sealed class ItemSet
     /// <param name="ids">Item registry ids (<see cref="Item.Id"/>).</param>
     public ItemSet(params int[] ids) => this.ids = ids.ToFrozenSet();
 
+    /// <summary>
+    /// Whether the set holds <paramref name="item"/>, compared by <see cref="Item.Id"/>.
+    /// </summary>
     public bool Contains(Item item) => this.ids.Contains(item.Id);
 }

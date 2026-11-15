@@ -13,6 +13,7 @@ public sealed class LootTableEntry : LootPoolSingletonEntry
     /// </summary>
     public required string Value { get; init; }
 
+    /// <inheritdoc/>
     protected override void CreateItems(Action<ItemStack> output, LootContext context) =>
         (context.ResolveTable(this.Value) ?? LootTable.Empty).GetRandomItemsRaw(context, output);
 }

@@ -3,6 +3,10 @@ using Obsidian.API.Inventory;
 
 namespace Obsidian.API.Crafting.Builders;
 
+/// <summary>
+/// Builds a <see cref="SmithingTransformRecipe"/>: start with <see cref="Create"/>, then give the template, base and
+/// addition, identifier and result in that order.
+/// </summary>
 public sealed class SmithingTransformRecipeBuilder : BaseRecipeBuilder<SmithingTransformRecipe>,
     IBaseIngredientRecipe<SmithingTransformRecipe>, 
     IUpgradeIngredientRecipe<SmithingTransformRecipe>,
@@ -14,8 +18,12 @@ public sealed class SmithingTransformRecipeBuilder : BaseRecipeBuilder<SmithingT
 
     private SmithingTransformRecipeBuilder() { }
 
+    /// <summary>
+    /// Starts a smithing transform recipe.
+    /// </summary>
     public static ITemplateIngredientRecipe<SmithingTransformRecipe> Create() => new SmithingTransformRecipeBuilder();
 
+    /// <inheritdoc/>
     public IBaseIngredientRecipe<SmithingTransformRecipe> WithTemplateIngredient(params ItemStack[] items)
     {
         foreach (var item in items)
@@ -24,6 +32,7 @@ public sealed class SmithingTransformRecipeBuilder : BaseRecipeBuilder<SmithingT
         return this;
     }
 
+    /// <inheritdoc/>
     public IUpgradeIngredientRecipe<SmithingTransformRecipe> WithBaseIngredient(params ItemStack[] items)
     {
         foreach (var item in items)
@@ -32,6 +41,7 @@ public sealed class SmithingTransformRecipeBuilder : BaseRecipeBuilder<SmithingT
         return this;
     }
 
+    /// <inheritdoc/>
     public INamedRecipe<SmithingTransformRecipe> WithUpgradeIngredient(params ItemStack[] items)
     {
         foreach (var item in items)
@@ -40,6 +50,7 @@ public sealed class SmithingTransformRecipeBuilder : BaseRecipeBuilder<SmithingT
         return this;
     }
 
+    /// <inheritdoc/>
     public override SmithingTransformRecipe Build()
     {
         if (this.@base.Count <= 0)

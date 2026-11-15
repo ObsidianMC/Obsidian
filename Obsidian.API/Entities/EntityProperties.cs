@@ -100,7 +100,13 @@ public sealed class EntityProperties
 /// </summary>
 public enum EntityMovementMode
 {
+    /// <summary>
+    /// The mob walks and falls with gravity, like most vanilla mobs.
+    /// </summary>
     Walking,
+    /// <summary>
+    /// The mob flies without gravity or fall damage and pathfinds through the air.
+    /// </summary>
     Flying
 }
 

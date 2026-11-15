@@ -59,6 +59,9 @@ public interface IItemBehavior
 /// </summary>
 public class ItemUseContext
 {
+    /// <summary>
+    /// Gets the player using the item.
+    /// </summary>
     public required IPlayer Player { get; init; }
 
     /// <summary>
@@ -66,6 +69,9 @@ public class ItemUseContext
     /// </summary>
     public required ItemStack Stack { get; init; }
 
+    /// <summary>
+    /// Gets the hand the player holds the item in.
+    /// </summary>
     public required InteractionHand Hand { get; init; }
 }
 
@@ -74,10 +80,19 @@ public class ItemUseContext
 /// </summary>
 public sealed class ItemUseOnBlockContext : ItemUseContext
 {
+    /// <summary>
+    /// Gets the position of the block the item is used on.
+    /// </summary>
     public required Vector Position { get; init; }
 
+    /// <summary>
+    /// Gets the face of the block the player clicked.
+    /// </summary>
     public required BlockFace Face { get; init; }
 
+    /// <summary>
+    /// Gets the block the item is used on.
+    /// </summary>
     public required IBlock Block { get; init; }
 
     /// <summary>
@@ -92,6 +107,9 @@ public sealed class ItemUseOnBlockContext : ItemUseContext
 /// </summary>
 public sealed class ItemUseOnEntityContext : ItemUseContext
 {
+    /// <summary>
+    /// Gets the entity the item is used on.
+    /// </summary>
     public required ILiving Entity { get; init; }
 }
 
@@ -100,8 +118,14 @@ public sealed class ItemUseOnEntityContext : ItemUseContext
 /// </summary>
 public sealed class ItemInventoryTickContext
 {
+    /// <summary>
+    /// Gets the player whose inventory the stack is in.
+    /// </summary>
     public required IPlayer Player { get; init; }
 
+    /// <summary>
+    /// Gets the stack ticking.
+    /// </summary>
     public required ItemStack Stack { get; init; }
 
     /// <summary>

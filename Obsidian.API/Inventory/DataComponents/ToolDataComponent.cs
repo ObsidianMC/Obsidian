@@ -2,6 +2,10 @@
 
 namespace Obsidian.API.Inventory.DataComponents;
 
+/// <summary>
+/// How an item mines (<c>minecraft:tool</c>): its speed and which blocks it drops items from, by rule. Start from
+/// <see cref="ComponentBuilder.Tool"/>.
+/// </summary>
 public sealed record class ToolDataComponent : DataComponent
 {
     private ComponentValueKey Comparison => new(new object?[]
@@ -12,18 +16,26 @@ public sealed record class ToolDataComponent : DataComponent
         this.canDestroyBlocksInCreative
     });
 
+    /// <inheritdoc/>
     public bool Equals(ToolDataComponent? other) => ReferenceEquals(this, other)
         || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
 
+    /// <inheritdoc/>
     public override int GetHashCode() =>
         HashCode.Combine(base.GetHashCode(), this.Comparison);
 
+    /// <inheritdoc/>
     public override DataComponentType Type => DataComponentType.Tool;
 
+    /// <inheritdoc/>
     public override string Identifier => "minecraft:tool";
 
     private ImmutableArray<ToolRule> rules;
 
+    /// <summary>
+    /// Gets the rules, checked in order. The speed and whether drops are correct for a block are worked out
+    /// separately: for each, the first rule that matches the block and sets that value decides it.
+    /// </summary>
     public required ImmutableArray<ToolRule> Rules
     {
         get => this.rules;
@@ -32,6 +44,9 @@ public sealed record class ToolDataComponent : DataComponent
 
     private float defaultMiningSpeed;
 
+    /// <summary>
+    /// Gets the mining speed for blocks no rule gives a speed.
+    /// </summary>
     public required float DefaultMiningSpeed
     {
         get => this.defaultMiningSpeed;
@@ -40,6 +55,9 @@ public sealed record class ToolDataComponent : DataComponent
 
     private int damagePerBlock;
 
+    /// <summary>
+    /// Gets how much damage breaking a block that isn't broken instantly does to the item.
+    /// </summary>
     public required int DamagePerBlock
     {
         get => this.damagePerBlock;
@@ -48,6 +66,9 @@ public sealed record class ToolDataComponent : DataComponent
 
     private bool canDestroyBlocksInCreative = true;
 
+    /// <summary>
+    /// Gets whether a creative mode player can break blocks with the item.
+    /// </summary>
     public bool CanDestroyBlocksInCreative
     {
         get => this.canDestroyBlocksInCreative;
@@ -57,6 +78,7 @@ public sealed record class ToolDataComponent : DataComponent
     [SetsRequiredMembers]
     internal ToolDataComponent() { }
 
+    /// <inheritdoc/>
     protected override void ReadCore(INetStreamReader reader)
     {
         this.rules = reader.ReadLengthPrefixedArray(() => new ToolRule()
@@ -71,6 +93,7 @@ public sealed record class ToolDataComponent : DataComponent
         this.canDestroyBlocksInCreative = reader.ReadBoolean();
     }
 
+    /// <inheritdoc/>
     public override void Write(INetStreamWriter writer)
     {
         writer.WriteLengthPrefixedArray((rule) => ToolRule.Write(rule, writer), this.Rules.AsSpan());
@@ -80,14 +103,29 @@ public sealed record class ToolDataComponent : DataComponent
     }
 }
 
+/// <summary>
+/// A <see cref="ToolDataComponent"/> rule for a set of blocks.
+/// </summary>
 public readonly record struct ToolRule : INetworkSerializable<ToolRule>
 {
+    /// <summary>
+    /// Gets the blocks the rule is for.
+    /// </summary>
     public required IdSet Blocks { get; init; }
 
+    /// <summary>
+    /// Gets the mining speed for the blocks, or null to leave it to later rules.
+    /// </summary>
     public float? Speed { get; init; }
 
+    /// <summary>
+    /// Gets whether the item is the correct tool for the blocks' drops, or null to leave it to later rules.
+    /// </summary>
     public bool? CorrectDropForBlocks { get; init; }
 
+    /// <summary>
+    /// Reads a rule written by <see cref="Write"/>.
+    /// </summary>
     public static ToolRule Read(INetStreamReader reader) => new()
     {
         Blocks = IdSet.Read(reader, ComponentValueCodecs.Blocks),
@@ -95,6 +133,9 @@ public readonly record struct ToolRule : INetworkSerializable<ToolRule>
         CorrectDropForBlocks = reader.ReadOptionalBoolean()
     };
 
+    /// <summary>
+    /// Writes the rule's blocks, speed and drop setting.
+    /// </summary>
     public static void Write(ToolRule value, INetStreamWriter writer)
     {
         IdSet.Write(value.Blocks, writer, ComponentValueCodecs.Blocks);
@@ -116,8 +157,10 @@ public readonly record struct IdSet : INetworkSerializable<IdSet>
         ComponentValueKey.Sequence(this.Ids)
     });
 
+    /// <inheritdoc/>
     public bool Equals(IdSet other) => this.Comparison.Equals(other.Comparison);
 
+    /// <inheritdoc/>
     public override int GetHashCode() => this.Comparison.GetHashCode();
 
     /// <summary>

@@ -4,6 +4,9 @@ using Obsidian.API.Registry.Codecs.ArmorTrims.TrimPattern;
 
 namespace Obsidian.API.Inventory.DataComponents;
 
+/// <summary>
+/// An armour trim (<c>minecraft:trim</c>): its material and pattern, each by registry id or inline.
+/// </summary>
 public sealed record class TrimDataComponent : DataComponent
 {
     private ComponentValueKey Comparison => new(new object?[]
@@ -17,17 +20,24 @@ public sealed record class TrimDataComponent : DataComponent
         this.showInToolTip
     });
 
+    /// <inheritdoc/>
     public bool Equals(TrimDataComponent? other) => ReferenceEquals(this, other)
         || other is not null && base.Equals(other) && this.Comparison.Equals(other.Comparison);
 
+    /// <inheritdoc/>
     public override int GetHashCode() => HashCode.Combine(base.GetHashCode(), this.Comparison);
 
+    /// <inheritdoc/>
     public override DataComponentType Type => DataComponentType.Trim;
 
+    /// <inheritdoc/>
     public override string Identifier => "minecraft:trim";
 
     private ChatMessage? materialDescription;
 
+    /// <summary>
+    /// Gets the material's name as the tooltip shows it, for an inline material.
+    /// </summary>
     public ChatMessage? MaterialDescription
     {
         get => ComponentCopies.Chat(this.materialDescription);
@@ -36,6 +46,9 @@ public sealed record class TrimDataComponent : DataComponent
 
     private ChatMessage? patternDescription;
 
+    /// <summary>
+    /// Gets the pattern's name as the tooltip shows it, for an inline pattern.
+    /// </summary>
     public ChatMessage? PatternDescription
     {
         get => ComponentCopies.Chat(this.patternDescription);
@@ -44,6 +57,9 @@ public sealed record class TrimDataComponent : DataComponent
 
     private int? materialRegistryId;
 
+    /// <summary>
+    /// Gets the material's id in the client's trim material registry, or null to send <see cref="Material"/> inline.
+    /// </summary>
     public int? MaterialRegistryId
     {
         get => this.materialRegistryId;
@@ -52,6 +68,9 @@ public sealed record class TrimDataComponent : DataComponent
 
     private int? patternRegistryId;
 
+    /// <summary>
+    /// Gets the pattern's id in the client's trim pattern registry, or null to send <see cref="Pattern"/> inline.
+    /// </summary>
     public int? PatternRegistryId
     {
         get => this.patternRegistryId;
@@ -60,6 +79,9 @@ public sealed record class TrimDataComponent : DataComponent
 
     private TrimMaterialElement material;
 
+    /// <summary>
+    /// Gets the inline material, used when <see cref="MaterialRegistryId"/> is null.
+    /// </summary>
     public TrimMaterialElement Material
     {
         get => this.material;
@@ -68,6 +90,9 @@ public sealed record class TrimDataComponent : DataComponent
 
     private TrimPatternElement pattern;
 
+    /// <summary>
+    /// Gets the inline pattern, used when <see cref="PatternRegistryId"/> is null.
+    /// </summary>
     public TrimPatternElement Pattern
     {
         get => this.pattern;
@@ -76,6 +101,9 @@ public sealed record class TrimDataComponent : DataComponent
 
     private bool showInToolTip;
 
+    /// <summary>
+    /// Gets whether the tooltip shows the trim. Neither sent to clients nor saved.
+    /// </summary>
     public bool ShowInToolTip
     {
         get => this.showInToolTip;
@@ -86,6 +114,7 @@ public sealed record class TrimDataComponent : DataComponent
     private static ChatMessage ChatDescription(TrimDescription value) => new()
     { Translate = value.Translate, Color = value.Color is string color ? new HexColor(color) : null };
 
+    /// <inheritdoc/>
     protected override void ReadCore(INetStreamReader reader)
     {
         this.material = null;
@@ -120,6 +149,7 @@ public sealed record class TrimDataComponent : DataComponent
         }
     }
 
+    /// <inheritdoc/>
     public override void Write(INetStreamWriter writer)
     {
         writer.WriteVarInt(this.MaterialRegistryId is int material ? material + 1 : 0);

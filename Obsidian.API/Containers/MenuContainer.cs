@@ -169,6 +169,8 @@ public class MenuContainer : BaseContainer
     /// </summary>
     internal bool HasItemAccessSlots { get; private init; }
 
+    /// <inheritdoc/>
+    /// <remarks>Also moves on when a container the menu's slots come from changes.</remarks>
     public override long Revision =>
         this.sources.Aggregate(base.Revision, (revision, source) => Math.Max(revision, source.Revision));
 
@@ -269,6 +271,7 @@ public class MenuContainer : BaseContainer
     {
     }
 
+    /// <inheritdoc/>
     public override ItemStack? GetItem(int slot)
     {
         var binding = this.slots[slot];
@@ -299,6 +302,10 @@ public class MenuContainer : BaseContainer
             base.SetItem(slot, item);
     }
 
+    /// <summary>
+    /// Not supported: a menu has its type's slots.
+    /// </summary>
+    /// <exception cref="NotSupportedException">Always.</exception>
     public override void Resize(int newSize) =>
         throw new NotSupportedException("A menu has its type's slots.");
 

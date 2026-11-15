@@ -14,6 +14,9 @@ public record class SimpleDataComponent<TValue> : DataComponent
     private ComponentValueKey? comparison;
 
     // Derived decoders use this property so a record copy never retains its previous comparison key.
+    /// <summary>
+    /// The stored value, which derived components set as they read one.
+    /// </summary>
     protected TValue? value
     {
         get;
@@ -27,6 +30,9 @@ public record class SimpleDataComponent<TValue> : DataComponent
     private ComponentValueKey Comparison => this.comparison ??= new(
         EqualityComparer<TValue>.Default.Equals(this.value, default) ? null : this.value);
 
+    /// <summary>
+    /// Gets the component's value, copied when the component has a copy function.
+    /// </summary>
     public TValue? Value
     {
         get => this.Copy(this.value);
@@ -48,9 +54,22 @@ public record class SimpleDataComponent<TValue> : DataComponent
         return this.copy(value);
     }
 
+    /// <inheritdoc/>
     public override string Identifier { get; }
+    /// <inheritdoc/>
     public override DataComponentType Type { get; }
 
+    /// <summary>
+    /// Creates a component of <paramref name="type"/> that writes and reads its value with the given delegates.
+    /// </summary>
+    /// <param name="type">The component's type.</param>
+    /// <param name="identifier">The component's identifier, like <c>minecraft:max_stack_size</c>.</param>
+    /// <param name="writer">Writes a value as clients read it.</param>
+    /// <param name="reader">Reads a value as clients write it.</param>
+    /// <param name="copy">Copies a mutable value, so that the component never shares it; null for immutable
+    /// values.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> or <paramref name="reader"/> is
+    /// null.</exception>
     public SimpleDataComponent(DataComponentType type, string identifier,
         Action<INetStreamWriter, TValue> writer,
         Func<INetStreamReader, TValue> reader,
@@ -64,13 +83,16 @@ public record class SimpleDataComponent<TValue> : DataComponent
         this.reader = reader ?? throw new ArgumentNullException(nameof(reader));
     }
 
+    /// <inheritdoc/>
     public virtual bool Equals(SimpleDataComponent<TValue>? other) => ReferenceEquals(this, other)
         || other is not null && base.Equals(other) && this.Type == other.Type
             && this.Identifier == other.Identifier && this.Comparison.Equals(other.Comparison);
 
+    /// <inheritdoc/>
     public override int GetHashCode() =>
         HashCode.Combine(base.GetHashCode(), this.Type, this.Identifier, this.Comparison);
 
+    /// <inheritdoc/>
     protected override void ReadCore(INetStreamReader reader)
     {
         ComponentExecutionGuard.CheckDelegate(this.reader, "network reader");
@@ -90,11 +112,19 @@ public record class SimpleDataComponent<TValue> : DataComponent
 }
 
 
+/// <summary>
+/// A component without a value, whose presence is what counts, like <c>minecraft:glider</c>.
+/// </summary>
 public record class SimpleDataComponent : DataComponent
 {
+    /// <inheritdoc/>
     public override string Identifier { get; }
+    /// <inheritdoc/>
     public override DataComponentType Type { get; }
 
+    /// <summary>
+    /// Creates a marker component of <paramref name="type"/>.
+    /// </summary>
     public SimpleDataComponent(DataComponentType type, string identifier)
     {
         this.Type = type;

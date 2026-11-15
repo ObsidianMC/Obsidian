@@ -12,10 +12,17 @@ namespace Obsidian.API.Loot.Functions;
 [LootType("minecraft:set_name")]
 public sealed class SetNameFunction : LootFunction
 {
+    /// <summary>
+    /// Gets the name to set (vanilla's <c>name</c>); the function does nothing when null.
+    /// </summary>
     public ChatMessage? Name { get; init; }
 
+    /// <summary>
+    /// Gets which name component the function sets (vanilla's <c>target</c>).
+    /// </summary>
     public NameTarget Target { get; init; } = NameTarget.CustomName;
 
+    /// <inheritdoc/>
     protected override ItemStack Run(ItemStack stack, LootContext context)
     {
         if (this.Name is null)

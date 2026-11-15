@@ -1,4 +1,8 @@
 ﻿namespace Obsidian.API.Inventory;
+/// <summary>
+/// A change an item makes to its holder's attribute while it's in <see cref="Slot"/>, like vanilla's attribute modifier
+/// entries.
+/// </summary>
 public readonly record struct AttributeModifier : INetworkSerializable<AttributeModifier>
 {
     /// <summary>
@@ -17,12 +21,28 @@ public readonly record struct AttributeModifier : INetworkSerializable<Attribute
     /// </summary>
     public required string Name { get; init; }
 
+    /// <summary>
+    /// Gets how much the modifier changes the attribute, as <see cref="Operation"/> applies it.
+    /// </summary>
     public required double Value { get; init; }
 
+    /// <summary>
+    /// Gets how <see cref="Value"/> is applied to the attribute.
+    /// </summary>
     public required AttributeOperation Operation { get; init; }
 
+    /// <summary>
+    /// Gets the equipment slots the item must be in for the modifier to apply.
+    /// </summary>
     public required AttributeSlot Slot { get; init; }
 
+    /// <summary>
+    /// Reads a modifier's id, UUID, name, value, operation and slot.
+    /// </summary>
+    /// <remarks>
+    /// It reads <see cref="Id"/> as a 4-byte int, but <see cref="Write"/> writes it as a VarInt, so it doesn't read
+    /// <see cref="Write"/>'s output back: the fields after the id are read from the wrong bytes.
+    /// </remarks>
     public static AttributeModifier Read(INetStreamReader reader) => new()
     {
         Id = reader.ReadInt(),
@@ -33,6 +53,9 @@ public readonly record struct AttributeModifier : INetworkSerializable<Attribute
         Slot = reader.ReadVarInt<AttributeSlot>()
     };
 
+    /// <summary>
+    /// Writes the modifier's id, UUID, name, value, operation and slot.
+    /// </summary>
     public static void Write(AttributeModifier value, INetStreamWriter writer)
     {
         writer.WriteVarInt(value.Id);
@@ -44,24 +67,69 @@ public readonly record struct AttributeModifier : INetworkSerializable<Attribute
     }
 }
 
+/// <summary>
+/// The equipment slots an attribute modifier applies in (vanilla's equipment slot groups).
+/// </summary>
 public enum AttributeSlot
 {
+    /// <summary>
+    /// Applies in any slot.
+    /// </summary>
     Any,
+    /// <summary>
+    /// Applies while the item is held in the main hand.
+    /// </summary>
     MainHand,
+    /// <summary>
+    /// Applies while the item is held in the off hand.
+    /// </summary>
     OffHand,
+    /// <summary>
+    /// Applies while the item is held in either hand.
+    /// </summary>
     Hand,
+    /// <summary>
+    /// Applies while the item is worn in the feet slot.
+    /// </summary>
     Feet,
+    /// <summary>
+    /// Applies while the item is worn in the legs slot.
+    /// </summary>
     Legs,
+    /// <summary>
+    /// Applies while the item is worn in the chest slot.
+    /// </summary>
     Chest,
+    /// <summary>
+    /// Applies while the item is worn in the head slot.
+    /// </summary>
     Head,
+    /// <summary>
+    /// Any of the four armour slots.
+    /// </summary>
     Armor,
+    /// <summary>
+    /// An animal's body slot, like a horse's armour.
+    /// </summary>
     Body
 }
 
+/// <summary>
+/// How an attribute modifier's value is applied.
+/// </summary>
 public enum AttributeOperation : int
 {
+    /// <summary>
+    /// Adds the value to the attribute's base (vanilla's <c>add_value</c>).
+    /// </summary>
     Add,
+    /// <summary>
+    /// Adds the value times the attribute's base (vanilla's <c>add_multiplied_base</c>).
+    /// </summary>
     MulBase,
+    /// <summary>
+    /// Multiplies the total by one plus the value (vanilla's <c>add_multiplied_total</c>).
+    /// </summary>
     MulTotal
 }
 

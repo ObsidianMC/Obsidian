@@ -44,6 +44,9 @@ public sealed class BlockEntityType
     // and dropped when it unloads.
     internal BlockEntityBinding? Binding { get; set; }
 
+    /// <summary>
+    /// Returns the type's identifier.
+    /// </summary>
     public override string ToString() => this.Identifier;
 }
 

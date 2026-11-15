@@ -13,20 +13,38 @@ namespace Obsidian.API.Data;
 /// </summary>
 public static partial class ContextNumberProviders
 {
+    /// <summary>
+    /// Parses an integer provider from JSON: a number, a provider id or an object with a <c>type</c>.
+    /// </summary>
+    /// <exception cref="System.Text.Json.JsonException"><paramref name="json"/> isn't valid JSON.</exception>
+    /// <exception cref="InvalidDataException">The provider type or one of its values isn't supported.</exception>
     public static ContextIntProvider ParseInt(string json)
     {
         using var document = JsonDocument.Parse(json);
         return ReadInt(document.RootElement);
     }
 
+    /// <summary>
+    /// Parses a float provider from JSON: a number, a provider id or an object with a <c>type</c>.
+    /// </summary>
+    /// <exception cref="System.Text.Json.JsonException"><paramref name="json"/> isn't valid JSON.</exception>
+    /// <exception cref="InvalidDataException">The provider type or one of its values isn't supported.</exception>
     public static ContextFloatProvider ParseFloat(string json)
     {
         using var document = JsonDocument.Parse(json);
         return ReadFloat(document.RootElement);
     }
 
+    /// <summary>
+    /// Reads an integer provider from an already parsed JSON value (see <see cref="ParseInt"/>).
+    /// </summary>
+    /// <exception cref="InvalidDataException">The provider type or one of its values isn't supported.</exception>
     public static ContextIntProvider ReadInt(JsonElement json) => new(CompileInt(json));
 
+    /// <summary>
+    /// Reads a float provider from an already parsed JSON value (see <see cref="ParseFloat"/>).
+    /// </summary>
+    /// <exception cref="InvalidDataException">The provider type or one of its values isn't supported.</exception>
     public static ContextFloatProvider ReadFloat(JsonElement json) => new(CompileFloat(json));
 
     private static Func<NumberContext, int> CompileInt(JsonElement json)

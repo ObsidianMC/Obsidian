@@ -9,12 +9,16 @@ namespace Obsidian.API.Crafting;
 /// </summary>
 public sealed class DyeRecipe : ICraftingRecipe
 {
+    /// <inheritdoc/>
     public required string Identifier { get; init; }
 
+    /// <inheritdoc/>
     public required CraftingType Type { get; init; }
 
+    /// <inheritdoc/>
     public string? Group { get; init; }
 
+    /// <inheritdoc/>
     public required CraftingBookCategory Category { get; init; }
 
     /// <summary>The item dyed.</summary>

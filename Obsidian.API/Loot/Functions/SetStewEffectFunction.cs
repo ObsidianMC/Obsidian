@@ -12,8 +12,13 @@ namespace Obsidian.API.Loot.Functions;
 [LootType("minecraft:set_stew_effect")]
 public sealed class SetStewEffectFunction : LootFunction
 {
+    /// <summary>
+    /// Gets the effects to pick from, each equally likely (vanilla's <c>effects</c>); the function does nothing when
+    /// empty.
+    /// </summary>
     public ImmutableArray<StewEffect> Effects { get; init; } = [];
 
+    /// <inheritdoc/>
     protected override ItemStack Run(ItemStack stack, LootContext context)
     {
         if (!LootItems.Is(stack, ItemsRegistry.SuspiciousStew) || this.Effects.Length == 0)
@@ -40,7 +45,14 @@ public sealed class SetStewEffectFunction : LootFunction
 /// </summary>
 public sealed class StewEffect
 {
+    /// <summary>
+    /// Gets the effect the stew gives (vanilla's <c>type</c>).
+    /// </summary>
     public required MobEffect Type { get; init; }
 
+    /// <summary>
+    /// Gets the effect's duration in seconds, converted to ticks except for instant effects (vanilla's
+    /// <c>duration</c>).
+    /// </summary>
     public required INumberProvider Duration { get; init; }
 }

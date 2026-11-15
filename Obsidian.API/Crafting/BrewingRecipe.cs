@@ -9,10 +9,13 @@ namespace Obsidian.API.Crafting;
 /// </summary>
 public sealed class BrewingRecipe : IRecipe
 {
+    /// <inheritdoc/>
     public required string Identifier { get; init; }
 
+    /// <inheritdoc/>
     public required CraftingType Type { get; init; }
 
+    /// <inheritdoc/>
     public string? Group { get; init; }
 
     /// <summary>

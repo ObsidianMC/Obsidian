@@ -3,6 +3,10 @@ using System.Collections.ObjectModel;
 
 namespace Obsidian.API.Crafting.Builders;
 
+/// <summary>
+/// Builds a <see cref="ShapelessRecipe"/>: start with <see cref="Create"/>, then give the ingredients, group,
+/// identifier and result in that order.
+/// </summary>
 public sealed class ShapelessRecipeBuilder : BaseRecipeBuilder<ShapelessRecipe>, IShapelessIngredientRecipe<ShapelessRecipe>
 {
     private readonly CraftingBookCategory category;
@@ -11,8 +15,12 @@ public sealed class ShapelessRecipeBuilder : BaseRecipeBuilder<ShapelessRecipe>,
 
     private ShapelessRecipeBuilder(CraftingBookCategory category) => this.category = category;
 
+    /// <summary>
+    /// Starts a shapeless recipe for the recipe book tab <paramref name="category"/>.
+    /// </summary>
     public static IShapelessIngredientRecipe<ShapelessRecipe> Create(CraftingBookCategory category) => new ShapelessRecipeBuilder(category);
 
+    /// <inheritdoc/>
     public IGroupedRecipe<ShapelessRecipe> AddIngredients(params Ingredient[] ingredients)
     {
         foreach (var ingredient in ingredients)
@@ -21,6 +29,7 @@ public sealed class ShapelessRecipeBuilder : BaseRecipeBuilder<ShapelessRecipe>,
         return this;
     }
 
+    /// <inheritdoc/>
     public override ShapelessRecipe Build()
     {
         if (this.ingredients.Count <= 0)

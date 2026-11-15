@@ -6,22 +6,50 @@ using System.Threading;
 
 namespace Obsidian.API;
 
+/// <summary>
+/// A set of item slots, numbered from 0 to <see cref="Size"/> - 1, each empty (null) or holding a stack: a block
+/// entity's items, a player's inventory or a window's slots.
+/// </summary>
+/// <remarks>
+/// These methods don't lock. Players' clicks change a container under its own lock, so change a block entity's items
+/// from plugin code under <see cref="BlockEntities.ContainerBlockEntity"/>'s inventory lock, or through
+/// <see cref="IItemAccess"/>. Enumerating yields every slot in order, empty ones as null.
+/// </remarks>
 public abstract class BaseContainer : IEnumerable<ItemStack>
 {
+    /// <summary>
+    /// The container's slots. Subclasses that keep their slots elsewhere override <see cref="GetItem"/> and
+    /// <see cref="SetItem"/> instead.
+    /// </summary>
     protected ItemStack?[] items;
 
+    /// <summary>
+    /// Gets the number of slots.
+    /// </summary>
     public short Size => (short)this.items.Length;
 
+    /// <summary>
+    /// Gets the kind of window the container opens as, which decides its layout on clients.
+    /// </summary>
     public InventoryType Type { get; }
 
+    /// <summary>
+    /// Gets or sets the title sent when the container's window opens, shown at its top.
+    /// </summary>
     public ChatMessage Title { get; set; }
 
     /// <summary>
-    /// The name the container was given (vanilla's <c>CustomName</c>), shown as its <see cref="Title"/> instead of the
-    /// default one; <c>null</c> when it has none.
+    /// The name the container was given (vanilla's <c>CustomName</c>), saved with it; <c>null</c> when it has none.
     /// </summary>
+    /// <remarks>
+    /// Setting it doesn't change <see cref="Title"/>, which is what the window shows. When the server loads a named
+    /// container or places a named block, it sets both.
+    /// </remarks>
     public ChatMessage? CustomName { get; set; }
 
+    /// <summary>
+    /// Gets an id made for this container instance.
+    /// </summary>
     public Guid Uuid { get; } = Guid.NewGuid();
 
     // A retained inventory must not keep an unloaded plugin's block entity or code alive.
@@ -82,6 +110,11 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         }
     }
 
+    /// <summary>
+    /// Gets or sets the stack in slot <paramref name="index"/>, null when empty, through <see cref="GetItem"/> and
+    /// <see cref="SetItem"/>. Setting moves <see cref="Revision"/> on.
+    /// </summary>
+    /// <exception cref="IndexOutOfRangeException"><paramref name="index"/> isn't a slot.</exception>
     public ItemStack? this[int index]
     {
         get => this.GetItem(index);
@@ -96,8 +129,14 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         }
     }
 
+    /// <summary>
+    /// Gets the stacks of a range of slots, in order, empty ones as null.
+    /// </summary>
     public ReadOnlySpan<ItemStack?> this[Range range] => this.GetItems().AsSpan(range);
 
+    /// <summary>
+    /// Creates a container of <paramref name="size"/> empty slots that opens as <see cref="InventoryType.Custom"/>.
+    /// </summary>
     public BaseContainer(int size) : this(size, InventoryType.Custom) { }
 
     internal BaseContainer(int size, InventoryType type)
@@ -107,6 +146,16 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         this.items = new ItemStack?[size];
     }
 
+    /// <summary>
+    /// Puts <paramref name="item"/> into the first slot, in slot order, that is empty or holds the same item with
+    /// fewer than 64, adding its whole count to a stack there. An empty slot before a matching stack wins.
+    /// </summary>
+    /// <remarks>
+    /// Only the item is compared, not its components, and the count isn't capped, so a stack can go past 64 or its
+    /// <see cref="ItemStack.MaxStackSize"/>. The stack itself is put in an empty slot, not a copy.
+    /// </remarks>
+    /// <returns>The slot the item went into, or -1 when none took it.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="item"/> is null.</exception>
     public virtual int AddItem(ItemStack item)
     {
         ArgumentNullException.ThrowIfNull(item);
@@ -138,14 +187,27 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         return -1;
     }
 
+    /// <summary>
+    /// Puts <paramref name="item"/> into <paramref name="slot"/>, or empties it when null, and moves
+    /// <see cref="Revision"/> on.
+    /// </summary>
+    /// <exception cref="IndexOutOfRangeException"><paramref name="slot"/> isn't a slot.</exception>
     public virtual void SetItem(int slot, ItemStack? item)
     {
         this.items[slot] = item;
         this.MarkChanged();
     }
 
+    /// <summary>
+    /// Gets the stack in <paramref name="slot"/> itself, not a copy, or null when it's empty.
+    /// </summary>
+    /// <exception cref="IndexOutOfRangeException"><paramref name="slot"/> isn't a slot.</exception>
     public virtual ItemStack? GetItem(int slot) => this.items[slot];
 
+    /// <summary>
+    /// Empties <paramref name="slot"/>.
+    /// </summary>
+    /// <returns>Whether the slot held a stack.</returns>
     public virtual bool RemoveItem(int slot)
     {
         if (this.GetItem(slot) == null)
@@ -156,6 +218,11 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         return true;
     }
 
+    /// <summary>
+    /// Takes <paramref name="amount"/> items from the stack in <paramref name="slot"/>, changing that stack, and
+    /// empties the slot when none are left.
+    /// </summary>
+    /// <returns>Whether the slot held a stack.</returns>
     public virtual bool RemoveItem(int slot, int amount)
     {
         var item = this.GetItem(slot);
@@ -169,6 +236,10 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         return true;
     }
 
+    /// <summary>
+    /// Empties <paramref name="slot"/>, giving the stack it held as <paramref name="removedItem"/>.
+    /// </summary>
+    /// <returns>Whether the slot held a stack.</returns>
     public virtual bool RemoveItem(int slot, out ItemStack? removedItem)
     {
         var item = this.GetItem(slot);
@@ -184,6 +255,18 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
         return this.RemoveItem(slot);
     }
 
+    /// <summary>
+    /// Takes <paramref name="amount"/> items from the stack in <paramref name="slot"/> like
+    /// <see cref="RemoveItem(int, int)"/>.
+    /// </summary>
+    /// <param name="slot">The slot to take from.</param>
+    /// <param name="amount">How many items to take.</param>
+    /// <param name="removedItem">
+    /// The slot's stack itself, after <paramref name="amount"/> was taken from it, not a stack of the items taken; null
+    /// when
+    /// the slot was empty.
+    /// </param>
+    /// <returns>Whether the slot held a stack.</returns>
     public virtual bool RemoveItem(int slot, int amount, out ItemStack? removedItem)
     {
         var item = this.GetItem(slot);
@@ -212,6 +295,9 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     public virtual SlotDifference GetSlot(short clickedSlot) =>
         clickedSlot >= this.Size ? new((short)(clickedSlot - this.Size + 9), true) : new(clickedSlot, false);
 
+    /// <summary>
+    /// Changes the number of slots, keeping the stacks of the slots that remain.
+    /// </summary>
     public virtual void Resize(int newSize)
     {
         Array.Resize(ref this.items, newSize);
@@ -483,8 +569,14 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
             return [.. this.Viewers];
     }
 
+    /// <summary>
+    /// Whether any slot holds a stack.
+    /// </summary>
     public bool HasItems() => this.Any(x => x is not null);
 
+    /// <summary>
+    /// Returns every slot's stack in order, empty slots as null.
+    /// </summary>
     public IEnumerator<ItemStack> GetEnumerator()
     {
         for (var slot = 0; slot < this.Size; slot++)
@@ -494,6 +586,13 @@ public abstract class BaseContainer : IEnumerable<ItemStack>
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
 
+/// <summary>
+/// A window slot resolved by <see cref="BaseContainer.GetSlot"/>.
+/// </summary>
+/// <param name="Slot">
+/// The slot's index in the container, or in the player's inventory when <paramref name="ForPlayer"/> is set.
+/// </param>
+/// <param name="ForPlayer">Whether the slot is in the player's own inventory instead of the container.</param>
 public readonly record struct SlotDifference(short Slot, bool ForPlayer);
 
 /// <summary>
@@ -535,13 +634,26 @@ internal sealed class LockSet(List<IDisposable> taken) : IDisposable
     }
 }
 
+/// <summary>
+/// A container with a result slot, like a crafting table's or an anvil's.
+/// </summary>
 public abstract class ResultContainer : BaseContainer
 {
+    /// <summary>
+    /// Creates a result container of <paramref name="size"/> empty slots that opens as
+    /// <see cref="InventoryType.Custom"/>.
+    /// </summary>
     protected ResultContainer(int size) : this(size, InventoryType.Custom) { }
 
     internal ResultContainer(int size, InventoryType type) : base(size, type) { }
 
+    /// <summary>
+    /// Puts <paramref name="result"/> into the result slot, or empties it when null.
+    /// </summary>
     public abstract void SetResult(ItemStack? result);
 
+    /// <summary>
+    /// Gets the stack in the result slot, or null when it's empty.
+    /// </summary>
     public abstract ItemStack? GetResult();
 }

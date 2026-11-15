@@ -31,7 +31,7 @@ public interface IEntityBehavior
 
     /// <summary>
     /// Called when a player who isn't sneaking uses a mob and <see cref="InteractAsync"/> didn't use the interaction:
-    /// whether the player mounts it (see <see cref="IPlayer.StartRiding"/>).
+    /// whether the player mounts it (see <see cref="IEntity.StartRiding"/>).
     /// </summary>
     public bool CanMount(IEntity entity, IPlayer player) => false;
 
@@ -71,6 +71,9 @@ public sealed record DamageSource(string Type, IEntity? Attacker, IEntity? Direc
 /// </summary>
 public sealed class EntityDamage
 {
+    /// <summary>
+    /// Gets what is dealing the damage.
+    /// </summary>
     public required DamageSource Source { get; init; }
 
     /// <summary>

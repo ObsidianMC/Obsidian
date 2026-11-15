@@ -5,11 +5,27 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Obsidian.API.Inventory;
 
+/// <summary>
+/// A number of one item with its components: what an inventory slot holds.
+/// </summary>
+/// <remarks>
+/// A stack is mutable and not thread-safe: its count and components change in place. Components themselves are
+/// immutable; replace one through the indexer to change it, for example
+/// <c>stack[DataComponentType.Damage] = ComponentBuilder.Damage with { Value = 3 }</c>. Two stacks are equal when they
+/// hold the same item with the same components, whatever their counts.
+/// </remarks>
 public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
 {
+    /// <summary>
+    /// An empty stack of air with a count of 0, shared by every caller; don't change it.
+    /// </summary>
     public static readonly ItemStack Air = new(ItemsRegistry.Air, 0);
 
     // A change moves the stack's Version on, so that the container holding it sees it (see BaseContainer.Revision).
+    /// <summary>
+    /// Gets or sets how many items the stack holds. Setting a new value moves the stack's change stamp on, so the
+    /// container holding it sees the change.
+    /// </summary>
     public int Count
     {
         get;
@@ -23,10 +39,19 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
         }
     }
 
+    /// <summary>
+    /// Gets the item the stack holds.
+    /// </summary>
     public Item Holder { get; }
 
     // A marker component: the item is unbreakable when it has one.
+    /// <summary>
+    /// Gets whether the stack has a <c>minecraft:unbreakable</c> component, so it takes no damage.
+    /// </summary>
     public bool Unbreakable => this.ContainsKey(DataComponentType.Unbreakable);
+    /// <summary>
+    /// Gets how many of the item fit in one stack: the stack's <c>minecraft:max_stack_size</c>, or its item's default.
+    /// </summary>
     public int MaxStackSize => this.GetComponent<SimpleDataComponent<int>>(DataComponentType.MaxStackSize)?.Value ?? this.Holder.MaxStackSize;
 
     /// <summary>
@@ -37,18 +62,42 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
         this.GetComponent<SimpleDataComponent<int>>(DataComponentType.MaxStackSize)?.StoredValue
         ?? this.Holder.MaxStackSize;
 
+    /// <summary>
+    /// Gets the stack's <c>minecraft:custom_name</c>, or null when it has none.
+    /// </summary>
     public ChatMessage? CustomName => this.GetComponent<SimpleDataComponent<ChatMessage>>(DataComponentType.CustomName)?.Value;
+    /// <summary>
+    /// Gets the stack's <c>minecraft:item_name</c>, or null when it has none.
+    /// </summary>
     public ChatMessage? ItemName => this.GetComponent<SimpleDataComponent<ChatMessage>>(DataComponentType.ItemName)?.Value;
 
+    /// <summary>
+    /// Gets how much damage the stack has taken (<c>minecraft:damage</c>), 0 when it has none.
+    /// </summary>
     public int Damage => this.GetComponent<SimpleDataComponent<int>>(DataComponentType.Damage)?.Value ?? 0;
 
+    /// <summary>
+    /// Gets how much damage the stack takes before it breaks: its <c>minecraft:max_damage</c>, or its item's default,
+    /// or 0 when the component was removed.
+    /// </summary>
     public int MaxDamage => this.RemoveComponents.Contains(DataComponentType.MaxDamage) ? 0 :
         this.GetComponent<SimpleDataComponent<int>>(DataComponentType.MaxDamage)?.Value ?? this.Holder.MaxDamage;
+    /// <summary>
+    /// Gets the stack's extra tooltip lines (<c>minecraft:lore</c>), empty when it has none.
+    /// </summary>
     public IReadOnlyList<ChatMessage> Lore => this.GetComponent<SimpleDataComponent<ImmutableArray<ChatMessage>>>(
         DataComponentType.Lore)?.Value ?? [];
+    /// <summary>
+    /// Gets the stack's enchantments (<c>minecraft:enchantments</c>), empty when it has none.
+    /// </summary>
     public IReadOnlyList<Enchantment> Enchantments =>
         this.GetComponent<SimpleDataComponent<ImmutableArray<Enchantment>>>(
             DataComponentType.Enchantments)?.Value ?? [];
+    /// <summary>
+    /// Gets whether clients draw the stack with the enchantment glint: its <c>minecraft:enchantment_glint_override</c>
+    /// when set, otherwise whether it's enchanted or an item that always glints, like an enchanted book or a lodestone
+    /// compass.
+    /// </summary>
     public bool HasEnchantmentGlint => this.GetComponent<SimpleDataComponent<bool>>(
         DataComponentType.EnchantmentGlintOverride)?.Value ??
         (!this.RemoveComponents.Contains(DataComponentType.EnchantmentGlintOverride) &&
@@ -57,6 +106,9 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
             this.Enchantments.Count > 0
             || this.Is(ItemsRegistry.Compass) && this.ContainsKey(DataComponentType.LodestoneTracker));
 
+    /// <summary>
+    /// Gets whether the stack holds air, the empty item.
+    /// </summary>
     public bool IsAir => this.Holder == ItemsRegistry.Air;
 
     /// <summary>
@@ -77,6 +129,16 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
     // The bundle slot the player selected (vanilla's selected item index); -1 when none. Not saved or compared.
     internal int BundleSelection { get; set; } = -1;
 
+    /// <summary>
+    /// Creates a stack of <paramref name="holder"/> with the common placeholder components (stack size, lore,
+    /// enchantments, repair cost, attribute modifiers and rarity), then <see cref="Item.DefaultComponents"/>, then
+    /// <paramref name="components"/>, each replacing earlier ones of the same type.
+    /// </summary>
+    /// <remarks>
+    /// A vanilla item's <see cref="Item.DefaultComponents"/> is empty, so its other vanilla defaults aren't on the
+    /// stack: a new stack of a vanilla food has no <c>minecraft:food</c> component for
+    /// <see cref="DataComponentsStorage.GetComponent{TComponent}"/> to return.
+    /// </remarks>
     public ItemStack(Item holder, int count = 1, params IEnumerable<DataComponent> components)
     {
         this.Holder = holder;
@@ -85,6 +147,10 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
         this.InitializeComponents(components);
     }
 
+    /// <summary>
+    /// Copies <paramref name="item"/>'s item and components, including removed defaults, into a new stack of
+    /// <paramref name="count"/>, which is 1 by default rather than <paramref name="item"/>'s count.
+    /// </summary>
     public ItemStack([DisallowNull] ItemStack item, int count = 1) : this(item.Holder, count, item.Patch)
     {
         foreach (var type in item.RemoveComponents)
@@ -169,6 +235,10 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
         return this.Remove(type.Type) || unmodeled;
     }
 
+    /// <summary>
+    /// Takes <paramref name="value"/> from the stack's count, not going below 0, and returns the same stack; returns
+    /// <see cref="Air"/> instead when the stack was already empty.
+    /// </summary>
     public static ItemStack operator -(ItemStack item, int value)
     {
         if (item.Count <= 0)
@@ -179,6 +249,10 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
         return item;
     }
 
+    /// <summary>
+    /// Divides the stack's count by <paramref name="value"/>, rounding down, and returns the same stack; returns
+    /// <see cref="Air"/> instead when the stack was already empty. Also prints the new count to the console.
+    /// </summary>
     public static ItemStack operator /(ItemStack item, int value)
     {
         if (item.Count <= 0)
@@ -191,6 +265,10 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
         return item;
     }
 
+    /// <summary>
+    /// Adds <paramref name="value"/> to the stack's count, up to <see cref="MaxStackSize"/>, and returns the same
+    /// stack.
+    /// </summary>
     public static ItemStack operator +(ItemStack item, int value)
     {
         if (item.Count >= item.MaxStackSize)
@@ -201,6 +279,10 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
         return item;
     }
 
+    /// <summary>
+    /// Adds <paramref name="value"/>'s count to the stack's, up to <see cref="MaxStackSize"/>, and returns the same
+    /// stack. The item and components aren't compared.
+    /// </summary>
     public static ItemStack operator +(ItemStack item, ItemStack value)
     {
         if (item.Count >= item.MaxStackSize)
@@ -211,10 +293,19 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
         return item;
     }
 
+    /// <summary>
+    /// Whether both stacks are null, the same stack, or equal (see <see cref="Equals(ItemStack?)"/>).
+    /// </summary>
     public static bool operator ==(ItemStack? left, ItemStack? right) => ReferenceEquals(left, right) || (left is not null && left.Equals(right));
 
+    /// <summary>
+    /// Whether the stacks aren't equal (see <see cref="Equals(ItemStack?)"/>).
+    /// </summary>
     public static bool operator !=(ItemStack? left, ItemStack? right) => !(left == right);
 
+    /// <summary>
+    /// Hashes the stack's item and components, not its count.
+    /// </summary>
     public override int GetHashCode()
     {
         var hash = new HashCode();
@@ -252,10 +343,20 @@ public sealed class ItemStack : DataComponentsStorage, IEquatable<ItemStack>
             this[component.Type] = component;
     }
 
+    /// <summary>
+    /// Returns the identifier of the stack's item.
+    /// </summary>
     public override string ToString() => $"{this.Holder.UnlocalizedName}";
 
+    /// <summary>
+    /// Whether <paramref name="obj"/> is an equal stack (see <see cref="Equals(ItemStack?)"/>).
+    /// </summary>
     public override bool Equals(object obj) => Equals(obj as ItemStack);
 
+    /// <summary>
+    /// Whether <paramref name="other"/> holds the same item with the same components, including saved components
+    /// Obsidian doesn't model. Counts aren't compared.
+    /// </summary>
     public bool Equals(ItemStack? other) => other is not null && (ReferenceEquals(this, other) || this.Holder.Equals(other.Holder)
         && (this.HasNoComponents && other.HasNoComponents || this.ComponentsEqual(other)));
 

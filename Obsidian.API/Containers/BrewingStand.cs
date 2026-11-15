@@ -26,8 +26,14 @@ public sealed class BrewingStand : ResultContainer
     /// </summary>
     public const int FuelSlot = 4;
 
+    /// <summary>
+    /// Gets the container's id, <c>brewing_stand</c>.
+    /// </summary>
     public string Id => "brewing_stand";
 
+    /// <summary>
+    /// Gets or sets the position of the brewing stand block.
+    /// </summary>
     public Vector BlockPosition { get; set; }
 
     /// <summary>
@@ -66,11 +72,22 @@ public sealed class BrewingStand : ResultContainer
     /// </summary>
     internal bool[]? ShownBottles { get; set; }
 
+    /// <summary>
+    /// Creates a brewing stand's five empty slots.
+    /// </summary>
     public BrewingStand() : base(5, InventoryType.BrewingStand)
     {
         this.Title = "Brewing Stand";
     }
 
+    /// <summary>
+    /// Not supported: a brewing stand has no single result slot.
+    /// </summary>
+    /// <exception cref="NotImplementedException">Always.</exception>
     public override void SetResult(ItemStack? result) => throw new NotImplementedException();
+    /// <summary>
+    /// Not supported: a brewing stand has no single result slot.
+    /// </summary>
+    /// <exception cref="NotImplementedException">Always.</exception>
     public override ItemStack? GetResult() => throw new NotImplementedException();
 }

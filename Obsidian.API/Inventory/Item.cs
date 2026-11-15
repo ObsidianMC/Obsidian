@@ -78,12 +78,21 @@ public sealed class Item : INetworkSerializable<Item>
     // The plugin and its behaviour, replaced together so that a use never pairs one plugin's behaviour with another.
     internal ItemBinding? Binding { get; set; }
 
+    /// <summary>
+    /// Writes <paramref name="value"/>'s network id, as clients know it.
+    /// </summary>
     public static void Write(Item value, INetStreamWriter writer) =>
         writer.WriteRegistryId(ComponentValueCodecs.Items, value.Id);
 
+    /// <summary>
+    /// Reads an item by its network id.
+    /// </summary>
     public static Item Read(INetStreamReader reader) =>
         ItemsRegistry.Get(reader.ReadRegistryId(ComponentValueCodecs.Items));
 
+    /// <summary>
+    /// Returns the item's identifier in braces.
+    /// </summary>
     public override string ToString() => $"{{{this.UnlocalizedName}}}";
 }
 

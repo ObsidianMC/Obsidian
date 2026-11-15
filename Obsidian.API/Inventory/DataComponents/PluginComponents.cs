@@ -60,6 +60,9 @@ public sealed class PluginComponentType<TValue>
 
     internal Func<IDisposable?> TryEnter { get; }
 
+    /// <summary>
+    /// Returns the type's identifier.
+    /// </summary>
     public override string ToString() => this.Identifier;
 }
 
@@ -95,8 +98,10 @@ public sealed record PluginDataComponent : DataComponent
         this.key = new ComponentValueKey(this.saved);
     }
 
+    /// <inheritdoc/>
     public override DataComponentType Type { get; }
 
+    /// <inheritdoc/>
     public override string Identifier { get; }
 
     /// <summary>
@@ -166,8 +171,10 @@ public sealed record PluginDataComponent : DataComponent
             throw new InvalidOperationException($"{this.Identifier} isn't sent to clients.");
     }
 
+    /// <inheritdoc/>
     public bool Equals(PluginDataComponent? other) =>
         ReferenceEquals(this, other) || other is not null && this.Type == other.Type && this.key.Equals(other.key);
 
+    /// <inheritdoc/>
     public override int GetHashCode() => HashCode.Combine(this.Type, this.key);
 }

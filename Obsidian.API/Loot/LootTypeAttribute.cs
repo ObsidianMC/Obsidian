@@ -8,5 +8,8 @@ namespace Obsidian.API.Loot;
 [AttributeUsage(AttributeTargets.Class)]
 public sealed class LootTypeAttribute(string resourceLocation) : Attribute
 {
+    /// <summary>
+    /// Gets the loot type's id, e.g. <c>minecraft:set_count</c>, matched against the JSON discriminator.
+    /// </summary>
     public string ResourceLocation { get; } = resourceLocation;
 }

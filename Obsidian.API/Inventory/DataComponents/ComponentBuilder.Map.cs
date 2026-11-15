@@ -3,6 +3,16 @@ namespace Obsidian.API.Inventory.DataComponents;
 public static partial class ComponentBuilder
 {
     // Key by generated registry enum, never by position in a hand-maintained array.
+    /// <summary>
+    /// Creates an empty component of <paramref name="type"/> for a reader to fill, as the server does when it decodes
+    /// components; null for a type without one.
+    /// </summary>
+    /// <remarks>
+    /// Most types return the matching property's template, but some return a bare instance instead: the
+    /// <c>minecraft:tool</c>, <c>minecraft:consumable</c> and <c>minecraft:equippable</c> ones don't have the defaults
+    /// that <see cref="Tool"/>, <see cref="Consumable"/> and <see cref="Equippable"/> set. Build new components from
+    /// the properties.
+    /// </remarks>
     public static DataComponent? Create(DataComponentType type) => type switch
     {
         DataComponentType.MaxStackSize => MaxStackSize,
