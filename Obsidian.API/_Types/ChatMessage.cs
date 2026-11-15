@@ -2,47 +2,75 @@
 
 namespace Obsidian.API;
 
+/// <summary>
+/// A chat text component: text or a translation key with styling, click and hover actions, and child components.
+/// </summary>
 public sealed record class ChatMessage : INetworkSerializable<ChatMessage>
 {
+    /// <summary>Gets or sets the literal text. It may hold legacy <c>§</c> formatting codes.</summary>
     public string? Text { get; set; }
 
+    /// <summary>
+    /// Gets or sets a translation key the client looks up in its language file, such as <c>chat.type.text</c>;
+    /// <see cref="With"/> fills its placeholders.
+    /// </summary>
     public string? Translate { get; set; }
 
     /// <summary>The key bound to this keybind, like <c>key.jump</c>, as the client shows it.</summary>
     public string? Keybind { get; set; }
 
+    /// <summary>Gets or sets the text color, or null to inherit it.</summary>
     public HexColor? Color { get; set; }
 
     // The style flags are inherited from the parent component (or the context, like italic custom item names) when null.
 
+    /// <summary>Gets or sets whether the text is bold, or null to inherit it.</summary>
     public bool? Bold { get; set; }
 
+    /// <summary>Gets or sets whether the text is italic, or null to inherit it.</summary>
     public bool? Italic { get; set; }
 
+    /// <summary>Gets or sets whether the text is underlined, or null to inherit it.</summary>
     public bool? Underlined { get; set; }
 
+    /// <summary>Gets or sets whether the text is struck through, or null to inherit it.</summary>
     public bool? Strikethrough { get; set; }
 
+    /// <summary>Gets or sets whether the text is scrambled, or null to inherit it.</summary>
     public bool? Obfuscated { get; set; }
 
     /// <summary>Optional signed ARGB shadow color from the text component codec.</summary>
     [System.Text.Json.Serialization.JsonPropertyName("shadow_color")]
     public int? ShadowColor { get; set; }
 
+    /// <summary>Gets or sets text inserted into the player's chat box when they shift-click this component.</summary>
     public string? Insertion { get; set; }
 
+    /// <summary>Gets or sets what happens when a player clicks this component.</summary>
     public ClickComponent? ClickEvent { get; set; }
 
+    /// <summary>Gets or sets what is shown when a player hovers over this component.</summary>
     public HoverComponent? HoverEvent { get; set; }
 
+    /// <summary>
+    /// Gets the child components shown after this one, which inherit its style; null when there are none.
+    /// </summary>
     public List<ChatMessage>? Extra { get; private set; }
 
+    /// <summary>
+    /// Gets the values that fill the <see cref="Translate"/> key's placeholders; null when there are none.
+    /// </summary>
     public List<ChatMessage>? With { get; private set; }
 
+    /// <summary>
+    /// Gets the values that fill the <see cref="Translate"/> key's placeholders, or an empty sequence.
+    /// </summary>
     public IEnumerable<ChatMessage> GetExtraChatComponents() => With ?? Enumerable.Empty<ChatMessage>();
 
+    /// <summary>Gets the child components, or an empty sequence.</summary>
     public IEnumerable<ChatMessage> GetExtras() => Extra ?? Enumerable.Empty<ChatMessage>();
 
+    /// <summary>Creates a plain text component, as <see cref="Simple(string)"/> does.</summary>
     public static implicit operator ChatMessage(string text) => Simple(text);
 
     /// <summary>
@@ -87,6 +115,11 @@ public sealed record class ChatMessage : INetworkSerializable<ChatMessage>
         Text = $"{color}{text}"
     };
 
+    /// <summary>
+    /// Creates a component that the client shows as a player's chat line, <c>&lt;username&gt; text</c>.
+    /// </summary>
+    /// <param name="text">The message.</param>
+    /// <param name="username">The sender's name; null is shown as empty.</param>
     public static ChatMessage TranslatableChatMessageType(string text, string username)
     {
         var message = new ChatMessage()
@@ -99,6 +132,13 @@ public sealed record class ChatMessage : INetworkSerializable<ChatMessage>
         return message;
     }
 
+    /// <summary>
+    /// Creates a component that the client shows as a player's chat line, <c>&lt;username&gt; text</c>, with the
+    /// message in a color.
+    /// </summary>
+    /// <param name="text">The message.</param>
+    /// <param name="color">The color code put before the message.</param>
+    /// <param name="username">The sender's name; null is shown as empty.</param>
     public static ChatMessage TranslatableChatMessageType(string text, ChatColor color, string username)
     {
         var message = new ChatMessage()
@@ -150,7 +190,8 @@ public sealed record class ChatMessage : INetworkSerializable<ChatMessage>
     }
 
     /// <summary>
-    /// Converts all formatting codes which are using '&amp;' to their respective '§' formatting code.
+    /// Replaces <c>&amp;</c> with <c>§</c> where it comes before one of the lowercase codes <c>0</c>-<c>9</c>,
+    /// <c>a</c>-<c>e</c>, <c>k</c>-<c>o</c> or <c>r</c>. <c>&amp;f</c> and uppercase codes are left as they are.
     /// </summary>
     /// <param name="originalText">The text to be reformatted.</param>
     /// <returns>The formatted text.</returns>
@@ -175,6 +216,8 @@ public sealed record class ChatMessage : INetworkSerializable<ChatMessage>
         });
     }
 
+    /// <summary>Adds a value for the <see cref="Translate"/> key's next placeholder.</summary>
+    /// <returns>This component.</returns>
     public ChatMessage AddChatComponent(ChatMessage message)
     {
         this.With ??= [];
@@ -183,6 +226,8 @@ public sealed record class ChatMessage : INetworkSerializable<ChatMessage>
         return this;
     }
 
+    /// <summary>Adds values for the <see cref="Translate"/> key's next placeholders.</summary>
+    /// <returns>This component.</returns>
     public ChatMessage AddChatComponent(IEnumerable<ChatMessage> message)
     {
         this.With ??= [];
@@ -192,6 +237,8 @@ public sealed record class ChatMessage : INetworkSerializable<ChatMessage>
     }
 
 
+    /// <summary>Adds a child component after this one's existing children.</summary>
+    /// <returns>This component.</returns>
     public ChatMessage AddExtra(ChatMessage message)
     {
         Extra ??= [];
@@ -200,6 +247,8 @@ public sealed record class ChatMessage : INetworkSerializable<ChatMessage>
         return this;
     }
 
+    /// <summary>Adds child components after this one's existing children.</summary>
+    /// <returns>This component.</returns>
     public ChatMessage AddExtra(List<ChatMessage> messages)
     {
         Extra ??= new List<ChatMessage>(capacity: messages.Count);
@@ -208,6 +257,8 @@ public sealed record class ChatMessage : INetworkSerializable<ChatMessage>
         return this;
     }
 
+    /// <summary>Adds child components after this one's existing children.</summary>
+    /// <returns>This component.</returns>
     public ChatMessage AddExtra(IEnumerable<ChatMessage> messages)
     {
         foreach (var message in messages)
@@ -218,6 +269,8 @@ public sealed record class ChatMessage : INetworkSerializable<ChatMessage>
         return this;
     }
 
+    /// <summary>Appends text to <see cref="Text"/>.</summary>
+    /// <returns>This component.</returns>
     public ChatMessage AppendText(string text)
     {
         if (Text is null)
@@ -231,6 +284,8 @@ public sealed record class ChatMessage : INetworkSerializable<ChatMessage>
         return this;
     }
 
+    /// <summary>Appends a legacy <c>§</c> formatting code to <see cref="Text"/>.</summary>
+    /// <returns>This component.</returns>
     public ChatMessage AppendColor(ChatColor color)
     {
         if (Text is null)
@@ -245,6 +300,8 @@ public sealed record class ChatMessage : INetworkSerializable<ChatMessage>
         return this;
     }
 
+    /// <summary>Appends text, preceded by a legacy <c>§</c> formatting code, to <see cref="Text"/>.</summary>
+    /// <returns>This component.</returns>
     public ChatMessage AppendText(string text, ChatColor color)
     {
         if (Text is null)
@@ -279,9 +336,13 @@ public sealed record class ChatMessage : INetworkSerializable<ChatMessage>
         With = this.With?.Select(message => message.CopyForComponent()).ToList()
     };
 
+    /// <summary>Gets a new component with empty text.</summary>
     public static ChatMessage Empty => Simple(string.Empty);
 
+    /// <summary>Serializes the component to JSON with the given options.</summary>
     public string ToString(JsonSerializerOptions options) => JsonSerializer.Serialize(this, options);
+    /// <summary>Writes a component to a network stream.</summary>
     public static void Write(ChatMessage value, INetStreamWriter writer) => writer.WriteChat(value);
+    /// <summary>Reads a component from a network stream.</summary>
     public static ChatMessage Read(INetStreamReader reader) => reader.ReadChat();
 }

@@ -1,5 +1,6 @@
 ﻿namespace Obsidian.API;
 
+/// <summary>What the client does when a player clicks a piece of chat text.</summary>
 public enum ClickAction
 {
     /// <summary>

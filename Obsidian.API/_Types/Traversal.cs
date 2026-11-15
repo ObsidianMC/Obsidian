@@ -1,5 +1,6 @@
 namespace Obsidian.API;
 
+/// <summary>Finds the blocks a straight line passes through, from a start point to an end point.</summary>
 public class Traverse
 {
     private VectorD StartPoint { get; }

@@ -3,8 +3,13 @@ using System.Numerics;
 using System.Threading;
 
 namespace Obsidian.API;
+/// <summary>
+/// Tracks, for each column of a chunk, the Y just above the highest block that counts for a
+/// <see cref="API.HeightmapType"/>.
+/// </summary>
 public sealed class Heightmap
 {
+    /// <summary>Gets which blocks this heightmap counts.</summary>
     public HeightmapType HeightmapType { get; }
 
     internal DataArray data;
@@ -17,6 +22,10 @@ public sealed class Heightmap
     internal static Func<HeightmapType, IBlock, bool> Matches { get; set; } =
         (_, _) => throw new InvalidOperationException("The block registry has not initialized heightmap predicates.");
 
+    /// <summary>
+    /// The test for whether a block counts. It starts as the vanilla rule for <see cref="HeightmapType"/>; replacing it
+    /// changes which blocks count from then on.
+    /// </summary>
     public Predicate<IBlock> Predicate;
 
     private readonly Predicate<IBlock> defaultPredicate;
@@ -35,6 +44,9 @@ public sealed class Heightmap
     /// <returns>Whether it was marked. A write after this marks it again, so the next save has it.</returns>
     internal bool TakeUnsaved() => Interlocked.Exchange(ref this.unsaved, 0) != 0;
 
+    /// <summary>Creates an empty heightmap for a chunk.</summary>
+    /// <param name="type">Which blocks the heightmap counts.</param>
+    /// <param name="chunk">The chunk whose blocks it reads when a column must be searched again.</param>
     public Heightmap(HeightmapType type, IChunk chunk)
     {
         HeightmapType = type;
@@ -58,6 +70,12 @@ public sealed class Heightmap
 
     private bool DefaultMatches(IBlock block) => Matches(this.HeightmapType, block);
 
+    /// <summary>Updates a column after the block at a position changes.</summary>
+    /// <param name="x">The block's X; only its position within the chunk is used.</param>
+    /// <param name="y">The block's world Y.</param>
+    /// <param name="z">The block's Z; only its position within the chunk is used.</param>
+    /// <param name="blockState">The block now at the position.</param>
+    /// <returns>Whether the column's height changed.</returns>
     public bool Update(int x, int y, int z, IBlock blockState) =>
         this.Update(x, y, z, blockState, 0, 0, default);
 
@@ -122,6 +140,10 @@ public sealed class Heightmap
             : this.Predicate(block);
     }
 
+    /// <summary>Sets a column's height: the world Y just above its highest counted block.</summary>
+    /// <param name="x">The column's X; only its position within the chunk is used.</param>
+    /// <param name="z">The column's Z; only its position within the chunk is used.</param>
+    /// <param name="value">The new height.</param>
     public void Set(int x, int z, int value)
     {
         lock (this.dataLock)
@@ -136,6 +158,11 @@ public sealed class Heightmap
         Volatile.Write(ref this.unsaved, 1);
     }
 
+    /// <summary>
+    /// Gets the world Y just above a column's highest counted block, or the chunk's minimum Y when none counts.
+    /// </summary>
+    /// <param name="x">The column's X; only its position within the chunk is used.</param>
+    /// <param name="z">The column's Z; only its position within the chunk is used.</param>
     public int GetHeight(int x, int z)
     {
         lock (this.dataLock)
@@ -178,8 +205,13 @@ public sealed class Heightmap
         }
     }
 
+    /// <summary>Creates a copy of this heightmap for the same chunk.</summary>
     public Heightmap Clone() => Clone(chunk);
 
+    /// <summary>
+    /// Creates a copy of this heightmap that reads its blocks from <paramref name="chunk"/>. A replaced
+    /// <see cref="Predicate"/> is kept.
+    /// </summary>
     public Heightmap Clone(IChunk chunk)
     {
         lock (this.dataLock)

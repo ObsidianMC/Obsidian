@@ -1,5 +1,6 @@
 ﻿namespace Obsidian.API.Boss;
 
+/// <summary>How many segments the client draws over a boss bar.</summary>
 public enum BossBarDivisionType : int
 {
     /// <summary>

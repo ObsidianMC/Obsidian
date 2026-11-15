@@ -62,6 +62,7 @@ public sealed record TradeEntry : INetworkSerializable<TradeEntry>
     /// </summary>
     public int Demand { get; set; }
 
+    /// <summary>Writes the offer to a network stream.</summary>
     public static void Write(TradeEntry value, INetStreamWriter writer)
     {
         TradeItem.Write(value.FirstInput, writer);
@@ -78,5 +79,7 @@ public sealed record TradeEntry : INetworkSerializable<TradeEntry>
     }
 
     // No need to implement
+    /// <summary>Not supported: offers are only sent to clients.</summary>
+    /// <exception cref="NotImplementedException">Always thrown.</exception>
     public static TradeEntry Read(INetStreamReader reader) => throw new NotImplementedException();
 }

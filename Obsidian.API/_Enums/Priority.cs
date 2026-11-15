@@ -2,6 +2,7 @@
 
 namespace Obsidian.API;
 
+/// <summary>The order an event handler runs in; lower priorities run first.</summary>
 public enum Priority
 {
     /// <summary>

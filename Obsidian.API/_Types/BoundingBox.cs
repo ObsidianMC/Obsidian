@@ -1,35 +1,55 @@
 ﻿namespace Obsidian.API;
 
+/// <summary>
+/// An axis-aligned box, given by its lowest and highest corners. Its coordinate space depends on the API using it:
+/// entity hitboxes are in world space, while block shapes are block-local, inside the unit cube.
+/// </summary>
 public readonly struct BoundingBox : IEquatable<BoundingBox>
 {
+    /// <summary>
+    /// The number of corners a box has, and the length of the array <see cref="GetCorners"/> returns.
+    /// </summary>
     public const int CornerCount = 8;
 
+    /// <summary>The corner with the highest X, Y and Z.</summary>
     public readonly VectorD Max;
+    /// <summary>The corner with the lowest X, Y and Z.</summary>
     public readonly VectorD Min;
 
+    /// <summary>Creates a box from its lowest and highest corners.</summary>
     public BoundingBox(VectorD min, VectorD max)
     {
         this.Min = min;
         this.Max = max;
     }
 
+    /// <summary>Gets the box's size along the Y axis, in blocks.</summary>
     public double Height
     {
         get => Max.Y - Min.Y;
     }
 
+    /// <summary>Gets the box's size along the X axis, in blocks.</summary>
     public double Width
     {
         get => Max.X - Min.X;
     }
 
+    /// <summary>Gets the box's size along the Z axis, in blocks.</summary>
     public double Depth
     {
         get => Max.Z - Min.Z;
     }
 
+    /// <summary>Indicates whether this box has the same corners as <paramref name="other"/>.</summary>
     public bool Equals(BoundingBox other) => (Min == other.Min) && (Max == other.Max);
 
+    /// <summary>
+    /// Tests how <paramref name="box"/> relates to this box. Boxes that only touch at a face are not disjoint.
+    /// </summary>
+    /// <returns><see cref="ContainmentType.Contains"/> when <paramref name="box"/> lies fully inside this box,
+    /// <see cref="ContainmentType.Disjoint"/> when they don't meet, and <see cref="ContainmentType.Intersects"/>
+    /// otherwise.</returns>
     public ContainmentType Contains(BoundingBox box)
     {
         //test if all corner is in the same side of a face by just checking min and max
@@ -56,6 +76,7 @@ public readonly struct BoundingBox : IEquatable<BoundingBox>
         return ContainmentType.Intersects;
     }
 
+    /// <summary>Indicates whether a point lies inside the box or on its surface.</summary>
     public bool Contains(VectorD vec)
     {
         return Min.X <= vec.X && vec.X <= Max.X &&
@@ -63,6 +84,9 @@ public readonly struct BoundingBox : IEquatable<BoundingBox>
                Min.Z <= vec.Z && vec.Z <= Max.Z;
     }
 
+    /// <summary>Creates the smallest box that holds every point.</summary>
+    /// <exception cref="ArgumentNullException"><paramref name="points"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="points"/> is empty.</exception>
     public static BoundingBox CreateFromPoints(IEnumerable<VectorD> points)
     {
         ArgumentNullException.ThrowIfNull(points);
@@ -84,8 +108,10 @@ public readonly struct BoundingBox : IEquatable<BoundingBox>
         return new BoundingBox(pos2, pos1);
     }
 
+    /// <summary>Gets a copy of this box moved by <paramref name="offset"/>.</summary>
     public BoundingBox OffsetBy(VectorD offset) => new BoundingBox(Min + offset, Max + offset);
 
+    /// <summary>Gets the box's eight corners.</summary>
     public VectorD[] GetCorners()
     {
         return
@@ -101,16 +127,22 @@ public readonly struct BoundingBox : IEquatable<BoundingBox>
             ];
     }
 
+    /// <inheritdoc/>
     public override bool Equals(object? obj) => (obj is BoundingBox box) && this.Equals(box);
 
+    /// <inheritdoc/>
     public override int GetHashCode() => Min.GetHashCode() + Max.GetHashCode();
 
+    /// <summary>Indicates whether this box and <paramref name="box"/> overlap or touch.</summary>
     public bool Intersects(BoundingBox box)
     {
         this.Intersects(ref box, out bool result);
         return result;
     }
 
+    /// <summary>Tests whether this box and <paramref name="box"/> overlap or touch, without copying the box.</summary>
+    /// <param name="box">The box to test against.</param>
+    /// <param name="result">Set to whether the boxes overlap or touch.</param>
     public void Intersects(ref BoundingBox box, out bool result)
     {
         if ((Max.X >= box.Min.X) && (Min.X <= box.Max.X))
@@ -128,10 +160,14 @@ public readonly struct BoundingBox : IEquatable<BoundingBox>
         result = false;
     }
 
+    /// <summary>Grows the box by <paramref name="b"/> blocks on every side.</summary>
     public static BoundingBox operator +(BoundingBox a, float b) => new BoundingBox(a.Min - b, a.Max + b);
+    /// <summary>Indicates whether two boxes have the same corners.</summary>
     public static bool operator ==(BoundingBox a, BoundingBox b) => a.Equals(b);
 
+    /// <summary>Indicates whether two boxes differ in either corner.</summary>
     public static bool operator !=(BoundingBox a, BoundingBox b) => !a.Equals(b);
 
+    /// <summary>Returns the box's corners as text, for debugging.</summary>
     public override string ToString() => $"{{Min:{Min} Max:{Max}}}";
 }

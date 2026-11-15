@@ -1,7 +1,9 @@
 ﻿namespace Obsidian.API;
+/// <summary>Options sent with a potion effect that change how the client shows it.</summary>
 [Flags]
 public enum EntityEffectFlags : sbyte
 {
+    /// <summary>No options set.</summary>
     None = 0x00,
 
     /// <summary>
@@ -18,5 +20,6 @@ public enum EntityEffectFlags : sbyte
     /// Whether to show the icon on the client or not.
     /// </summary>
     ShowIcon = 0x04,
+    /// <summary>Blends the darkness effect in gradually instead of at full strength.</summary>
     Blend = 0x08
 }

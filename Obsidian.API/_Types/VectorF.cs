@@ -157,12 +157,17 @@ public struct VectorF : IEquatable<VectorF>
         );
     }
 
+    /// <summary>
+    /// Clamps each component of <paramref name="value"/> between the matching components of <paramref name="min"/> and
+    /// <paramref name="max"/>.
+    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VectorF Clamp(VectorF value, VectorF min, VectorF max)
     {
         return Min(Max(value, min), max);
     }
 
+    /// <summary>Gets the cross product of two vectors.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VectorF Cross(VectorF value1, VectorF value2)
     {
@@ -173,12 +178,18 @@ public struct VectorF : IEquatable<VectorF>
         );
     }
 
+    /// <summary>Gets the dot product of two vectors.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static float Dot(VectorF value1, VectorF value2)
     {
         return (value1.X * value2.X) + (value1.Y * value2.Y) + (value1.Z * value2.Z);
     }
 
+    /// <summary>Interpolates linearly between two vectors.</summary>
+    /// <param name="value1">The vector returned when <paramref name="amount"/> is 0.</param>
+    /// <param name="value2">The vector returned when <paramref name="amount"/> is 1.</param>
+    /// <param name="amount">How far to move from <paramref name="value1"/> toward <paramref name="value2"/>; values
+    /// outside 0 to 1 extrapolate.</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VectorF Lerp(VectorF value1, VectorF value2, float amount)
     {
@@ -190,63 +201,91 @@ public struct VectorF : IEquatable<VectorF>
     }
 
     #region Operators
+    /// <summary>Indicates whether any component of the two vectors differs by more than 0.01.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool operator !=(VectorF a, VectorF b) => !a.Equals(b);
 
+    /// <summary>Indicates whether every component of the two vectors is within 0.01 of the other's.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool operator ==(VectorF a, VectorF b) => a.Equals(b);
 
+    /// <summary>Adds two vectors component by component.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VectorF operator +(VectorF a, VectorF b) => new(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
 
+    /// <summary>Adds the tuple's values to the matching components.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VectorF operator +(VectorF a, (int x, int y, int z) b) => new(a.X + b.x, a.Y + b.y, a.Z + b.z);
 
+    /// <summary>Subtracts <paramref name="b"/> from <paramref name="a"/> component by component.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VectorF operator -(VectorF a, VectorF b) => new(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
 
+    /// <summary>Negates every component.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VectorF operator -(VectorF a) => new(-a.X, -a.Y, -a.Z);
 
+    /// <summary>Multiplies two vectors component by component.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VectorF operator *(VectorF a, VectorF b) => new(a.X * b.X, a.Y * b.Y, a.Z * b.Z);
 
+    /// <summary>Divides <paramref name="a"/> by <paramref name="b"/> component by component.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VectorF operator /(VectorF a, VectorF b) => new(a.X / b.X, a.Y / b.Y, a.Z / b.Z);
 
+    /// <summary>
+    /// Takes the remainder of dividing <paramref name="a"/> by <paramref name="b"/>, component by component.
+    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VectorF operator %(VectorF a, VectorF b) => new(a.X % b.X, a.Y % b.Y, a.Z % b.Z);
 
+    /// <summary>Adds <paramref name="b"/> to every component.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VectorF operator +(VectorF a, float b) => new(a.X + b, a.Y + b, a.Z + b);
 
+    /// <summary>Subtracts <paramref name="b"/> from every component.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VectorF operator -(VectorF a, float b) => new(a.X - b, a.Y - b, a.Z - b);
 
+    /// <summary>Multiplies every component by <paramref name="b"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VectorF operator *(VectorF a, float b) => new(a.X * b, a.Y * b, a.Z * b);
 
+    /// <summary>Divides every component by <paramref name="b"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VectorF operator /(VectorF a, float b) => new(a.X / b, a.Y / b, a.Z / b);
 
+    /// <summary>Takes the remainder of dividing every component by <paramref name="b"/>.</summary>
+    /// <remarks>The Z component is currently computed from Y instead of Z.</remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VectorF operator %(VectorF a, float b) => new(a.X % b, a.Y % b, a.Y % b);
 
+    /// <summary>Adds <paramref name="a"/> to every component of <paramref name="b"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VectorF operator +(float a, VectorF b) => new(a + b.X, a + b.Y, a + b.Z);
 
+    /// <summary>Subtracts every component of <paramref name="b"/> from <paramref name="a"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VectorF operator -(float a, VectorF b) => new(a - b.X, a - b.Y, a - b.Z);
 
+    /// <summary>Multiplies every component of <paramref name="b"/> by <paramref name="a"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VectorF operator *(float a, VectorF b) => new(a * b.X, a * b.Y, a * b.Z);
 
+    /// <summary>Divides <paramref name="a"/> by every component of <paramref name="b"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VectorF operator /(float a, VectorF b) => new(a / b.X, a / b.Y, a / b.Z);
 
+    /// <summary>
+    /// Takes the remainder of dividing <paramref name="a"/> by every component of <paramref name="b"/>.
+    /// </summary>
+    /// <remarks>The Z component is currently computed from Y instead of Z.</remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VectorF operator %(float a, VectorF b) => new(a % b.X, a % b.Y, a % b.Y);
 
+    /// <summary>
+    /// Converts to a <see cref="Vector"/> by casting each component to <see cref="int"/>, which truncates toward zero.
+    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static explicit operator Vector(VectorF positionF)
     {
@@ -254,6 +293,7 @@ public struct VectorF : IEquatable<VectorF>
     }
     #endregion
 
+    /// <summary>Splits the vector into its X, Y and Z components.</summary>
     public void Deconstruct(out float x, out float y, out float z)
     {
         x = X;

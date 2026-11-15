@@ -5,12 +5,18 @@ namespace Obsidian.API;
 /// <summary>A world's shared clocks, independent of the elapsed simulation time.</summary>
 public sealed class WorldClocks
 {
+    /// <summary>The id of the Overworld's clock.</summary>
     public const string Overworld = "minecraft:overworld";
 
+    /// <summary>The id of the End's clock.</summary>
     public const string End = "minecraft:the_end";
 
+    /// <summary>
+    /// Gets or sets the total ticks the world has run. It advances every tick, even while clocks don't.
+    /// </summary>
     public long GameTime { get; set; }
 
+    /// <summary>Gets the world's clocks, keyed by id.</summary>
     public Dictionary<string, WorldClockState> States { get; } = new(StringComparer.Ordinal)
     {
         [Overworld] = new(),
@@ -43,6 +49,7 @@ public sealed class WorldClockState
 
     private long totalTicks;
 
+    /// <summary>Gets or sets the whole ticks the clock has counted.</summary>
     public long TotalTicks
     {
         get => Volatile.Read(ref this.totalTicks);
@@ -53,10 +60,13 @@ public sealed class WorldClockState
         }
     }
 
+    /// <summary>Gets or sets the fraction of a tick the clock has counted beyond <see cref="TotalTicks"/>.</summary>
     public float PartialTick { get; set; }
 
+    /// <summary>Gets or sets how many ticks the clock counts per game tick; 1 runs at normal speed.</summary>
     public float Rate { get; set; } = 1;
 
+    /// <summary>Gets or sets whether the clock is stopped.</summary>
     public bool Paused { get; set; }
 
     /// <summary>Matches ServerClockInstance's single-precision accumulation and floor at each tick.</summary>
@@ -74,6 +84,7 @@ public sealed class WorldClockState
         }
     }
 
+    /// <summary>Sets the clock's time and clears its partial tick.</summary>
     public void SetTime(long ticks)
     {
         lock (this.gate)

@@ -17,6 +17,7 @@ public sealed record ScoreHolderArgument(string Text, EntitySelector? Selector)
     /// them.
     /// </summary>
     /// <param name="tracked">Every holder the scoreboard tracks, which <c>*</c> names.</param>
+    /// <param name="context">The context the command runs in, which the selector is evaluated against.</param>
     public IReadOnlyList<string> Resolve(CommandContext context, IEnumerable<string> tracked)
     {
         if (this.IsWildcard)
