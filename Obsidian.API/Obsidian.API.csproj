@@ -113,9 +113,19 @@
 		</ItemGroup>
 	</Target>
 
+	<!-- Resolve the analyzer reference's actual output so packing also works with artifacts output. -->
+	<Target Name="PackPluginApiAnalyzer" BeforeTargets="_GetPackageFiles" DependsOnTargets="ResolveProjectReferences">
+		<ItemGroup>
+			<None Include="@(Analyzer)" Condition="'%(Filename)' == 'Obsidian.API.Analyzers'"
+			      Pack="true" PackagePath="analyzers/dotnet/cs" />
+		</ItemGroup>
+	</Target>
+
 	<ItemGroup>
 		<ProjectReference Include="..\Obsidian.AssetGenerator\Obsidian.AssetGenerator.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
       <ProjectReference Include="..\Obsidian.Nbt\Nbt\Obsidian.Nbt.csproj" PrivateAssets="all" />
 		<ProjectReference Include="..\Obsidian.SourceGenerators\Obsidian.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+		<ProjectReference Include="..\Obsidian.API.Analyzers\Obsidian.API.Analyzers.csproj"
+		                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
 	</ItemGroup>
 </Project>

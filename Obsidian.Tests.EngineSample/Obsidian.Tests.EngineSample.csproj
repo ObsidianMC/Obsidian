@@ -22,6 +22,8 @@
 	     brings the ASP.NET Core framework, whose Blazor components Razor screens are built on. -->
 	<ItemGroup>
 		<ProjectReference Include="..\Obsidian.API\Obsidian.API.csproj" Private="false" />
+		<ProjectReference Include="..\Obsidian.API.Analyzers\Obsidian.API.Analyzers.csproj"
+		                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 		<ProjectReference Include="..\Obsidian.API.Client\Obsidian.API.Client.csproj" Private="false" />
 		<ProjectReference Include="..\Obsidian.Nbt\Nbt\Obsidian.Nbt.csproj" Private="false" />
 	</ItemGroup>

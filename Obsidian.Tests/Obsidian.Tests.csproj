@@ -97,6 +97,12 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Obsidian\Obsidian.csproj" />
+		<ProjectReference Include="..\Obsidian.API.Analyzers\Obsidian.API.Analyzers.csproj" />
+		<!-- Reuse the analyzer's existing Roslyn packages without adding test dependencies. -->
+		<Reference Include="Microsoft.CodeAnalysis"
+		           HintPath="$(NuGetPackageRoot)/microsoft.codeanalysis.common/5.0.0/lib/netstandard2.0/Microsoft.CodeAnalysis.dll" />
+		<Reference Include="Microsoft.CodeAnalysis.CSharp"
+		           HintPath="$(NuGetPackageRoot)/microsoft.codeanalysis.csharp/5.0.0/lib/netstandard2.0/Microsoft.CodeAnalysis.CSharp.dll" />
 		<ProjectReference Include="..\Obsidian.Porting\Obsidian.Porting.csproj" />
 	</ItemGroup>
 
