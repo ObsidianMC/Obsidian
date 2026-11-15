@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -66,9 +67,10 @@ public sealed class PluginApiAnalyzer : DiagnosticAnalyzer
             if (symbols.EventModule is null || symbols.CommandModule is null || symbols.Plugin is null)
                 return;
 
-            start.RegisterSymbolAction(c => AnalyzeMethod(c, symbols), SymbolKind.Method);
+            var eventMethods = new ConcurrentDictionary<IMethodSymbol, byte>(SymbolEqualityComparer.Default);
+            var commandMethods = new ConcurrentDictionary<IMethodSymbol, byte>(SymbolEqualityComparer.Default);
             start.RegisterSymbolAction(c => AnalyzeProperty(c, symbols), SymbolKind.Property);
-            start.RegisterSymbolAction(c => AnalyzeModule(c, symbols), SymbolKind.NamedType);
+            start.RegisterSymbolAction(c => AnalyzeModule(c, symbols, eventMethods, commandMethods), SymbolKind.NamedType);
             start.RegisterCompilationEndAction(c => AnalyzePlugin(c, symbols));
         });
     }
@@ -78,31 +80,24 @@ public sealed class PluginApiAnalyzer : DiagnosticAnalyzer
             description: description,
             helpLinkUri: "https://github.com/ObsidianMC/Obsidian/blob/26.3.x/docs/plugin-archives.md#plugin-api-analyzers");
 
-    private static void AnalyzeMethod(SymbolAnalysisContext context, ApiSymbols symbols)
+    private static void AnalyzeEventMethod(SymbolAnalysisContext context, IMethodSymbol method, ApiSymbols symbols)
     {
-        var method = (IMethodSymbol)context.Symbol;
-        if (method.MethodKind != MethodKind.Ordinary || method.DeclaredAccessibility != Accessibility.Public)
-            return;
-
-        if (DerivesFrom(method.ContainingType, symbols.EventModule) && HasAttribute(method, symbols.EventPriority))
+        // Services/EventDispatcher.cs:120-124 validates the event type; :179 supplies one argument.
+        if (method.Parameters.Length != 1
+            || method.Parameters[0].RefKind != RefKind.None
+            || !DerivesFrom(method.Parameters[0].Type, symbols.EventArgs))
         {
-            // Services/EventDispatcher.cs:120-124 validates the event type; :179 supplies one argument.
-            if (method.Parameters.Length != 1
-                || method.Parameters[0].RefKind != RefKind.None
-                || !DerivesFrom(method.Parameters[0].Type, symbols.EventArgs))
-            {
-                Report(context, EventSignature, method);
-            }
-
-            // Events/MinecraftEventExecutor.cs:33-44 only awaits the exact non-generic task types.
-            // Synchronous return values may intentionally be discarded, so do not diagnose them.
-            if ((method.IsAsync && method.ReturnsVoid) || symbols.IsUnawaitedTask(method.ReturnType))
-                Report(context, EventReturn, method);
+            Report(context, EventSignature, method);
         }
 
-        if (!symbols.IsCommand(method))
-            return;
+        // Events/MinecraftEventExecutor.cs:33-44 only awaits the exact non-generic task types.
+        // Synchronous return values may intentionally be discarded, so do not diagnose them.
+        if ((method.IsAsync && method.ReturnsVoid) || symbols.IsUnawaitedTask(method.ReturnType))
+            Report(context, EventReturn, method);
+    }
 
+    private static void AnalyzeCommandMethod(SymbolAnalysisContext context, IMethodSymbol method, ApiSymbols symbols)
+    {
         // Commands/Framework/CommandExecutor.cs:35-67 and CommandExecutor.Delegate.cs:32-65.
         if (!symbols.IsCommandReturn(method.ReturnType) || (method.IsAsync && method.ReturnsVoid))
             Report(context, CommandReturn, method);
@@ -119,7 +114,9 @@ public sealed class PluginApiAnalyzer : DiagnosticAnalyzer
     {
         var property = (IPropertySymbol)context.Symbol;
         // Utilities/Extensions.cs:72-75 excludes static properties and properties holding plugin instances.
-        if (property.IsStatic || !HasAttribute(property, symbols.Inject)
+        // Attributes on interface declarations are not copied to their implementing class properties.
+        if (property.ContainingType.TypeKind == TypeKind.Interface || property.IsStatic
+            || !HasAttribute(property, symbols.Inject)
             || EqualsType(property.Type, symbols.Plugin) || DerivesFrom(property.Type, symbols.Plugin))
         {
             return;
@@ -131,19 +128,42 @@ public sealed class PluginApiAnalyzer : DiagnosticAnalyzer
             Report(context, InjectionProperty, property);
     }
 
-    private static void AnalyzeModule(SymbolAnalysisContext context, ApiSymbols symbols)
+    private static void AnalyzeModule(
+        SymbolAnalysisContext context,
+        ApiSymbols symbols,
+        ConcurrentDictionary<IMethodSymbol, byte> eventMethods,
+        ConcurrentDictionary<IMethodSymbol, byte> commandMethods)
     {
         var type = (INamedTypeSymbol)context.Symbol;
         if (type.TypeKind != TypeKind.Class)
             return;
 
-        var methods = Members(type).OfType<IMethodSymbol>()
-            .Where(method => method.DeclaredAccessibility == Accessibility.Public).ToArray();
-        var isEvent = DerivesFrom(type, symbols.EventModule)
-            && methods.Any(method => HasAttribute(method, symbols.EventPriority));
-        var isCommand = symbols.IsCommandModule(type) && methods.Any(symbols.IsCommand);
+        var isEventModule = DerivesFrom(type, symbols.EventModule);
+        if (!isEventModule && !symbols.IsCommandModule(type))
+            return;
+
+        var methods = ReflectedMethods(type);
+        var events = methods.Where(method => isEventModule
+            && HasAttribute(method, symbols.EventPriority)).ToArray();
+        var commands = methods.Where(method => symbols.IsCommand(method, type, methods)).ToArray();
+        var isEvent = events.Length != 0;
+        var isCommand = commands.Length != 0;
         if (!isEvent && !isCommand)
             return;
+
+        // Classify inherited handlers against the registered module, not their declaring base class.
+        // Report a source method only once when several modules inherit it.
+        foreach (var method in events)
+        {
+            if (!method.Locations.Any(location => location.IsInSource) || eventMethods.TryAdd(method, 0))
+                AnalyzeEventMethod(context, method, symbols);
+        }
+
+        foreach (var method in commands)
+        {
+            if (!method.Locations.Any(location => location.IsInSource) || commandMethods.TryAdd(method, 0))
+                AnalyzeCommandMethod(context, method, symbols);
+        }
 
         // Services/EventDispatcher.cs:129 and Commands/Framework/CommandHandler.cs:265,297,310.
         // Do not guess DI registrations or constructor selection: only diagnose definite impossibilities.
@@ -184,12 +204,12 @@ public sealed class PluginApiAnalyzer : DiagnosticAnalyzer
         var entries = Types(context.Compilation.Assembly.GlobalNamespace)
             .Where(type => DerivesFrom(type, symbols.Plugin)).Take(2).ToArray();
         // Plugins/PluginProviders/PluginAssemblyLoader.cs:32-40 picks the first entry in reflection order.
-        // Libraries may contain several base/entry types; diagnose only an unambiguous single entry.
-        if (entries.Length != 1)
+        // Libraries may contain several base/entry types, or only an abstract helper; leave these to the loader.
+        if (entries.Length != 1 || entries[0].IsAbstract)
             return;
 
         var entry = entries[0];
-        if (entry.IsAbstract || IsOpen(entry)
+        if (IsOpen(entry)
             || !entry.InstanceConstructors.Any(ctor => ctor.DeclaredAccessibility == Accessibility.Public
                 && ctor.Parameters.Length == 0))
         {
@@ -219,6 +239,52 @@ public sealed class PluginApiAnalyzer : DiagnosticAnalyzer
             foreach (var member in current.GetMembers())
                 yield return member;
         }
+    }
+
+    private static IReadOnlyList<IMethodSymbol> ReflectedMethods(INamedTypeSymbol type)
+    {
+        var methods = new List<IMethodSymbol>();
+        foreach (var method in Members(type).OfType<IMethodSymbol>())
+        {
+            // EventDispatcher.cs:115 and CommandHandler.cs:252 use public GetMethods(), without FlattenHierarchy.
+            if (method.MethodKind != MethodKind.Ordinary || method.DeclaredAccessibility != Accessibility.Public
+                || (method.IsStatic && !EqualsType(method.ContainingType, type)))
+            {
+                continue;
+            }
+
+            if (!methods.Any(derived => HidesMethod(derived, method)))
+                methods.Add(method);
+        }
+
+        return methods;
+    }
+
+    private static bool HidesMethod(IMethodSymbol derived, IMethodSymbol inherited)
+    {
+        // Reflection hides by name and signature, including return type and generic arity. Different overloads stay.
+        if (derived.Name != inherited.Name || derived.Arity != inherited.Arity
+            || derived.IsStatic != inherited.IsStatic || derived.Parameters.Length != inherited.Parameters.Length
+            || (derived.ReturnsByRef || derived.ReturnsByRefReadonly)
+                != (inherited.ReturnsByRef || inherited.ReturnsByRefReadonly))
+        {
+            return false;
+        }
+
+        // Method type parameter names are immaterial to a reflected signature.
+        var signature = derived.Arity == 0 ? derived : derived.Construct(inherited.TypeArguments.ToArray());
+        if (!EqualsType(signature.ReturnType, inherited.ReturnType))
+            return false;
+
+        for (var index = 0; index < signature.Parameters.Length; index++)
+        {
+            var left = signature.Parameters[index];
+            var right = inherited.Parameters[index];
+            if ((left.RefKind == RefKind.None) != (right.RefKind == RefKind.None) || !EqualsType(left.Type, right.Type))
+                return false;
+        }
+
+        return true;
     }
 
     private static IEnumerable<IPropertySymbol> ReflectedProperties(INamedTypeSymbol type)
@@ -274,7 +340,8 @@ public sealed class PluginApiAnalyzer : DiagnosticAnalyzer
     }
 
     private static void Report(SymbolAnalysisContext context, DiagnosticDescriptor rule, ISymbol symbol) =>
-        context.ReportDiagnostic(Diagnostic.Create(rule, symbol.Locations[0], symbol.Name));
+        context.ReportDiagnostic(Diagnostic.Create(rule,
+            symbol.Locations.FirstOrDefault(location => location.IsInSource) ?? context.Symbol.Locations[0], symbol.Name));
 
     private sealed class ApiSymbols
     {
@@ -315,20 +382,19 @@ public sealed class PluginApiAnalyzer : DiagnosticAnalyzer
         public bool IsCommandModule(INamedTypeSymbol type) =>
             DerivesFrom(type, CommandModule) || HasAttribute(type, Group);
 
-        public bool IsCommand(IMethodSymbol method)
+        public bool IsCommand(IMethodSymbol method, INamedTypeSymbol module, IReadOnlyList<IMethodSymbol> methods)
         {
-            if (!IsCommandModule(method.ContainingType))
+            if (!IsCommandModule(module))
                 return false;
 
             // Commands/Framework/CommandHandler.cs:257-311 discovers commands, group handlers and named overloads.
-            if (HasAttribute(method, GroupCommand) && HasAttribute(method.ContainingType, Group))
+            if (HasAttribute(method, GroupCommand) && HasAttribute(module, Group))
                 return true;
 
             if (!HasAttribute(method, Overload))
                 return HasAttribute(method, Command);
 
-            return Members(method.ContainingType).OfType<IMethodSymbol>().Any(candidate =>
-                candidate.Name == method.Name && candidate.DeclaredAccessibility == Accessibility.Public
+            return methods.Any(candidate => candidate.Name == method.Name
                 && HasAttribute(candidate, Command) && !HasAttribute(candidate, Overload));
         }
 

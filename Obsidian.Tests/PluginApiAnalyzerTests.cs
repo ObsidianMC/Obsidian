@@ -8,9 +8,12 @@ using Obsidian.Tests.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -33,7 +36,12 @@ public sealed class PluginApiAnalyzerTests
     private static readonly ImmutableArray<MetadataReference> References = GetReferences();
     private static readonly string[] ContractTypes = ["MinecraftEventHandler", "CommandContext", "Plugins.PluginBase"];
 
-    private sealed record Case(string Name, string Source, string? Id = null);
+    private sealed record Case(
+        string Name,
+        string Source,
+        string? Id = null,
+        bool ProjectAnalyzer = false,
+        bool AlternatePackageRoot = false);
 
     [Fact]
     public async Task ReflectionContracts_ReportOnlyConfirmedMistakes()
@@ -193,12 +201,12 @@ public sealed class PluginApiAnalyzerTests
                 }
                 """, "OBSAPI008"),
             new("plugin implicit constructor", "public class Probe : PluginBase { }"),
-            new("plugin abstract", """
+            new("plugin abstract helper library", """
                 public abstract class /*here*/Probe : PluginBase
                 {
                     public Probe() { }
                 }
-                """, "OBSAPI008"),
+                """),
             new("plugin generic", "public class /*here*/Probe<T> : PluginBase { }", "OBSAPI008"),
             new("multiple plugin types left to runtime", """
                 public abstract class PluginHelper : PluginBase { }
@@ -224,7 +232,87 @@ public sealed class PluginApiAnalyzerTests
                         public void Run() { }
                     }
                 }
-                """)
+                """),
+            new("event unattributed override disables module", """
+                public class Base : MinecraftEventHandler
+                {
+                    [EventPriority]
+                    public virtual void Run(PlayerJoinEventArgs e) { }
+                }
+                public abstract class Disabled : Base
+                {
+                    public override void Run(PlayerJoinEventArgs e) { }
+                }
+                """),
+            new("event hidden method disables module", """
+                public class Base : MinecraftEventHandler
+                {
+                    [EventPriority]
+                    public void Run(PlayerJoinEventArgs e) { }
+                }
+                public abstract class Disabled : Base
+                {
+                    public new void Run(PlayerJoinEventArgs e) { }
+                }
+                """),
+            new("overridden command cannot pair overload", """
+                public class Base : CommandModuleBase
+                {
+                    [Command("run")]
+                    public virtual void Run() { }
+                }
+                public class Disabled : Base
+                {
+                    public override void Run() { }
+                    [CommandOverload]
+                    public string Run(int count) => "unused";
+                }
+                """),
+            new("interface injection attribute is not inherited", """
+                public interface IServiceOwner
+                {
+                    [Inject]
+                    object Service { set; }
+                }
+                public class Owner : IServiceOwner
+                {
+                    public object Service { set { } }
+                }
+                """),
+            new("inherited command requires group context", InheritedGroup("""
+                [Command("run")]
+                public void Run() { }
+                """, "", "/*here*/Group"), "OBSAPI006"),
+            new("inherited command return is checked", InheritedGroup("""
+                [Command("run")]
+                public string /*here*/Run() => "ignored";
+                """, "[CommandContext] public CommandContext Context { get; set; }"), "OBSAPI003"),
+            new("inherited remaining placement is checked", InheritedGroup("""
+                [Command("run")]
+                public void Run([Remaining] string /*here*/text, int count) { }
+                """, "[CommandContext] public CommandContext Context { get; set; }"), "OBSAPI004"),
+            new("inherited named overload is discovered", InheritedGroup("""
+                [CommandOverload]
+                public string /*here*/Run(int count) => "ignored";
+                """, """
+                [CommandContext]
+                public CommandContext Context { get; set; }
+                [Command("run")]
+                public void Run() { }
+                """), "OBSAPI003"),
+            new("tests project supplies the plugin analyzer", """
+                public class ProbePlugin : PluginBase
+                {
+                    [Inject]
+                    public object /*here*/Service { set { } }
+                }
+                """, "OBSAPI005", ProjectAnalyzer: true),
+            new("Roslyn references survive a different NuGetPackageRoot", """
+                public class Probe
+                {
+                    public Microsoft.CodeAnalysis.CSharp.CSharpCompilation Compilation { get; set; }
+                }
+                """, AlternatePackageRoot: true)
         };
 
         foreach (var (returnType, expression) in new[]
@@ -258,11 +346,15 @@ public sealed class PluginApiAnalyzerTests
         await FixtureCases.AssertAllAsync(cases, test => test.Name, async test =>
         {
             var source = Imports + test.Source;
-            var compilation = Compile(test.Name, [CSharpSyntaxTree.ParseText(source, ParseOptions)]);
+            var references = test.AlternatePackageRoot ? await ProjectReferences() : References;
+            var compilation = Compile(test.Name, [CSharpSyntaxTree.ParseText(source, ParseOptions)], references);
             var errors = compilation.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error);
             Assert.Empty(errors);
 
-            var diagnostics = await Analyze(compilation);
+            var analyzers = test.ProjectAnalyzer ? await ProjectAnalyzers() : [new PluginApiAnalyzer()];
+            var diagnostics = analyzers.IsEmpty
+                ? ImmutableArray<Diagnostic>.Empty
+                : await compilation.WithAnalyzers(analyzers).GetAnalyzerDiagnosticsAsync();
             if (test.Id is null)
             {
                 Assert.Empty(diagnostics);
@@ -334,12 +426,79 @@ public sealed class PluginApiAnalyzerTests
         });
     }
 
-    private static CSharpCompilation Compile(string name, IEnumerable<SyntaxTree> trees) =>
-        CSharpCompilation.Create(name, trees, References,
+    private static CSharpCompilation Compile(
+        string name,
+        IEnumerable<SyntaxTree> trees,
+        IEnumerable<MetadataReference>? references = null) =>
+        CSharpCompilation.Create(name, trees, references ?? References,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
     private static Task<ImmutableArray<Diagnostic>> Analyze(CSharpCompilation compilation) =>
         compilation.WithAnalyzers([new PluginApiAnalyzer()]).GetAnalyzerDiagnosticsAsync();
+
+    private static async Task<ImmutableArray<DiagnosticAnalyzer>> ProjectAnalyzers()
+    {
+        var paths = await ProjectItems("Analyzer");
+        var references = paths.Where(path => Path.GetFileName(path) == "Obsidian.API.Analyzers.dll");
+        return [.. references.SelectMany(path =>
+            new AnalyzerFileReference(path, new AnalyzerLoader()).GetAnalyzers(LanguageNames.CSharp))];
+    }
+
+    private static async Task<ImmutableArray<MetadataReference>> ProjectReferences()
+    {
+        var paths = await ProjectItems("ReferencePath", alternatePackageRoot: true);
+        return [.. paths.Select(path => MetadataReference.CreateFromFile(path))];
+    }
+
+    private static async Task<ImmutableArray<string>> ProjectItems(string item, bool alternatePackageRoot = false)
+    {
+        // Ask MSBuild for the compiler's actual inputs. A library-only project reference must fail this case.
+        var start = new ProcessStartInfo("dotnet")
+        {
+            WorkingDirectory = RepositoryRoot(),
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        start.ArgumentList.Add("msbuild");
+        start.ArgumentList.Add("Obsidian.Tests/Obsidian.Tests.csproj");
+        start.ArgumentList.Add("-target:ResolveReferences");
+        start.ArgumentList.Add("-property:BuildProjectReferences=false");
+        start.ArgumentList.Add("-nodeReuse:false");
+        start.ArgumentList.Add("-getItem:" + item);
+
+        if (alternatePackageRoot)
+        {
+            // Restore can locate assemblies outside NuGetPackageRoot, such as in a fallback package folder.
+            // ReferencePath must follow project.assets.json rather than assuming this property's directory.
+            var alternateRoot = Path.Combine(Path.GetTempPath(), "obsapi-unused-packages-" + Guid.NewGuid().ToString("N"));
+            start.ArgumentList.Add("-property:NuGetPackageRoot=" + alternateRoot);
+            start.ArgumentList.Add("-property:NoWarn=MSB3245");
+        }
+
+        var output = new DirectoryInfo(AppContext.BaseDirectory);
+        if (output.Parent?.Name == "Obsidian.Tests")
+            start.ArgumentList.Add("-property:ArtifactsPath=" + output.Parent.Parent!.Parent!.FullName);
+
+        using var process = Process.Start(start)!;
+        var standardOutput = process.StandardOutput.ReadToEndAsync();
+        var standardError = process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+        var result = await standardOutput;
+        Assert.True(process.ExitCode == 0, result + await standardError);
+
+        using var document = JsonDocument.Parse(result);
+        return [.. document.RootElement.GetProperty("Items").GetProperty(item).EnumerateArray()
+            .Select(reference => reference.GetProperty("FullPath").GetString()!)];
+    }
+
+    private sealed class AnalyzerLoader : IAnalyzerAssemblyLoader
+    {
+        public void AddDependencyLocation(string fullPath) { }
+
+        public Assembly LoadFromPath(string fullPath) => Assembly.LoadFrom(fullPath);
+    }
 
     private static ImmutableArray<MetadataReference> GetReferences()
     {
@@ -376,6 +535,21 @@ public sealed class PluginApiAnalyzerTests
         public class {{name}}
         {
             {{members}}
+        }
+        """;
+
+    private static string InheritedGroup(string sharedMembers, string groupMembers, string name = "Group") => $$"""
+        public class Shared
+        {
+            {{sharedMembers}}
+        }
+        public class Root : CommandModuleBase
+        {
+            [CommandGroup("group")]
+            public class {{name}} : Shared
+            {
+                {{groupMembers}}
+            }
         }
         """;
 }

@@ -68,10 +68,10 @@ They report the following warnings for reflection-discovered plugin handlers and
 | OBSAPI002 | An event handler returns a generic task or uses `async void`; its work is not awaited. | Return `Task` or `ValueTask`. Synchronous return values are intentionally allowed. |
 | OBSAPI003 | A command has an unsupported return type or uses `async void`. | Return `void`, `int`, `Task`, `ValueTask`, `Task<int>` or `ValueTask<int>`. |
 | OBSAPI004 | `[Remaining]` is applied before the final command parameter. | Move the parameter last. |
-| OBSAPI005 | An instance `[Inject]` property lacks a getter or is an indexer. | Use an ordinary readable property; injection reads it before setting it. |
+| OBSAPI005 | A class instance `[Inject]` property lacks a getter or is an indexer. | Use an ordinary readable property; injection reads it before setting it. Interface declarations are ignored. |
 | OBSAPI006 | A command module has no public `[CommandContext]` property, or its sole context property cannot accept the context. | Inherit `CommandModuleBase`, or provide a non-indexed property with a setter and a compatible type. |
 | OBSAPI007 | A discovered handler module is abstract, has open type parameters or has no public constructor. | Make it concrete and closed, with a public constructor. Constructor services may come from plugin registrations. |
-| OBSAPI008 | The assembly's sole `PluginBase` subclass cannot be constructed. | Give the concrete, closed entry class a public parameterless constructor. |
+| OBSAPI008 | The assembly's only `PluginBase` subclass is concrete but cannot be constructed. | Give the closed entry class a public parameterless constructor. A sole abstract subclass may belong to a helper library and is ignored. |
 
 Project references do not propagate analyzers. Plugins built against an engine checkout should also reference:
 
