@@ -8,6 +8,7 @@ public partial class RegistryAssetsGenerator
     private static void GenerateBlockIdConstants(Assets assets, SourceProductionContext context)
     {
         var builder = new CodeBuilder();
+        builder.Line(ApiDocs.MissingDocsPragma);
         builder.Namespace("Obsidian.API.Registries");
         builder.Line();
         builder.Line("/// <summary>");

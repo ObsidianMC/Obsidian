@@ -6,12 +6,17 @@ namespace Obsidian.SourceGenerators.Registry;
 
 public partial class RegistryAssetsGenerator
 {
-    private static void GenerateTags(Assets assets, SourceProductionContext context)
+    private static void GenerateTags(Assets assets, Compilation compilation, SourceProductionContext context)
     {
         var builder = new CodeBuilder();
         builder.Line();
+        builder.Line(ApiDocs.MissingDocsPragma);
         builder.Namespace("Obsidian.API.Registries");
         builder.Line();
+
+        if (!ApiDocs.IsDocumented(compilation, "Obsidian.API.Registries.TagsRegistry"))
+            builder.XmlSummary(ApiDocs.Tags);
+
         builder.Type("public static partial class TagsRegistry");
 
         var tags = assets.Tags.GroupBy(tag => tag.Type.GetActualType()).ToDictionary(x => x.Key, x => x.ToImmutableList());

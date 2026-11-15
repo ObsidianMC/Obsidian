@@ -128,6 +128,7 @@ public sealed class PathTypeMalusGenerator : IIncrementalGenerator
     private static void EmitApiEnum(SourceProductionContext context, List<(string Name, double Malus)> entries)
     {
         var api = new StringBuilder();
+        api.AppendLine(ApiDocs.MissingDocsPragma);
         api.AppendLine("namespace Obsidian.API.AI;");
         api.AppendLine();
         api.AppendLine("/// <summary>Vanilla's path node types. Generated from the asset generator's path_type_malus.json.</summary>");

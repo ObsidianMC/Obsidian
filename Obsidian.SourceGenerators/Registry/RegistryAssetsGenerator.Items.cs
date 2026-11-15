@@ -4,7 +4,7 @@ namespace Obsidian.SourceGenerators.Registry;
 
 public partial class RegistryAssetsGenerator
 {
-    private static void GenerateItems(Assets assets, SourceProductionContext context)
+    private static void GenerateItems(Assets assets, Compilation compilation, SourceProductionContext context)
     {
         var builder = new CodeBuilder();
         builder.Using("System.Collections.Generic");
@@ -12,8 +12,13 @@ public partial class RegistryAssetsGenerator
         builder.Using("Obsidian.API");
         builder.Using("Obsidian.API.Inventory");
         builder.Line();
+        builder.Line(ApiDocs.MissingDocsPragma);
         builder.Namespace("Obsidian.API.Registries");
         builder.Line();
+
+        if (!ApiDocs.IsDocumented(compilation, "Obsidian.API.Registries.ItemsRegistry"))
+            builder.XmlSummary(ApiDocs.Items);
+
         builder.Type("public static partial class ItemsRegistry");
 
         foreach (Item item in assets.Items)
@@ -51,6 +56,7 @@ public partial class RegistryAssetsGenerator
     private static void GenerateItemIds(Assets assets, SourceProductionContext context)
     {
         var builder = new CodeBuilder();
+        builder.Line(ApiDocs.MissingDocsPragma);
         builder.Namespace("Obsidian.API.Registries");
         builder.Line();
         builder.Line("/// <summary>");

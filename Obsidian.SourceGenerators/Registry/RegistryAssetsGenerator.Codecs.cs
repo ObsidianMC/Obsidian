@@ -9,7 +9,7 @@ public partial class RegistryAssetsGenerator
     //TODO COME BACK TO THIS
     private static string[] BlacklistedBiomeProperties = ["Features", "Carvers", "Spawners", "SpawnCosts"];
 
-    private static void GenerateCodecs(Assets assets, SourceProductionContext ctx)
+    private static void GenerateCodecs(Assets assets, Compilation compilation, SourceProductionContext ctx)
     {
         //if (!Debugger.IsAttached)
         //    Debugger.Launch();
@@ -32,9 +32,14 @@ public partial class RegistryAssetsGenerator
             .Using("Obsidian.API.Registry.Codecs.ZombieNautilusVariant")
             .Using("System.Collections.Frozen")
             .Line()
+            .Line(ApiDocs.MissingDocsPragma)
             .Namespace("Obsidian.API.Registries")
-            .Line()
-            .Type("public static partial class CodecRegistry");
+            .Line();
+
+        if (!ApiDocs.IsDocumented(compilation, "Obsidian.API.Registries.CodecRegistry"))
+            builder.XmlSummary(ApiDocs.Codecs);
+
+        builder.Type("public static partial class CodecRegistry");
 
         var codecs = assets.Codecs;
 

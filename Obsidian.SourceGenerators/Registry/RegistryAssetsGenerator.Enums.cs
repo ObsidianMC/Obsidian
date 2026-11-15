@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 namespace Obsidian.SourceGenerators.Registry;
 public partial class RegistryAssetsGenerator
 {
-    private static void GenerateEnum(string enumsJson, SourceProductionContext ctx)
+    private static void GenerateEnum(string enumsJson, Compilation compilation, SourceProductionContext ctx)
     {
         var enums = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(enumsJson)!;
 
@@ -17,9 +17,16 @@ public partial class RegistryAssetsGenerator
             var enumName = isAttribute ? "AttributeIds" : elements.Key.RemoveNamespace().ToPascalCase();
             var components = elements.Value.Deserialize<Dictionary<string, Protocol>>();
 
-            builder.Namespace(isAttribute ? "Obsidian.API.Inventory" : "Obsidian.API")
-             .Line()
-             .Type(isAttribute ? $"public static partial class {enumName}" : $"public enum {enumName}");
+            var ns = isAttribute ? "Obsidian.API.Inventory" : "Obsidian.API";
+
+            builder.Line(ApiDocs.MissingDocsPragma)
+                .Namespace(ns)
+                .Line();
+
+            if (!ApiDocs.IsDocumented(compilation, $"{ns}.{enumName}"))
+                builder.XmlSummary(ApiDocs.RegistryEnum(elements.Key.RemoveNamespace()));
+
+            builder.Type(isAttribute ? $"public static partial class {enumName}" : $"public enum {enumName}");
 
             foreach (var component in components.OrderBy(x => x.Value.ProtocolId).ThenBy(x => x.Key, StringComparer.Ordinal))
             {

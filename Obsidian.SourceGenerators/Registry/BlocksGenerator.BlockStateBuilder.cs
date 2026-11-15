@@ -149,8 +149,10 @@ public partial class BlocksGenerator
             var stateBuilder = new CodeBuilder()
                 .Using("System.Text")
                 .Using("Obsidian.API.Utilities")
+                .Line(ApiDocs.MissingDocsPragma)
                 .Namespace("Obsidian.API.BlockStates.Builders")
                 .Line()
+                .XmlSummary(ApiDocs.BlockStateBuilder($"{blockName}State"))
                 .Type($"public sealed class {fullName} : IStateBuilder<{blockName}State>");
 
             GenerateValueStore(stateBuilder, block.Properties);

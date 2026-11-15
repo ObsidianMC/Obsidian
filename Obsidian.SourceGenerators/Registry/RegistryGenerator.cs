@@ -116,8 +116,13 @@ public sealed partial class RegistryGenerator : IIncrementalGenerator
 
             var builder = new CodeBuilder();
             builder.Line();
+            builder.Line(ApiDocs.MissingDocsPragma);
             builder.Namespace("Obsidian.API.Commands.ArgumentParsers");
             builder.Line();
+
+            if (!ApiDocs.IsDocumented(@class.Symbol))
+                builder.XmlSummary(ApiDocs.ArgumentParser(@class.Symbol.Name));
+
             builder.Type($"public partial class {@class.Symbol.Name}");
 
             builder.Line($"public override string Identifier => {SymbolDisplay.FormatLiteral(@class.ResourceLocation, true)};");
