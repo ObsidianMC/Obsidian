@@ -14,8 +14,10 @@ public partial class BlocksGenerator
                 continue;
 
             var builder = new CodeBuilder()
+                .Line(ApiDocs.MissingDocsPragma)
                 .Namespace("Obsidian.API")
                 .Line()
+                .XmlSummary(ApiDocs.BlockProperty(name))
                 .Type($"public enum {name}");
 
             foreach (var value in values)

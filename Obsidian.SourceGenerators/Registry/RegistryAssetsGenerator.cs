@@ -34,12 +34,12 @@ public sealed partial class RegistryAssetsGenerator : IIncrementalGenerator
         }
         else if (assembly == "Obsidian.API")
         {
-            GenerateTags(assets, context);
-            GenerateItems(assets, context);
+            GenerateTags(assets, output.compilation, context);
+            GenerateItems(assets, output.compilation, context);
             GenerateBlockIdConstants(assets, context);
-            GenerateCodecs(assets, context);
-            GenerateSounds(assets, context);
-            GenerateEnum(output.files.GetJsonFromArray("enums"), context);
+            GenerateCodecs(assets, output.compilation, context);
+            GenerateSounds(assets, output.compilation, context);
+            GenerateEnum(output.files.GetJsonFromArray("enums"), output.compilation, context);
         }
     }
 }

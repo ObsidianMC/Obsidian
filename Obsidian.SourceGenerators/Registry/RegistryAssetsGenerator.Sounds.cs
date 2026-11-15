@@ -3,14 +3,18 @@
 namespace Obsidian.SourceGenerators.Registry;
 public partial class RegistryAssetsGenerator
 {
-    private static void GenerateSounds(Assets assets, SourceProductionContext context)
+    private static void GenerateSounds(Assets assets, Compilation compilation, SourceProductionContext context)
     {
         //if (!Debugger.IsAttached)
         //    Debugger.Launch();
 
         var builder = new CodeBuilder();
+        builder.Line(ApiDocs.MissingDocsPragma);
         builder.Namespace("Obsidian.API");
         builder.Line();
+
+        if (!ApiDocs.IsDocumented(compilation, "Obsidian.API.SoundId"))
+            builder.XmlSummary(ApiDocs.SoundIds);
 
         builder.Type("public static class SoundId");
 

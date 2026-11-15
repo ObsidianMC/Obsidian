@@ -15,8 +15,10 @@ public partial class BlocksGenerator
             var blockName = block.Name.SanitizeBlockName();
 
             var builder = new CodeBuilder()
+                .Line(ApiDocs.MissingDocsPragma)
                 .Namespace("Obsidian.API.BlockStates")
                 .Line()
+                .XmlSummary(ApiDocs.BlockState(block.Name, blockName))
                 .Type($"public readonly struct {blockName}State : IBlockState");
 
             builder.Indent().Append("public int Id { get; internal init; } = ").Append($"{block.DefaultId};");
