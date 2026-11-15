@@ -6,8 +6,8 @@ no AI at all. The plan gives both one system, exposed through an API shaped like
 then fixes the navigation and wandering parity gaps the review below found.
 
 Written 2026-11-15 against `26.3.x` at `7d840bc4d`. Line numbers are as of that commit. Nothing was run; the review
-read the code. The parity items come from reading vanilla and need checking against the pinned source before they're
-built.
+read the code. The parity items were then checked against a decompile of the named 26.3 server jar
+(`server-26.3.jar`, SHA-256 `A362163E…8AE6`) and corrected; class and method names below are vanilla's.
 
 Related: [mob parity](mob-parity.md) (per-species gaps), [mob parity follow-up](mob-parity-follow-up.md),
 [plugin entities](known-gaps/plugin-entities.md), [plugin content](plugin-content.md#entities).
@@ -44,34 +44,97 @@ Related: [mob parity](mob-parity.md) (per-species gaps), [mob parity follow-up](
    nothing; `IsNavigating` has a public setter.
 10. Adding or removing a goal from a goal's own tick throws: `TickAsync` loops the list with `foreach`.
 
-### Vanilla parity (verify against the pinned source)
+### Vanilla parity (checked against 26.3)
 
-11. `Navigator` copies a moving target's position every tick and searches again (`Navigator.cs:146`), and stops
-    within 0.5 blocks (`Navigator.cs:149`). Vanilla's `moveTo(entity)` follows a fixed path and leaves searching
-    again to the goal. There is no reach (accuracy) argument.
-12. The search visits at most 1024 nodes (`PathFinder.cs:258`); vanilla allows `floor(base follow range * 16)`.
-    The range is `Math.Max(16, FollowRange)` (`PathFinder.cs:250`); vanilla uses the follow range.
-13. A block change on a mob's path doesn't make it search again, as vanilla's does. Mobs walk into new blocks until
-    the stuck check fires.
-14. `RandomPosition` (`MobGoals.cs:6-38`) picks the best of ten candidates by a random score instead of
-    `getWalkTargetValue` (animals prefer grass, monsters darkness), searches ±3 vertically instead of ±7, and has no
-    home restriction.
-15. `Mob.Random` is `new Random()` (`Mob.AI.cs:14`), not a vanilla `RandomSource`, so AI can't be replayed against
-    captures. `BeeParity` is the only AI parity test.
-16. Vanilla's `GoalSelector` disables controls (Move, Jump, Look) while a passenger steers or the mob sits in a boat.
-    Obsidian can only pause the whole selector, and only plugin mobs do.
-17. `PanicGoal` ignores the `panic_causes` damage tag and freezing, and its water search misses waterlogged blocks
-    (`MobGoals.cs:105`).
-18. `NoAI` cancels the built-in selector but not a replacement `GoalController` (`Mob.AI.cs:407`).
+11. **Following an entity.** `Navigator` copies an entity target's position every tick and searches again once
+    its 10–19 tick delay runs out and the target has moved more than a block (`Navigator.cs:146`, `:167`). It also
+    stops within 0.5 blocks of the target (`Navigator.cs:149`). Vanilla's `PathNavigation.moveTo(Entity)` paths to
+    the target's block as it was; goals ask for a new search (`MeleeAttackGoal.tick`), and block changes trigger one
+    (item 13). Vanilla has no 0.5-block stop: `followThePath` advances by a width-based horizontal tolerance and a
+    vertical tolerance of 1. Obsidian has no reach argument. Vanilla's reach is a Manhattan distance between path
+    nodes and the target node, and both ordinary `moveTo` overloads (entity and coordinates) default it to 1;
+    `MeleeAttackGoal` passes 0.
+12. **Search budget and length.** The search visits at most a fixed 1024 nodes (`PathFinder.cs:258`). Vanilla's
+    budget is `floor(max(follow range, requiredPathLength) × 16)`, `requiredPathLength` defaulting to 16 and
+    changed by `setRequiredPathLength`; it's refreshed when the follow or tempt range changes
+    (`Mob.onAttributeUpdated`), and `PathFinder.findPath` scales it by `maxVisitedNodesMultiplier` (default 1).
+    `Math.Max(16, FollowRange)` (`PathFinder.cs:250`) matches vanilla's default maximum path length, but vanilla
+    limits the distance walked along the path, while Obsidian checks only the straight-line distance from the start
+    (`PathFinder.cs:282`).
+13. **Block changes.** Nothing in Obsidian tells navigation about block changes. Mobs walk into new blocks until
+    the stuck check stops them; the stuck checks stop navigation rather than search again. In vanilla,
+    `ServerLevel.sendBlockUpdated` compares the old and new collision shapes, and when they differ asks each
+    navigation `shouldRecomputePath`: a proximity test against the stretch between the mob and its path's end, not
+    a test that the block sits on a node. `recomputePath` searches at once only if more than 20 game ticks have
+    passed since the last recompute, otherwise on a later tick.
+14. **Wandering targets.** `RandomPosition` (`MobGoals.cs:6-38`) draws ten candidates and keeps the best by a random
+    score (or by distance from a threat when fleeing), sampling ±3 vertically, with no home restriction. Vanilla's
+    `RandomStrollGoal` uses `DefaultRandomPos.getPos(mob, 10, 7)`: ten candidates, the highest
+    `getWalkTargetValue` kept (the earlier one on a tie), home restriction through `GoalUtils.mobRestricted` and a
+    bias toward home. `WaterAvoidingRandomStrollGoal` uses `LandRandomPos` (10, 7), or (15, 7) in water. Vanilla
+    draws each offset in X, Y, Z order and tests the sampled block, where Obsidian draws X, Z, Y and searches the
+    column for ground, so matching the random source and ranges alone won't reproduce candidates. Walk target
+    values:
+
+    | Class | Value |
+    |---|---|
+    | `PathfinderMob` | 0 |
+    | `Animal` | 10 on grass, else from light |
+    | `Monster` | Negative, from light |
+    | `MushroomCow` | 10 on mycelium, else from light |
+    | `Bee` | 10 in air, else 0 |
+    | `Turtle` | 10 in water when not going home, else 10 on sand, else from light |
+    | `Guardian` | In water 10 plus the light value, else as a monster |
+    | `Silverfish` | 10 above an infestable block, else as a monster |
+    | `Strider` | 10 in lava; negative infinity out of lava while in lava; else 0 |
+    | `Hoglin` | −1 near a repellent, 10 on crimson nylium, else 0 |
+    | `HappyGhast` | 0 in an occupied block; 10 in air with air above and a block two below; other air 5 |
+    | `Giant` | Positive, from light |
+    | `Axolotl`, `AbstractNautilus`, `Enderman`, `Pillager`, `Creaking`, `Warden` | 0 |
+
+    "From light" is `LevelReader.getPathfindingCostFromLightLevels`.
+15. **Randomness.** `Mob.Random` is `System.Random` (`Mob.AI.cs:14`). Vanilla's `Entity.random` is a
+    `LegacyRandomSource` (Java's 48-bit LCG) from `RandomSource.create`, seeded by `RandomSupport.generateUniqueSeed`
+    from a process-wide counter and `System.nanoTime()`, so it isn't reproducible from the world seed. Brain setup
+    and sensor start delays draw from it too. Replaying vanilla needs a Java-compatible generator, the entity's
+    seed controlled or captured, and vanilla's draw order. `BeeParity` is a hand-written test, not a capture replay;
+    no AI behaviour is checked against vanilla captures yet.
+16. **Disabled controls.** Obsidian has no disabled controls: only cancelling or pausing a whole selector
+    (`Goal.cs:115`), which plugin mobs (`PluginMob.cs:183`) and several vanilla mounts (`AbstractHorse.cs:128`,
+    `HappyGhast.cs:115`, `Nautilus.cs:119`, `Strider.cs:92`) do while ridden. Vanilla's `GoalSelector` has disabled
+    flags, which stop running goals holding them and keep them from starting. `Mob.updateControlFlags` sets them
+    every 5 ticks: a controlling passenger that's a mob disables Move, Look and Jump; riding a boat disables Jump.
+    Target is never disabled, and a player steering doesn't disable anything here; mounts handle that themselves.
+17. **Panic.** `PanicGoal` (`MobGoals.cs:91`) panics whenever the mob burns, or after an attacker within 100 ticks.
+    Vanilla's `PanicGoal.shouldPanic` needs the last damage source, which `getLastDamageSource` keeps for 40 ticks,
+    to be in the goal's damage type tag (`minecraft:panic_causes` by default, which takes in freeze, fire and lava
+    damage through `panic_environmental_causes`). There's no separate burning or freezing trigger. When burning,
+    vanilla's `lookForWater` searches ±5 horizontally and ±1 vertically in Manhattan order, accepts any water fluid
+    (waterlogged blocks included), and doesn't search if the mob's own block has a collision shape. Obsidian checks
+    the water block id only, by straight-line distance, without that guard (`MobGoals.cs:105`). Vanilla's fallback is
+    `DefaultRandomPos.getPos(mob, 5, 4)`.
+18. **NoAI.** Obsidian cancels the built-in selectors and navigation (`Mob.AI.cs:407`) but not a replacement
+    `GoalSelector`, which keeps its running state without a `Stop`. It still calls `Travel` afterwards
+    (`Mob.AI.cs:444`). Vanilla's `Mob.isEffectiveAi` is false under NoAI, so `LivingEntity.aiStep` skips
+    `serverAiStep` (goals, navigation, brain, controls) and ordinary travel. `setNoAi` only sets the flag; it
+    cancels nothing.
+19. **Smaller divergences.**
+    - `MeleeAttackGoal` doesn't add vanilla's 15-tick delay when a search fails (`MobGoals.cs:486`); Obsidian's
+      navigator doesn't report failure to it.
+    - `RandomStrollGoal` refuses while the mob has an attack target (`MobGoals.cs:129`). Vanilla instead refuses with
+      a controlling passenger, and stops starting strolls once `noActionTime` reaches 100. Its `Next(60)` matches
+      vanilla's 120-tick interval.
+    - `Navigator` moves to the next node by tolerance only (`Navigator.cs:195`); vanilla's `followThePath` also
+      skips ahead at corners in the direction of travel.
 
 ### Performance and tidiness
 
-19. Hot paths read attributes by name (`"minecraft:generic.movement_speed"`, step height), each resolving the name
+20. Hot paths read attributes by name (`"minecraft:generic.movement_speed"`, step height), each resolving the name
     and taking a lock; about 100 sites use the old `generic.` names.
-20. `WalkNodeEvaluator.GetNeighbors` is a `yield` iterator (an allocation per expanded node), `Node` is a class, the
+21. `WalkNodeEvaluator.GetNeighbors` is a `yield` iterator (an allocation per expanded node), `Node` is a class, the
     ground cache key holds a `double`, and `MeleeAttackGoal` falls back to `new PathFinder(...)` (`MobGoals.cs:468`).
-21. Path code reads block state ids through `block.GetHashCode()`.
-22. Goal constructor parameters keep the name of the first mob they were written for (`TemptGoal(Animal pig, …)`,
+22. Path code reads block state ids through `block.GetHashCode()`.
+23. Goal constructor parameters keep the name of the first mob they were written for (`TemptGoal(Animal pig, …)`,
     `NearestAttackableTargetGoal(PathfinderMob zombie, …)`).
 
 ## The API
@@ -177,7 +240,8 @@ public interface IMobNavigation
 
     NavigationStatus Status { get; }        // Idle, Moving, Reached, Partial, Stuck, NoPath
 
-    bool MoveTo(VectorD target, float speed = 1, int reach = 0);
+    // Reach is vanilla's: a Manhattan distance in nodes, 1 by default for both overloads as in vanilla.
+    bool MoveTo(VectorD target, float speed = 1, int reach = 1);
 
     bool MoveTo(IEntity target, float speed = 1, int reach = 1);
 
@@ -185,13 +249,13 @@ public interface IMobNavigation
     ValueTask<NavigationStatus> MoveToAsync(
         VectorD target,
         float speed = 1,
-        int reach = 0,
+        int reach = 1,
         CancellationToken cancellationToken = default);
 
     void Stop();
 
     /// <summary>Searches synchronously on the tick, as vanilla's goals need the path in the same tick.</summary>
-    NavigationPath? FindPath(VectorD target, int reach = 0);
+    NavigationPath? FindPath(VectorD target, int reach = 1);
 
     PathRules Rules { get; }                // malus per PathNodeType, CanOpenDoors, CanFloat, MaxFall
 }
@@ -273,7 +337,10 @@ Server:
 - `Mob` implements `IMob` (`Target`, `SetTargetAsync` with `MobTargetEventArgs`, `AiEnabled`); `Navigator`
   implements `IMobNavigation` with `Status`, `Stop`, speed and `PathRules`, without `MoveToAsync` yet.
 - `PluginMob` calls `IEntityBehavior.ConfigureAi`; raise `MobAiConfiguringEventArgs` for every mob.
-- `NoAI` and riding use `Disable` instead of pausing (problems 16 and 18).
+- Riding uses disabled controls as vanilla's `updateControlFlags` does, every 5 ticks (problem 16); mounts that
+  pause their whole selector today switch to it where vanilla's do.
+- `NoAI` skips the whole AI step and ordinary travel, as vanilla's does, and stops a replacement selector's goals
+  too (problem 18). Disabled controls alone aren't enough for it.
 - Delete `AStarPath.cs`, `Goal.Run()`, the public `Navigator()` constructor and the public `IsNavigating` setter.
 - Wrap `IGoal`, `IGoalController` and `INavigator` as `[Obsolete]` adapters.
 
@@ -291,13 +358,17 @@ behaviour beyond the plugin surface and `Disable`.
 
 ### Phase 2: navigation parity
 
-Problems 11 to 13, and `MoveToAsync`.
+Problems 11 to 13, the navigation parts of 19, and `MoveToAsync`.
 
-- Entity targets follow a fixed path; goals decide when to search again (most already do, as `MeleeAttackGoal`
-  does). Drop the 0.5-block stop. Add reach.
-- Visit cap and range from the follow range, as vanilla.
-- Search again when a changed block lies on the path. Find where block changes are published per level and have
-  navigators with a path through that block search again on their next tick.
+- Entity targets get a path to where the target was; goals decide when to search again (most already do, as
+  `MeleeAttackGoal` does). Drop the 0.5-block stop. Add reach as a node Manhattan distance, 1 by default.
+- The visit budget as vanilla's (follow range or required length, times 16, refreshed on attribute changes), and a
+  limit on the distance walked along the path rather than from the start.
+- Search again after block changes as vanilla does: on a collision-shape change, ask each navigation in the level
+  whether the block is near its remaining path, and recompute at most once per 20 ticks, deferring otherwise.
+  Find where block changes are published per level (`AbstractLevel.BlockUpdates.cs`).
+- Report search failure to goals, so `MeleeAttackGoal` can add vanilla's 15-tick delay; corner skipping in path
+  following.
 - `MoveToAsync` with the completion rules above, and a test that it completes `Cancelled` on unload and removal.
 
 Parity evidence: capture navigation scenarios from vanilla with the scenario tooling
@@ -307,17 +378,22 @@ deterministic setups only (no random draws on the way).
 
 ### Phase 3: wandering and randomness
 
-Problems 14, 15 and 17.
+Problems 14, 15, 17 and the stroll part of 19.
 
-- Give each mob a vanilla `RandomSource` seeded as vanilla seeds it, used by AI in vanilla's draw order.
-- `RandomPosition` with vanilla's ranges, `getWalkTargetValue` per mob type (animals, monsters, others) and home
-  restriction.
-- `PanicGoal` causes from the `panic_causes` tag plus freezing; water search including waterlogged blocks.
+- Give each mob a Java-compatible `LegacyRandomSource` and draw from it in vanilla's order. Vanilla seeds it from
+  the clock, so it can't match a live server; what matters is that a capture can fix or record the seed and the
+  replay sets the same one. The capture tooling needs a way to do that.
+- `RandomPosition` as vanilla's `DefaultRandomPos` and `LandRandomPos`: X, Y, Z draws, the sampled block tested,
+  vanilla's ranges per caller, `getWalkTargetValue` per class (the table in problem 14), home restriction and the
+  bias toward home.
+- `RandomStrollGoal` eligibility: controlling passenger and `noActionTime`, not the attack target.
+- `PanicGoal` triggered by recent damage in the goal's damage type tag (default `minecraft:panic_causes`), with no
+  separate burning or freezing check; vanilla's water search and `(5, 4)` fallback.
 - One scenario replay for wandering (a stroll from a fixed seed) and one for panic.
 
 ### Phase 4: performance and tidying
 
-Problems 19 to 22. Benchmark first with the load test (`Obsidian.LoadTest`) and a mob-heavy level, so each change is
+Problems 20 to 23. Benchmark first with the load test (`Obsidian.LoadTest`) and a mob-heavy level, so each change is
 kept only if it shows.
 
 - Typed attribute handles or per-tick cached values for movement speed, step height and follow range.
@@ -327,9 +403,10 @@ kept only if it shows.
 
 ### Phase 5 (separate plan): brains
 
-Vanilla drives villagers, piglins, hoglins, axolotls, goats, camels, allays, frogs, sniffers, breezes, armadillos
-and the warden with brains (memories, sensors, activities). Obsidian runs them on approximate goals, so their timing
-and random draws can't match ([mob parity](mob-parity.md#ai-movement-and-targeting)). Parity needs a brain layer:
+Vanilla 26.3 drives villagers, piglins, piglin brutes, hoglins, zoglins, axolotls, goats, camels, camel husks,
+allays, frogs, tadpoles, sniffers, breezes, armadillos, wardens, creakings, copper golems, nautiluses, zombie
+nautiluses and baby happy ghasts with brains (memories, sensors, activities); adult happy ghasts use goals.
+Obsidian runs them on approximate goals, so their timing and random draws can't match ([mob parity](mob-parity.md#ai-movement-and-targeting)). Parity needs a brain layer:
 typed memories (`MemoryKey<T>`, shaped like data components and saved to vanilla's `Brain` NBT), sensors on vanilla's
 intervals, and activities. `IMob.Memories` would also give plugins state shared across goals. This is large enough to
 need its own plan after phases 1 to 3.
