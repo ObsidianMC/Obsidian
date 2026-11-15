@@ -16,8 +16,13 @@ public sealed class SetEnchantmentsFunction : LootFunction
     /// </summary>
     public Dictionary<EnchantmentDefinition, INumberProvider> Enchantments { get; init; } = [];
 
+    /// <summary>
+    /// Gets whether each level is added to the stack's current level of that enchantment instead of replacing it;
+    /// levels are clamped to 0..255 (vanilla's <c>add</c>).
+    /// </summary>
     public bool Add { get; init; }
 
+    /// <inheritdoc/>
     protected override ItemStack Run(ItemStack stack, LootContext context)
     {
         if (LootItems.Is(stack, ItemsRegistry.Book))

@@ -33,6 +33,9 @@ public sealed class EnchantmentDefinition
     /// </summary>
     public required int Weight { get; init; }
 
+    /// <summary>
+    /// Gets the highest level the enchantment normally reaches (vanilla's <c>max_level</c>).
+    /// </summary>
     public required int MaxLevel { get; init; }
 
     /// <summary>
@@ -40,6 +43,9 @@ public sealed class EnchantmentDefinition
     /// </summary>
     public int AnvilCost { get; init; } = 1;
 
+    /// <summary>
+    /// Gets the lowest level of the enchantment, always 1.
+    /// </summary>
     public int MinLevel => 1;
 
     // Vanilla's applicable equipment slot groups, used when resolving an attacking entity's enchantment level.
@@ -65,6 +71,10 @@ public sealed class EnchantmentDefinition
     /// </summary>
     public bool CanEnchant(ItemStack stack) => this.SupportedItems.Contains(LootItems.ItemOf(stack));
 
+    /// <summary>
+    /// Whether enchanting offers the enchantment for the stack's item: it must be supported and, when
+    /// <see cref="PrimaryItems"/> is set, one of them.
+    /// </summary>
     public bool IsPrimaryItem(ItemStack stack) =>
         this.CanEnchant(stack) && (this.PrimaryItems is null || this.PrimaryItems.Contains(LootItems.ItemOf(stack)));
 
@@ -80,5 +90,9 @@ public sealed class EnchantmentDefinition
 /// </summary>
 public readonly record struct EnchantmentCost(int Base, int PerLevelAboveFirst)
 {
+    /// <summary>
+    /// Calculates the enchanting power for <paramref name="level"/>: <c>Base</c> plus <c>PerLevelAboveFirst</c> for
+    /// each level above 1.
+    /// </summary>
     public int Calculate(int level) => this.Base + this.PerLevelAboveFirst * (level - 1);
 }

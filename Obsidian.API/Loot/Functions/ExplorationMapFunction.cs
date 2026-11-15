@@ -22,6 +22,9 @@ public sealed class ExplorationMapFunction : LootFunction
     /// </summary>
     public string Decoration { get; init; } = "minecraft:mansion";
 
+    /// <summary>
+    /// Gets the map's zoom level (vanilla's <c>zoom</c>).
+    /// </summary>
     public int Zoom { get; init; } = 2;
 
     /// <summary>
@@ -34,6 +37,7 @@ public sealed class ExplorationMapFunction : LootFunction
     /// </summary>
     public bool SkipExistingChunks { get; init; } = true;
 
+    /// <inheritdoc/>
     protected override ItemStack Run(ItemStack stack, LootContext context)
     {
         if (LootItems.IsEmpty(stack) || context.Origin is null || context.ExplorationMaps is null)

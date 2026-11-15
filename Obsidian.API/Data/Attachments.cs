@@ -20,6 +20,11 @@ public interface IAttachmentHolder
 /// <summary>Persistent attachments. Holders keep NBT only, including unknown and unloaded types.</summary>
 public static class AttachmentExtensions
 {
+    /// <summary>
+    /// Reads the holder's value of <paramref name="type"/>, decoded with its codec into a detached copy.
+    /// </summary>
+    /// <returns>Whether the holder has a value of the type.</returns>
+    /// <exception cref="InvalidOperationException">The type's plugin is unloaded.</exception>
     public static bool TryGetAttachment<TValue>(
         this IAttachmentHolder holder, AttachmentType<TValue> type, [MaybeNullWhen(false)] out TValue value)
     {
@@ -29,9 +34,20 @@ public static class AttachmentExtensions
         return saved is not null;
     }
 
+    /// <summary>
+    /// Gets the holder's value of <paramref name="type"/>, decoded into a detached copy, or <c>default</c> when it has
+    /// none.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The type's plugin is unloaded.</exception>
     public static TValue? GetAttachment<TValue>(this IAttachmentHolder holder, AttachmentType<TValue> type) =>
         holder.TryGetAttachment(type, out var value) ? value : default;
 
+    /// <summary>
+    /// Sets the holder's value of <paramref name="type"/>, saving the encoded form, and raises
+    /// <see cref="AttachmentType{TValue}.Changed"/>.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The type's plugin is unloaded or its registration was replaced, or
+    /// the holder was retired.</exception>
     public static void SetAttachment<TValue>(this IAttachmentHolder holder, AttachmentType<TValue> type, TValue value)
     {
         using var call = type.Binding.Enter();
@@ -45,6 +61,13 @@ public static class AttachmentExtensions
         type.Binding.RaiseChanged(holder);
     }
 
+    /// <summary>
+    /// Removes the holder's value of <paramref name="type"/>, raising <see cref="AttachmentType{TValue}.Changed"/> if
+    /// it had one.
+    /// </summary>
+    /// <returns>Whether the holder had a value.</returns>
+    /// <exception cref="InvalidOperationException">The type's plugin is unloaded or its registration was replaced, or
+    /// the holder was retired.</exception>
     public static bool RemoveAttachment<TValue>(this IAttachmentHolder holder, AttachmentType<TValue> type)
     {
         using var call = type.Binding.Enter();

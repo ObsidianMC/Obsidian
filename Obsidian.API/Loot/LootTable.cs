@@ -34,6 +34,9 @@ public sealed class LootTable
     /// </summary>
     public string? RandomSequence { get; init; }
 
+    /// <summary>
+    /// Gets the pools the table rolls, in order (vanilla's <c>pools</c>).
+    /// </summary>
     public ImmutableArray<LootPool> Pools { get; init; } = [];
 
     /// <summary>

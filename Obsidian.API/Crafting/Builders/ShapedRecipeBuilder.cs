@@ -4,6 +4,10 @@ using System.Collections.ObjectModel;
 
 namespace Obsidian.API.Crafting.Builders;
 
+/// <summary>
+/// Builds a <see cref="ShapedRecipe"/>: start with <see cref="Create"/>, give each key, then the pattern, group,
+/// identifier and result in that order.
+/// </summary>
 public sealed class ShapedRecipeBuilder : BaseRecipeBuilder<ShapedRecipe>, IPatternedRecipe
 {
     private readonly CraftingBookCategory category;
@@ -14,8 +18,15 @@ public sealed class ShapedRecipeBuilder : BaseRecipeBuilder<ShapedRecipe>, IPatt
 
     private ShapedRecipeBuilder(CraftingBookCategory category) => this.category = category;
 
+    /// <summary>
+    /// Starts a shaped recipe for the recipe book tab <paramref name="category"/>.
+    /// </summary>
     public static IPatternedRecipe Create(CraftingBookCategory category) => new ShapedRecipeBuilder(category);
 
+    /// <summary>
+    /// Makes the character <paramref name="key"/> stand for any of <paramref name="matches"/> in the pattern.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="key"/> was already given.</exception>
     public IPatternedRecipe WithKey(char key, params ItemStack[] matches)
     {
         var ingredient = new Ingredient();
@@ -28,6 +39,10 @@ public sealed class ShapedRecipeBuilder : BaseRecipeBuilder<ShapedRecipe>, IPatt
         return this;
     }
 
+    /// <summary>
+    /// Sets the recipe's shape: up to 3 rows, each character a key or a space for an empty slot.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">There are more than 3 rows, or no keys were given first.</exception>
     public IGroupedRecipe<ShapedRecipe> WithPattern(params string[] pattern)
     {
         if (pattern.Length > 3)
@@ -40,6 +55,7 @@ public sealed class ShapedRecipeBuilder : BaseRecipeBuilder<ShapedRecipe>, IPatt
         return this;
     }
 
+    /// <inheritdoc/>
     public override ShapedRecipe Build()
     {
         if (this.pattern.Count <= 0)

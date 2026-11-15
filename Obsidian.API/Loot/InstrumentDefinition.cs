@@ -31,6 +31,9 @@ public sealed class InstrumentDefinition
     /// </summary>
     public required float Range { get; init; }
 
+    /// <summary>
+    /// Gets the instrument's description, shown in the tooltip of a goat horn that plays it.
+    /// </summary>
     public required ChatMessage Description { get; init; }
 
     /// <summary>

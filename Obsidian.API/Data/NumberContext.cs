@@ -9,11 +9,22 @@ namespace Obsidian.API.Data;
 /// </summary>
 public sealed class NumberContext
 {
+    /// <summary>
+    /// Gets the random source random providers draw from.
+    /// </summary>
     public required IRandomSource Random { get; init; }
 
+    /// <summary>
+    /// Gets or sets how a provider id referenced by another provider resolves to an integer provider; vanilla's
+    /// definitions by default. Unknown ids throw as the provider is evaluated.
+    /// </summary>
     public Func<string, ContextIntProvider?> ResolveInt { get; init; } =
         id => ContextNumberProviders.Ints.GetValueOrDefault(id);
 
+    /// <summary>
+    /// Gets or sets how a provider id referenced by another provider resolves to a float provider; vanilla's
+    /// definitions by default. Unknown ids throw as the provider is evaluated.
+    /// </summary>
     public Func<string, ContextFloatProvider?> ResolveFloat { get; init; } =
         id => ContextNumberProviders.Floats.GetValueOrDefault(id);
 
@@ -21,16 +32,39 @@ public sealed class NumberContext
     public Func<JsonElement, bool>? TestCondition { get; init; }
 
     // World-dependent sources are supplied by the caller, without coupling this component to a server or loot.
+    /// <summary>
+    /// Gets or sets the integer value of an environment attribute by id, for <c>minecraft:environment_attribute</c>
+    /// providers; they give 0 when this is null or returns null.
+    /// </summary>
     public Func<string, int?>? IntEnvironmentAttribute { get; init; }
 
+    /// <summary>
+    /// Gets or sets the float value of an environment attribute by id, for <c>minecraft:environment_attribute</c>
+    /// providers; they give 0 when this is null or returns null.
+    /// </summary>
     public Func<string, float?>? FloatEnvironmentAttribute { get; init; }
 
+    /// <summary>
+    /// Gets or sets the integer read from a command storage id and path, for <c>minecraft:storage</c> providers; they
+    /// use their fallback when this is null or returns null.
+    /// </summary>
     public Func<string, string, int?>? IntStorage { get; init; }
 
+    /// <summary>
+    /// Gets or sets the float read from a command storage id and path, for <c>minecraft:storage</c> providers; they use
+    /// their fallback when this is null or returns null.
+    /// </summary>
     public Func<string, string, float?>? FloatStorage { get; init; }
 
+    /// <summary>
+    /// Gets or sets the score of a JSON target for an objective name, for <c>minecraft:score</c> providers; they use
+    /// their fallback when this is null or returns null.
+    /// </summary>
     public Func<JsonElement, string, int?>? Score { get; init; }
 
+    /// <summary>
+    /// Gets the enchantment level <c>minecraft:enchantment_level</c> providers scale by; 0 when null.
+    /// </summary>
     public int? EnchantmentLevel { get; init; }
 
     private int referenceDepth;
@@ -66,6 +100,9 @@ public sealed class ContextIntProvider
     /// <summary>Evaluates a command expression, preserving arithmetic failures for command feedback.</summary>
     public int GetIntOrThrow(NumberContext context) => this.Evaluate(context);
 
+    /// <summary>
+    /// Evaluates the expression, giving 0 when its arithmetic fails (overflow or division by zero, for example).
+    /// </summary>
     public int GetInt(NumberContext context)
     {
         try
@@ -102,6 +139,9 @@ public sealed class ContextFloatProvider
         return value;
     }
 
+    /// <summary>
+    /// Evaluates the expression, giving 0 when its arithmetic fails or its result isn't finite.
+    /// </summary>
     public float GetFloat(NumberContext context)
     {
         try

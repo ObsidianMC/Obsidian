@@ -8,10 +8,19 @@ namespace Obsidian.API.Containers;
 /// </summary>
 public sealed class AnvilContainer : ResultContainer
 {
+    /// <summary>
+    /// The result slot's index.
+    /// </summary>
     public const int ResultSlot = 2;
 
+    /// <summary>
+    /// Gets the container's id, <c>anvil</c> unless another was given.
+    /// </summary>
     public string Id { get; }
 
+    /// <summary>
+    /// Gets or sets the position of the anvil block the window belongs to.
+    /// </summary>
     public Vector BlockPosition { get; set; }
 
     /// <summary>
@@ -29,12 +38,17 @@ public sealed class AnvilContainer : ResultContainer
     /// </summary>
     public int RepairItemCountCost { get; set; }
 
+    /// <summary>
+    /// Creates an anvil window's slots, with id <paramref name="id"/>.
+    /// </summary>
     public AnvilContainer(string id = "anvil") : base(3, InventoryType.Anvil)
     {
         this.Id = id;
         this.Title = "Repair & Name";
     }
 
+    /// <inheritdoc/>
     public override void SetResult(ItemStack? result) => this.SetItem(ResultSlot, result);
+    /// <inheritdoc/>
     public override ItemStack? GetResult() => this.GetItem(ResultSlot);
 }

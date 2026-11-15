@@ -12,6 +12,9 @@ namespace Obsidian.API.Loot;
 /// </summary>
 public sealed class LootPool
 {
+    /// <summary>
+    /// Gets the entries a roll picks from, by weight (vanilla's <c>entries</c>).
+    /// </summary>
     public required ImmutableArray<LootPoolEntry> Entries { get; init; }
 
     /// <summary>
@@ -24,6 +27,9 @@ public sealed class LootPool
     /// </summary>
     public ImmutableArray<LootFunction> Functions { get; init; } = [];
 
+    /// <summary>
+    /// Gets how many times the pool is rolled, before bonus rolls for luck (vanilla's <c>rolls</c>).
+    /// </summary>
     public required INumberProvider Rolls { get; init; }
 
     /// <summary>
@@ -31,6 +37,10 @@ public sealed class LootPool
     /// </summary>
     public INumberProvider BonusRolls { get; init; } = new ConstantNumber { Value = 0 };
 
+    /// <summary>
+    /// Rolls the pool if its <see cref="Conditions"/> pass, passing each generated stack, after the pool's
+    /// <see cref="Functions"/>, to <paramref name="output"/>.
+    /// </summary>
     public void AddRandomItems(Action<ItemStack> output, LootContext context)
     {
         if (!ILootCondition.TestAll(this.Conditions, context))

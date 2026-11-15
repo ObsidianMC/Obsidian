@@ -29,6 +29,7 @@ public sealed class EnchantRandomlyFunction : LootFunction
     /// </summary>
     public bool IncludeAdditionalCostComponent { get; init; }
 
+    /// <inheritdoc/>
     protected override ItemStack Run(ItemStack stack, LootContext context)
     {
         var isBook = LootItems.Is(stack, ItemsRegistry.Book);

@@ -8,5 +8,6 @@ namespace Obsidian.API.Loot.Entries;
 [LootType("minecraft:empty")]
 public sealed class EmptyEntry : LootPoolSingletonEntry
 {
+    /// <inheritdoc/>
     protected override void CreateItems(Action<ItemStack> output, LootContext context) { }
 }

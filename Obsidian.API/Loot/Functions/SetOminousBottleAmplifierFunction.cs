@@ -10,8 +10,12 @@ namespace Obsidian.API.Loot.Functions;
 [LootType("minecraft:set_ominous_bottle_amplifier")]
 public sealed class SetOminousBottleAmplifierFunction : LootFunction
 {
+    /// <summary>
+    /// Gets the amplifier to set, clamped to 0..4 (vanilla's <c>amplifier</c>).
+    /// </summary>
     public required INumberProvider Amplifier { get; init; }
 
+    /// <inheritdoc/>
     protected override ItemStack Run(ItemStack stack, LootContext context)
     {
         var amplifier = Math.Clamp(this.Amplifier.GetInt(context), 0, 4);

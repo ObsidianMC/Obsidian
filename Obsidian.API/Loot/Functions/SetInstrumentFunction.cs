@@ -18,6 +18,7 @@ public sealed class SetInstrumentFunction : LootFunction
     // A data pack's options, resolved as the function runs so that it sees the current tags.
     internal JsonElement? OptionsSet { get; init; }
 
+    /// <inheritdoc/>
     protected override ItemStack Run(ItemStack stack, LootContext context)
     {
         var options = LootTableJson.ReadInstrumentOptions(this.OptionsSet) ?? this.Options;

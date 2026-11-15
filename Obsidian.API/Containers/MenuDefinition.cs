@@ -68,5 +68,8 @@ public sealed class MenuDefinition
     /// </summary>
     internal Lock Gate { get; } = new();
 
+    /// <summary>
+    /// Returns the menu type's identifier.
+    /// </summary>
     public override string ToString() => this.Identifier;
 }

@@ -12,10 +12,19 @@ namespace Obsidian.API.Loot.Functions;
 [LootType("minecraft:set_damage")]
 public sealed class SetDamageFunction : LootFunction
 {
+    /// <summary>
+    /// Gets the durability fraction to set, or to add when <see cref="Add"/> is set; the result is clamped to 0..1
+    /// (vanilla's <c>damage</c>).
+    /// </summary>
     public required INumberProvider Damage { get; init; }
 
+    /// <summary>
+    /// Gets whether <see cref="Damage"/> is added to the stack's current durability fraction instead of replacing it
+    /// (vanilla's <c>add</c>).
+    /// </summary>
     public bool Add { get; init; }
 
+    /// <inheritdoc/>
     protected override ItemStack Run(ItemStack stack, LootContext context)
     {
         var maxDamage = stack.Holder.MaxDamage;

@@ -20,6 +20,10 @@ public abstract class LootFunction
     public ItemStack Apply(ItemStack stack, LootContext context) =>
         ILootCondition.TestAll(this.Conditions, context) ? this.Run(stack, context) : stack;
 
+    /// <summary>
+    /// Modifies <paramref name="stack"/> once <see cref="Conditions"/> pass and returns the result, which may be
+    /// <paramref name="stack"/> itself or a new stack.
+    /// </summary>
     protected abstract ItemStack Run(ItemStack stack, LootContext context);
 
     /// <summary>

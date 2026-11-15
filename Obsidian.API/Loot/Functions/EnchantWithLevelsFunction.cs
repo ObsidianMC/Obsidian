@@ -12,6 +12,9 @@ namespace Obsidian.API.Loot.Functions;
 [LootType("minecraft:enchant_with_levels")]
 public sealed class EnchantWithLevelsFunction : LootFunction
 {
+    /// <summary>
+    /// Gets the enchanting level to enchant at, like an enchanting table's level cost (vanilla's <c>levels</c>).
+    /// </summary>
     public required INumberProvider Levels { get; init; }
 
     /// <summary>
@@ -27,6 +30,7 @@ public sealed class EnchantWithLevelsFunction : LootFunction
     /// </summary>
     public bool IncludeAdditionalCostComponent { get; init; }
 
+    /// <inheritdoc/>
     protected override ItemStack Run(ItemStack stack, LootContext context)
     {
         var levels = this.Levels.GetInt(context);

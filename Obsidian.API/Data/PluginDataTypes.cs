@@ -6,7 +6,13 @@ namespace Obsidian.API.Data;
 /// <summary>The lifetime scope of a saved data instance.</summary>
 public enum SavedDataScope
 {
+    /// <summary>
+    /// The data belongs to one level (dimension) and is saved in its folder.
+    /// </summary>
     Level,
+    /// <summary>
+    /// The data is shared by a world's dimensions and saved in the world's folder.
+    /// </summary>
     World
 }
 
@@ -20,6 +26,9 @@ public sealed class SavedDataType<TValue>
         this.Binding = binding;
     }
 
+    /// <summary>
+    /// Gets the saved data's identifier, the key it's saved under.
+    /// </summary>
     public string Identifier { get; }
     internal ComponentCodec<TValue> Codec { get; }
     internal PluginDataBinding Binding { get; }
@@ -75,7 +84,14 @@ public sealed class AttachmentType<TValue>
         this.Binding = binding;
     }
 
+    /// <summary>
+    /// Gets the attachment's identifier, the key it's saved under.
+    /// </summary>
     public string Identifier { get; }
+    /// <summary>
+    /// Gets whether a player keeps the value through death and respawn. Without it the value is removed at respawn, or,
+    /// when it holds items, its items drop at death unless <c>keep_inventory</c> is on.
+    /// </summary>
     public bool CopyOnDeath => this.Binding.CopyOnDeath;
 
     /// <summary>

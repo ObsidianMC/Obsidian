@@ -12,12 +12,16 @@ namespace Obsidian.API.Crafting;
 /// </summary>
 public sealed class TransmuteRecipe : ICraftingRecipe
 {
+    /// <inheritdoc/>
     public required string Identifier { get; init; }
 
+    /// <inheritdoc/>
     public required CraftingType Type { get; init; }
 
+    /// <inheritdoc/>
     public string? Group { get; init; }
 
+    /// <inheritdoc/>
     public required CraftingBookCategory Category { get; init; }
 
     /// <summary>The item transmuted, whose components the result keeps.</summary>

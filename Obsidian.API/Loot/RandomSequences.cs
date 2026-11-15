@@ -17,6 +17,9 @@ public sealed class RandomSequences
     private readonly Dictionary<string, IRandomSource> sequences = [];
     private readonly Lock sequencesLock = new();
 
+    /// <summary>
+    /// Creates an empty set of sequences for a world with seed <paramref name="worldSeed"/>.
+    /// </summary>
     public RandomSequences(long worldSeed) => this.worldSeed = worldSeed;
 
     /// <summary>

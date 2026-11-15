@@ -50,6 +50,9 @@ public sealed class EntityDefinition
     // The server's copy of the plugin's properties, kept when the plugin unloads since its entities stay saved.
     internal EntitySettings Settings { get; set; } = EntitySettings.From(new EntityProperties(), EntityKind.Mob);
 
+    /// <summary>
+    /// Returns the entity type's identifier.
+    /// </summary>
     public override string ToString() => this.Identifier;
 }
 

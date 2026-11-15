@@ -5,6 +5,9 @@ namespace Obsidian.API.Loot.Conditions;
 /// </summary>
 public interface ILootCondition
 {
+    /// <summary>
+    /// Whether the condition passes in <paramref name="context"/>. May draw from <see cref="LootContext.Random"/>.
+    /// </summary>
     public bool Test(LootContext context);
 
     /// <summary>

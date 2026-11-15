@@ -127,6 +127,12 @@ public partial class ContainerBlockEntity : BlockEntity, IItemAccessProvider
     /// </summary>
     internal void QueueItemsChanged() => (this.Host as IContainerItemsHost)?.QueueItemsChanged(this);
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Clears the inventory first, then reads the loot table and its seed, the saved items (unless a loot table is
+    /// still
+    /// waiting to fill the container) and the custom name.
+    /// </remarks>
     protected internal override void Load(NbtCompound tag)
     {
         for (var slot = 0; slot < this.Inventory.Size; slot++)

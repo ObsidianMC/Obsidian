@@ -9,8 +9,12 @@ namespace Obsidian.API.Loot.Functions;
 [LootType("minecraft:set_potion")]
 public sealed class SetPotionFunction : LootFunction
 {
+    /// <summary>
+    /// Gets the potion to set (vanilla's <c>id</c>).
+    /// </summary>
     public required Potion Id { get; init; }
 
+    /// <inheritdoc/>
     protected override ItemStack Run(ItemStack stack, LootContext context)
     {
         var contents = stack.GetComponent<PotionContentsDataComponent>(DataComponentType.PotionContents);

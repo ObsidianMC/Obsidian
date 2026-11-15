@@ -18,6 +18,9 @@ public sealed class LootContext
 {
     private readonly HashSet<LootTable> visitedTables = [];
 
+    /// <summary>
+    /// Gets the random source every draw of the generation comes from, in vanilla's order.
+    /// </summary>
     public required IRandomSource Random { get; init; }
 
     private NumberContext? numbers;

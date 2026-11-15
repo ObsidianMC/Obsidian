@@ -3,6 +3,10 @@ using Obsidian.API.Inventory;
 
 namespace Obsidian.API.Crafting.Builders;
 
+/// <summary>
+/// Builds a <see cref="SmeltingRecipe"/>: start with <see cref="Create"/>, then give the ingredient, experience,
+/// cooking time, group, identifier and result in that order.
+/// </summary>
 public sealed class CookingRecipeBuilder : BaseRecipeBuilder<SmeltingRecipe>, IIngredientRecipe<ICookingRecipe>, ICookingRecipe
 {
     private readonly CookingBookCategory category;
@@ -21,9 +25,16 @@ public sealed class CookingRecipeBuilder : BaseRecipeBuilder<SmeltingRecipe>, II
         this.type = type;
     }
 
+    /// <summary>
+    /// Starts a cooking recipe for the recipe book tab <paramref name="category"/>, cooked in the block
+    /// <paramref name="type"/> names.
+    /// </summary>
     public static IIngredientRecipe<ICookingRecipe> Create(CookingBookCategory category, SmeltingType type) =>
         new CookingRecipeBuilder(category, type);
 
+    /// <summary>
+    /// Adds <paramref name="items"/> to the stacks the recipe cooks, any one of which works.
+    /// </summary>
     public ICookingRecipe WithIngredient(params ItemStack[] items)
     {
         foreach (var item in items)
@@ -32,6 +43,9 @@ public sealed class CookingRecipeBuilder : BaseRecipeBuilder<SmeltingRecipe>, II
         return this;
     }
 
+    /// <summary>
+    /// Adds <paramref name="exp"/> to the experience the cooked item gives; calling it again adds more.
+    /// </summary>
     public ICookingRecipe GivesExperience(float exp)
     {
         this.experience += exp;//Just add if this function gets called again
@@ -39,12 +53,16 @@ public sealed class CookingRecipeBuilder : BaseRecipeBuilder<SmeltingRecipe>, II
         return this;
     }
 
+    /// <summary>
+    /// Sets how long one item takes to cook, in ticks.
+    /// </summary>
     public IGroupedRecipe<SmeltingRecipe> WithCookingTime(int cookingTime)
     {
         this.cookingTime = cookingTime;
 
         return this;
     }
+    /// <inheritdoc/>
     public override SmeltingRecipe Build()
     {
         CraftingType type = this.type switch
@@ -73,10 +91,25 @@ public sealed class CookingRecipeBuilder : BaseRecipeBuilder<SmeltingRecipe>, II
     }
 }
 
+/// <summary>
+/// Which block a <see cref="CookingRecipeBuilder"/> recipe cooks in.
+/// </summary>
 public enum SmeltingType
 {
+    /// <summary>
+    /// A furnace (<see cref="CraftingType.Smelting"/>).
+    /// </summary>
     Default,
+    /// <summary>
+    /// A blast furnace (<see cref="CraftingType.Blasting"/>).
+    /// </summary>
     Blasting,
+    /// <summary>
+    /// A smoker (<see cref="CraftingType.Smoking"/>).
+    /// </summary>
     Smoking,
+    /// <summary>
+    /// A campfire (<see cref="CraftingType.CampfireCooking"/>).
+    /// </summary>
     CampfireCooking
 }

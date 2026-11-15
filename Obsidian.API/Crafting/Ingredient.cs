@@ -3,25 +3,48 @@ using System.Collections;
 
 namespace Obsidian.API.Crafting;
 
+/// <summary>
+/// The stacks one recipe slot accepts, any one of which matches (vanilla's ingredient: an item, a list of items or an
+/// item tag).
+/// </summary>
 public class Ingredient : IEnumerable<ItemStack>
 {
     private readonly List<ItemStack> items;
 
+    /// <summary>
+    /// Gets how many different stacks the ingredient accepts.
+    /// </summary>
     public int Count => this.items.Count;
 
+    /// <summary>
+    /// Creates an ingredient that accepts nothing until stacks are added.
+    /// </summary>
     public Ingredient()
     {
         this.items = [];
     }
 
+    /// <summary>
+    /// Adds <paramref name="item"/> to the stacks the ingredient accepts.
+    /// </summary>
     public void Add(ItemStack item) => this.items.Add(item);
 
+    /// <summary>
+    /// Removes <paramref name="item"/> from the stacks the ingredient accepts, if it's there.
+    /// </summary>
     public void Remove(ItemStack item) => this.items.Remove(item);
 
+    /// <summary>
+    /// Returns the accepted stacks in the order they were added.
+    /// </summary>
     public IEnumerator<ItemStack> GetEnumerator() => new IngredientEnumerator(this.items);
 
     IEnumerator IEnumerable.GetEnumerator() => (IEnumerator)this;
 
+    /// <summary>
+    /// Whether <paramref name="item"/> matches one of the accepted stacks: the same item with the same components,
+    /// whatever its count.
+    /// </summary>
     public bool CanBe(ItemStack item) => this.items.Any(x => x.Equals(item));
 
     private class IngredientEnumerator : IEnumerator<ItemStack>
