@@ -26,6 +26,9 @@ public sealed record class Tag
     /// </summary>
     public required string Type { get; init; }
 
+    /// <summary>
+    /// Gets whether the tag file replaces the entries of the files loaded before it instead of adding to them.
+    /// </summary>
     public bool Replace { get; init; }
 
     /// <summary>
@@ -37,6 +40,7 @@ public sealed record class Tag
         init => this.entries = value;
     }
 
+    /// <summary>Gets the number of entries in the tag.</summary>
     public int Count => this.Entries.Length;
 
     /// <summary>

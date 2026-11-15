@@ -24,17 +24,23 @@ public struct Velocity(double x, double y, double z) : IEquatable<Velocity>
     /// </summary>
     public double Z { get; set; } = z;
 
+    /// <summary>A velocity of zero on every axis.</summary>
     public static readonly Velocity Zero = new(0, 0, 0);
 
+    /// <summary>Indicates whether two velocities have equal components.</summary>
     public static bool operator ==(Velocity left, Velocity right) => left.Equals(right);
 
+    /// <summary>Indicates whether two velocities differ in any component.</summary>
     public static bool operator !=(Velocity left, Velocity right) => !left.Equals(right);
 
+    /// <summary>Indicates whether this velocity has the same components as <paramref name="other"/>.</summary>
     public readonly bool Equals(Velocity other) =>
         this.X.Equals(other.X) && this.Y.Equals(other.Y) && this.Z.Equals(other.Z);
 
+    /// <inheritdoc/>
     public readonly override bool Equals(object? obj) => obj is Velocity velocity && this.Equals(velocity);
 
+    /// <inheritdoc/>
     public readonly override int GetHashCode() => HashCode.Combine(this.X, this.Y, this.Z);
 
     /// <summary>

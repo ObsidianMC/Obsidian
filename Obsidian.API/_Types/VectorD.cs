@@ -110,6 +110,10 @@ public struct VectorD : IEquatable<VectorD>, INetworkSerializable<VectorD>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static double Distance(VectorD from, VectorD to) => (to - from).Magnitude;
 
+    /// <summary>
+    /// Clamps each component of <paramref name="value"/> between the matching components of <paramref name="min"/> and
+    /// <paramref name="max"/>.
+    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VectorD Clamp(VectorD value, VectorD min, VectorD max) =>
         new(Math.Clamp(value.X, min.X, max.X), Math.Clamp(value.Y, min.Y, max.Y), Math.Clamp(value.Z, min.Z, max.Z));
@@ -122,6 +126,7 @@ public struct VectorD : IEquatable<VectorD>, INetworkSerializable<VectorD>
     public static VectorD Max(VectorD value1, VectorD value2) =>
         new(Math.Max(value1.X, value2.X), Math.Max(value1.Y, value2.Y), Math.Max(value1.Z, value2.Z));
 
+    /// <summary>Gets the cross product of two vectors.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VectorD Cross(VectorD value1, VectorD value2)
     {
@@ -132,38 +137,57 @@ public struct VectorD : IEquatable<VectorD>, INetworkSerializable<VectorD>
         );
     }
 
+    /// <summary>Gets the dot product of two vectors.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static double Dot(VectorD value1, VectorD value2) =>
         (value1.X * value2.X) + (value1.Y * value2.Y) + (value1.Z * value2.Z);
 
+    /// <summary>Interpolates linearly between two vectors.</summary>
+    /// <param name="value1">The vector returned when <paramref name="amount"/> is 0.</param>
+    /// <param name="value2">The vector returned when <paramref name="amount"/> is 1.</param>
+    /// <param name="amount">How far to move from <paramref name="value1"/> toward <paramref name="value2"/>; values
+    /// outside 0 to 1 extrapolate.</param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VectorD Lerp(VectorD value1, VectorD value2, double amount) => value1 + (value2 - value1) * amount;
 
     #region Operators
+    /// <summary>Indicates whether two vectors differ in any component.</summary>
     public static bool operator !=(VectorD a, VectorD b) => !a.Equals(b);
 
+    /// <summary>Indicates whether two vectors have equal components.</summary>
     public static bool operator ==(VectorD a, VectorD b) => a.Equals(b);
 
+    /// <summary>Adds two vectors component by component.</summary>
     public static VectorD operator +(VectorD a, VectorD b) => new(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
 
+    /// <summary>Adds the tuple's values to the matching components.</summary>
     public static VectorD operator +(VectorD a, (int x, int y, int z) b) => new(a.X + b.x, a.Y + b.y, a.Z + b.z);
 
+    /// <summary>Subtracts <paramref name="b"/> from <paramref name="a"/> component by component.</summary>
     public static VectorD operator -(VectorD a, VectorD b) => new(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
 
+    /// <summary>Negates every component.</summary>
     public static VectorD operator -(VectorD a) => new(-a.X, -a.Y, -a.Z);
 
+    /// <summary>Multiplies two vectors component by component.</summary>
     public static VectorD operator *(VectorD a, VectorD b) => new(a.X * b.X, a.Y * b.Y, a.Z * b.Z);
 
+    /// <summary>Divides <paramref name="a"/> by <paramref name="b"/> component by component.</summary>
     public static VectorD operator /(VectorD a, VectorD b) => new(a.X / b.X, a.Y / b.Y, a.Z / b.Z);
 
+    /// <summary>Adds <paramref name="b"/> to every component.</summary>
     public static VectorD operator +(VectorD a, double b) => new(a.X + b, a.Y + b, a.Z + b);
 
+    /// <summary>Subtracts <paramref name="b"/> from every component.</summary>
     public static VectorD operator -(VectorD a, double b) => new(a.X - b, a.Y - b, a.Z - b);
 
+    /// <summary>Multiplies every component by <paramref name="b"/>.</summary>
     public static VectorD operator *(VectorD a, double b) => new(a.X * b, a.Y * b, a.Z * b);
 
+    /// <summary>Divides every component by <paramref name="b"/>.</summary>
     public static VectorD operator /(VectorD a, double b) => new(a.X / b, a.Y / b, a.Z / b);
 
+    /// <summary>Multiplies every component of <paramref name="b"/> by <paramref name="a"/>.</summary>
     public static VectorD operator *(double a, VectorD b) => new(a * b.X, a * b.Y, a * b.Z);
 
     /// <summary>A block position as the position of its lowest corner.</summary>
@@ -180,6 +204,7 @@ public struct VectorD : IEquatable<VectorD>, INetworkSerializable<VectorD>
         new((int)Math.Floor(value.X), (int)Math.Floor(value.Y), (int)Math.Floor(value.Z));
     #endregion
 
+    /// <summary>Splits the vector into its X, Y and Z components.</summary>
     public readonly void Deconstruct(out double x, out double y, out double z)
     {
         x = X;

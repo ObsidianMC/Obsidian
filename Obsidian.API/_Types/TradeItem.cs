@@ -36,6 +36,7 @@ public sealed record TradeItem : INetworkSerializable<TradeItem>
         Components = components;
     }
 
+    /// <summary>Writes the price item to a network stream.</summary>
     public static void Write(TradeItem value, INetStreamWriter writer)
     {
         writer.WriteVarInt(value.ID);
@@ -48,5 +49,7 @@ public sealed record TradeItem : INetworkSerializable<TradeItem>
     }
 
     // No need to implement
+    /// <summary>Not supported: price items are only sent to clients.</summary>
+    /// <exception cref="NotImplementedException">Always thrown.</exception>
     public static TradeItem Read(INetStreamReader reader) => throw new NotImplementedException();
 }

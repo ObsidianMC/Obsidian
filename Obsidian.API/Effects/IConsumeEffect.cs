@@ -6,8 +6,10 @@
 /// </remarks>
 public interface IConsumeEffect
 {
+    /// <summary>Gets the effect's type id, such as <c>minecraft:apply_effects</c>.</summary>
     public string Type { get; }
 
+    /// <summary>Writes this effect's fields to a network stream.</summary>
     public void Write(INetStreamWriter writer);
     /// <summary>Reads a new effect without changing this value.</summary>
     public IConsumeEffect Read(INetStreamReader reader);

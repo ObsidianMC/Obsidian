@@ -8,6 +8,7 @@ namespace Obsidian.API;
 /// </summary>
 public readonly partial record struct ResourceLocation(string Namespace, string Path)
 {
+    /// <summary>The namespace used for an identifier read without one.</summary>
     public const string DefaultNamespace = "minecraft";
 
     /// <summary>
@@ -27,6 +28,7 @@ public readonly partial record struct ResourceLocation(string Namespace, string 
         return true;
     }
 
+    /// <summary>Returns the identifier as <c>namespace:path</c>.</summary>
     public override string ToString() => $"{this.Namespace}:{this.Path}";
 
     [GeneratedRegex(@"^([a-z0-9_.-]*:)?[a-z0-9_./-]+$")]

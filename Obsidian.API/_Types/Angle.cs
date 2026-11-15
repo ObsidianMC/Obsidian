@@ -10,7 +10,11 @@
 /// </remarks>
 public struct Angle(byte value) : INetworkSerializable<Angle>, IEquatable<Angle>
 {
+    /// <summary>Gets or sets the angle in 256ths of a turn.</summary>
     public byte Value { get; set; } = value;
+    /// <summary>
+    /// Gets or sets the angle in degrees. Setting it packs the value as <see cref="NormalizeToByte"/> does.
+    /// </summary>
     public float Degrees
     {
         get => Value * 360f / 256f;
@@ -22,16 +26,22 @@ public struct Angle(byte value) : INetworkSerializable<Angle>, IEquatable<Angle>
     /// </summary>
     public static implicit operator Angle(float degree) => new(NormalizeToByte(degree));
 
+    /// <summary>Converts the angle to degrees.</summary>
     public static implicit operator float(Angle angle) => angle.Degrees;
 
+    /// <summary>Indicates whether two angles pack to the same byte.</summary>
     public static bool operator ==(Angle left, Angle right) => left.Equals(right);
 
+    /// <summary>Indicates whether two angles pack to different bytes.</summary>
     public static bool operator !=(Angle left, Angle right) => !left.Equals(right);
 
+    /// <summary>Indicates whether this angle packs to the same byte as <paramref name="other"/>.</summary>
     public readonly bool Equals(Angle other) => this.Value == other.Value;
 
+    /// <inheritdoc/>
     public readonly override bool Equals(object? obj) => obj is Angle angle && this.Equals(angle);
 
+    /// <inheritdoc/>
     public readonly override int GetHashCode() => this.Value.GetHashCode();
 
     /// <summary>
@@ -44,6 +54,8 @@ public struct Angle(byte value) : INetworkSerializable<Angle>, IEquatable<Angle>
     /// </remarks>
     public static byte NormalizeToByte(float value) => (byte)(int)MathF.Floor(value * 256f / 360f);
 
+    /// <summary>Writes the angle to a network stream as a float of degrees.</summary>
     public static void Write(Angle value, INetStreamWriter writer) => writer.WriteSingle(value);
+    /// <summary>Reads an angle from a network stream, given as a float of degrees.</summary>
     public static Angle Read(INetStreamReader reader) => reader.ReadSingle();
 }

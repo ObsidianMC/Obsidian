@@ -1,5 +1,6 @@
 ﻿namespace Obsidian.API;
 
+/// <summary>What the client shows when a player hovers over a piece of chat text.</summary>
 public enum HoverAction
 {
     /// <summary>

@@ -15,12 +15,21 @@ public sealed class LevelData
     /// </summary>
     public ConcurrentDictionary<string, string> GameRules { get; set; } = new(StringComparer.Ordinal);
 
+    /// <summary>Gets a true or false game rule, such as <c>keep_inventory</c>.</summary>
+    /// <param name="name">The rule's name, with or without the <c>minecraft:</c> namespace; some older camelCase names
+    /// are also found.</param>
+    /// <param name="defaultValue">The value returned when the rule isn't set.</param>
+    /// <returns>The rule's value; a saved value of <c>1</c> also counts as true.</returns>
     public bool GetBooleanRule(string name, bool defaultValue = true)
     {
         var value = GetRule(name);
         return value == null ? defaultValue : bool.TryParse(value, out var enabled) ? enabled : value == "1";
     }
 
+    /// <summary>Gets a whole-number game rule, such as <c>random_tick_speed</c>.</summary>
+    /// <param name="name">The rule's name, with or without the <c>minecraft:</c> namespace; some older camelCase names
+    /// are also found.</param>
+    /// <param name="defaultValue">The value returned when the rule isn't set or isn't a number.</param>
     public int GetIntegerRule(string name, int defaultValue = 3) =>
         int.TryParse(GetRule(name), out var value) ? value : defaultValue;
 
@@ -162,6 +171,7 @@ public sealed class LevelData
     /// </summary>
     public long LastPlayed { get; set; }
 
+    /// <summary>Gets or sets the world's name.</summary>
     public string LevelName { get; set; }
 
     /// <summary>
@@ -251,6 +261,9 @@ public sealed class LevelData
     /// </summary>
     public int WanderingTraderSpawnDelay { get; set; }
 
+    /// <summary>
+    /// Gets or sets the world generation settings: the seed, structure generation and each dimension's generator.
+    /// </summary>
     public WorldGenSetting WorldGenSettings { get; set; }
 }
 

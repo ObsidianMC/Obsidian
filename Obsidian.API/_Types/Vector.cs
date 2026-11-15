@@ -58,6 +58,7 @@ public struct Vector : IEquatable<Vector>, INetworkSerializable<Vector>
         Z = z;
     }
 
+    /// <summary>Gets this block position as a <see cref="API.SoundPosition"/>.</summary>
     public readonly SoundPosition SoundPosition => new(X, Y, Z);
 
     /// <summary>
@@ -72,7 +73,7 @@ public struct Vector : IEquatable<Vector>, INetworkSerializable<Vector>
     public readonly float MagnitudeSquared() => Dot(this, this);
 
     /// <summary>
-    /// Indicates whether this <see cref="Vector"/> is near equal to <paramref name="other"/>.
+    /// Indicates whether this <see cref="Vector"/> has the same components as <paramref name="other"/>.
     /// </summary>
     public readonly bool Equals(Vector other) => X == other.X && Y == other.Y && Z == other.Z;
 
@@ -132,12 +133,17 @@ public struct Vector : IEquatable<Vector>, INetworkSerializable<Vector>
         );
     }
 
+    /// <summary>
+    /// Clamps each component of <paramref name="value"/> between the matching components of <paramref name="min"/> and
+    /// <paramref name="max"/>.
+    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector Clamp(Vector value, Vector min, Vector max)
     {
         return Min(Max(value, min), max);
     }
 
+    /// <summary>Gets the cross product of two vectors.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector Cross(Vector value1, Vector value2)
     {
@@ -148,6 +154,7 @@ public struct Vector : IEquatable<Vector>, INetworkSerializable<Vector>
         );
     }
 
+    /// <summary>Gets the dot product of two vectors.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int Dot(Vector value1, Vector value2)
     {
@@ -155,63 +162,87 @@ public struct Vector : IEquatable<Vector>, INetworkSerializable<Vector>
     }
 
     #region Operators
+    /// <summary>Indicates whether two vectors differ in any component.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool operator !=(Vector a, Vector b) => !a.Equals(b);
 
+    /// <summary>Indicates whether two vectors have equal components.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool operator ==(Vector a, Vector b) => a.Equals(b);
 
+    /// <summary>Adds two vectors component by component.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector operator +(Vector a, Vector b) => new(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
 
+    /// <summary>Adds the tuple's values to the matching components.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector operator +(Vector a, (int x, int y, int z) b) => new(a.X + b.x, a.Y + b.y, a.Z + b.z);
 
+    /// <summary>Subtracts <paramref name="b"/> from <paramref name="a"/> component by component.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector operator -(Vector a, Vector b) => new(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
 
+    /// <summary>Negates every component.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector operator -(Vector a) => new(-a.X, -a.Y, -a.Z);
 
+    /// <summary>Multiplies two vectors component by component.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector operator *(Vector a, Vector b) => new(a.X * b.X, a.Y * b.Y, a.Z * b.Z);
 
+    /// <summary>Divides <paramref name="a"/> by <paramref name="b"/> component by component.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector operator /(Vector a, Vector b) => new(a.X / b.X, a.Y / b.Y, a.Z / b.Z);
 
+    /// <summary>
+    /// Takes the remainder of dividing <paramref name="a"/> by <paramref name="b"/>, component by component.
+    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector operator %(Vector a, Vector b) => new(a.X % b.X, a.Y % b.Y, a.Z % b.Z);
 
+    /// <summary>Adds <paramref name="b"/> to every component.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector operator +(Vector a, int b) => new(a.X + b, a.Y + b, a.Z + b);
 
+    /// <summary>Subtracts <paramref name="b"/> from every component.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector operator -(Vector a, int b) => new(a.X - b, a.Y - b, a.Z - b);
 
+    /// <summary>Multiplies every component by <paramref name="b"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector operator *(Vector a, int b) => new(a.X * b, a.Y * b, a.Z * b);
 
+    /// <summary>Divides every component by <paramref name="b"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector operator /(Vector a, int b) => new(a.X / b, a.Y / b, a.Z / b);
 
+    /// <summary>Takes the remainder of dividing every component by <paramref name="b"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector operator %(Vector a, int b) => new(a.X % b, a.Y % b, a.Y % b);
 
+    /// <summary>Adds <paramref name="a"/> to every component of <paramref name="b"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector operator +(int a, Vector b) => new(a + b.X, a + b.Y, a + b.Z);
 
+    /// <summary>Subtracts every component of <paramref name="b"/> from <paramref name="a"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector operator -(int a, Vector b) => new(a - b.X, a - b.Y, a - b.Z);
 
+    /// <summary>Multiplies every component of <paramref name="b"/> by <paramref name="a"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector operator *(int a, Vector b) => new(a * b.X, a * b.Y, a * b.Z);
 
+    /// <summary>Divides <paramref name="a"/> by every component of <paramref name="b"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector operator /(int a, Vector b) => new(a / b.X, a / b.Y, a / b.Z);
 
+    /// <summary>
+    /// Takes the remainder of dividing <paramref name="a"/> by every component of <paramref name="b"/>.
+    /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector operator %(int a, Vector b) => new(a % b.X, a % b.Y, a % b.Y);
 
+    /// <summary>Converts a block position to a <see cref="VectorF"/> with the same components.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator VectorF(Vector position)
     {
@@ -219,6 +250,7 @@ public struct Vector : IEquatable<Vector>, INetworkSerializable<Vector>
     }
     #endregion
 
+    /// <summary>Splits the vector into its X, Y and Z components.</summary>
     public void Deconstruct(out int x, out int y, out int z)
     {
         x = X;
@@ -226,6 +258,11 @@ public struct Vector : IEquatable<Vector>, INetworkSerializable<Vector>
         z = Z;
     }
 
+    /// <summary>
+    /// Gets the position <paramref name="distance"/> steps along <paramref name="direction"/> from this one.
+    /// </summary>
+    /// <param name="direction">The step to take, usually a unit vector such as <see cref="Up"/>.</param>
+    /// <param name="distance">How many steps to take; 0 returns this position.</param>
     public Vector Relative(Vector direction, int distance = 0)
     {
         if (distance == 0)
@@ -325,6 +362,8 @@ public struct Vector : IEquatable<Vector>, INetworkSerializable<Vector>
     }
     #endregion
 
+    /// <summary>Writes the position to a network stream in the protocol's packed block position format.</summary>
     public static void Write(Vector value, INetStreamWriter writer) => writer.WritePosition(value);
+    /// <summary>Reads a position in the protocol's packed block position format from a network stream.</summary>
     public static Vector Read(INetStreamReader reader) => reader.ReadPosition();
 }

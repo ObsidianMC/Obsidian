@@ -1,5 +1,6 @@
 ﻿namespace Obsidian.API;
 
+/// <summary>A fixed list of command argument type ids.</summary>
 public class MinecraftArgumentTypes
 {
     // TODO maybe make a Dictionary mapping an enum to a string?
@@ -54,5 +55,6 @@ public class MinecraftArgumentTypes
             "obsidian:player"
         ];
 
+    /// <summary>Indicates whether <paramref name="input"/> is one of the listed argument type ids.</summary>
     public static bool IsValidMcType(string? input) => mcTypes.Contains(input);
 }

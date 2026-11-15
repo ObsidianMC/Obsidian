@@ -7,6 +7,9 @@ namespace Obsidian.API;
 /// </summary>
 public sealed record class PotionEffectData : INetworkSerializable<PotionEffectData>
 {
+    /// <summary>
+    /// Gets the effect's zero-based registry id, which is one less than its <see cref="PotionEffect"/> value.
+    /// </summary>
     public required int Id { get; init; }
 
     /// <summary>
@@ -41,6 +44,7 @@ public sealed record class PotionEffectData : INetworkSerializable<PotionEffectD
     /// </summary>
     public PotionEffectData? HiddenEffect { get; init; }
 
+    /// <summary>Reads effect data from a network stream.</summary>
     public static PotionEffectData Read(INetStreamReader reader) => new()
     {
         Id = reader.ReadVarInt(),
@@ -54,6 +58,7 @@ public sealed record class PotionEffectData : INetworkSerializable<PotionEffectD
         HiddenEffect = reader.ReadOptional<PotionEffectData>()
     };
 
+    /// <summary>Writes effect data to a network stream.</summary>
     public static void Write(PotionEffectData value, INetStreamWriter writer)
     {
         writer.WriteVarInt(value.Id);

@@ -1,6 +1,7 @@
 ﻿using Obsidian.API.Registries;
 
 namespace Obsidian.API;
+/// <summary>A goat horn instrument: the sound it plays and how it is used.</summary>
 public sealed record class InstrumentData : INetworkSerializable<InstrumentData>
 {
     /// <summary>
@@ -9,14 +10,19 @@ public sealed record class InstrumentData : INetworkSerializable<InstrumentData>
     /// </summary>
     public string? Identifier { get; init; }
 
+    /// <summary>Gets the sound the instrument plays.</summary>
     public SoundEvent SoundEvent { get; init; }
 
+    /// <summary>Gets how long the instrument is used for each play, in seconds.</summary>
     public float UseDuration { get; init; }
 
+    /// <summary>Gets how far away the sound can be heard, in blocks.</summary>
     public float Range { get; init; }
 
+    /// <summary>Gets the instrument's durability damage value.</summary>
     public int DurabilityDamage { get; init; }
 
+    /// <summary>Gets the instrument's description, shown in the item's tooltip.</summary>
     public ChatMessage Description
     {
         get => Inventory.DataComponents.ComponentCopies.Chat(field)!;
@@ -24,6 +30,7 @@ public sealed record class InstrumentData : INetworkSerializable<InstrumentData>
     }
 
     // Instrument holders use registry ID + 1, or zero followed by the inline definition.
+    /// <summary>Reads an instrument from a network stream, looking registered ones up by id.</summary>
     public static InstrumentData Read(INetStreamReader reader)
     {
         var holder = reader.ReadVarInt();
@@ -44,6 +51,9 @@ public sealed record class InstrumentData : INetworkSerializable<InstrumentData>
         };
     }
 
+    /// <summary>
+    /// Writes an instrument to a network stream: a registered one by its id, any other with all its data.
+    /// </summary>
     public static void Write(InstrumentData value, INetStreamWriter writer)
     {
         var registered = InstrumentsRegistry.All.FirstOrDefault(instrument => instrument.Identifier == value.Identifier);

@@ -2,8 +2,14 @@
 
 namespace Obsidian.API;
 
+/// <summary>The details of one command being run: who sent it, as which entity, where, and its result.</summary>
+/// <param name="message">The command line being run.</param>
+/// <param name="commandSender">The sender of the command.</param>
+/// <param name="player">The player who sent the command, or null if a player didn't send it.</param>
+/// <param name="server">The server the command runs on.</param>
 public sealed class CommandContext(string message, ICommandSender commandSender, IPlayer? player, IServer server)
 {
+    /// <summary>Gets the player the command runs for, or null when it isn't run by or as a player.</summary>
     public IPlayer? Player { get; } = player;
 
     /// <summary>
@@ -12,12 +18,15 @@ public sealed class CommandContext(string message, ICommandSender commandSender,
     /// </summary>
     public IServer Server => ServerScope.Resolve(server);
 
+    /// <summary>Gets the sender of the command, such as a player, the console or an RCON connection.</summary>
     public ICommandSender Sender { get; } = commandSender;
+    /// <summary>Gets whether <see cref="Player"/> is set.</summary>
     public bool IsPlayer => Player is not null;
 
     /// <summary>The outcome of the last command, including a successful command whose result is zero.</summary>
     public bool Succeeded { get; private set; }
 
+    /// <summary>Gets the last command's result value, which is 0 when it failed.</summary>
     public int Result { get; private set; }
 
     /// <summary>
@@ -41,6 +50,7 @@ public sealed class CommandContext(string message, ICommandSender commandSender,
         this.SuccessCount = succeeded ? successes : 0;
     }
 
+    /// <summary>Gets the plugin whose command is running, or null for a server command.</summary>
     public PluginBase? Plugin { get; internal set; }
     internal string Message { get; } = message;
 

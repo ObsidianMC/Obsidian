@@ -36,5 +36,6 @@ public sealed class ParticleDefinition : ParticleData
     /// </summary>
     public override ParticleType ParticleType => (ParticleType)this.Id;
 
+    /// <summary>Returns <see cref="Identifier"/>.</summary>
     public override string ToString() => this.Identifier;
 }
