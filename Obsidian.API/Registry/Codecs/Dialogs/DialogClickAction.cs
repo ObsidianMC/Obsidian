@@ -8,6 +8,9 @@ public sealed class DialogClickAction : INbtSerializable
 {
     private readonly Action<INbtWriter> write;
     private DialogClickAction(Action<INbtWriter> write) => this.write = write;
+    /// <summary>
+    /// Writes the click action's type and associated fields to the current NBT compound.
+    /// </summary>
     public void Write(INbtWriter writer) => write(writer);
 
     private static DialogClickAction Text(string type, string field, string value) => new(writer =>
@@ -16,10 +19,22 @@ public sealed class DialogClickAction : INbtSerializable
         writer.WriteString(field, value);
     });
 
+    /// <summary>
+    /// Creates a client click action that runs the supplied command.
+    /// </summary>
     public static DialogClickAction RunCommand(string command) => Text("minecraft:run_command", "command", command);
+    /// <summary>
+    /// Creates a client click action that fills the chat input with the supplied command.
+    /// </summary>
     public static DialogClickAction SuggestCommand(string command) => Text("minecraft:suggest_command", "command", command);
+    /// <summary>
+    /// Creates a client click action that copies the supplied text to the clipboard.
+    /// </summary>
     public static DialogClickAction CopyToClipboard(string value) => Text("minecraft:copy_to_clipboard", "value", value);
 
+    /// <summary>
+    /// Creates an action opening an absolute HTTP or HTTPS URL; throws <see cref="ArgumentException"/> for other URLs.
+    /// </summary>
     public static DialogClickAction OpenUrl(string url)
     {
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("https" or "http"))
@@ -27,6 +42,9 @@ public sealed class DialogClickAction : INbtSerializable
         return Text("minecraft:open_url", "url", url);
     }
 
+    /// <summary>
+    /// Creates an action selecting a book page numbered from one.
+    /// </summary>
     public static DialogClickAction ChangePage(int page)
     {
         DialogValidation.Range(page, 1, int.MaxValue, nameof(page));
@@ -37,12 +55,18 @@ public sealed class DialogClickAction : INbtSerializable
         });
     }
 
+    /// <summary>
+    /// Creates an action opening a registered dialog by identifier or an inline dialog definition.
+    /// </summary>
     public static DialogClickAction ShowDialog(string id)
     {
         DialogValidation.Identifier(id);
         return Text("minecraft:show_dialog", "dialog", id);
     }
 
+    /// <summary>
+    /// Creates an action opening a registered dialog by identifier or an inline dialog definition.
+    /// </summary>
     public static DialogClickAction ShowDialog(DialogElement dialog) => new(writer =>
     {
         writer.WriteString("type", "minecraft:show_dialog");
@@ -51,8 +75,17 @@ public sealed class DialogClickAction : INbtSerializable
         writer.EndCompound();
     });
 
+    /// <summary>
+    /// Creates a dynamic command action whose template is expanded using dialog input values.
+    /// </summary>
     public static DialogClickAction CommandTemplate(string template) => Text("minecraft:dynamic/run_command", "template", template);
+    /// <summary>
+    /// Creates a custom action with a namespaced event identifier and optional fixed NBT payload.
+    /// </summary>
     public static DialogClickAction Custom(string id, INbtTag? payload = null) => CustomAction("minecraft:custom", id, "payload", payload);
+    /// <summary>
+    /// Creates a dynamic custom action that submits dialog input values with optional NBT additions.
+    /// </summary>
     public static DialogClickAction Submit(string id, NbtCompound? additions = null) => CustomAction("minecraft:dynamic/custom", id, "additions", additions);
 
     private static DialogClickAction CustomAction(string type, string id, string field, INbtTag? payload)

@@ -27,6 +27,9 @@ public sealed class NewWorldConfiguration
     /// </summary>
     public string? FlatPreset { get; set; }
 
+    /// <summary>
+    /// Gets or sets the structure-generation option saved for a newly created world.
+    /// </summary>
     public bool GenerateStructures { get; set; } = true;
 
     /// <summary>
@@ -34,10 +37,19 @@ public sealed class NewWorldConfiguration
     /// </summary>
     public bool BonusChest { get; set; }
 
+    /// <summary>
+    /// Gets or sets the initial default game mode for a newly created world.
+    /// </summary>
     public GameMode GameMode { get; set; } = GameMode.Survival;
 
+    /// <summary>
+    /// Gets or sets the initial difficulty for a newly created world.
+    /// </summary>
     public Difficulty Difficulty { get; set; } = Difficulty.Normal;
 
+    /// <summary>
+    /// Gets or sets whether a newly created world uses hardcore mode.
+    /// </summary>
     public bool Hardcore { get; set; }
 
     /// <summary>

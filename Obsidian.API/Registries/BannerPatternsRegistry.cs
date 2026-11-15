@@ -10,6 +10,9 @@ namespace Obsidian.API.Registries;
 /// </summary>
 public static class BannerPatternsRegistry
 {
+    /// <summary>
+    /// Identifies the <c>minecraft:banner_pattern</c> registry on the network.
+    /// </summary>
     public const string CodecKey = "minecraft:banner_pattern";
 
     // The patterns a loom offers without a pattern item, in the tag's order, which is the loom's.

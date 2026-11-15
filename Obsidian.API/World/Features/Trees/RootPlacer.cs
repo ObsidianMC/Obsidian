@@ -8,13 +8,22 @@ namespace Obsidian.API.World.Features.Trees;
 /// </summary>
 public abstract class RootPlacer
 {
+    /// <summary>
+    /// Gets the registered codec type identifier for this world generation component.
+    /// </summary>
     public string Type { get; init; } = string.Empty;
 
     /// <summary>How far above the feature origin the trunk starts.</summary>
     public required IIntProvider TrunkOffsetY { get; init; }
 
+    /// <summary>
+    /// Gets the block state provider used for root positions.
+    /// </summary>
     public required IBlockStateProvider RootProvider { get; init; }
 
+    /// <summary>
+    /// Gets the optional block placement above roots, or <c>null</c> when disabled.
+    /// </summary>
     public AboveRootPlacement? AboveRootPlacement { get; init; }
 
     /// <summary>
@@ -23,6 +32,9 @@ public abstract class RootPlacer
     /// </summary>
     public abstract bool PlaceRoots(TreeContext tree, Vector origin, Vector trunkOrigin);
 
+    /// <summary>
+    /// Offsets the world block origin upward by a sampled <see cref="TrunkOffsetY"/>.
+    /// </summary>
     public Vector GetTrunkOrigin(Vector origin, IRandomSource random) =>
         origin + (0, this.TrunkOffsetY.Sample(random), 0);
 
@@ -30,6 +42,9 @@ public abstract class RootPlacer
     protected virtual bool CanPlaceRoot(IWorldGenLevel level, Vector position) =>
         TreeBlockRules.ValidTreePos(level, position);
 
+    /// <summary>
+    /// Places a root at an eligible world position, waterlogging it and optionally placing a block above it.
+    /// </summary>
     protected virtual void PlaceRoot(TreeContext tree, Vector position)
     {
         if (!this.CanPlaceRoot(tree.Level, position))
@@ -68,7 +83,13 @@ public abstract class RootPlacer
 /// </summary>
 public sealed class AboveRootPlacement
 {
+    /// <summary>
+    /// Gets the state provider for blocks placed immediately above roots.
+    /// </summary>
     public required IBlockStateProvider AboveRootProvider { get; init; }
 
+    /// <summary>
+    /// Gets the probability of placing a block above an eligible root, read from <c>above_root_placement_chance</c>.
+    /// </summary>
     public required float AboveRootPlacementChance { get; init; }
 }

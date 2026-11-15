@@ -8,12 +8,24 @@ namespace Obsidian.API.Registry.Codecs.Biomes;
 /// </summary>
 public sealed record class BiomeEffect : INbtSerializable
 {
+    /// <summary>
+    /// Gets or sets the water tint as a hexadecimal color string, serialized as <c>water_color</c>.
+    /// </summary>
     public required string WaterColor { get; set; }
 
+    /// <summary>
+    /// Gets or sets the optional foliage tint; <c>null</c> omits <c>foliage_color</c>.
+    /// </summary>
     public string? FoliageColor { get; set; }
 
+    /// <summary>
+    /// Gets or sets the optional dry foliage tint; <c>null</c> omits <c>dry_foliage_color</c>.
+    /// </summary>
     public string? DryFoliageColor { get; set; }
 
+    /// <summary>
+    /// Gets or sets the optional grass tint; <c>null</c> omits <c>grass_color</c>.
+    /// </summary>
     public string? GrassColor { get; set; }
 
     /// <summary>
@@ -22,6 +34,9 @@ public sealed record class BiomeEffect : INbtSerializable
     public string? GrassColorModifier { get; set; }
 
     // Matches vanilla's BiomeSpecialEffects codec: absent optional colours and a "none" modifier are left out.
+    /// <summary>
+    /// Writes the <c>effects</c> compound, omitting absent colors and a missing or <c>none</c> grass modifier.
+    /// </summary>
     public void Write(INbtWriter writer)
     {
         writer.WriteCompoundStart("effects");

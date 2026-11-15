@@ -13,8 +13,14 @@ namespace Obsidian.API.Noise;
 /// </remarks>
 public class DensityNoiseMapBuilder : NoiseMapBuilder
 {
+    /// <summary>
+    /// Gets or sets the three-dimensional noise cube sampled to build the destination map.
+    /// </summary>
     public NoiseCube SourceNoiseCube { get; set; }
 
+    /// <summary>
+    /// Validates positive destination dimensions and assigned source and destination, then sizes the map.
+    /// </summary>
     protected override void PrepareBuild()
     {
         if (destWidth <= 0 ||
@@ -28,6 +34,9 @@ public class DensityNoiseMapBuilder : NoiseMapBuilder
         DestNoiseMap.SetSize(destHeight, destWidth);
     }
 
+    /// <summary>
+    /// Fills columns in parallel with the mean of their Y samples, honoring cancellation.
+    /// </summary>
     protected override void BuildImpl(CancellationToken cancellationToken)
     {
         NoiseCube nc = SourceNoiseCube;

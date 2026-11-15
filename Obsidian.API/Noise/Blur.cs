@@ -2,6 +2,9 @@
 
 namespace Obsidian.API.Noise;
 
+/// <summary>
+/// Blurs a right-shifted source with a horizontally weighted center-and-neighbor average.
+/// </summary>
 public class Blur : Module
 {
     /// <summary>

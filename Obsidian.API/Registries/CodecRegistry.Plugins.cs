@@ -9,6 +9,9 @@ namespace Obsidian.API.Registries;
 // entries, as static properties with their ids, and the table.
 public static partial class CodecRegistry
 {
+    /// <summary>
+    /// Exposes biome entries from vanilla and plugins, indexed by identifier and numeric ID.
+    /// </summary>
     public static partial class Biomes
     {
         /// <summary>
@@ -29,6 +32,9 @@ public static partial class CodecRegistry
         internal static CodecTable<BiomeCodec> Table => table;
     }
 
+    /// <summary>
+    /// Exposes dimension type entries from vanilla and plugins, indexed by identifier and numeric ID.
+    /// </summary>
     public static partial class Dimensions
     {
         /// <summary>
@@ -49,6 +55,9 @@ public static partial class CodecRegistry
         internal static CodecTable<DimensionCodec> Table => table;
     }
 
+    /// <summary>
+    /// Exposes damage type entries from vanilla and plugins, indexed by identifier and numeric ID.
+    /// </summary>
     public static partial class DamageType
     {
         /// <summary>

@@ -14,8 +14,14 @@ public sealed class BlockSet
 {
     private readonly string[] entries;
 
+    /// <summary>
+    /// Creates a set from block identifiers and <c>#</c>-prefixed block tag identifiers.
+    /// </summary>
     public BlockSet(params string[] entries) => this.entries = entries;
 
+    /// <summary>
+    /// Gets the unresolved block and tag identifiers supplied to this set.
+    /// </summary>
     public IReadOnlyList<string> Entries => this.entries;
 
     // Whether each block, by registry id, is in the set.

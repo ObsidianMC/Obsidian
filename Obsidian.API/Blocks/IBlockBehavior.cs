@@ -152,8 +152,14 @@ public interface IBlockBehavior
 /// </summary>
 public sealed class BlockUseContext
 {
+    /// <summary>
+    /// Gets the player using or breaking the block.
+    /// </summary>
     public required IPlayer Player { get; init; }
 
+    /// <summary>
+    /// Gets the used block's world position in blocks.
+    /// </summary>
     public required Vector Position { get; init; }
 
     /// <summary>
@@ -166,6 +172,9 @@ public sealed class BlockUseContext
     /// </summary>
     public required BlockFace Face { get; init; }
 
+    /// <summary>
+    /// Gets the interaction hand used to activate the block.
+    /// </summary>
     public required InteractionHand Hand { get; init; }
 
     /// <summary>The use packet's hit location relative to the block's lowest corner.</summary>
@@ -175,12 +184,24 @@ public sealed class BlockUseContext
 /// <summary>A player's attempt to break a plugin block, before removal and drops.</summary>
 public sealed class BlockBreakContext
 {
+    /// <summary>
+    /// Gets the player using or breaking the block.
+    /// </summary>
     public required IPlayer Player { get; init; }
 
+    /// <summary>
+    /// Gets the block state the player is attempting to break.
+    /// </summary>
     public required IBlock Block { get; init; }
 
+    /// <summary>
+    /// Gets the server's outline raycast hit for the attempted break.
+    /// </summary>
     public required BlockShapeHit Hit { get; init; }
 
+    /// <summary>
+    /// Gets or sets whether the break is cancelled and the block is retained.
+    /// </summary>
     public bool IsCancelled { get; set; }
 
     /// <summary>

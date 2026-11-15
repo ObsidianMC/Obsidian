@@ -8,9 +8,18 @@
 /// </remarks>
 public interface ISpline
 {
+    /// <summary>
+    /// Gets the lower bound reported for this spline's output.
+    /// </summary>
     public double MinValue { get; }
+    /// <summary>
+    /// Gets the upper bound reported for this spline's output.
+    /// </summary>
     public double MaxValue { get; }
 
+    /// <summary>
+    /// Evaluates the spline at world block coordinates, returning a single-precision result widened to double.
+    /// </summary>
     public double Apply(double x, double y, double z);
 
     /// <summary>

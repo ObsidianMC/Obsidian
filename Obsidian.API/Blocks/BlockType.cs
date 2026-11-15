@@ -244,6 +244,9 @@ public sealed class BlockType
         return index;
     }
 
+    /// <summary>
+    /// Returns the block type's namespaced identifier.
+    /// </summary>
     public override string ToString() => this.Identifier;
 }
 

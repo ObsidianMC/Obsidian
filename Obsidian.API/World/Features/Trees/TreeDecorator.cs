@@ -8,8 +8,14 @@ namespace Obsidian.API.World.Features.Trees;
 /// </summary>
 public abstract class TreeDecorator
 {
+    /// <summary>
+    /// Gets the registered codec type identifier for this world generation component.
+    /// </summary>
     public string Type { get; init; } = string.Empty;
 
+    /// <summary>
+    /// Adds decorations to the placed tree using the supplied context.
+    /// </summary>
     public abstract void Place(TreeDecoratorContext context);
 }
 
@@ -27,16 +33,34 @@ public abstract class TreeDecoratorContext
     {
     }
 
+    /// <summary>
+    /// Gets the world generation view used to read and place blocks.
+    /// </summary>
     public abstract IWorldGenLevel Level { get; }
 
+    /// <summary>
+    /// Gets the random source shared by this placement's operations.
+    /// </summary>
     public abstract IRandomSource Random { get; }
 
+    /// <summary>
+    /// Gets the vertical generation bounds used to resolve height providers and anchors.
+    /// </summary>
     public abstract WorldGenerationContext Generation { get; }
 
+    /// <summary>
+    /// Gets the tree's log positions in world blocks, ordered from lowest Y upward.
+    /// </summary>
     public abstract IReadOnlyList<Vector> Logs { get; }
 
+    /// <summary>
+    /// Gets the tree's foliage positions in world blocks, ordered from lowest Y upward.
+    /// </summary>
     public abstract IReadOnlyList<Vector> Leaves { get; }
 
+    /// <summary>
+    /// Gets the tree's root positions in world blocks, ordered from lowest Y upward.
+    /// </summary>
     public abstract IReadOnlyList<Vector> Roots { get; }
 
     /// <summary>
@@ -50,6 +74,9 @@ public abstract class TreeDecoratorContext
     public void PlaceVine(Vector position, BlockFace face) =>
         this.SetBlock(position, TreeBlockRules.WithProperty(TreeBlockRules.Vine, face.PropertyName(), true));
 
+    /// <summary>
+    /// Tests whether the world block position contains air.
+    /// </summary>
     public bool IsAir(Vector position) => this.Level.GetBlock(position).IsAir;
 
     /// <summary>

@@ -3,10 +3,20 @@ using Obsidian.Nbt.Interfaces;
 
 namespace Obsidian.API.Registry.Codecs.Dialogs;
 
+/// <summary>Defines one selectable value of a single-option dialog input.</summary>
+/// <param name="Id">The value submitted when this option is selected.</param>
+/// <param name="Display">The optional display text for the option.</param>
+/// <param name="Initial">Whether this option is initially selected.</param>
 public sealed record DialogOption(string Id, ChatMessage? Display = null, bool Initial = false);
 
+/// <summary>
+/// Defines a typed client dialog input and its serialized settings.
+/// </summary>
 public sealed class DialogInput : INbtSerializable
 {
+    /// <summary>
+    /// Gets the input key, containing only ASCII letters, digits and underscores.
+    /// </summary>
     public string Key { get; }
     private readonly string type;
     private readonly ChatMessage label;
@@ -22,6 +32,9 @@ public sealed class DialogInput : INbtSerializable
         this.write = write;
     }
 
+    /// <summary>
+    /// Writes the input type, key, label and type-specific settings to NBT.
+    /// </summary>
     public void Write(INbtWriter writer)
     {
         writer.WriteString("type", type);
@@ -30,6 +43,10 @@ public sealed class DialogInput : INbtSerializable
         write(writer);
     }
 
+    /// <summary>
+    /// Creates a text input with positive maximum length and optional multiline limits; widths and heights use client
+    /// pixels.
+    /// </summary>
     public static DialogInput Text(string key, ChatMessage label, int maxLength = 32, string initial = "",
         int width = 200, bool labelVisible = true, bool multiline = false, int? maxLines = null, int? height = null)
     {
@@ -54,6 +71,9 @@ public sealed class DialogInput : INbtSerializable
         });
     }
 
+    /// <summary>
+    /// Creates a Boolean input with explicit submitted strings for its true and false states.
+    /// </summary>
     public static DialogInput Boolean(string key, ChatMessage label, bool initial = false,
         string onTrue = "true", string onFalse = "false") => new(key, "minecraft:boolean", label, writer =>
     {
@@ -62,6 +82,9 @@ public sealed class DialogInput : INbtSerializable
         writer.WriteString("on_false", onFalse);
     });
 
+    /// <summary>
+    /// Creates a selector with nonempty unique options and at most one initial selection.
+    /// </summary>
     public static DialogInput SingleOption(string key, ChatMessage label, IEnumerable<DialogOption> options,
         int width = 200, bool labelVisible = true)
     {
@@ -86,6 +109,9 @@ public sealed class DialogInput : INbtSerializable
         });
     }
 
+    /// <summary>
+    /// Creates a finite increasing numeric slider with an optional positive step and an initial value inside its range.
+    /// </summary>
     public static DialogInput NumberRange(string key, ChatMessage label, float start, float end,
         float? initial = null, float? step = null, int width = 200, string labelFormat = "options.generic_value")
     {

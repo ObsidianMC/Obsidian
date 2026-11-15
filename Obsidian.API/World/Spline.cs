@@ -9,16 +9,31 @@
 /// </remarks>
 public class Spline : ISpline
 {
+    /// <summary>
+    /// Gets the density function supplying the spline's interpolation coordinate.
+    /// </summary>
     public required IDensityFunction Coordinate { get; init; }
 
+    /// <summary>
+    /// Gets the nonempty control points sorted by increasing <see cref="SplinePoint.Location"/>.
+    /// </summary>
     public required ImmutableArray<SplinePoint> Points { get; init; }
 
+    /// <summary>
+    /// Gets the lower bound reported for this spline's output.
+    /// </summary>
     public double MinValue => this.State.MinValue;
 
+    /// <summary>
+    /// Gets the upper bound reported for this spline's output.
+    /// </summary>
     public double MaxValue => this.State.MaxValue;
 
     private SplineState State => field ??= SplineState.Create(this.Coordinate, this.Points);
 
+    /// <summary>
+    /// Evaluates the spline at world block coordinates, returning a single-precision result widened to double.
+    /// </summary>
     public double Apply(double x, double y, double z) => this.ApplyFloat(x, y, z);
 
     private float ApplyFloat(double x, double y, double z)

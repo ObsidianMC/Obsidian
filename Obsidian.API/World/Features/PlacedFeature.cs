@@ -14,6 +14,9 @@ public sealed class PlacedFeature : IFeature
     /// </summary>
     public string Identifier { get; init; } = string.Empty;
 
+    /// <summary>
+    /// Gets the configured feature placed at each accepted position.
+    /// </summary>
     public required ConfiguredFeatureBase Feature { get; init; }
 
     // Built-in features don't keep their context once they return, so a placement moves one context from position to
@@ -21,6 +24,9 @@ public sealed class PlacedFeature : IFeature
     private bool? reusesFeatureContext;
     private bool ReusesFeatureContext => this.reusesFeatureContext ??= this.Feature.GetType().Assembly.GetName().Name is "Obsidian" or "Obsidian.API";
 
+    /// <summary>
+    /// Gets the modifiers applied in order to each candidate position before placement.
+    /// </summary>
     public ImmutableArray<PlacementModifierBase> Placement { get; init; } = [];
 
     /// <summary>

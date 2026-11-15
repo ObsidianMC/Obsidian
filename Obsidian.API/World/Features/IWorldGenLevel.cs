@@ -17,10 +17,19 @@ public interface IWorldGenLevel
     /// </summary>
     public long Seed { get; }
 
+    /// <summary>
+    /// Gets the lowest build Y in world blocks.
+    /// </summary>
     public int MinY { get; }
 
+    /// <summary>
+    /// Gets the build height in blocks.
+    /// </summary>
     public int Height { get; }
 
+    /// <summary>
+    /// Gets the sea surface's world Y in blocks.
+    /// </summary>
     public int SeaLevel { get; }
 
     /// <summary>Raw brightness before lighting: 15 with skylight, otherwise 0.</summary>
@@ -32,6 +41,9 @@ public interface IWorldGenLevel
     /// </summary>
     public IRandomSource Random { get; }
 
+    /// <summary>
+    /// Gets the block at a world block position.
+    /// </summary>
     public IBlock GetBlock(Vector position);
 
     /// <summary>
@@ -55,6 +67,9 @@ public interface IWorldGenLevel
     /// </summary>
     public int GetHeight(HeightmapType type, int x, int z);
 
+    /// <summary>
+    /// Gets the biome at a world block position.
+    /// </summary>
     public BiomeCodec GetBiome(Vector position);
 
     /// <summary>
@@ -84,5 +99,8 @@ public interface IWorldGenLevel
     /// </summary>
     public void ScheduleFluidTick(Vector position);
 
+    /// <summary>
+    /// Tests whether Y lies outside [<see cref="MinY"/>, <see cref="MinY"/> + <see cref="Height"/>).
+    /// </summary>
     public bool IsOutsideBuildHeight(int y) => y < this.MinY || y >= this.MinY + this.Height;
 }

@@ -1,5 +1,8 @@
 ﻿namespace Obsidian.API.World;
 
+/// <summary>
+/// Creates worlds and dimensions and registers their level generators.
+/// </summary>
 public interface ILevelFactory
 {
     /// <summary>

@@ -1,8 +1,14 @@
 ﻿namespace Obsidian.API.World.Generator.DensityFunctions;
 
+/// <summary>
+/// Evaluates a terrain spline at the sampled position.
+/// </summary>
 [DensityFunction("minecraft:spline")]
 public sealed class SplineDensityFunction : IDensityFunction
 {
+    /// <summary>
+    /// Gets the density function's codec type identifier.
+    /// </summary>
     public string Type => "minecraft:spline";
 
     /// <summary>
@@ -11,12 +17,24 @@ public sealed class SplineDensityFunction : IDensityFunction
     /// </summary>
     public required ISpline Spline { get; init; }
 
+    /// <summary>
+    /// Gets the lower bound reported for this function's output.
+    /// </summary>
     public double MinValue => this.Spline.MinValue;
 
+    /// <summary>
+    /// Gets the upper bound reported for this function's output.
+    /// </summary>
     public double MaxValue => this.Spline.MaxValue;
 
+    /// <summary>
+    /// Evaluates this function at the supplied world block coordinates.
+    /// </summary>
     public double GetValue(double x, double y, double z) => this.Spline.Apply(x, y, z);
 
+    /// <summary>
+    /// Maps child functions and noises with the visitor, then applies it to the rebuilt function.
+    /// </summary>
     public IDensityFunction MapAll(IDensityFunctionVisitor visitor) =>
         visitor.Apply(new SplineDensityFunction { Spline = this.Spline.MapAll(visitor) });
 }

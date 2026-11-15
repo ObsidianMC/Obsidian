@@ -9,12 +9,24 @@ public sealed class FeatureContext
 {
     private Vector origin;
 
+    /// <summary>
+    /// Gets the world generation view used to read and place blocks.
+    /// </summary>
     public required IWorldGenLevel Level { get; init; }
 
+    /// <summary>
+    /// Gets the feature placement origin in world block coordinates.
+    /// </summary>
     public required Vector Origin { get => this.origin; init => this.origin = value; }
 
+    /// <summary>
+    /// Gets the random source shared by this placement's operations.
+    /// </summary>
     public required IRandomSource Random { get; init; }
 
+    /// <summary>
+    /// Gets the vertical generation bounds used to resolve height providers and anchors.
+    /// </summary>
     public required WorldGenerationContext Generation { get; init; }
 
     /// <summary>

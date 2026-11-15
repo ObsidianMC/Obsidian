@@ -4,6 +4,9 @@ using SharpNoise.Modules;
 
 namespace Obsidian.API.Noise;
 
+/// <summary>
+/// Selects biome registry IDs from temperature, humidity, terrain height, erosion, rivers and peaks.
+/// </summary>
 public class BiomeSelector : Module
 {
     // 3D: 5 heights, 4 temp, 3 humidity
@@ -40,6 +43,9 @@ public class BiomeSelector : Module
         ]
     ];
 
+    /// <summary>
+    /// Connects the six source modules used to choose a biome.
+    /// </summary>
     public BiomeSelector(Module temp, Module humidity, Module height, Module erosion, Module river, Module peaks) : base(6)
     {
         SourceModules[0] = temp;
@@ -50,6 +56,9 @@ public class BiomeSelector : Module
         SourceModules[5] = peaks;
     }
 
+    /// <summary>
+    /// Returns the selected biome registry ID using X and Z samples at Y zero.
+    /// </summary>
     public override double GetValue(double x, double y, double z)
     {
         // 5 heights, 4 temps, 3 humidities

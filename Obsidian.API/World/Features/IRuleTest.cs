@@ -7,7 +7,13 @@ namespace Obsidian.API.World.Features;
 /// </summary>
 public interface IRuleTest
 {
+    /// <summary>
+    /// Gets the registered codec type identifier for this world generation component.
+    /// </summary>
     public string Type { get; }
 
+    /// <summary>
+    /// Tests whether a block is an eligible replacement target, using randomness when required.
+    /// </summary>
     public bool Test(IBlock block, IRandomSource random);
 }

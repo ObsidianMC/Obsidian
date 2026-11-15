@@ -4,17 +4,32 @@ using System.Runtime.CompilerServices;
 
 namespace Obsidian.API.Noise;
 
+/// <summary>
+/// Produces a binary tunnel mask by comparing distances to nearby seeded Voronoi points.
+/// </summary>
 public class VoronoiTunnels : Module
 {
+    /// <summary>
+    /// Gets or sets the base seed used to offset Voronoi points on each axis.
+    /// </summary>
     public int Seed { get; set; }
 
+    /// <summary>
+    /// Gets or sets the coordinate scale, also used in the point-distance threshold.
+    /// </summary>
     public double Frequency { get; set; }
 
+    /// <summary>
+    /// Creates a Voronoi tunnel module with caller-configured seed and frequency.
+    /// </summary>
     public VoronoiTunnels() : base(0)
     {
 
     }
 
+    /// <summary>
+    /// Returns zero or one from nearby point distances after scaling Y by an additional factor of 1.333.
+    /// </summary>
     [SkipLocalsInit]
     public override double GetValue(double x, double y, double z)
     {

@@ -142,8 +142,17 @@ public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
         Data.SavedDataType<TValue> type, Func<TValue> create, Data.SavedDataScope scope = Data.SavedDataScope.Level) =>
         throw new NotSupportedException("This level doesn't support saved data.");
 
+    /// <summary>
+    /// Gets the level's configured name.
+    /// </summary>
     public string Name { get; }
+    /// <summary>
+    /// Gets the seed text supplied when the level was created.
+    /// </summary>
     public string Seed { get; }
+    /// <summary>
+    /// Gets the filesystem path containing this level's chunks, entities and saved data.
+    /// </summary>
     public string FolderPath { get; }
     /// <summary>
     /// The level's name, which clients know it by: its dimension's identifier, like <c>minecraft:the_nether</c>.
@@ -155,31 +164,83 @@ public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
     /// </summary>
     public DimensionCodec DimensionType { get; }
 
+    /// <summary>
+    /// Gets the filesystem path of the level data file.
+    /// </summary>
     public string LevelDataFilePath { get; }
 
+    /// <summary>
+    /// Gets whether the level has been loaded.
+    /// </summary>
     public bool Loaded { get; }
 
+    /// <summary>
+    /// Gets or sets the stored world time in ticks, broadcasting changes to players.
+    /// </summary>
     public long Time { get; set; }
+    /// <summary>
+    /// Gets or sets the stored time of day in ticks, broadcasting changes to players.
+    /// </summary>
     public int DayTime { get; set; }
 
+    /// <summary>
+    /// Gets the level's mutable persisted settings and state.
+    /// </summary>
     public LevelData LevelData { get; }
 
+    /// <summary>
+    /// Gets the default game mode stored in the level data.
+    /// </summary>
     public GameMode DefaultGamemode { get; }
 
+    /// <summary>
+    /// Gets the number of regions currently held by the level.
+    /// </summary>
     public int RegionCount { get; }
+    /// <summary>
+    /// Gets the number of generated chunks currently loaded across the level's regions.
+    /// </summary>
     public int LoadedChunkCount { get; }
+    /// <summary>
+    /// Gets the number of queued and waiting chunk generation jobs.
+    /// </summary>
     public int ChunksToGenCount { get; }
 
+    /// <summary>
+    /// Gets the service used to send packets to this level's players.
+    /// </summary>
     public IPacketBroadcaster PacketBroadcaster { get; }
+    /// <summary>
+    /// Gets the service used to dispatch server events for this level.
+    /// </summary>
     public IEventDispatcher EventDispatcher { get; }
 
+    /// <summary>
+    /// Gets the live mapping of player UUIDs to players in this level.
+    /// </summary>
     public ConcurrentDictionary<Guid, IPlayer> Players { get; }
 
+    /// <summary>
+    /// Creates an entity spawner bound to this level.
+    /// </summary>
     public IEntitySpawner GetNewEntitySpawner();
 
+    /// <summary>
+    /// Enumerates nonplayer entities within a three-dimensional radius in blocks.
+    /// </summary>
     public IEnumerable<IEntity> GetNonPlayerEntitiesInRange(VectorD location, float distance);
+    /// <summary>
+    /// Enumerates players within horizontal range and nonplayer entities within three-dimensional range, in blocks.
+    /// </summary>
     public IEnumerable<IEntity> GetEntitiesInRange(VectorD location, float distance);
+    /// <summary>
+    /// Enumerates players within a horizontal radius in blocks; zero requires an exact three-dimensional position
+    /// match.
+    /// </summary>
     public IEnumerable<IPlayer> GetPlayersInRange(VectorD location, float distance);
+    /// <summary>
+    /// Enumerates players that have the chunk containing the world block position loaded.
+    /// </summary>
     public IEnumerable<IPlayer> GetPlayersInChunkRange(Vector worldPosition);
 
     /// <summary>
@@ -205,13 +266,36 @@ public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
     /// <returns>Null if the region or chunk doesn't exist yet. Otherwise the full chunk or a partial chunk.</returns>
     public ValueTask<IChunk?> GetChunkAsync(Vector worldLocation, bool scheduleGeneration = true);
 
+    /// <summary>
+    /// Removes an entity from this level and queues its removal for clients, returning whether removal succeeded.
+    /// </summary>
     public ValueTask<bool> DestroyEntityAsync(IEntity entity);
+    /// <summary>
+    /// Gets the block at world block coordinates, loading its chunk without generation; returns <c>null</c> if
+    /// unavailable and void air outside build height.
+    /// </summary>
     public ValueTask<IBlock?> GetBlockAsync(Vector location);
+    /// <summary>
+    /// Gets the block at world block coordinates, loading its chunk without generation; returns <c>null</c> if
+    /// unavailable and void air outside build height.
+    /// </summary>
     public ValueTask<IBlock?> GetBlockAsync(int x, int y, int z);
+    /// <summary>
+    /// Sets a block at a world block position and notifies clients without requesting neighbor updates.
+    /// </summary>
     public ValueTask SetBlockAsync(Vector location, IBlock block);
+    /// <summary>
+    /// Sets a block at world block coordinates and notifies clients without requesting neighbor updates.
+    /// </summary>
     public ValueTask SetBlockAsync(int x, int y, int z, IBlock block);
 
+    /// <summary>
+    /// Sets a block at world block coordinates and notifies clients, optionally requesting block updates.
+    /// </summary>
     public ValueTask SetBlockAsync(Vector location, IBlock block, bool doBlockUpdate);
+    /// <summary>
+    /// Sets a block at world block coordinates and notifies clients, optionally requesting block updates.
+    /// </summary>
     public ValueTask SetBlockAsync(int x, int y, int z, IBlock block, bool doBlockUpdate);
 
     /// <summary>
@@ -233,12 +317,27 @@ public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
         int delay,
         Blocks.TickPriority priority = Blocks.TickPriority.Normal);
 
+    /// <summary>
+    /// Removes the matching player instance from this level's player collection, returning whether it was present.
+    /// </summary>
     public bool TryRemovePlayer(IPlayer player);
 
+    /// <summary>
+    /// Stores block entity data at world block coordinates.
+    /// </summary>
     public ValueTask SetBlockEntity(Vector blockPosition, IBlockEntity tileEntityData);
+    /// <summary>
+    /// Stores block entity data at world block coordinates.
+    /// </summary>
     public ValueTask SetBlockEntity(int x, int y, int z, IBlockEntity tileEntityData);
 
+    /// <summary>
+    /// Gets block entity data at world block coordinates, or <c>null</c> when none is available.
+    /// </summary>
     public ValueTask<IBlockEntity?> GetBlockEntityAsync(Vector blockPosition);
+    /// <summary>
+    /// Gets block entity data at world block coordinates, or <c>null</c> when none is available.
+    /// </summary>
     public ValueTask<IBlockEntity?> GetBlockEntityAsync(int x, int y, int z);
 
     /// <summary>
@@ -250,14 +349,32 @@ public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
     /// </summary>
     public Inventory.IItemAccess? GetItemAccess(Vector position, BlockFace? side);
 
+    /// <summary>
+    /// Sets a block at world block coordinates without client notification, optionally requesting block updates.
+    /// </summary>
     public ValueTask SetBlockUntrackedAsync(Vector location, IBlock block, bool doBlockUpdate = false);
+    /// <summary>
+    /// Sets a block at world block coordinates without client notification, optionally requesting block updates.
+    /// </summary>
     public ValueTask SetBlockUntrackedAsync(int x, int y, int z, IBlock block, bool doBlockUpdate = false);
 
+    /// <summary>
+    /// Gets the world-surface heightmap value at world block X and Z, or <c>null</c> if the chunk is unavailable.
+    /// </summary>
     public ValueTask<int?> GetWorldSurfaceHeightAsync(int x, int z);
 
+    /// <summary>
+    /// Attempts to register an entity in this level, returning whether it was added.
+    /// </summary>
     public bool TryAddEntity(IEntity entity);
+    /// <summary>
+    /// Adds a player to this level's player collection unless its UUID is already present.
+    /// </summary>
     public bool TryAddPlayer(IPlayer player);
 
+    /// <summary>
+    /// Spawns the requested type at a world position; falling blocks use sand placed 20 blocks higher.
+    /// </summary>
     public IEntity SpawnEntity(VectorD position, EntityType type);
 
     /// <summary>
@@ -269,8 +386,17 @@ public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
         Entities.EntityDefinition definition,
         VectorD motion = default,
         IEntity? owner = null);
+    /// <summary>
+    /// Registers and spawns the existing entity, throwing if it cannot be registered in this level.
+    /// </summary>
     public IEntity SpawnEntity(IEntity entity);
+    /// <summary>
+    /// Spawns a falling block carrying the supplied state, offsetting X and Z by half a block.
+    /// </summary>
     public IEntity SpawnFallingBlock(VectorD position, IBlock block);
+    /// <summary>
+    /// Spawns experience orbs whose values total <paramref name="count"/> at a world position.
+    /// </summary>
     public void SpawnExperienceOrbs(VectorD position, short count);
 
     /// <summary>
@@ -296,6 +422,9 @@ public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
         VectorF spread = default,
         float speed = 0,
         bool force = false);
+    /// <summary>
+    /// Enumerates players that have the chunk containing the world block position loaded.
+    /// </summary>
     public IEnumerable<IPlayer> PlayersInRange(Vector location);
     /// <summary>
     /// Ticks the level once. The server does, every tick; a plugin rarely needs to.
@@ -319,6 +448,9 @@ public interface ILevel : IAsyncDisposable, Blocks.ISignalReader
     /// </exception>
     public Task FlushRegionsAsync();
 
+    /// <summary>
+    /// Loads the level using the supplied dimension type, returning whether loading succeeded.
+    /// </summary>
     public Task<bool> LoadAsync(DimensionCodec codec);
 
     /// <summary>

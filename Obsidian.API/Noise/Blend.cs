@@ -2,6 +2,9 @@
 
 namespace Obsidian.API.Noise;
 
+/// <summary>
+/// Averages the source sample with four horizontal neighbors separated by the configured distance.
+/// </summary>
 public class Blend : Module
 {
     /// <summary>

@@ -2,6 +2,9 @@
 
 namespace Obsidian.API.Configuration;
 
+/// <summary>
+/// Configures server networking, player admission and level operation.
+/// </summary>
 public sealed class ServerConfiguration
 {
     private const byte DefaultViewDistance = 10;
@@ -55,8 +58,14 @@ public sealed class ServerConfiguration
     /// </summary>
     public bool AllowOperatorRequests { get; set; } = true;
 
+    /// <summary>
+    /// Gets or sets whether server shutdown also stops the hosting application.
+    /// </summary>
     public bool ServerShutdownStopsProgram { get; set; } = true;
 
+    /// <summary>
+    /// Gets or sets the unused nullable <c>Baah</c> setting.
+    /// </summary>
     public bool? Baah { get; set; }
 
     /// <summary>
@@ -122,16 +131,28 @@ public sealed class ServerConfiguration
         set => field = Math.Max(value, MinimumSimulationDistance);
     }
 
+    /// <summary>
+    /// Gets or sets the entity broadcast range in blocks, clamped to at least 10 and defaulting to 100.
+    /// </summary>
     public ushort EntityBroadcastRangePercentage
     {
         get => field == 0 ? DefaultEntityBroadcastRangePercentage : field;
         set => field = Math.Max((ushort)10, value);
     }
 
+    /// <summary>
+    /// Gets or sets the radius in chunks used when loading and preparing the spawn area.
+    /// </summary>
     public int SpawnChunkRadius { get; set; } = 12;
 
+    /// <summary>
+    /// Gets or sets the chunk radius used for initial world pregeneration.
+    /// </summary>
     public int PregenerateChunkRange { get; set; } = 15; // by default, pregenerate range from -15 to 15;
 
+    /// <summary>
+    /// Gets or sets the configured player-information mode for server list responses.
+    /// </summary>
     public ServerListQuery ServerListQuery { get; set; } = ServerListQuery.Full;
 
     /// <summary>
@@ -151,24 +172,57 @@ public sealed class ServerConfiguration
     public bool ParallelLevelTicks { get; set; }
 }
 
+/// <summary>
+/// Describes a configured world, its generator and its child dimension identifiers.
+/// </summary>
 public sealed class ServerWorld
 {
+    /// <summary>
+    /// Gets or sets the world's configured name.
+    /// </summary>
     public string Name { get; set; } = "overworld";
+    /// <summary>
+    /// Gets or sets the registered level generator identifier.
+    /// </summary>
     public string Generator { get; set; } = "minecraft:mojang_generator";
 
+    /// <summary>
+    /// Gets or sets the seed text used to create the world.
+    /// </summary>
     public string Seed { get; set; } = default!;
 
+    /// <summary>
+    /// Gets or sets whether this world is selected as the default world.
+    /// </summary>
     public bool Default { get; set; }
 
+    /// <summary>
+    /// Gets or sets the identifier of the world's default dimension.
+    /// </summary>
     public string DefaultDimension { get; set; } = "minecraft:overworld";
 
+    /// <summary>
+    /// Gets or sets the identifiers of additional dimensions belonging to the world.
+    /// </summary>
     public List<string> ChildDimensions { get; set; } = new();
 }
 
+/// <summary>
+/// Specifies the configured player-information mode for server list responses.
+/// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum ServerListQuery
 {
+    /// <summary>
+    /// Selects full player information for the server list response.
+    /// </summary>
     Full,
+    /// <summary>
+    /// Selects anonymized player information for the server list response.
+    /// </summary>
     Anonymized,
+    /// <summary>
+    /// Selects omission of player information from the server list response.
+    /// </summary>
     Disabled
 }

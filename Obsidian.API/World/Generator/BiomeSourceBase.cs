@@ -27,6 +27,9 @@ public abstract class BiomeSourceBase
     /// <summary>
     /// The biome at quart coordinates (block coordinates divided by 4), one of <see cref="PossibleBiomes"/>.
     /// </summary>
+    /// <param name="quartX">The world X coordinate in four-block quarts.</param>
+    /// <param name="quartY">The world Y coordinate in four-block quarts.</param>
+    /// <param name="quartZ">The world Z coordinate in four-block quarts.</param>
     /// <param name="climate">Samples the noise settings' climate.</param>
     public abstract string GetBiome(int quartX, int quartY, int quartZ, IClimateSampler climate);
 }
@@ -46,6 +49,10 @@ public interface IClimateSampler
 /// The router's climate values at a position, before vanilla quantizes them to pick a multi-noise biome: mostly
 /// from -1 to 1, the range of vanilla's biome parameters.
 /// </summary>
+/// <param name="Temperature">The router's temperature sample.</param>
+/// <param name="Continentalness">The router's continents sample.</param>
+/// <param name="Erosion">The router's erosion sample.</param>
+/// <param name="Depth">The router's depth sample.</param>
 /// <param name="Weirdness">The router's <c>ridges</c>.</param>
 /// <param name="Humidity">The router's <c>vegetation</c>.</param>
 public readonly record struct ClimatePoint(

@@ -8,8 +8,14 @@ namespace Obsidian.API.World.Features;
 /// </summary>
 public abstract class PlacementModifierBase
 {
+    /// <summary>
+    /// Gets the registered codec type identifier for this world generation component.
+    /// </summary>
     public abstract string Type { get; }
 
+    /// <summary>
+    /// Produces zero or more candidate world block positions from the input position.
+    /// </summary>
     public abstract IEnumerable<Vector> GetPositions(PlacementContext context, IRandomSource random, Vector position);
 }
 
@@ -22,6 +28,9 @@ public abstract class PlacementModifierBase
 /// </remarks>
 public abstract class SinglePlacementModifierBase : PlacementModifierBase
 {
+    /// <summary>
+    /// Produces zero or more candidate world block positions from the input position.
+    /// </summary>
     public sealed override IEnumerable<Vector> GetPositions(PlacementContext context, IRandomSource random, Vector position) =>
         this.GetPosition(context, random, position) is Vector next ? [next] : [];
 
@@ -36,9 +45,15 @@ public abstract class SinglePlacementModifierBase : PlacementModifierBase
 /// </summary>
 public abstract class PlacementFilterBase : SinglePlacementModifierBase
 {
+    /// <summary>
+    /// Returns the unchanged world block position when the filter accepts it, or <c>null</c> otherwise.
+    /// </summary>
     public sealed override Vector? GetPosition(PlacementContext context, IRandomSource random, Vector position) =>
         this.ShouldPlace(context, random, position) ? position : null;
 
+    /// <summary>
+    /// Tests whether the candidate world block position should be retained for placement.
+    /// </summary>
     protected abstract bool ShouldPlace(PlacementContext context, IRandomSource random, Vector position);
 }
 
@@ -47,8 +62,14 @@ public abstract class PlacementFilterBase : SinglePlacementModifierBase
 /// </summary>
 public sealed class PlacementContext
 {
+    /// <summary>
+    /// Gets the world generation view used to read and place blocks.
+    /// </summary>
     public required IWorldGenLevel Level { get; init; }
 
+    /// <summary>
+    /// Gets the vertical generation bounds used to resolve height providers and anchors.
+    /// </summary>
     public required WorldGenerationContext Generation { get; init; }
 
     /// <summary>

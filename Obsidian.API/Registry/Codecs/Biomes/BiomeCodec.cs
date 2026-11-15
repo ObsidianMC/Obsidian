@@ -2,10 +2,19 @@
 
 namespace Obsidian.API.Registry.Codecs.Biomes;
 
+/// <summary>
+/// Represents a biome registry entry and its synchronized element data.
+/// </summary>
 public sealed record class BiomeCodec : ICodec
 {
+    /// <summary>
+    /// Gets the entry's namespaced registry identifier.
+    /// </summary>
     public required string Name { get; init; }
 
+    /// <summary>
+    /// Gets the numeric registry ID used on the network.
+    /// </summary>
     public required int Id { get; init; }
 
     /// <summary>

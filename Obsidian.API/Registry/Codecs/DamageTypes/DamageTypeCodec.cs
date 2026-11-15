@@ -3,10 +3,19 @@ using Obsidian.Nbt.Interfaces;
 
 namespace Obsidian.API.Registry.Codecs.DamageTypes;
 
+/// <summary>
+/// Represents a damage type registry entry and its synchronized element data.
+/// </summary>
 public sealed class DamageTypeCodec : ICodec
 {
+    /// <summary>
+    /// Gets the entry's namespaced registry identifier.
+    /// </summary>
     public required string Name { get; init; }
 
+    /// <summary>
+    /// Gets the numeric registry ID used on the network.
+    /// </summary>
     public required int Id { get; init; }
 
     /// <summary>
@@ -16,6 +25,9 @@ public sealed class DamageTypeCodec : ICodec
 
     // Matches vanilla's DamageType.DIRECT_CODEC, which clients decode damage types with: the default effects (hurt)
     // and death message type (default) are left out.
+    /// <summary>
+    /// Writes this entry's damage type fields to the registry element NBT payload.
+    /// </summary>
     public void WriteElement(INbtWriter writer)
     {
         var element = this.Element;

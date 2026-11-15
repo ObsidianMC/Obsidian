@@ -50,9 +50,18 @@ public static class RandomSupport
 /// <summary>A 128-bit seed split into two 64-bit halves.</summary>
 public readonly record struct Seed128Bit(long SeedLo, long SeedHi)
 {
+    /// <summary>
+    /// Returns a seed with each half XORed with the corresponding supplied half.
+    /// </summary>
     public Seed128Bit Xor(long seedLo, long seedHi) => new(this.SeedLo ^ seedLo, this.SeedHi ^ seedHi);
 
+    /// <summary>
+    /// Returns a seed with each half XORed with the corresponding supplied half.
+    /// </summary>
     public Seed128Bit Xor(Seed128Bit other) => this.Xor(other.SeedLo, other.SeedHi);
 
+    /// <summary>
+    /// Returns a seed with Stafford's Mix13 finalizer applied independently to each half.
+    /// </summary>
     public Seed128Bit Mixed() => new(RandomSupport.MixStafford13(this.SeedLo), RandomSupport.MixStafford13(this.SeedHi));
 }

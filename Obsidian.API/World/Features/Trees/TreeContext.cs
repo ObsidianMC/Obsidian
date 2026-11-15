@@ -16,10 +16,19 @@ public abstract class TreeContext
     {
     }
 
+    /// <summary>
+    /// Gets the world generation view used to read and place blocks.
+    /// </summary>
     public abstract IWorldGenLevel Level { get; }
 
+    /// <summary>
+    /// Gets the random source shared by this placement's operations.
+    /// </summary>
     public abstract IRandomSource Random { get; }
 
+    /// <summary>
+    /// Gets the vertical generation bounds used to resolve height providers and anchors.
+    /// </summary>
     public abstract WorldGenerationContext Generation { get; }
 
     /// <summary>The tree feature's <c>trunk_provider</c>, for logs.</summary>
@@ -39,6 +48,9 @@ public abstract class TreeContext
     /// <summary>Places a trunk block: a log, or the dirt under the trunk.</summary>
     public abstract void SetLog(Vector position, IBlock block);
 
+    /// <summary>
+    /// Places a root block at a world position and records it as part of the tree.
+    /// </summary>
     public abstract void SetRoot(Vector position, IBlock block);
 
     /// <summary>Vanilla <c>FoliageSetter.set</c>.</summary>

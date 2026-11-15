@@ -7,8 +7,14 @@ namespace Obsidian.API.World.Features;
 /// </summary>
 public sealed class WeightedEntry<T>
 {
+    /// <summary>
+    /// Gets the value returned when this entry is selected.
+    /// </summary>
     public required T Data { get; init; }
 
+    /// <summary>
+    /// Gets this entry's contribution to the cumulative selection weight.
+    /// </summary>
     public required int Weight { get; init; }
 
     /// <summary>

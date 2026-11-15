@@ -1,4 +1,7 @@
 ﻿namespace Obsidian.API.Configuration;
+/// <summary>
+/// Configures packet compression, keep-alive timing and connection throttling.
+/// </summary>
 public sealed record class NetworkConfiguration
 {
     /// <summary>
@@ -18,8 +21,14 @@ public sealed record class NetworkConfiguration
     /// </summary>
     public int CompressionLevel { get; set; } = -1;
 
+    /// <summary>
+    /// Gets or sets the interval between keep-alive requests in milliseconds.
+    /// </summary>
     public long KeepAliveInterval { get; set; } = 10_000;
 
+    /// <summary>
+    /// Gets or sets the timeout for an unanswered keep-alive request in milliseconds.
+    /// </summary>
     public long KeepAliveTimeoutInterval { get; set; } = 30_000;
 
     /// <summary>
