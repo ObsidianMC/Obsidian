@@ -88,6 +88,9 @@ internal sealed partial class PlayClientHandler : ClientHandler
             case PickItemFromBlockPacket.PacketId:
                 await HandleFromPoolAsync<PickItemFromBlockPacket>(data);
                 break;
+            case PickItemFromEntityPacket.PacketId:
+                await HandleFromPoolAsync<PickItemFromEntityPacket>(data);
+                break;
             case PlaceRecipePacket.PacketId:
                 await HandleFromPoolAsync<PlaceRecipePacket>(data);
                 break;

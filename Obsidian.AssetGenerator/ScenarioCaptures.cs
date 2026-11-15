@@ -18,6 +18,7 @@ namespace Obsidian.AssetGenerator;
 /// </remarks>
 internal static class ScenarioCaptures
 {
+    public const string PickBlocks = "pick_blocks";
     public const string Invisibility = "invisibility";
     public const string Redstone = "redstone";
     public const string Fluids = "fluids";
@@ -97,7 +98,7 @@ internal static class ScenarioCaptures
             GrowingPlantTicks, MeltingWeather, FurnaceResults, EyeblossomGhastPortal, Brushing, ArmorStandUse,
             WaxingBellsOre, FoodHarvest, Cauldrons, ProjectileHits, Dispenser, Shelves, StrawBeds,
             GoldenDandelions, Lightning, TrialSpawners, Vaults, OminousTrials, CommandBlocks, StructureBlocks, JigsawBlocks,
-            SpecialBlocks];
+            SpecialBlocks, PickBlocks];
 
     private const string RedstoneNotes = """
         Vanilla redstone scenarios, recorded by the asset generator's capture-scenarios (ScenarioCaptures.cs) on a
@@ -173,6 +174,13 @@ internal static class ScenarioCaptures
                 + "armor_stand_use, waxing_bells_ore, food_and_harvest, cauldrons, projectile_hits, dispenser, "
                 + "shelves, straw_beds, golden_dandelions, lightning, trial_spawners, vaults, ominous_trials, growing_plant_ticks, "
                 + "command_blocks, structure_blocks, jigsaw_blocks or special_blocks.");
+        }
+
+        if (fixtures.Contains(PickBlocks))
+        {
+            await FixtureDumper.DumpPickBlocksAsync(server, Path.Combine(assetsDirectory, "pick_blocks.json"));
+            if (fixtures.Count == 1)
+                return;
         }
 
         if (fixtures.Contains(Invisibility))
