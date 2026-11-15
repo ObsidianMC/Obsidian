@@ -22,6 +22,7 @@
 
 	<ItemGroup>
 		<EmbeddedResource Include="Assets\bigtest.nbt" />
+		<EmbeddedResource Include="Assets\pick_blocks.json" />
 		<EmbeddedResource Include="Assets\daylight_detector.json" />
 		<EmbeddedResource Include="Assets\fluid_scenarios.json" />
 		<EmbeddedResource Include="Assets\sulfur_scenarios.json" />

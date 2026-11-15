@@ -1,0 +1,189 @@
+{
+  "version": "26.3",
+  "cases": [
+    {
+      "block": "minecraft:stone",
+      "item": "minecraft:stone"
+    },
+    {
+      "block": "minecraft:wheat",
+      "item": "minecraft:wheat_seeds"
+    },
+    {
+      "block": "minecraft:carrots",
+      "item": "minecraft:carrot"
+    },
+    {
+      "block": "minecraft:potatoes",
+      "item": "minecraft:potato"
+    },
+    {
+      "block": "minecraft:beetroots",
+      "item": "minecraft:beetroot_seeds"
+    },
+    {
+      "block": "minecraft:cocoa",
+      "item": "minecraft:cocoa_beans"
+    },
+    {
+      "block": "minecraft:torchflower_crop",
+      "item": "minecraft:torchflower_seeds"
+    },
+    {
+      "block": "minecraft:pitcher_crop",
+      "item": "minecraft:pitcher_pod"
+    },
+    {
+      "block": "minecraft:melon_stem",
+      "item": "minecraft:melon_seeds"
+    },
+    {
+      "block": "minecraft:attached_melon_stem",
+      "item": "minecraft:melon_seeds"
+    },
+    {
+      "block": "minecraft:pumpkin_stem",
+      "item": "minecraft:pumpkin_seeds"
+    },
+    {
+      "block": "minecraft:attached_pumpkin_stem",
+      "item": "minecraft:pumpkin_seeds"
+    },
+    {
+      "block": "minecraft:bamboo_sapling",
+      "item": "minecraft:bamboo"
+    },
+    {
+      "block": "minecraft:big_dripleaf_stem",
+      "item": "minecraft:big_dripleaf"
+    },
+    {
+      "block": "minecraft:cave_vines",
+      "item": "minecraft:glow_berries"
+    },
+    {
+      "block": "minecraft:cave_vines_plant",
+      "item": "minecraft:glow_berries"
+    },
+    {
+      "block": "minecraft:sweet_berry_bush",
+      "item": "minecraft:sweet_berries"
+    },
+    {
+      "block": "minecraft:kelp_plant",
+      "item": "minecraft:kelp"
+    },
+    {
+      "block": "minecraft:twisting_vines_plant",
+      "item": "minecraft:twisting_vines"
+    },
+    {
+      "block": "minecraft:weeping_vines_plant",
+      "item": "minecraft:weeping_vines"
+    },
+    {
+      "block": "minecraft:tall_seagrass",
+      "item": "minecraft:seagrass"
+    },
+    {
+      "block": "minecraft:redstone_wire",
+      "item": "minecraft:redstone"
+    },
+    {
+      "block": "minecraft:tripwire",
+      "item": "minecraft:string"
+    },
+    {
+      "block": "minecraft:piston_head",
+      "item": "minecraft:piston"
+    },
+    {
+      "block": "minecraft:candle_cake",
+      "item": "minecraft:cake"
+    },
+    {
+      "block": "minecraft:blue_candle_cake",
+      "item": "minecraft:cake"
+    },
+    {
+      "block": "minecraft:potted_dandelion",
+      "item": "minecraft:dandelion"
+    },
+    {
+      "block": "minecraft:potted_oak_sapling",
+      "item": "minecraft:oak_sapling"
+    },
+    {
+      "block": "minecraft:potted_azalea_bush",
+      "item": "minecraft:azalea"
+    },
+    {
+      "block": "minecraft:oak_wall_sign",
+      "item": "minecraft:oak_sign"
+    },
+    {
+      "block": "minecraft:oak_wall_hanging_sign",
+      "item": "minecraft:oak_hanging_sign"
+    },
+    {
+      "block": "minecraft:skeleton_wall_skull",
+      "item": "minecraft:skeleton_skull"
+    },
+    {
+      "block": "minecraft:dragon_wall_head",
+      "item": "minecraft:dragon_head"
+    },
+    {
+      "block": "minecraft:wall_torch",
+      "item": "minecraft:torch"
+    },
+    {
+      "block": "minecraft:soul_wall_torch",
+      "item": "minecraft:soul_torch"
+    },
+    {
+      "block": "minecraft:redstone_wall_torch",
+      "item": "minecraft:redstone_torch"
+    },
+    {
+      "block": "minecraft:nether_portal",
+      "item": "minecraft:air"
+    },
+    {
+      "block": "minecraft:end_portal",
+      "item": "minecraft:air"
+    },
+    {
+      "block": "minecraft:end_gateway",
+      "item": "minecraft:air"
+    },
+    {
+      "block": "minecraft:frosted_ice",
+      "item": "minecraft:air"
+    },
+    {
+      "block": "minecraft:moving_piston",
+      "item": "minecraft:air"
+    },
+    {
+      "block": "minecraft:water",
+      "item": "minecraft:air"
+    },
+    {
+      "block": "minecraft:lava",
+      "item": "minecraft:air"
+    },
+    {
+      "block": "minecraft:air",
+      "item": "minecraft:air"
+    },
+    {
+      "block": "minecraft:light",
+      "item": "minecraft:light"
+    },
+    {
+      "block": "minecraft:test_block",
+      "item": "minecraft:test_block"
+    }
+  ]
+}

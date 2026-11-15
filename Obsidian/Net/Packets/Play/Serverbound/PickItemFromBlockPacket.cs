@@ -1,8 +1,9 @@
-﻿namespace Obsidian.Net.Packets.Play.Serverbound;
+﻿using Obsidian.Entities;
+
+namespace Obsidian.Net.Packets.Play.Serverbound;
 
 /// <summary>
-/// A player's pick-block (middle click) on a block. Obsidian doesn't act on it yet
-/// (see docs/known-gaps/signed-chat-and-block-picking.md).
+/// A player's pick-block (middle click) on a block.
 /// </summary>
 public partial class PickItemFromBlockPacket
 {
@@ -18,4 +19,9 @@ public partial class PickItemFromBlockPacket
         this.Position = reader.ReadPosition();
         this.IncludeData = reader.ReadBoolean();
     }
+
+    public override ValueTask HandleAsync(IServer server, IClientPlayer player) =>
+        player is PlayerBase picker
+            ? picker.PickBlockAsync(this.Position, this.IncludeData)
+            : ValueTask.CompletedTask;
 }
